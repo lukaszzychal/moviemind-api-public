@@ -899,6 +899,88 @@ class RapidAPIService
 
 ---
 
+## 🌳 Git Trunk Flow
+
+### 🇵🇱 Strategia Zarządzania Kodem / Code Management Strategy
+
+Używamy **Git Trunk Flow** jako głównej strategii zarządzania kodem dla MovieMind API.
+
+We use **Git Trunk Flow** as the main code management strategy for MovieMind API.
+
+### ✅ Zalety Trunk Flow / Trunk Flow Advantages:
+- **Prostszy workflow** - jeden główny branch (main) / **Simpler workflow** - single main branch (main)
+- **Szybsze integracje** - częste mergowanie do main / **Faster integrations** - frequent merging to main
+- **Mniej konfliktów** - krótsze żywotność feature branchy / **Fewer conflicts** - shorter feature branch lifetime
+- **Lepsze CI/CD** - każdy commit na main może być deployowany / **Better CI/CD** - every commit on main can be deployed
+- **Feature flags** - kontrola funkcji bez branchy / **Feature flags** - feature control without branches
+- **Rollback** - łatwy rollback przez feature flags / **Rollback** - easy rollback through feature flags
+
+### 🔄 Workflow:
+1. **Feature branch** - `feature/ai-description-generation`
+2. **Pull Request** - code review i testy / code review and tests
+3. **Merge do main** - po zatwierdzeniu / **Merge to main** - after approval
+4. **Deploy** - automatyczny deploy z feature flags / automatic deploy with feature flags
+5. **Feature flag** - kontrola włączenia funkcji / feature enablement control
+
+### 🛠️ Implementacja / Implementation:
+- **Main branch** - zawsze deployable / always deployable
+- **Feature branchy** - krótkoterminowe (1-3 dni) / **Feature branches** - short-term (1-3 days)
+- **Feature flags** - kontrola funkcji w runtime / runtime feature control
+- **CI/CD** - automatyczny deploy na każdy merge / automatic deploy on every merge
+
+---
+
+## 🎛️ Feature Flags
+
+### 🇵🇱 Strategia Kontroli Funkcji / Feature Control Strategy
+
+Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
+
+We use **custom Feature Flags implementation** instead of ready-made solutions.
+
+### ✅ Zalety własnej implementacji / Custom implementation advantages:
+- **Kontrola** - pełna kontrola nad logiką / **Control** - full control over logic
+- **Koszt** - brak kosztów zewnętrznych serwisów / **Cost** - no external service costs
+- **Prostota** - dostosowana do potrzeb projektu / **Simplicity** - tailored to project needs
+- **Integracja** - łatwa integracja z Laravel / **Integration** - easy Laravel integration
+- **Bezpieczeństwo** - dane nie opuszczają naszej infrastruktury / **Security** - data doesn't leave our infrastructure
+
+### 🎛️ Typy Feature Flags / Feature Flag Types:
+1. **Boolean flags** - włącz/wyłącz funkcje / enable/disable features
+2. **Percentage flags** - gradual rollout (0-100%)
+3. **User-based flags** - dla konkretnych użytkowników / for specific users
+4. **Environment flags** - różne ustawienia per środowisko / different settings per environment
+
+### 🔧 Implementacja Laravel / Laravel Implementation:
+```php
+// app/Services/FeatureFlagService.php
+class FeatureFlagService
+{
+    public function isEnabled(string $flag, ?User $user = null): bool
+    {
+        $config = $this->getFlagConfig($flag);
+        
+        if ($config['enabled'] === false) {
+            return false;
+        }
+        
+        if ($config['percentage'] < 100) {
+            return $this->shouldEnableForPercentage($flag, $user);
+        }
+        
+        return true;
+    }
+}
+```
+
+### 🎯 Użycie w MovieMind API / Usage in MovieMind API:
+- **AI Generation** - gradual rollout nowych modeli / gradual rollout of new models
+- **Multilingual** - włączanie nowych języków / enabling new languages
+- **Style Packs** - testowanie nowych stylów / testing new styles
+- **Rate Limiting** - różne limity dla różnych użytkowników / different limits for different users
+
+---
+
 ## 🔐 Bezpieczeństwo i Zarządzanie Kluczami / Security and Key Management
 
 ### 🔒 Zasada Ogólna / General Principle

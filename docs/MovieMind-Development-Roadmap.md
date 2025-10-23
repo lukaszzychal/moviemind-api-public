@@ -14,7 +14,9 @@
 6. [Wielojęzyczność](#wielojęzyczność)
 7. [Funkcje Zaawansowane](#funkcje-zaawansowane)
 8. [Monetyzacja](#monetyzacja)
-9. [Timeline](#timeline)
+9. [Git Trunk Flow](#git-trunk-flow)
+10. [Feature Flags](#feature-flags)
+11. [Timeline](#timeline)
 
 ### 🇬🇧
 1. [Project Goal](#project-goal)
@@ -25,7 +27,9 @@
 6. [Multilingual Support](#multilingual-support)
 7. [Advanced Features](#advanced-features)
 8. [Monetization](#monetization)
-9. [Timeline](#timeline-en)
+9. [Git Trunk Flow](#git-trunk-flow-en)
+10. [Feature Flags](#feature-flags-en)
+11. [Timeline](#timeline-en)
 
 ---
 
@@ -670,6 +674,158 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 - **Value-based pricing** - value-based pricing
 - **Freemium model** - free plan with limitations
 - **Enterprise sales** - corporate sales
+
+---
+
+## 🇵🇱 Git Trunk Flow
+
+### 🎯 Strategia Zarządzania Kodem
+Używamy **Git Trunk Flow** jako głównej strategii zarządzania kodem dla MovieMind API.
+
+### ✅ Zalety Trunk Flow:
+- **Prostszy workflow** - jeden główny branch (main)
+- **Szybsze integracje** - częste mergowanie do main
+- **Mniej konfliktów** - krótsze żywotność feature branchy
+- **Lepsze CI/CD** - każdy commit na main może być deployowany
+- **Feature flags** - kontrola funkcji bez branchy
+- **Rollback** - łatwy rollback przez feature flags
+
+### 🔄 Workflow:
+1. **Feature branch** - `feature/ai-description-generation`
+2. **Pull Request** - code review i testy
+3. **Merge do main** - po zatwierdzeniu
+4. **Deploy** - automatyczny deploy z feature flags
+5. **Feature flag** - kontrola włączenia funkcji
+
+### 🛠️ Implementacja:
+- **Main branch** - zawsze deployable
+- **Feature branchy** - krótkoterminowe (1-3 dni)
+- **Feature flags** - kontrola funkcji w runtime
+- **CI/CD** - automatyczny deploy na każdy merge
+
+---
+
+## 🇵🇱 Feature Flags
+
+### 🎛️ Strategia Kontroli Funkcji
+Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
+
+### ✅ Zalety własnej implementacji:
+- **Kontrola** - pełna kontrola nad logiką
+- **Koszt** - brak kosztów zewnętrznych serwisów
+- **Prostota** - dostosowana do potrzeb projektu
+- **Integracja** - łatwa integracja z Laravel
+- **Bezpieczeństwo** - dane nie opuszczają naszej infrastruktury
+
+### 🎛️ Typy Feature Flags:
+1. **Boolean flags** - włącz/wyłącz funkcje
+2. **Percentage flags** - gradual rollout (0-100%)
+3. **User-based flags** - dla konkretnych użytkowników
+4. **Environment flags** - różne ustawienia per środowisko
+
+### 🔧 Implementacja Laravel:
+```php
+// app/Services/FeatureFlagService.php
+class FeatureFlagService
+{
+    public function isEnabled(string $flag, ?User $user = null): bool
+    {
+        $config = $this->getFlagConfig($flag);
+        
+        if ($config['enabled'] === false) {
+            return false;
+        }
+        
+        if ($config['percentage'] < 100) {
+            return $this->shouldEnableForPercentage($flag, $user);
+        }
+        
+        return true;
+    }
+}
+```
+
+### 🎯 Użycie w MovieMind API:
+- **AI Generation** - gradual rollout nowych modeli
+- **Multilingual** - włączanie nowych języków
+- **Style Packs** - testowanie nowych stylów
+- **Rate Limiting** - różne limity dla różnych użytkowników
+
+---
+
+## 🇬🇧 Git Trunk Flow
+
+### 🎯 Code Management Strategy
+We use **Git Trunk Flow** as the main code management strategy for MovieMind API.
+
+### ✅ Trunk Flow Advantages:
+- **Simpler workflow** - single main branch (main)
+- **Faster integrations** - frequent merging to main
+- **Fewer conflicts** - shorter feature branch lifetime
+- **Better CI/CD** - every commit on main can be deployed
+- **Feature flags** - feature control without branches
+- **Rollback** - easy rollback through feature flags
+
+### 🔄 Workflow:
+1. **Feature branch** - `feature/ai-description-generation`
+2. **Pull Request** - code review and tests
+3. **Merge to main** - after approval
+4. **Deploy** - automatic deploy with feature flags
+5. **Feature flag** - feature enablement control
+
+### 🛠️ Implementation:
+- **Main branch** - always deployable
+- **Feature branches** - short-term (1-3 days)
+- **Feature flags** - runtime feature control
+- **CI/CD** - automatic deploy on every merge
+
+---
+
+## 🇬🇧 Feature Flags
+
+### 🎛️ Feature Control Strategy
+We use **custom Feature Flags implementation** instead of ready-made solutions.
+
+### ✅ Custom implementation advantages:
+- **Control** - full control over logic
+- **Cost** - no external service costs
+- **Simplicity** - tailored to project needs
+- **Integration** - easy Laravel integration
+- **Security** - data doesn't leave our infrastructure
+
+### 🎛️ Feature Flag Types:
+1. **Boolean flags** - enable/disable features
+2. **Percentage flags** - gradual rollout (0-100%)
+3. **User-based flags** - for specific users
+4. **Environment flags** - different settings per environment
+
+### 🔧 Laravel Implementation:
+```php
+// app/Services/FeatureFlagService.php
+class FeatureFlagService
+{
+    public function isEnabled(string $flag, ?User $user = null): bool
+    {
+        $config = $this->getFlagConfig($flag);
+        
+        if ($config['enabled'] === false) {
+            return false;
+        }
+        
+        if ($config['percentage'] < 100) {
+            return $this->shouldEnableForPercentage($flag, $user);
+        }
+        
+        return true;
+    }
+}
+```
+
+### 🎯 Usage in MovieMind API:
+- **AI Generation** - gradual rollout of new models
+- **Multilingual** - enabling new languages
+- **Style Packs** - testing new styles
+- **Rate Limiting** - different limits for different users
 
 ---
 
