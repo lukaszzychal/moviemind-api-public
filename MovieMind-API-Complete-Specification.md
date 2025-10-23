@@ -46,13 +46,13 @@ Udostępnić API, które:
 
 ### 🧩 Podejście Dual-Repository / Dual-Repository Approach
 
-| Aspekt / Aspect | Repozytorium Publiczne / Public Repository | Repozytorium Prywatne / Private Repository |
-|-----------------|---------------------------------------------|---------------------------------------------|
-| **Cel / Goal** | Portfolio, demonstracja umiejętności / Portfolio, skills demonstration | Produkcja, komercyjny produkt / Production, commercial product |
-| **Zawartość / Content** | Okrojony kod, mock AI, dokumentacja / Trimmed code, mock AI, documentation | Pełny kod, realne AI, billing, webhooki / Full code, real AI, billing, webhooks |
-| **Bezpieczeństwo / Security** | Brak kluczy API, przykładowe dane / No API keys, sample data | Prawdziwe klucze, dane produkcyjne / Real keys, production data |
-| **Licencja / License** | MIT / CC-BY-NC | Własna komercyjna / Custom commercial |
-| **Timeline / Harmonogram** | 6 tygodni (MVP) | 8-12 tygodni (pełny produkt) |
+| Aspekt / Aspect               | Repozytorium Publiczne / Public Repository                                 | Repozytorium Prywatne / Private Repository                                      |
+| -----------------             | ---------------------------------------------                              | ---------------------------------------------                                   |
+| **Cel / Goal**                | Portfolio, demonstracja umiejętności / Portfolio, skills demonstration     | Produkcja, komercyjny produkt / Production, commercial product                  |
+| **Zawartość / Content**       | Okrojony kod, mock AI, dokumentacja / Trimmed code, mock AI, documentation | Pełny kod, realne AI, billing, webhooki / Full code, real AI, billing, webhooks |
+| **Bezpieczeństwo / Security** | Brak kluczy API, przykładowe dane / No API keys, sample data               | Prawdziwe klucze, dane produkcyjne / Real keys, production data                 |
+| **Licencja / License**        | MIT / CC-BY-NC                                                             | Własna komercyjna / Custom commercial                                           |
+| **Timeline / Harmonogram**    | 6 tygodni (MVP)                                                            | 8-12 tygodni (pełny produkt)                                                    |
 
 ### ✅ Dlaczego to dobre rozwiązanie / Why This Is a Good Solution
 
@@ -103,13 +103,13 @@ Prywatne repo może zawierać:
 ### 🔹 1. Zakres Funkcjonalny / Functional Scope
 
 **Użytkownik (klient API) może:**
-| Funkcja | Opis |
-|---------|------|
-| `GET /v1/movies?q=` | wyszukać filmy (tytuł, rok, gatunek) |
-| `GET /v1/movies/{id}` | pobrać szczegóły filmu + opis (AI lub cache) |
-| `GET /v1/actors/{id}` | pobrać dane aktora + biografię |
-| `POST /v1/generate` | wymusić nowe wygenerowanie opisu lub biografii (AI) |
-| `GET /v1/jobs/{id}` | sprawdzić status generacji (PENDING, DONE, FAILED) |
+| Funkcja               | Opis                                                |
+| ---------             | ------                                              |
+| `GET /v1/movies?q=`   | wyszukać filmy (tytuł, rok, gatunek)                |
+| `GET /v1/movies/{id}` | pobrać szczegóły filmu + opis (AI lub cache)        |
+| `GET /v1/actors/{id}` | pobrać dane aktora + biografię                      |
+| `POST /v1/generate`   | wymusić nowe wygenerowanie opisu lub biografii (AI) |
+| `GET /v1/jobs/{id}`   | sprawdzić status generacji (PENDING, DONE, FAILED)  |
 
 **System (wewnętrznie):**
 - zapisuje dane w PostgreSQL (movies, actors, descriptions, bios, jobs)
@@ -124,29 +124,29 @@ Prywatne repo może zawierać:
 
 **Dwa backend'y dla różnych celów:**
 
-| Kontener | Technologia | Odpowiedzialność |
-|----------|-------------|------------------|
-| **API Gateway** | FastAPI (Python) | Publikuje REST/GraphQL endpointy (filmy, aktorzy, itp) |
-| **AI Service** | Python (LangChain / custom microservice z OpenAI SDK) | Generuje opisy, biografie, tagi kontekstowe |
-| **Metadata Fetcher** | Node.js / PHP Worker | Pobiera dane z TMDB/TVMaze, normalizuje, uzupełnia braki |
-| **Database** | PostgreSQL | Przechowuje treści, metadane, wersje, tagi, ratingi jakości |
-| **Cache** | Redis | Cache odpowiedzi API i AI wyników |
-| **Task Queue** | RabbitMQ / Redis Queue | Kolejkuje generowanie opisów, porównania, scoring |
-| **Admin Panel** | Symfony 7 (PHP 8.3) | Zarządzanie danymi, modelami AI, planami API |
+| Kontener             | Technologia                                           | Odpowiedzialność                                            |
+| ----------           | -------------                                         | ------------------                                          |
+| **API Gateway**      | FastAPI (Python)                                      | Publikuje REST/GraphQL endpointy (filmy, aktorzy, itp)      |
+| **AI Service**       | Python (LangChain / custom microservice z OpenAI SDK) | Generuje opisy, biografie, tagi kontekstowe                 |
+| **Metadata Fetcher** | Node.js / PHP Worker                                  | Pobiera dane z TMDB/TVMaze, normalizuje, uzupełnia braki    |
+| **Database**         | PostgreSQL                                            | Przechowuje treści, metadane, wersje, tagi, ratingi jakości |
+| **Cache**            | Redis                                                 | Cache odpowiedzi API i AI wyników                           |
+| **Task Queue**       | RabbitMQ / Redis Queue                                | Kolejkuje generowanie opisów, porównania, scoring           |
+| **Admin Panel**      | Symfony 7 (PHP 8.3)                                   | Zarządzanie danymi, modelami AI, planami API                |
 
 #### ⚡ /src-fastapi/ — lekki, publiczny, skalowalny API Core
 
 **Technologia:** Python + FastAPI + Celery + RabbitMQ + Redis  
 **Cel:** API-as-a-Service (publiczne endpointy, AI generacja, async jobs)
 
-| Cecha | Opis |
-|-------|------|
-| **Język** | Python — prosty, szybki dla ML/AI, łatwy deploy na RapidAPI |
-| **Async** | obsługuje tysiące requestów, idealny do generacji treści przez AI |
-| **Worker (Celery)** | obsługa kolejek, webhooków, generacji asynchronicznej |
-| **Redis + Prometheus** | cache, rate limiting, metryki |
-| **AI Integration** | to tu trafia request z RapidAPI, generuje opis i zapisuje w bazie |
-| **Deployment** | kontener publiczny (np. RapidAPI, AWS Lambda, Railway, etc.) |
+| Cecha                  | Opis                                                              |
+| -------                | ------                                                            |
+| **Język**              | Python — prosty, szybki dla ML/AI, łatwy deploy na RapidAPI       |
+| **Async**              | obsługuje tysiące requestów, idealny do generacji treści przez AI |
+| **Worker (Celery)**    | obsługa kolejek, webhooków, generacji asynchronicznej             |
+| **Redis + Prometheus** | cache, rate limiting, metryki                                     |
+| **AI Integration**     | to tu trafia request z RapidAPI, generuje opis i zapisuje w bazie |
+| **Deployment**         | kontener publiczny (np. RapidAPI, AWS Lambda, Railway, etc.)      |
 
 **📌 Rola:** To zewnętrzna warstwa API-as-a-Service, zorientowana na klientów zewnętrznych i integracje.
 
@@ -155,14 +155,14 @@ Prywatne repo może zawierać:
 **Technologia:** PHP 8.3 + Symfony 7 + Doctrine + Messenger  
 **Cel:** wewnętrzny backend domenowy i panel zarządzania danymi (CMS / DDD)
 
-| Cecha | Opis |
-|-------|------|
-| **DDD / CQRS / Doctrine** | model domenowy: Movie, Actor, AIJob itp. |
-| **Messenger (RabbitMQ)** | integracja event-driven z FastAPI workerem |
-| **API Platform (REST/GraphQL)** | dokumentacja, CRUD-y, back-office |
-| **Security** | admin roles, JWT, OAuth |
-| **CLI / Cron / Importy** | zarządzanie danymi zewnętrznymi (IMDb, TMDb, TVMaze) |
-| **Deployment** | serwis wewnętrzny (np. admin.moviemind.dev) |
+| Cecha                           | Opis                                                 |
+| -------                         | ------                                               |
+| **DDD / CQRS / Doctrine**       | model domenowy: Movie, Actor, AIJob itp.             |
+| **Messenger (RabbitMQ)**        | integracja event-driven z FastAPI workerem           |
+| **API Platform (REST/GraphQL)** | dokumentacja, CRUD-y, back-office                    |
+| **Security**                    | admin roles, JWT, OAuth                              |
+| **CLI / Cron / Importy**        | zarządzanie danymi zewnętrznymi (IMDb, TMDb, TVMaze) |
+| **Deployment**                  | serwis wewnętrzny (np. admin.moviemind.dev)          |
 
 **📌 Rola:** To wewnętrzny CMS / Control Plane, który:
 - zarządza bazą filmów, aktorów, opisów, tagów, języków
@@ -174,102 +174,102 @@ Prywatne repo może zawierać:
 
 ```
 +--------------------------------------------+
-|               Public Internet               |
-|---------------------------------------------|
-|         [ RapidAPI Gateway ]                |
-|                  │                          |
-|      X-API-Key + JWT + RateLimit            |
-|                  ▼                          |
-|     [ FastAPI Container ] (MovieMind API)   |
-|       - /v1/movies                          |
-|       - /v1/actors                          |
-|       - /v1/generate                        |
-|       - webhook/email/slack                 |
-|                  │                          |
-|        (RabbitMQ Queue + Celery)            |
-|                  ▼                          |
-|       [ PostgreSQL + Redis Cache ]          |
-|                  │                          |
-|       [ Symfony Backend (Admin/API) ]       |
-|       - /admin/movies                       |
-|       - /admin/actors                       |
-|       - /api/jobs/status                    |
-|       - AI moderation, curation, analytics  |
+| Public Internet                               |
+| --------------------------------------------- |
+| [ RapidAPI Gateway ]                          |
+| │                                             |
+| X-API-Key + JWT + RateLimit                   |
+| ▼                                             |
+| [ FastAPI Container ] (MovieMind API)         |
+| - /v1/movies                                  |
+| - /v1/actors                                  |
+| - /v1/generate                                |
+| - webhook/email/slack                         |
+| │                                             |
+| (RabbitMQ Queue + Celery)                     |
+| ▼                                             |
+| [ PostgreSQL + Redis Cache ]                  |
+| │                                             |
+| [ Symfony Backend (Admin/API) ]               |
+| - /admin/movies                               |
+| - /admin/actors                               |
+| - /api/jobs/status                            |
+| - AI moderation, curation, analytics          |
 +--------------------------------------------+
 ```
 
 #### ⚖️ Dlaczego dwa, a nie jedno?
 
-| Powód | Wyjaśnienie |
-|-------|-------------|
-| **Izolacja ryzyka** | Publiczne API (FastAPI) jest lekkie i skalowalne, prywatne (Symfony) może mieć bardziej złożoną logikę i walidacje |
-| **Zgodność z RapidAPI** | RapidAPI wymaga REST + JSON + szybkiego startu, Python jest tu naturalny |
-| **Komfort pracy** | Ty jako PHP Dev masz w Symfony pełną kontrolę nad domeną, a AI worker nie blokuje requestów |
-| **Rozdział kosztów** | Możesz skalować AI worker (Python) niezależnie od panelu admina (PHP) |
-| **Rozwój SaaS** | API publiczne → RapidAPI, API wewnętrzne → Twój panel / portal / integracje |
+| Powód                   | Wyjaśnienie                                                                                                        |
+| -------                 | -------------                                                                                                      |
+| **Izolacja ryzyka**     | Publiczne API (FastAPI) jest lekkie i skalowalne, prywatne (Symfony) może mieć bardziej złożoną logikę i walidacje |
+| **Zgodność z RapidAPI** | RapidAPI wymaga REST + JSON + szybkiego startu, Python jest tu naturalny                                           |
+| **Komfort pracy**       | Ty jako PHP Dev masz w Symfony pełną kontrolę nad domeną, a AI worker nie blokuje requestów                        |
+| **Rozdział kosztów**    | Możesz skalować AI worker (Python) niezależnie od panelu admina (PHP)                                              |
+| **Rozwój SaaS**         | API publiczne → RapidAPI, API wewnętrzne → Twój panel / portal / integracje                                        |
 
 #### 🧩 Krótko:
 
-| Folder | Technologia | Rola | Udostępnienie |
-|--------|-------------|------|---------------|
-| `/src-fastapi` | Python (FastAPI) | Public API-as-a-Service | RapidAPI / Public Cloud |
-| `/src-symfony` | PHP (Symfony 7) | Internal Admin / CMS / DDD | Private / Internal |
+| Folder         | Technologia      | Rola                       | Udostępnienie           |
+| --------       | -------------    | ------                     | ---------------         |
+| `/src-fastapi` | Python (FastAPI) | Public API-as-a-Service    | RapidAPI / Public Cloud |
+| `/src-symfony` | PHP (Symfony 7)  | Internal Admin / CMS / DDD | Private / Internal      |
 
 ### 🔹 3. Struktura Danych / Data Structure
 
 #### Tabela: movies
-| Pole | Typ | Opis |
-|------|-----|------|
-| id | int | PK |
-| title | varchar | Tytuł |
-| release_year | smallint | Rok produkcji |
-| director | varchar | Reżyser |
-| genres | text[] | Gatunki |
-| default_description_id | int | referencja do opisu |
+| Pole                   | Typ      | Opis                |
+| ------                 | -----    | ------              |
+| id                     | int      | PK                  |
+| title                  | varchar  | Tytuł               |
+| release_year           | smallint | Rok produkcji       |
+| director               | varchar  | Reżyser             |
+| genres                 | text[]   | Gatunki             |
+| default_description_id | int      | referencja do opisu |
 
 #### Tabela: movie_descriptions
-| Pole | Typ | Opis |
-|------|-----|------|
-| id | int | PK |
-| movie_id | int FK | - |
-| locale | varchar(10) | np. pl-PL, en-US |
-| text | text | treść opisu |
-| context_tag | varchar(64) | np. modern, critical |
-| origin | varchar(32) | GENERATED / TRANSLATED |
-| ai_model | varchar(64) | np. gpt-4o-mini |
-| created_at | timestamp | - |
+| Pole        | Typ         | Opis                   |
+| ------      | -----       | ------                 |
+| id          | int         | PK                     |
+| movie_id    | int FK      | -                      |
+| locale      | varchar(10) | np. pl-PL, en-US       |
+| text        | text        | treść opisu            |
+| context_tag | varchar(64) | np. modern, critical   |
+| origin      | varchar(32) | GENERATED / TRANSLATED |
+| ai_model    | varchar(64) | np. gpt-4o-mini        |
+| created_at  | timestamp   | -                      |
 
 #### Tabela: actors
-| Pole | Typ |
-|------|-----|
-| id | int |
-| name | varchar |
-| birth_date | date |
-| birthplace | varchar |
-| default_bio_id | int |
+| Pole           | Typ     |
+| ------         | -----   |
+| id             | int     |
+| name           | varchar |
+| birth_date     | date    |
+| birthplace     | varchar |
+| default_bio_id | int     |
 
 #### Tabela: actor_bios
-| Pole | Typ |
-|------|-----|
-| id | int |
-| actor_id | int |
-| locale | varchar(10) |
-| text | text |
+| Pole        | Typ         |
+| ------      | -----       |
+| id          | int         |
+| actor_id    | int         |
+| locale      | varchar(10) |
+| text        | text        |
 | context_tag | varchar(64) |
-| origin | varchar(32) |
-| ai_model | varchar(64) |
-| created_at | timestamp |
+| origin      | varchar(32) |
+| ai_model    | varchar(64) |
+| created_at  | timestamp   |
 
 #### Tabela: jobs
-| Pole | Typ |
-|------|-----|
-| id | int |
-| entity_type | varchar(16) (MOVIE, ACTOR) |
-| entity_id | int |
-| locale | varchar(10) |
-| status | varchar(16) (PENDING, DONE, FAILED) |
-| payload_json | jsonb |
-| created_at | timestamp |
+| Pole         | Typ                                 |
+| ------       | -----                               |
+| id           | int                                 |
+| entity_type  | varchar(16) (MOVIE, ACTOR)          |
+| entity_id    | int                                 |
+| locale       | varchar(10)                         |
+| status       | varchar(16) (PENDING, DONE, FAILED) |
+| payload_json | jsonb                               |
+| created_at   | timestamp                           |
 
 ### 🔹 4. MVP – Przepływ Działania (Happy Path)
 
@@ -990,11 +990,11 @@ jwt/
 
 ## 💰 Monetyzacja (RapidAPI) / Monetization (RapidAPI)
 
-| Plan | Limit | Features |
-|------|-------|----------|
-| **Free** | 100 zapytań/miesiąc | Dostęp tylko do danych w bazie (bez generowania) |
-| **Pro** | 10 000 zapytań/miesiąc | Możliwość regeneracji opisów AI i wyboru kontekstu |
-| **Enterprise** | Nielimitowany | API + dedykowane modele AI + webhooki |
+| Plan           | Limit                  | Features                                           |
+| ------         | -------                | ----------                                         |
+| **Free**       | 100 zapytań/miesiąc    | Dostęp tylko do danych w bazie (bez generowania)   |
+| **Pro**        | 10 000 zapytań/miesiąc | Możliwość regeneracji opisów AI i wyboru kontekstu |
+| **Enterprise** | Nielimitowany          | API + dedykowane modele AI + webhooki              |
 
 ---
 
@@ -1013,14 +1013,14 @@ jwt/
 
 ### 🧠 Rekomendacja dla MovieMind API
 
-| Element | Wersja Publiczna | Wersja Prywatna |
-|---------|------------------|-----------------|
-| **Backend** | Symfony (MVP) | Symfony + AI Workers |
-| **AI generacja** | stub/mock | pełny prompt i model |
-| **Cache + DB** | ✅ | ✅ |
-| **Rate Limit, Billing** | ❌ | ✅ |
-| **Webhooki, Jobs, Admin Panel** | ❌ | ✅ |
-| **Licencja** | MIT lub CC-BY-NC | własna ("MovieMind Commercial License") |
+| Element                         | Wersja Publiczna   | Wersja Prywatna                         |
+| ---------                       | ------------------ | -----------------                       |
+| **Backend**                     | Symfony (MVP)      | Symfony + AI Workers                    |
+| **AI generacja**                | stub/mock          | pełny prompt i model                    |
+| **Cache + DB**                  | ✅                  | ✅                                       |
+| **Rate Limit, Billing**         | ❌                  | ✅                                       |
+| **Webhooki, Jobs, Admin Panel** | ❌                  | ✅                                       |
+| **Licencja**                    | MIT lub CC-BY-NC   | własna ("MovieMind Commercial License") |
 
 ---
 
@@ -1028,14 +1028,14 @@ jwt/
 
 ### 📊 Porównanie Repozytoriów / Repository Comparison
 
-| Aspekt / Aspect | Publiczne / Public | Prywatne / Private |
-|-----------------|-------------------|-------------------|
-| **Kod / Code** | Mock services, przykładowe dane | Prawdziwe AI, produkcyjne dane |
-| **Bezpieczeństwo / Security** | Brak kluczy API | Prawdziwe klucze, webhooki |
-| **Testy / Tests** | Unit tests, mock tests | Integration tests, E2E tests |
-| **Dokumentacja / Documentation** | Portfolio, architektura | API docs, deployment guides |
-| **Licencja / License** | MIT (open source) | Custom commercial |
-| **Cel / Purpose** | Demonstracja umiejętności | Komercyjny produkt |
+| Aspekt / Aspect                  | Publiczne / Public              | Prywatne / Private             |
+| -----------------                | -------------------             | -------------------            |
+| **Kod / Code**                   | Mock services, przykładowe dane | Prawdziwe AI, produkcyjne dane |
+| **Bezpieczeństwo / Security**    | Brak kluczy API                 | Prawdziwe klucze, webhooki     |
+| **Testy / Tests**                | Unit tests, mock tests          | Integration tests, E2E tests   |
+| **Dokumentacja / Documentation** | Portfolio, architektura         | API docs, deployment guides    |
+| **Licencja / License**           | MIT (open source)               | Custom commercial              |
+| **Cel / Purpose**                | Demonstracja umiejętności       | Komercyjny produkt             |
 
 ### 🚀 Następne Kroki / Next Steps
 
