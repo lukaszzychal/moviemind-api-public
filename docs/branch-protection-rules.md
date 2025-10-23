@@ -27,6 +27,22 @@ This document outlines the recommended branch protection rules for the MovieMind
 - ✅ **Require conversation resolution before merging** / **Wymagaj rozwiązania rozmów przed scaleniem**
 - ✅ **Lock branch** (for critical releases) / **Zablokuj gałąź** (dla krytycznych wydań)
 
+### Advanced Protection Rules / Zaawansowane Zasady Ochrony
+- ✅ **Restrict creations** / **Ogranicz tworzenie**
+  - Only allow users with bypass permission to create matching refs / Pozwól tylko użytkownikom z uprawnieniami bypass tworzyć pasujące referencje
+- ✅ **Restrict updates** / **Ogranicz aktualizacje**
+  - Only allow users with bypass permission to update matching refs / Pozwól tylko użytkownikom z uprawnieniami bypass aktualizować pasujące referencje
+- ✅ **Restrict deletions** / **Ogranicz usuwanie**
+  - Only allow users with bypass permissions to delete matching refs / Pozwól tylko użytkownikom z uprawnieniami bypass usuwać pasujące referencje
+- ✅ **Block force pushes** / **Blokuj force pushy**
+  - Prevent users with push access from force pushing to refs / Zapobiegaj użytkownikom z dostępem push wykonywania force push do referencji
+- ✅ **Require deployments to succeed** / **Wymagaj udanych wdrożeń**
+  - Choose which environments must be successfully deployed to before refs can be pushed / Wybierz które środowiska muszą być pomyślnie wdrożone przed push referencji
+- ✅ **Require code scanning results** / **Wymagaj wyników skanowania kodu**
+  - Choose which tools must provide code scanning results before the reference is updated / Wybierz które narzędzia muszą dostarczyć wyniki skanowania kodu przed aktualizacją referencji
+- ✅ **Automatically request Copilot code review** / **Automatycznie żądaj recenzji kodu Copilot**
+  - Request Copilot code review for new pull requests automatically if the author has access / Automatycznie żądaj recenzji kodu Copilot dla nowych pull requestów jeśli autor ma dostęp
+
 ## Branch Naming Conventions / Konwencje Nazewnictwa Gałęzi
 
 ### Protected Branches / Chronione Gałęzie
@@ -114,6 +130,29 @@ Branch Protection Rule for 'main' / Zasada Ochrony Gałęzi dla 'main':
   Require linear history / Wymagaj liniowej historii:
     ✅ Required / ✅ Wymagane
   
+  Block force pushes / Blokuj force pushy:
+    ✅ Required / ✅ Wymagane
+  
+  Restrict creations / Ogranicz tworzenie:
+    ✅ Required / ✅ Wymagane
+  
+  Restrict updates / Ogranicz aktualizacje:
+    ✅ Required / ✅ Wymagane
+  
+  Restrict deletions / Ogranicz usuwanie:
+    ✅ Required / ✅ Wymagane
+  
+  Require deployments to succeed / Wymagaj udanych wdrożeń:
+    ✅ Required / ✅ Wymagane
+    ✅ Environments: production, staging / ✅ Środowiska: production, staging
+  
+  Require code scanning results / Wymagaj wyników skanowania kodu:
+    ✅ Required / ✅ Wymagane
+    ✅ Tools: CodeQL, Semgrep / ✅ Narzędzia: CodeQL, Semgrep
+  
+  Automatically request Copilot code review / Automatycznie żądaj recenzji kodu Copilot:
+    ✅ Required / ✅ Wymagane
+  
   Include administrators / Uwzględnij administratorów:
     ✅ Required / ✅ Wymagane
   
@@ -144,6 +183,30 @@ Create `.github/CODEOWNERS`: / Utwórz `.github/CODEOWNERS`:
 /README.md @lukaszzychal
 /docs/ @lukaszzychal
 ```
+
+## Security Levels and Recommendations / Poziomy Bezpieczeństwa i Rekomendacje
+
+### Basic Protection (MVP) / Podstawowa Ochrona (MVP)
+For initial development and small teams: / Dla początkowego rozwoju i małych zespołów:
+- ✅ Require pull request before merging / Wymagaj pull request przed scaleniem
+- ✅ Require status checks to pass / Wymagaj przejścia sprawdzeń statusu
+- ✅ Block force pushes / Blokuj force pushy
+- ✅ Require linear history / Wymagaj liniowej historii
+
+### Enhanced Protection (Production) / Rozszerzona Ochrona (Produkcja)
+For production-ready applications: / Dla aplikacji gotowych do produkcji:
+- ✅ All Basic Protection features / Wszystkie funkcje Podstawowej Ochrony
+- ✅ Require signed commits / Wymagaj podpisanych commitów
+- ✅ Restrict creations/updates/deletions / Ogranicz tworzenie/aktualizacje/usuwanie
+- ✅ Require deployments to succeed / Wymagaj udanych wdrożeń
+- ✅ Require code scanning results / Wymagaj wyników skanowania kodu
+
+### Enterprise Protection (High Security) / Ochrona Enterprise (Wysokie Bezpieczeństwo)
+For enterprise applications with strict security requirements: / Dla aplikacji enterprise z rygorystycznymi wymaganiami bezpieczeństwa:
+- ✅ All Enhanced Protection features / Wszystkie funkcje Rozszerzonej Ochrony
+- ✅ Automatically request Copilot code review / Automatycznie żądaj recenzji kodu Copilot
+- ✅ Multiple required reviewers / Wielu wymaganych recenzentów
+- ✅ Strict bypass permissions / Rygorystyczne uprawnienia bypass
 
 ## Monitoring and Alerts / Monitorowanie i Alerty
 
