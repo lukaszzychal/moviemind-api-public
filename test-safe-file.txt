@@ -1,0 +1,6 @@
+# Safe test file with placeholders
+OPENAI_API_KEY=<REPLACE_ME>
+DATABASE_URL=postgresql://moviemind:moviemind@db:5432/moviemind
+API_KEY=your-api-key-here
+
+# This is a safe commit for testing GitLeaks integration
