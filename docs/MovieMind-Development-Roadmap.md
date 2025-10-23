@@ -79,7 +79,7 @@ moviemind-api-public/
 │   │   └── services/
 │   ├── requirements.txt
 │   └── Dockerfile
-├── src-symfony/          # PHP Symfony (admin panel)
+├── src-laravel/          # PHP Laravel (admin panel)
 │   ├── src/
 │   │   ├── Controller/
 │   │   ├── Entity/
@@ -98,7 +98,7 @@ moviemind-api-public/
 | Komponent       | Funkcjonalność                      | Status   |
 | --------------- | ----------------------------------- | -------- |
 | **FastAPI**     | Podstawowe endpointy REST           | ✅        |
-| **Symfony**     | Admin panel z CRUD                  | ✅        |
+| **Laravel**     | Admin panel z CRUD                  | ✅        |
 | **Database**    | PostgreSQL z podstawowym schematem  | ✅        |
 | **Cache**       | Redis dla cache'owania              | ✅        |
 | **Mock AI**     | Symulacja generacji opisów          | ✅        |
@@ -116,7 +116,7 @@ GET  /v1/jobs/{id}          # Status zadania
 ```
 
 ```php
-// Symfony - Admin Panel
+// Laravel - Admin Panel
 GET  /admin/movies           # Zarządzanie filmami
 POST /admin/movies           # Dodawanie filmu
 PUT  /admin/movies/{id}     # Edycja filmu
@@ -142,7 +142,7 @@ moviemind-api-public/
 │   │   └── services/
 │   ├── requirements.txt
 │   └── Dockerfile
-├── src-symfony/          # PHP Symfony (admin panel)
+├── src-laravel/          # PHP Laravel (admin panel)
 │   ├── src/
 │   │   ├── Controller/
 │   │   ├── Entity/
@@ -161,7 +161,7 @@ moviemind-api-public/
 | Component    | Functionality                     | Status   |
 | -----------  | ---------------                   | -------- |
 | **FastAPI**  | Basic REST endpoints              | ✅        |
-| **Symfony**  | Admin panel with CRUD             | ✅        |
+| **Laravel**  | Admin panel with CRUD             | ✅        |
 | **Database** | PostgreSQL with basic schema      | ✅        |
 | **Cache**    | Redis for caching                 | ✅        |
 | **Mock AI**  | Description generation simulation | ✅        |
@@ -179,7 +179,7 @@ GET  /v1/jobs/{id}          # Job status
 ```
 
 ```php
-// Symfony - Admin Panel
+// Laravel - Admin Panel
 GET  /admin/movies           # Manage movies
 POST /admin/movies           # Add movie
 PUT  /admin/movies/{id}     # Edit movie
@@ -215,7 +215,7 @@ GET  /v1/health/detailed      # Health check
 ```
 
 ```php
-// Symfony - Production Admin
+// Laravel - Production Admin
 GET  /admin/billing          # Billing management
 GET  /admin/analytics        # Usage analytics
 POST /admin/ai/models        # AI model management
@@ -250,7 +250,7 @@ GET  /v1/health/detailed      # Health check
 ```
 
 ```php
-// Symfony - Production Admin
+// Laravel - Production Admin
 GET  /admin/billing          # Billing management
 GET  /admin/analytics        # Usage analytics
 POST /admin/ai/models        # AI model management
@@ -268,7 +268,7 @@ GET  /admin/security         # Security dashboard
 - [ ] **Setup projektu** - struktura katalogów, Docker
 - [ ] **Database schema** - podstawowe tabele (movies, actors, descriptions)
 - [ ] **FastAPI setup** - podstawowe endpointy REST
-- [ ] **Symfony setup** - admin panel z CRUD
+- [ ] **Laravel setup** - admin panel z CRUD
 - [ ] **Redis cache** - podstawowe cache'owanie
 - [ ] **GitLeaks security** - pre-commit hooks
 
@@ -357,7 +357,7 @@ GET  /admin/security         # Security dashboard
 - [ ] **Project setup** - directory structure, Docker
 - [ ] **Database schema** - basic tables (movies, actors, descriptions)
 - [ ] **FastAPI setup** - basic REST endpoints
-- [ ] **Symfony setup** - admin panel with CRUD
+- [ ] **Laravel setup** - admin panel with CRUD
 - [ ] **Redis cache** - basic caching
 - [ ] **GitLeaks security** - pre-commit hooks
 
@@ -444,7 +444,7 @@ GET  /admin/security         # Security dashboard
 | Komponent      | Technologia   | Rola          | Port   |
 | -----------    | ------------- | ------        | ------ |
 | **FastAPI**    | Python 3.11+  | Publiczne API | 8000   |
-| **Symfony**    | PHP 8.3+      | Admin Panel   | 8001   |
+| **Laravel**    | PHP 8.3+      | Admin Panel   | 8001   |
 | **Celery**     | Python        | Worker AI     | -      |
 | **PostgreSQL** | 15+           | Baza danych   | 5432   |
 | **Redis**      | 7+            | Cache         | 6379   |
