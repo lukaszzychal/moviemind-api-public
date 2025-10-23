@@ -132,7 +132,7 @@ Prywatne repo może zawierać:
 | **Database**         | PostgreSQL                                            | Przechowuje treści, metadane, wersje, tagi, ratingi jakości |
 | **Cache**            | Redis                                                 | Cache odpowiedzi API i AI wyników                           |
 | **Task Queue**       | RabbitMQ / Redis Queue                                | Kolejkuje generowanie opisów, porównania, scoring           |
-| **Admin Panel**      | Symfony 7 (PHP 8.3)                                   | Zarządzanie danymi, modelami AI, planami API                |
+| **Admin Panel**      | Laravel 11 (PHP 8.3)                                  | Zarządzanie danymi, modelami AI, planami API                |
 
 #### ⚡ /src-fastapi/ — lekki, publiczny, skalowalny API Core
 
@@ -150,16 +150,16 @@ Prywatne repo może zawierać:
 
 **📌 Rola:** To zewnętrzna warstwa API-as-a-Service, zorientowana na klientów zewnętrznych i integracje.
 
-#### 🧱 /src-symfony/ — domenowy backend / admin / integracje wewnętrzne
+#### 🧱 /src-laravel/ — domenowy backend / admin / integracje wewnętrzne
 
-**Technologia:** PHP 8.3 + Symfony 7 + Doctrine + Messenger  
+**Technologia:** PHP 8.3 + Laravel 11 + Eloquent + Queue  
 **Cel:** wewnętrzny backend domenowy i panel zarządzania danymi (CMS / DDD)
 
 | Cecha                           | Opis                                                 |
 | -------                         | ------                                               |
-| **DDD / CQRS / Doctrine**       | model domenowy: Movie, Actor, AIJob itp.             |
-| **Messenger (RabbitMQ)**        | integracja event-driven z FastAPI workerem           |
-| **API Platform (REST/GraphQL)** | dokumentacja, CRUD-y, back-office                    |
+| **DDD / CQRS / Eloquent** | model domenowy: Movie, Actor, AIJob itp.             |
+| **Queue (RabbitMQ)**       | integracja event-driven z FastAPI workerem           |
+| **Laravel Nova (REST/GraphQL)** | dokumentacja, CRUD-y, back-office                    |
 | **Security**                    | admin roles, JWT, OAuth                              |
 | **CLI / Cron / Importy**        | zarządzanie danymi zewnętrznymi (IMDb, TMDb, TVMaze) |
 | **Deployment**                  | serwis wewnętrzny (np. admin.moviemind.dev)          |
@@ -213,7 +213,7 @@ Prywatne repo może zawierać:
 | Folder         | Technologia      | Rola                       | Udostępnienie           |
 | --------       | -------------    | ------                     | ---------------         |
 | `/src-fastapi` | Python (FastAPI) | Public API-as-a-Service    | RapidAPI / Public Cloud |
-| `/src-symfony` | PHP (Symfony 7)  | Internal Admin / CMS / DDD | Private / Internal      |
+| `/src-laravel` | PHP (Laravel 11)  | Internal Admin / CMS / DDD | Private / Internal      |
 
 ### 🔹 3. Struktura Danych / Data Structure
 
@@ -385,10 +385,10 @@ moviemind-api-public/
 │   │   └── services/
 │   ├── requirements.txt
 │   └── Dockerfile
-├── src-symfony/          # PHP Symfony (admin panel)
+├── src-laravel/          # PHP Laravel (admin panel)
 │   ├── src/
 │   │   ├── Controller/
-│   │   ├── Entity/
+│   │   ├── Model/
 │   │   ├── Service/
 │   │   └── Mock/ (mock AI services)
 │   ├── composer.json
@@ -432,9 +432,9 @@ services:
       APP_MODE: mock
     depends_on: [db, redis, rabbitmq]
   
-  # Symfony - Admin Panel
-  symfony:
-    build: ./src-symfony
+  # Laravel - Admin Panel
+  laravel:
+    build: ./src-laravel
     ports: ["8001:80"]
     environment:
       DATABASE_URL: postgresql://moviemind:moviemind@db:5432/moviemind
@@ -485,9 +485,9 @@ services:
       APP_MODE: real
     depends_on: [db, redis, rabbitmq]
   
-  # Symfony - Admin Panel (produkcja)
-  symfony:
-    build: ./src-symfony
+  # Laravel - Admin Panel (produkcja)
+  laravel:
+    build: ./src-laravel
     ports: ["8001:80"]
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -564,13 +564,13 @@ async def get_job_status(job_id: str):
     return job
 ```
 
-#### 🎬 Symfony Controller (Admin Panel) / Symfony Controller (Admin Panel)
+#### 🎬 Laravel Controller (Admin Panel) / Laravel Controller (Admin Panel)
 ```php
 <?php
-// src/Controller/MovieController.php (publiczne repo)
-class MovieController extends AbstractController
+// app/Http/Controllers/MovieController.php (publiczne repo)
+class MovieController extends Controller
 {
-    public function getMovies(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         // Mock data - przykładowe filmy
         $movies = [
@@ -596,17 +596,17 @@ class MovieController extends AbstractController
             ]
         ];
 
-        return $this->json([
+        return response()->json([
             'data' => $movies,
             'total' => count($movies),
             'mock_mode' => true
         ]);
     }
 
-    public function getMovie(int $id): JsonResponse
+    public function show(int $id): JsonResponse
     {
         // Mock implementation
-        return $this->json([
+        return response()->json([
             'id' => $id,
             'title' => 'The Matrix',
             'release_year' => 1999,
@@ -625,7 +625,7 @@ class MovieController extends AbstractController
 #### 🤖 MockAIService (Publiczne Repo) / MockAIService (Public Repo)
 ```php
 <?php
-// src/Service/MockAIService.php (publiczne repo)
+// app/Services/MockAIService.php (publiczne repo)
 class MockAIService
 {
     public function generateDescription(string $title, string $context = 'modern'): string
@@ -657,7 +657,7 @@ class MockAIService
 #### 🤖 RealAIService (Prywatne Repo) / RealAIService (Private Repo)
 ```php
 <?php
-// src/Service/RealAIService.php (prywatne repo)
+// app/Services/RealAIService.php (prywatne repo)
 class RealAIService
 {
     private string $openaiApiKey;
@@ -710,7 +710,7 @@ class RealAIService
 #### ⚡ Redis Cache Implementation
 ```php
 <?php
-// src/Service/CacheService.php (oba repozytoria)
+// app/Services/CacheService.php (oba repozytoria)
 class CacheService
 {
     private Redis $redis;
@@ -748,7 +748,7 @@ class CacheService
 #### 🌍 Locale Management
 ```php
 <?php
-// src/Service/LocaleService.php (oba repozytoria)
+// app/Services/LocaleService.php (oba repozytoria)
 class LocaleService
 {
     private array $supportedLocales = [
@@ -792,11 +792,11 @@ class LocaleService
 ```bash
 tests/
 ├── Unit/
-│   ├── Service/
+│   ├── Services/
 │   │   ├── MockAIServiceTest.php
 │   │   ├── CacheServiceTest.php
 │   │   └── LocaleServiceTest.php
-│   └── Controller/
+│   └── Controllers/
 │       ├── MovieControllerTest.php
 │       └── ActorControllerTest.php
 ├── Integration/
@@ -859,7 +859,7 @@ paths:
 #### 🚀 RapidAPI Integration (Prywatne Repo) / RapidAPI Integration (Private Repo)
 ```php
 <?php
-// src/Service/RapidAPIService.php (prywatne repo)
+// app/Services/RapidAPIService.php (prywatne repo)
 class RapidAPIService
 {
     private string $webhookSecret;
@@ -867,7 +867,7 @@ class RapidAPIService
 
     public function handleWebhook(Request $request): JsonResponse
     {
-        $signature = $request->headers->get('X-RapidAPI-Signature');
+        $signature = $request->header('X-RapidAPI-Signature');
         $payload = $request->getContent();
         
         if (!$this->verifySignature($signature, $payload)) {
@@ -886,7 +886,7 @@ class RapidAPIService
                 return $this->handleUsageExceeded($data);
         }
 
-        return $this->json(['status' => 'ok']);
+        return response()->json(['status' => 'ok']);
     }
 
     private function verifySignature(string $signature, string $payload): bool
@@ -1015,7 +1015,7 @@ jwt/
 
 | Element                         | Wersja Publiczna   | Wersja Prywatna                         |
 | ---------                       | ------------------ | -----------------                       |
-| **Backend**                     | Symfony (MVP)      | Symfony + AI Workers                    |
+| **Backend**                     | Laravel (MVP)      | Laravel + AI Workers                    |
 | **AI generacja**                | stub/mock          | pełny prompt i model                    |
 | **Cache + DB**                  | ✅                  | ✅                                       |
 | **Rate Limit, Billing**         | ❌                  | ✅                                       |
