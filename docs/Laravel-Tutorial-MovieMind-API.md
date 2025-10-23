@@ -40,14 +40,96 @@
 ## 🇵🇱 Wprowadzenie do Laravel
 
 ### 🎯 Co to jest Laravel?
-Laravel to framework PHP, który ułatwia tworzenie aplikacji webowych. Dla MovieMind API używamy Laravel 11 - najnowszej wersji.
+Laravel to nowoczesny framework PHP, który znacząco ułatwia tworzenie aplikacji webowych. Został stworzony przez Taylor Otwell w 2011 roku i od tego czasu stał się jednym z najpopularniejszych frameworków PHP na świecie. Dla MovieMind API używamy Laravel 11 - najnowszej wersji, która wprowadza wiele ulepszeń wydajnościowych i nowych funkcji.
+
+**Kluczowe cechy Laravel:**
+- **Elegant Syntax** - czytelny i ekspresyjny kod
+- **Artisan CLI** - potężne narzędzia wiersza poleceń
+- **Blade Templating** - system szablonów z komponentami
+- **Service Container** - zaawansowany system dependency injection
+- **Eloquent ORM** - aktywny wzorzec ORM dla bazy danych
 
 ### 🧩 Dlaczego Laravel dla MovieMind API?
-- **Laravel Nova** - gotowy admin panel
-- **Eloquent ORM** - łatwe zarządzanie bazą danych
-- **Laravel Sanctum** - autoryzacja API
-- **Laravel Queue** - asynchroniczne zadania AI
-- **Laravel Telescope** - debugging i monitoring
+
+#### **Laravel Nova** - Gotowy Admin Panel
+Laravel Nova to oficjalny pakiet administracyjny, który automatycznie generuje interfejs zarządzania danymi. Dla MovieMind API oznacza to:
+- **Automatyczne CRUD** - tworzenie, czytanie, aktualizacja i usuwanie filmów/aktorów
+- **Filtrowanie i wyszukiwanie** - zaawansowane opcje wyszukiwania
+- **Relacje** - łatwe zarządzanie powiązaniami między filmami a opisami
+- **Custom Actions** - niestandardowe akcje jak "Generuj opis AI"
+
+#### **Eloquent ORM** - Zarządzanie Bazą Danych
+Eloquent to aktywny wzorzec ORM, który mapuje tabele bazy danych na klasy PHP:
+```php
+// Zamiast surowego SQL:
+// SELECT * FROM movies WHERE release_year > 2020
+
+// Używamy eleganckiego Eloquent:
+Movie::where('release_year', '>', 2020)->get();
+```
+
+#### **Laravel Sanctum** - Autoryzacja API
+Sanctum zapewnia prostą autoryzację API dla Single Page Applications (SPA), aplikacji mobilnych i prostych tokenów API:
+- **API Tokens** - dla klientów zewnętrznych (RapidAPI)
+- **SPA Authentication** - dla panelu administracyjnego
+- **Session Authentication** - dla tradycyjnych aplikacji webowych
+
+#### **Laravel Queue** - Asynchroniczne Zadania AI
+System kolejek Laravel pozwala na wykonywanie zadań w tle, co jest kluczowe dla MovieMind API:
+- **AI Generation** - generowanie opisów nie blokuje API
+- **Webhook Delivery** - wysyłanie powiadomień asynchronicznie
+- **Email Sending** - wysyłanie emaili w tle
+- **File Processing** - przetwarzanie dużych plików
+
+#### **Laravel Telescope** - Debugging i Monitoring
+Telescope to narzędzie do debugowania aplikacji Laravel w czasie rzeczywistym:
+- **Request Monitoring** - śledzenie wszystkich żądań HTTP
+- **Query Logging** - monitorowanie zapytań do bazy danych
+- **Job Monitoring** - śledzenie zadań w kolejkach
+- **Exception Tracking** - śledzenie błędów i wyjątków
+
+---
+
+## 📚 Słownik Terminów Laravel / Laravel Glossary
+
+### 🔤 Podstawowe Terminy / Basic Terms
+
+| Termin / Term | Opis / Description | Przykład / Example |
+|---------------|-------------------|-------------------|
+| **Artisan** | CLI narzędzie Laravel do automatyzacji zadań | `php artisan make:controller MovieController` |
+| **Blade** | System szablonów Laravel z składnią PHP | `@if($movie) {{ $movie->title }} @endif` |
+| **Eloquent** | ORM (Object-Relational Mapping) Laravel | `Movie::find(1)` zamiast SQL |
+| **Middleware** | Warstwa między żądaniem a odpowiedzią | Sprawdzanie autoryzacji, logowanie |
+| **Migration** | Pliki definiujące zmiany w strukturze bazy | Tworzenie/usuwanie tabel |
+| **Model** | Klasa reprezentująca tabelę w bazie danych | `Movie` model dla tabeli `movies` |
+| **Route** | Definicja URL i odpowiadającej mu akcji | `Route::get('/movies', [MovieController::class, 'index'])` |
+| **Service Container** | System dependency injection Laravel | Automatyczne wstrzykiwanie zależności |
+| **Seeder** | Klasa do wypełniania bazy danych przykładowymi danymi | `MovieSeeder` z przykładowymi filmami |
+| **Validation** | Sprawdzanie poprawności danych wejściowych | `'title' => 'required|string|max:255'` |
+
+### 🏗️ Architektura / Architecture Terms
+
+| Termin / Term | Opis / Description | Użycie w MovieMind API / Usage in MovieMind API |
+|---------------|-------------------|--------------------------------------------------|
+| **Controller** | Klasa obsługująca logikę HTTP | `MovieController` - obsługa żądań API |
+| **Service** | Klasa zawierająca logikę biznesową | `AIService` - generowanie opisów AI |
+| **Job** | Klasa do wykonywania zadań w tle | `GenerateDescriptionJob` - generowanie opisów |
+| **Event** | Powiadomienie o wystąpieniu zdarzenia | `DescriptionGenerated` - po wygenerowaniu opisu |
+| **Listener** | Klasa reagująca na eventy | `SendWebhookNotification` - wysyłanie webhooków |
+| **Observer** | Klasa monitorująca zmiany w modelu | `MovieObserver` - logowanie zmian filmów |
+| **Policy** | Klasa definiująca uprawnienia | `MoviePolicy` - kto może edytować filmy |
+| **Resource** | Klasa transformująca dane do API | `MovieResource` - formatowanie odpowiedzi JSON |
+
+### 🔧 Narzędzia Deweloperskie / Developer Tools
+
+| Narzędzie / Tool | Opis / Description | Komenda / Command |
+|------------------|-------------------|-------------------|
+| **Telescope** | Debugging i monitoring aplikacji | `php artisan telescope:install` |
+| **Horizon** | Dashboard dla kolejek Redis | `php artisan horizon:install` |
+| **Nova** | Admin panel dla aplikacji | `composer require laravel/nova` |
+| **Sanctum** | Autoryzacja API | `composer require laravel/sanctum` |
+| **Scout** | Pełnotekstowe wyszukiwanie | `composer require laravel/scout` |
+| **Cashier** | Płatności Stripe | `composer require laravel/cashier` |
 
 ---
 
@@ -67,48 +149,215 @@ Laravel is a PHP framework that makes web application development easier. For Mo
 
 ## 🇵🇱 Instalacja i Konfiguracja
 
-### 📦 Wymagania
-- PHP 8.3+
-- Composer
-- PostgreSQL
-- Redis
+### 📦 Wymagania Systemowe
+Przed instalacją Laravel upewnij się, że masz zainstalowane:
 
-### 🚀 Instalacja Laravel
+#### **PHP 8.3+** (Wymagane)
 ```bash
-# Instalacja Laravel 11
-composer create-project laravel/laravel:^11.0 src-laravel
+# Sprawdź wersję PHP
+php --version
 
-# Przejście do katalogu
-cd src-laravel
-
-# Instalacja zależności
-composer install
+# Wymagane rozszerzenia PHP:
+# - BCMath PHP Extension
+# - Ctype PHP Extension  
+# - cURL PHP Extension
+# - DOM PHP Extension
+# - Fileinfo PHP Extension
+# - JSON PHP Extension
+# - Mbstring PHP Extension
+# - OpenSSL PHP Extension
+# - PCRE PHP Extension
+# - PDO PHP Extension
+# - Tokenizer PHP Extension
+# - XML PHP Extension
 ```
 
-### ⚙️ Konfiguracja .env
+#### **Composer** (Menedżer Zależności)
 ```bash
-# .env
-APP_NAME="MovieMind API"
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost:8001
+# Instalacja Composer (Linux/macOS)
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
 
-# Database
-DB_CONNECTION=pgsql
-DB_HOST=db
-DB_PORT=5432
-DB_DATABASE=moviemind
-DB_USERNAME=moviemind
-DB_PASSWORD=moviemind
+# Sprawdź instalację
+composer --version
+```
+
+#### **PostgreSQL** (Baza Danych)
+```bash
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
+
+# macOS (Homebrew)
+brew install postgresql
+
+# Sprawdź instalację
+psql --version
+```
+
+#### **Redis** (Cache i Kolejki)
+```bash
+# Ubuntu/Debian
+sudo apt-get install redis-server
+
+# macOS (Homebrew)
+brew install redis
+
+# Sprawdź instalację
+redis-cli --version
+```
+
+### 🚀 Instalacja Laravel 11
+
+#### **Krok 1: Tworzenie Projektu**
+```bash
+# Tworzenie nowego projektu Laravel 11
+composer create-project laravel/laravel:^11.0 src-laravel
+
+# Przejście do katalogu projektu
+cd src-laravel
+
+# Sprawdzenie struktury projektu
+ls -la
+```
+
+#### **Krok 2: Instalacja Zależności**
+```bash
+# Instalacja wszystkich pakietów z composer.json
+composer install
+
+# Generowanie klucza aplikacji
+php artisan key:generate
+
+# Sprawdzenie konfiguracji
+php artisan about
+```
+
+#### **Krok 3: Konfiguracja Środowiska**
+```bash
+# Kopiowanie pliku środowiskowego
+cp .env.example .env
+
+# Edycja konfiguracji
+nano .env
+```
+
+### ⚙️ Szczegółowa Konfiguracja .env
+
+#### **Podstawowe Ustawienia Aplikacji**
+```bash
+# .env - Podstawowe ustawienia
+APP_NAME="MovieMind API"
+APP_ENV=local                    # local, staging, production
+APP_KEY=base64:...              # Generowany przez artisan key:generate
+APP_DEBUG=true                   # true dla development, false dla production
+APP_TIMEZONE=Europe/Warsaw       # Strefa czasowa
+APP_URL=http://localhost:8001   # URL aplikacji
+```
+
+#### **Konfiguracja Bazy Danych PostgreSQL**
+```bash
+# .env - Baza danych
+DB_CONNECTION=pgsql              # Typ bazy danych
+DB_HOST=127.0.0.1               # Host bazy danych (lub 'db' dla Docker)
+DB_PORT=5432                     # Port PostgreSQL
+DB_DATABASE=moviemind            # Nazwa bazy danych
+DB_USERNAME=moviemind            # Użytkownik bazy danych
+DB_PASSWORD=moviemind            # Hasło bazy danych
+
+# Opcjonalne ustawienia zaawansowane
+DB_SCHEMA=public                 # Schemat PostgreSQL
+DB_SSLMODE=prefer               # Tryb SSL (disable, prefer, require)
+```
+
+#### **Konfiguracja Redis (Cache i Kolejki)**
+```bash
+# .env - Redis
+REDIS_HOST=127.0.0.1            # Host Redis (lub 'redis' dla Docker)
+REDIS_PASSWORD=null              # Hasło Redis (null jeśli brak)
+REDIS_PORT=6379                  # Port Redis
+REDIS_DB=0                       # Numer bazy danych Redis
 
 # Cache
-CACHE_DRIVER=redis
-REDIS_HOST=redis
-REDIS_PASSWORD=null
-REDIS_PORT=6379
+CACHE_DRIVER=redis               # redis, file, database, array
+CACHE_PREFIX=moviemind           # Prefiks dla kluczy cache
 
-# Queue
-QUEUE_CONNECTION=redis
+# Kolejki
+QUEUE_CONNECTION=redis           # redis, database, sync, sqs
+REDIS_QUEUE=default              # Nazwa kolejki Redis
+```
+
+#### **Konfiguracja AI i Zewnętrznych API**
+```bash
+# .env - AI i API
+OPENAI_API_KEY=sk-...            # Klucz API OpenAI
+OPENAI_MODEL=gpt-4o-mini         # Model AI do użycia
+OPENAI_MAX_TOKENS=1000           # Maksymalna liczba tokenów
+OPENAI_TEMPERATURE=0.7           # Kreatywność odpowiedzi (0.0-2.0)
+
+# RapidAPI
+RAPIDAPI_KEY=your-key-here       # Klucz RapidAPI
+RAPIDAPI_PLAN=FREE               # Plan RapidAPI (FREE, PRO, ENTERPRISE)
+
+# Rate Limiting
+API_RATE_LIMIT=60/minute         # Limit żądań na minutę
+```
+
+#### **Konfiguracja Email i Powiadomień**
+```bash
+# .env - Email
+MAIL_MAILER=smtp                 # smtp, sendmail, mailgun, ses
+MAIL_HOST=127.0.0.1              # Host SMTP (lub 'mailhog' dla Docker)
+MAIL_PORT=1025                   # Port SMTP
+MAIL_USERNAME=null               # Użytkownik SMTP
+MAIL_PASSWORD=null               # Hasło SMTP
+MAIL_ENCRYPTION=null             # Szyfrowanie (tls, ssl, null)
+MAIL_FROM_ADDRESS="noreply@moviemind.dev"
+MAIL_FROM_NAME="MovieMind API"
+
+# Webhooki
+WEBHOOK_SECRET=your-webhook-secret
+WEBHOOK_TIMEOUT=30               # Timeout dla webhooków (sekundy)
+```
+
+### 🔧 Pierwsze Kroki po Instalacji
+
+#### **Krok 1: Uruchomienie Migracji**
+```bash
+# Tworzenie tabel w bazie danych
+php artisan migrate
+
+# Sprawdzenie statusu migracji
+php artisan migrate:status
+```
+
+#### **Krok 2: Wypełnienie Bazy Danych**
+```bash
+# Uruchomienie seederów
+php artisan db:seed
+
+# Lub konkretnego seeder
+php artisan db:seed --class=MovieSeeder
+```
+
+#### **Krok 3: Uruchomienie Serwera Deweloperskiego**
+```bash
+# Uruchomienie serwera na porcie 8001
+php artisan serve --port=8001
+
+# Aplikacja będzie dostępna pod adresem:
+# http://localhost:8001
+```
+
+#### **Krok 4: Sprawdzenie Instalacji**
+```bash
+# Sprawdzenie wszystkich komponentów
+php artisan about
+
+# Sprawdzenie konfiguracji cache
+php artisan config:cache
+
+# Sprawdzenie tras
+php artisan route:list
 ```
 
 ---
@@ -241,7 +490,20 @@ src-laravel/
 
 ## 🇵🇱 Modele i Migracje
 
-### 🎬 Model Movie
+### 🎯 Wprowadzenie do Eloquent ORM
+
+Eloquent ORM to aktywny wzorzec implementacji Object-Relational Mapping (ORM) w Laravel. Pozwala na interakcję z bazą danych używając składni obiektowej PHP zamiast surowego SQL.
+
+#### **Kluczowe Koncepcje Eloquent:**
+- **Model** - klasa reprezentująca tabelę w bazie danych
+- **Migration** - plik definiujący strukturę tabeli
+- **Relationship** - powiązania między modelami
+- **Accessor/Mutator** - metody do formatowania danych
+- **Scopes** - zapytania wielokrotnego użytku
+- **Events** - hooki na zdarzenia modelu
+
+### 🎬 Model Movie - Szczegółowa Analiza
+
 ```php
 <?php
 // app/Models/Movie.php
@@ -249,31 +511,159 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Movie extends Model
 {
+    use HasFactory; // Umożliwia tworzenie factory dla testów
+
+    /**
+     * Nazwa tabeli w bazie danych
+     * Laravel automatycznie używa liczby mnogiej nazwy klasy
+     */
+    protected $table = 'movies';
+
+    /**
+     * Klucz główny tabeli
+     * Domyślnie 'id'
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * Typ klucza głównego
+     */
+    protected $keyType = 'int';
+
+    /**
+     * Czy klucz główny jest auto-increment
+     */
+    public $incrementing = true;
+
+    /**
+     * Pola, które można masowo przypisywać (Mass Assignment Protection)
+     * Bezpieczeństwo przed atakami mass assignment
+     */
     protected $fillable = [
-        'title',
-        'release_year',
-        'director',
-        'genres',
-        'default_description_id',
-        'source_of_truth_locale'
+        'title',                    // Tytuł filmu
+        'release_year',            // Rok wydania
+        'director',                // Reżyser
+        'genres',                  // Gatunki (JSON array)
+        'default_description_id',  // ID domyślnego opisu
+        'source_of_truth_locale'   // Lokalizacja źródła prawdy
     ];
 
+    /**
+     * Pola, które NIE mogą być masowo przypisywane
+     * Alternatywa dla $fillable
+     */
+    protected $guarded = [
+        'id',                      // ID nie może być zmieniane
+        'created_at',              // Timestampy są automatyczne
+        'updated_at'
+    ];
+
+    /**
+     * Automatyczne rzutowanie typów danych
+     * Zapewnia poprawne typy przy pobieraniu z bazy
+     */
     protected $casts = [
-        'genres' => 'array',
-        'release_year' => 'integer'
+        'genres' => 'array',           // JSON string → PHP array
+        'release_year' => 'integer',   // String → Integer
+        'created_at' => 'datetime',    // String → Carbon instance
+        'updated_at' => 'datetime',
+        'is_featured' => 'boolean',    // 0/1 → true/false
+        'rating' => 'decimal:2'        // Float z 2 miejscami po przecinku
     ];
 
+    /**
+     * Relacja One-to-Many z MovieDescription
+     * Jeden film może mieć wiele opisów (różne języki, konteksty)
+     */
     public function descriptions(): HasMany
     {
         return $this->hasMany(MovieDescription::class);
     }
 
-    public function defaultDescription()
+    /**
+     * Relacja BelongsTo z MovieDescription (domyślny opis)
+     * Jeden film ma jeden domyślny opis
+     */
+    public function defaultDescription(): BelongsTo
     {
         return $this->belongsTo(MovieDescription::class, 'default_description_id');
+    }
+
+    /**
+     * Scope - zapytanie wielokrotnego użytku
+     * Użycie: Movie::recent()->get()
+     */
+    public function scopeRecent($query)
+    {
+        return $query->where('release_year', '>=', 2020);
+    }
+
+    /**
+     * Scope z parametrem
+     * Użycie: Movie::byYear(2023)->get()
+     */
+    public function scopeByYear($query, $year)
+    {
+        return $query->where('release_year', $year);
+    }
+
+    /**
+     * Accessor - formatowanie danych przy pobieraniu
+     * Użycie: $movie->formatted_title
+     */
+    public function getFormattedTitleAttribute(): string
+    {
+        return ucwords(strtolower($this->title));
+    }
+
+    /**
+     * Mutator - formatowanie danych przed zapisem
+     * Automatycznie wywoływany przy $movie->title = 'nowy tytuł'
+     */
+    public function setTitleAttribute($value): void
+    {
+        $this->attributes['title'] = trim($value);
+    }
+
+    /**
+     * Metoda pomocnicza - sprawdza czy film ma opis
+     */
+    public function hasDescription(): bool
+    {
+        return $this->descriptions()->exists();
+    }
+
+    /**
+     * Metoda pomocnicza - pobiera opis w określonym języku
+     */
+    public function getDescriptionInLocale(string $locale): ?MovieDescription
+    {
+        return $this->descriptions()
+            ->where('locale', $locale)
+            ->first();
+    }
+
+    /**
+     * Event - wywoływany przed zapisem modelu
+     */
+    protected static function booted(): void
+    {
+        static::creating(function ($movie) {
+            // Automatyczne ustawienie source_of_truth_locale jeśli nie ustawione
+            if (empty($movie->source_of_truth_locale)) {
+                $movie->source_of_truth_locale = 'en-US';
+            }
+        });
+
+        static::saved(function ($movie) {
+            // Logowanie zmian filmu
+            \Log::info("Movie saved: {$movie->title}");
+        });
     }
 }
 ```
@@ -349,7 +739,23 @@ class MovieDescription extends Model
 }
 ```
 
-### 🗄️ Migracje
+### 🗄️ Migracje - Szczegółowy Przewodnik
+
+Migracje to pliki definiujące zmiany w strukturze bazy danych. Pozwalają na wersjonowanie schematu bazy danych i współpracę w zespole.
+
+#### **Tworzenie Migracji**
+```bash
+# Tworzenie migracji dla tabeli movies
+php artisan make:migration create_movies_table
+
+# Tworzenie migracji z modelem (automatycznie tworzy strukturę)
+php artisan make:migration create_movies_table --create=movies
+
+# Tworzenie migracji modyfikującej istniejącą tabelę
+php artisan make:migration add_rating_to_movies_table --table=movies
+```
+
+#### **Szczegółowa Migracja Movies**
 ```php
 <?php
 // database/migrations/2025_01_27_000001_create_movies_table.php
@@ -359,25 +765,199 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Nazwa tabeli docelowej
+     */
+    protected $table = 'movies';
+
+    /**
+     * Uruchamiane przy wykonaniu migracji
+     * Tworzy strukturę tabeli
+     */
     public function up(): void
     {
-        Schema::create('movies', function (Blueprint $table) {
+        Schema::create($this->table, function (Blueprint $table) {
+            // Klucz główny - auto-increment integer
             $table->id();
-            $table->string('title');
-            $table->smallInteger('release_year');
-            $table->string('director');
-            $table->json('genres');
-            $table->foreignId('default_description_id')->nullable();
-            $table->string('source_of_truth_locale', 10)->default('en-US');
+            
+            // Podstawowe informacje o filmie
+            $table->string('title')->index(); // Indeks dla szybkiego wyszukiwania
+            $table->smallInteger('release_year')->index(); // Indeks dla filtrowania po roku
+            $table->string('director')->index(); // Indeks dla wyszukiwania po reżyserze
+            
+            // Gatunki jako JSON array
+            $table->json('genres')->nullable(); // Może być null
+            
+            // Metadane
+            $table->string('imdb_id', 20)->unique()->nullable(); // Unikalny ID z IMDb
+            $table->string('tmdb_id', 20)->unique()->nullable(); // Unikalny ID z TMDb
+            $table->decimal('rating', 3, 1)->nullable(); // Ocena 0.0-10.0
+            $table->integer('runtime')->nullable(); // Czas trwania w minutach
+            
+            // Relacje
+            $table->foreignId('default_description_id')
+                  ->nullable()
+                  ->constrained('movie_descriptions')
+                  ->onDelete('set null'); // Jeśli opis zostanie usunięty, ustaw null
+                  
+            // Lokalizacja i język
+            $table->string('source_of_truth_locale', 10)
+                  ->default('en-US')
+                  ->index(); // Język źródła danych
+                  
+            // Flagi i statusy
+            $table->boolean('is_featured')->default(false); // Czy film jest wyróżniony
+            $table->boolean('is_active')->default(true); // Czy film jest aktywny
+            $table->enum('status', ['draft', 'published', 'archived'])
+                  ->default('draft')
+                  ->index(); // Status publikacji
+                  
+            // Timestamps - automatycznie dodaje created_at i updated_at
             $table->timestamps();
+            
+            // Indeksy złożone dla wydajności
+            $table->index(['release_year', 'is_active']); // Filtrowanie aktywnych filmów z danego roku
+            $table->index(['director', 'release_year']); // Wyszukiwanie po reżyserze i roku
+            
+            // Indeks pełnotekstowy dla wyszukiwania (PostgreSQL)
+            $table->rawIndex('to_tsvector(\'english\', title || \' \' || director)', 'movies_search_idx');
+        });
+    }
+
+    /**
+     * Uruchamiane przy cofaniu migracji
+     * Usuwa strukturę tabeli
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists($this->table);
+    }
+};
+```
+
+#### **Migracja MovieDescriptions**
+```php
+<?php
+// database/migrations/2025_01_27_000002_create_movie_descriptions_table.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('movie_descriptions', function (Blueprint $table) {
+            $table->id();
+            
+            // Relacja z filmem
+            $table->foreignId('movie_id')
+                  ->constrained('movies')
+                  ->onDelete('cascade'); // Jeśli film zostanie usunięty, usuń opisy
+                  
+            // Lokalizacja opisu
+            $table->string('locale', 10)->index(); // pl-PL, en-US, de-DE
+            $table->text('text'); // Treść opisu
+            
+            // Metadane opisu
+            $table->string('context_tag')->nullable(); // modern, classic, technical
+            $table->enum('origin', ['GENERATED', 'MANUAL', 'IMPORTED'])
+                  ->default('GENERATED')
+                  ->index();
+                  
+            // Informacje o AI
+            $table->string('ai_model')->nullable(); // gpt-4, gpt-3.5-turbo
+            $table->decimal('quality_score', 3, 2)->nullable(); // 0.00-1.00
+            $table->decimal('plagiarism_score', 3, 2)->nullable(); // 0.00-1.00
+            
+            // Flagi
+            $table->boolean('selected_default')->default(false); // Czy to domyślny opis
+            $table->boolean('is_approved')->default(false); // Czy opis został zatwierdzony
+            
+            // Timestamps
+            $table->timestamps();
+            
+            // Indeksy
+            $table->index(['movie_id', 'locale']); // Unikalny opis per film per język
+            $table->index(['origin', 'is_approved']); // Filtrowanie zatwierdzonych opisów
+            
+            // Unikalny indeks - jeden domyślny opis per film
+            $table->unique(['movie_id', 'selected_default'], 'unique_default_per_movie');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('movies');
+        Schema::dropIfExists('movie_descriptions');
     }
 };
+```
+
+#### **Migracja Modyfikująca Istniejącą Tabelę**
+```php
+<?php
+// database/migrations/2025_01_27_000003_add_rating_to_movies_table.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('movies', function (Blueprint $table) {
+            // Dodanie nowej kolumny
+            $table->decimal('rating', 3, 1)->nullable()->after('runtime');
+            
+            // Dodanie indeksu
+            $table->index('rating');
+            
+            // Dodanie ograniczenia (constraint)
+            $table->check('rating >= 0 AND rating <= 10', 'rating_range_check');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('movies', function (Blueprint $table) {
+            // Usunięcie ograniczenia
+            $table->dropCheck('rating_range_check');
+            
+            // Usunięcie indeksu
+            $table->dropIndex(['rating']);
+            
+            // Usunięcie kolumny
+            $table->dropColumn('rating');
+        });
+    }
+};
+```
+
+#### **Uruchamianie Migracji**
+```bash
+# Uruchomienie wszystkich migracji
+php artisan migrate
+
+# Uruchomienie migracji z wyświetlaniem SQL
+php artisan migrate --pretend
+
+# Uruchomienie konkretnej migracji
+php artisan migrate --path=/database/migrations/2025_01_27_000001_create_movies_table.php
+
+# Sprawdzenie statusu migracji
+php artisan migrate:status
+
+# Cofnięcie ostatniej migracji
+php artisan migrate:rollback
+
+# Cofnięcie wszystkich migracji
+php artisan migrate:reset
+
+# Cofnięcie i ponowne uruchomienie
+php artisan migrate:refresh
+
+# Cofnięcie, uruchomienie i seedowanie
+php artisan migrate:refresh --seed
 ```
 
 ---
