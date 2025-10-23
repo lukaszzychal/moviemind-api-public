@@ -1,0 +1,39 @@
+# Environment files
+.env
+.env.local
+.env.prod
+.env.production
+
+# Vendor / Dependencies
+/vendor/
+/node_modules/
+
+# Build & Cache
+/.idea/
+/.cache/
+/var/
+/storage/
+/public/build/
+/public/uploads/
+
+# Logs
+*.log
+logs/
+error.log
+phpunit.xml
+
+# Secrets / Keys
+*.pem
+*.key
+*.crt
+secrets/
+jwt/
+
+# System
+.DS_Store
+Thumbs.db
+
+# ChatGPT conversation exports
+chatgpt
+chatgpt2
+

@@ -95,15 +95,15 @@ moviemind-api-public/
 
 ### 🔧 Funkcjonalności MVP Publicznego
 
-| Komponent | Funkcjonalność | Status |
-|-----------|----------------|--------|
-| **FastAPI** | Podstawowe endpointy REST | ✅ |
-| **Symfony** | Admin panel z CRUD | ✅ |
-| **Database** | PostgreSQL z podstawowym schematem | ✅ |
-| **Cache** | Redis dla cache'owania | ✅ |
-| **Mock AI** | Symulacja generacji opisów | ✅ |
-| **Docker** | Środowisko deweloperskie | ✅ |
-| **Security** | GitLeaks, pre-commit hooks | ✅ |
+| Komponent       | Funkcjonalność                      | Status   |
+| --------------- | ----------------------------------- | -------- |
+| **FastAPI**     | Podstawowe endpointy REST           | ✅        |
+| **Symfony**     | Admin panel z CRUD                  | ✅        |
+| **Database**    | PostgreSQL z podstawowym schematem  | ✅        |
+| **Cache**       | Redis dla cache'owania              | ✅        |
+| **Mock AI**     | Symulacja generacji opisów          | ✅        |
+| **Docker**      | Środowisko deweloperskie            | ✅        |
+| **Security**    | GitLeaks, pre-commit hooks          | ✅        |
 
 ### 📊 Endpointy MVP
 ```python
@@ -158,15 +158,15 @@ moviemind-api-public/
 
 ### 🔧 Public MVP Features
 
-| Component | Functionality | Status |
-|-----------|---------------|--------|
-| **FastAPI** | Basic REST endpoints | ✅ |
-| **Symfony** | Admin panel with CRUD | ✅ |
-| **Database** | PostgreSQL with basic schema | ✅ |
-| **Cache** | Redis for caching | ✅ |
-| **Mock AI** | Description generation simulation | ✅ |
-| **Docker** | Development environment | ✅ |
-| **Security** | GitLeaks, pre-commit hooks | ✅ |
+| Component    | Functionality                     | Status   |
+| -----------  | ---------------                   | -------- |
+| **FastAPI**  | Basic REST endpoints              | ✅        |
+| **Symfony**  | Admin panel with CRUD             | ✅        |
+| **Database** | PostgreSQL with basic schema      | ✅        |
+| **Cache**    | Redis for caching                 | ✅        |
+| **Mock AI**  | Description generation simulation | ✅        |
+| **Docker**   | Development environment           | ✅        |
+| **Security** | GitLeaks, pre-commit hooks        | ✅        |
 
 ### 📊 MVP Endpoints
 ```python
@@ -196,14 +196,14 @@ Pełny produkt komercyjny z rzeczywistą integracją AI, billingiem i funkcjami 
 
 ### 🔧 Funkcjonalności MVP Prywatnego
 
-| Komponent | Funkcjonalność | Różnica vs Publiczne |
-|-----------|----------------|---------------------|
-| **AI Integration** | OpenAI GPT-4o, Claude | Mock → Real AI |
-| **Billing** | RapidAPI plans, webhooks | Brak → Pełny billing |
-| **Rate Limiting** | Plany free/pro/enterprise | Brak → Zaawansowane |
-| **Monitoring** | Prometheus, Grafana | Podstawowe → Pełne |
-| **Security** | OAuth, JWT, encryption | Podstawowe → Enterprise |
-| **CI/CD** | GitHub Actions, deployment | Brak → Automatyzacja |
+| Komponent          | Funkcjonalność             | Różnica vs Publiczne    |
+| -----------        | ----------------           | ---------------------   |
+| **AI Integration** | OpenAI GPT-4o, Claude      | Mock → Real AI          |
+| **Billing**        | RapidAPI plans, webhooks   | Brak → Pełny billing    |
+| **Rate Limiting**  | Plany free/pro/enterprise  | Brak → Zaawansowane     |
+| **Monitoring**     | Prometheus, Grafana        | Podstawowe → Pełne      |
+| **Security**       | OAuth, JWT, encryption     | Podstawowe → Enterprise |
+| **CI/CD**          | GitHub Actions, deployment | Brak → Automatyzacja    |
 
 ### 📊 Dodatkowe Endpointy Prywatne
 ```python
@@ -231,14 +231,14 @@ Full commercial product with real AI integration, billing, and SaaS features.
 
 ### 🔧 Private MVP Features
 
-| Component | Functionality | Difference vs Public |
-|-----------|---------------|---------------------|
-| **AI Integration** | OpenAI GPT-4o, Claude | Mock → Real AI |
-| **Billing** | RapidAPI plans, webhooks | None → Full billing |
-| **Rate Limiting** | Free/pro/enterprise plans | None → Advanced |
-| **Monitoring** | Prometheus, Grafana | Basic → Full |
-| **Security** | OAuth, JWT, encryption | Basic → Enterprise |
-| **CI/CD** | GitHub Actions, deployment | None → Automation |
+| Component          | Functionality              | Difference vs Public  |
+| -----------        | ---------------            | --------------------- |
+| **AI Integration** | OpenAI GPT-4o, Claude      | Mock → Real AI        |
+| **Billing**        | RapidAPI plans, webhooks   | None → Full billing   |
+| **Rate Limiting**  | Free/pro/enterprise plans  | None → Advanced       |
+| **Monitoring**     | Prometheus, Grafana        | Basic → Full          |
+| **Security**       | OAuth, JWT, encryption     | Basic → Enterprise    |
+| **CI/CD**          | GitHub Actions, deployment | None → Automation     |
 
 ### 📊 Additional Private Endpoints
 ```python
@@ -441,14 +441,14 @@ GET  /admin/security         # Security dashboard
 
 ### 🏗️ Komponenty Systemu
 
-| Komponent | Technologia | Rola | Port |
-|-----------|-------------|------|------|
-| **FastAPI** | Python 3.11+ | Publiczne API | 8000 |
-| **Symfony** | PHP 8.3+ | Admin Panel | 8001 |
-| **Celery** | Python | Worker AI | - |
-| **PostgreSQL** | 15+ | Baza danych | 5432 |
-| **Redis** | 7+ | Cache | 6379 |
-| **RabbitMQ** | 3+ | Kolejka zadań | 5672 |
+| Komponent      | Technologia   | Rola          | Port   |
+| -----------    | ------------- | ------        | ------ |
+| **FastAPI**    | Python 3.11+  | Publiczne API | 8000   |
+| **Symfony**    | PHP 8.3+      | Admin Panel   | 8001   |
+| **Celery**     | Python        | Worker AI     | -      |
+| **PostgreSQL** | 15+           | Baza danych   | 5432   |
+| **Redis**      | 7+            | Cache         | 6379   |
+| **RabbitMQ**   | 3+            | Kolejka zadań | 5672   |
 
 ### 🔄 Przepływ Danych
 ```
@@ -468,14 +468,14 @@ RapidAPI → FastAPI → RabbitMQ → Celery → OpenAI → PostgreSQL → Redis
 
 ### 🏗️ System Components
 
-| Component | Technology | Role | Port |
-|-----------|------------|------|------|
-| **FastAPI** | Python 3.11+ | Public API | 8000 |
-| **Symfony** | PHP 8.3+ | Admin Panel | 8001 |
-| **Celery** | Python | AI Worker | - |
-| **PostgreSQL** | 15+ | Database | 5432 |
-| **Redis** | 7+ | Cache | 6379 |
-| **RabbitMQ** | 3+ | Task Queue | 5672 |
+| Component      | Technology   | Role        | Port   |
+| -----------    | ------------ | ------      | ------ |
+| **FastAPI**    | Python 3.11+ | Public API  | 8000   |
+| **Symfony**    | PHP 8.3+     | Admin Panel | 8001   |
+| **Celery**     | Python       | AI Worker   | -      |
+| **PostgreSQL** | 15+          | Database    | 5432   |
+| **Redis**      | 7+           | Cache       | 6379   |
+| **RabbitMQ**   | 3+           | Task Queue  | 5672   |
 
 ### 🔄 Data Flow
 ```
@@ -629,11 +629,11 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ### 💰 Plany RapidAPI
 
-| Plan | Limit | Cena | Funkcje |
-|------|-------|------|---------|
-| **Free** | 100 zapytań/miesiąc | $0 | Podstawowe dane, cache |
-| **Pro** | 10,000 zapytań/miesiąc | $29/miesiąc | AI generacja, style packs |
-| **Enterprise** | Nielimitowany | $199/miesiąc | Webhooki, dedykowane modele |
+| Plan           | Limit                  | Cena         | Funkcje                     |
+| ------         | -------                | ------       | ---------                   |
+| **Free**       | 100 zapytań/miesiąc    | $0           | Podstawowe dane, cache      |
+| **Pro**        | 10,000 zapytań/miesiąc | $29/miesiąc  | AI generacja, style packs   |
+| **Enterprise** | Nielimitowany          | $199/miesiąc | Webhooki, dedykowane modele |
 
 ### 📊 Model Rozliczeń
 - **Pay-per-use** - płatność za użycie
@@ -653,11 +653,11 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ### 💰 RapidAPI Plans
 
-| Plan | Limit | Price | Features |
-|------|-------|-------|----------|
-| **Free** | 100 requests/month | $0 | Basic data, cache |
-| **Pro** | 10,000 requests/month | $29/month | AI generation, style packs |
-| **Enterprise** | Unlimited | $199/month | Webhooks, dedicated models |
+| Plan           | Limit                 | Price      | Features                   |
+| ------         | -------               | -------    | ----------                 |
+| **Free**       | 100 requests/month    | $0         | Basic data, cache          |
+| **Pro**        | 10,000 requests/month | $29/month  | AI generation, style packs |
+| **Enterprise** | Unlimited             | $199/month | Webhooks, dedicated models |
 
 ### 📊 Billing Model
 - **Pay-per-use** - usage-based payment
@@ -677,13 +677,13 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ### 📅 Harmonogram 10-tygodniowy
 
-| Tydzień | Etap | Zadania | Deliverables |
-|---------|------|---------|--------------|
-| **1-2** | Foundation | Setup, Docker, DB schema | Działające środowisko |
-| **3-4** | AI Integration | OpenAI, Celery, Quality scoring | Generacja opisów |
-| **5-6** | Multilingual | i18n, Translation, Glossary | 5+ języków |
-| **7-8** | Advanced Features | Style packs, Analytics | Zaawansowane funkcje |
-| **9-10** | Monetization | RapidAPI, Billing | Produkt gotowy |
+| Tydzień   | Etap              | Zadania                         | Deliverables          |
+| --------- | ------            | ---------                       | --------------        |
+| **1-2**   | Foundation        | Setup, Docker, DB schema        | Działające środowisko |
+| **3-4**   | AI Integration    | OpenAI, Celery, Quality scoring | Generacja opisów      |
+| **5-6**   | Multilingual      | i18n, Translation, Glossary     | 5+ języków            |
+| **7-8**   | Advanced Features | Style packs, Analytics          | Zaawansowane funkcje  |
+| **9-10**  | Monetization      | RapidAPI, Billing               | Produkt gotowy        |
 
 ### 🎯 Milestones
 - **Tydzień 2** - MVP Publiczne repo gotowe
@@ -698,13 +698,13 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ### 📅 10-Week Schedule
 
-| Week | Stage | Tasks | Deliverables |
-|------|-------|-------|--------------|
-| **1-2** | Foundation | Setup, Docker, DB schema | Working environment |
-| **3-4** | AI Integration | OpenAI, Celery, Quality scoring | Description generation |
-| **5-6** | Multilingual | i18n, Translation, Glossary | 5+ languages |
-| **7-8** | Advanced Features | Style packs, Analytics | Advanced features |
-| **9-10** | Monetization | RapidAPI, Billing | Ready product |
+| Week     | Stage             | Tasks                           | Deliverables           |
+| ------   | -------           | -------                         | --------------         |
+| **1-2**  | Foundation        | Setup, Docker, DB schema        | Working environment    |
+| **3-4**  | AI Integration    | OpenAI, Celery, Quality scoring | Description generation |
+| **5-6**  | Multilingual      | i18n, Translation, Glossary     | 5+ languages           |
+| **7-8**  | Advanced Features | Style packs, Analytics          | Advanced features      |
+| **9-10** | Monetization      | RapidAPI, Billing               | Ready product          |
 
 ### 🎯 Milestones
 - **Week 2** - Public MVP repo ready
