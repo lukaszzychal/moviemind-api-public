@@ -393,16 +393,17 @@ We use **Git Trunk Flow** as the main code management strategy.
 **Kontekst:** Strategia kontroli funkcji MovieMind API
 
 ### 🎯 Decyzja
-Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
+Używamy **oficjalnej integracji Laravel Feature Flags** (`laravel/feature-flags`) zamiast własnej implementacji.
 
 ### 💡 Uzasadnienie
 
-#### ✅ Zalety własnej implementacji:
-- **Kontrola** - pełna kontrola nad logiką
-- **Koszt** - brak kosztów zewnętrznych serwisów
-- **Prostota** - dostosowana do potrzeb projektu
-- **Integracja** - łatwa integracja z Laravel
-- **Bezpieczeństwo** - dane nie opuszczają naszej infrastruktury
+#### ✅ Zalety oficjalnej integracji Laravel:
+- **Oficjalne wsparcie** - wspierane przez Laravel team
+- **Prostota** - gotowe API i funkcje
+- **Bezpieczeństwo** - przetestowane przez społeczność
+- **Integracja** - idealna integracja z Laravel
+- **Funkcje** - więcej funkcji out-of-the-box
+- **Maintenance** - utrzymywane przez zespół Laravel
 
 #### 🎛️ Typy Feature Flags:
 1. **Boolean flags** - włącz/wyłącz funkcje
@@ -410,24 +411,23 @@ Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
 3. **User-based flags** - dla konkretnych użytkowników
 4. **Environment flags** - różne ustawienia per środowisko
 
-#### 🔧 Implementacja:
+#### 🔧 Implementacja Laravel Feature Flags:
 ```php
-// app/Services/FeatureFlagService.php
-class FeatureFlagService
+// Instalacja
+composer require laravel/feature-flags
+
+// Użycie w kontrolerze
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieController extends Controller
 {
-    public function isEnabled(string $flag, ?User $user = null): bool
+    public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
+        if (!FeatureFlags::enabled('ai_description_generation')) {
+            return response()->json(['error' => 'Feature not available'], 403);
         }
         
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
-        }
-        
-        return true;
+        // Reszta logiki...
     }
 }
 ```
@@ -436,7 +436,8 @@ class FeatureFlagService
 1. **LaunchDarkly** - odrzucone (koszt, złożoność)
 2. **Split.io** - odrzucone (koszt)
 3. **Unleash** - rozważane (open source)
-4. **Własna implementacja** - wybrana ✅
+4. **Własna implementacja** - odrzucone (dużo pracy)
+5. **Laravel Feature Flags** - wybrane ✅
 
 ### 🎯 Użycie w MovieMind API:
 - **AI Generation** - gradual rollout nowych modeli
@@ -455,16 +456,17 @@ class FeatureFlagService
 **Context:** MovieMind API feature control strategy
 
 ### 🎯 Decision
-We use **custom Feature Flags implementation** instead of ready-made solutions.
+We use **official Laravel Feature Flags integration** (`laravel/feature-flags`) instead of custom implementation.
 
 ### 💡 Rationale
 
-#### ✅ Custom implementation advantages:
-- **Control** - full control over logic
-- **Cost** - no external service costs
-- **Simplicity** - tailored to project needs
-- **Integration** - easy Laravel integration
-- **Security** - data doesn't leave our infrastructure
+#### ✅ Official Laravel integration advantages:
+- **Official support** - supported by Laravel team
+- **Simplicity** - ready-made API and functions
+- **Security** - tested by community
+- **Integration** - perfect Laravel integration
+- **Features** - more features out-of-the-box
+- **Maintenance** - maintained by Laravel team
 
 #### 🎛️ Feature Flag Types:
 1. **Boolean flags** - enable/disable features
@@ -472,24 +474,23 @@ We use **custom Feature Flags implementation** instead of ready-made solutions.
 3. **User-based flags** - for specific users
 4. **Environment flags** - different settings per environment
 
-#### 🔧 Implementation:
+#### 🔧 Laravel Feature Flags Implementation:
 ```php
-// app/Services/FeatureFlagService.php
-class FeatureFlagService
+// Installation
+composer require laravel/feature-flags
+
+// Usage in controller
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieController extends Controller
 {
-    public function isEnabled(string $flag, ?User $user = null): bool
+    public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
+        if (!FeatureFlags::enabled('ai_description_generation')) {
+            return response()->json(['error' => 'Feature not available'], 403);
         }
         
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
-        }
-        
-        return true;
+        // Rest of logic...
     }
 }
 ```
@@ -498,7 +499,8 @@ class FeatureFlagService
 1. **LaunchDarkly** - rejected (cost, complexity)
 2. **Split.io** - rejected (cost)
 3. **Unleash** - considered (open source)
-4. **Custom implementation** - chosen ✅
+4. **Custom implementation** - rejected (too much work)
+5. **Laravel Feature Flags** - chosen ✅
 
 ### 🎯 Usage in MovieMind API:
 - **AI Generation** - gradual rollout of new models
