@@ -1,0 +1,101 @@
+# GitLeaks Configuration for MovieMind API
+
+title = "MovieMind API GitLeaks Configuration"
+
+[extend]
+useDefault = true
+
+# Custom regex patterns
+[extend.regexes]
+movieMindApiKey = '''movie_mind_api_key\s*=\s*['"]?[a-zA-Z0-9]{32,}['"]?'''
+openaiApiKey = '''openai_api_key\s*=\s*['"]?sk-[a-zA-Z0-9]{48}['"]?'''
+postgresPassword = '''postgres_password\s*=\s*['"]?[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]{8,}['"]?'''
+
+# Allowlist patterns
+[extend.allowlist]
+description = "Allowlist for false positives"
+
+[[extend.allowlist.regexes]]
+regex = '''password\s*=\s*['"]?password['"]?'''
+reason = "Default password placeholder"
+
+[[extend.allowlist.regexes]]
+regex = '''api_key\s*=\s*['"]?your-api-key-here['"]?'''
+reason = "Example API key placeholder"
+
+[[extend.allowlist.regexes]]
+regex = '''OPENAI_API_KEY\s*=\s*['"]?<REPLACE_ME>['"]?'''
+reason = "Environment variable placeholder"
+
+[[extend.allowlist.regexes]]
+regex = '''sk-test-[a-zA-Z0-9]{48}'''
+reason = "OpenAI test API keys"
+
+[[extend.allowlist.regexes]]
+regex = '''moviemind:moviemind@db:5432/moviemind'''
+reason = "Docker Compose example database URL"
+
+[[extend.allowlist.regexes]]
+regex = '''curl -H "X-API-Key: [^"]*"'''
+reason = "cURL example with placeholder API key"
+
+[[extend.allowlist.regexes]]
+regex = '''OPENAI_API_KEY=sk-[a-zA-Z0-9]{48}'''
+reason = "Example OpenAI API key in documentation"
+
+# Allowlist specific files
+[[extend.allowlist.paths]]
+path = '''README\.md'''
+reason = "Documentation file with examples"
+
+[[extend.allowlist.paths]]
+path = '''\.env\.example'''
+reason = "Environment template file"
+
+[[extend.allowlist.paths]]
+path = '''docker-compose\.yml'''
+reason = "Docker Compose configuration"
+
+[[extend.allowlist.paths]]
+path = '''docs/.*'''
+reason = "Documentation directory"
+
+[[extend.allowlist.paths]]
+path = '''docs/pre-commit-setup\.md'''
+reason = "Pre-commit setup documentation with examples"
+
+# Custom rules
+[[extend.rules]]
+id = "movie-mind-api-key"
+description = "MovieMind API Key"
+regex = '''movie_mind_api_key\s*=\s*['"]?[a-zA-Z0-9]{32,}['"]?'''
+tags = ["key", "api", "movie-mind"]
+entropy = 3.5
+
+[[extend.rules]]
+id = "openai-api-key-detailed"
+description = "OpenAI API Key (detailed pattern)"
+regex = '''sk-[a-zA-Z0-9]{48}'''
+tags = ["key", "api", "openai"]
+entropy = 4.0
+
+[[extend.rules]]
+id = "postgres-connection-string"
+description = "PostgreSQL Connection String with Password"
+regex = '''postgresql://[^:]+:[^@]+@[^/]+/[^?]+'''
+tags = ["database", "postgres", "connection"]
+entropy = 3.0
+
+[[extend.rules]]
+id = "redis-password"
+description = "Redis Password"
+regex = '''redis://[^:]+:[^@]+@[^/]+'''
+tags = ["database", "redis", "password"]
+entropy = 3.0
+
+# Severity levels
+[extend.severity]
+movie-mind-api-key = "high"
+openai-api-key-detailed = "high"
+postgres-connection-string = "medium"
+redis-password = "medium"
