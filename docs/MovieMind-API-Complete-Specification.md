@@ -934,16 +934,17 @@ We use **Git Trunk Flow** as the main code management strategy for MovieMind API
 
 ### 🇵🇱 Strategia Kontroli Funkcji / Feature Control Strategy
 
-Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
+Używamy **oficjalnej integracji Laravel Feature Flags** (`laravel/feature-flags`) zamiast własnej implementacji.
 
-We use **custom Feature Flags implementation** instead of ready-made solutions.
+We use **official Laravel Feature Flags integration** (`laravel/feature-flags`) instead of custom implementation.
 
-### ✅ Zalety własnej implementacji / Custom implementation advantages:
-- **Kontrola** - pełna kontrola nad logiką / **Control** - full control over logic
-- **Koszt** - brak kosztów zewnętrznych serwisów / **Cost** - no external service costs
-- **Prostota** - dostosowana do potrzeb projektu / **Simplicity** - tailored to project needs
-- **Integracja** - łatwa integracja z Laravel / **Integration** - easy Laravel integration
-- **Bezpieczeństwo** - dane nie opuszczają naszej infrastruktury / **Security** - data doesn't leave our infrastructure
+### ✅ Zalety oficjalnej integracji Laravel / Official Laravel integration advantages:
+- **Oficjalne wsparcie** - wspierane przez Laravel team / **Official support** - supported by Laravel team
+- **Prostota** - gotowe API i funkcje / **Simplicity** - ready-made API and functions
+- **Bezpieczeństwo** - przetestowane przez społeczność / **Security** - tested by community
+- **Integracja** - idealna integracja z Laravel / **Integration** - perfect Laravel integration
+- **Funkcje** - więcej funkcji out-of-the-box / **Features** - more features out-of-the-box
+- **Maintenance** - utrzymywane przez zespół Laravel / **Maintenance** - maintained by Laravel team
 
 ### 🎛️ Typy Feature Flags / Feature Flag Types:
 1. **Boolean flags** - włącz/wyłącz funkcje / enable/disable features
@@ -951,33 +952,56 @@ We use **custom Feature Flags implementation** instead of ready-made solutions.
 3. **User-based flags** - dla konkretnych użytkowników / for specific users
 4. **Environment flags** - różne ustawienia per środowisko / different settings per environment
 
-### 🔧 Implementacja Laravel / Laravel Implementation:
+### 🔧 Implementacja Laravel Feature Flags / Laravel Feature Flags Implementation:
 ```php
-// app/Services/FeatureFlagService.php
-class FeatureFlagService
+<?php
+// Instalacja / Installation
+composer require laravel/feature-flags
+
+// Użycie w kontrolerze / Usage in controller
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieController extends Controller
 {
-    public function isEnabled(string $flag, ?User $user = null): bool
+    public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
+        // Sprawdź czy funkcja jest włączona / Check if feature is enabled
+        if (!FeatureFlags::enabled('ai_description_generation')) {
+            return response()->json(['error' => 'Feature not available'], 403);
         }
-        
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
+
+        // Sprawdź gradual rollout dla nowych modeli / Check gradual rollout for new models
+        if (FeatureFlags::enabled('gpt4_generation')) {
+            $model = 'gpt-4';
+        } else {
+            $model = 'gpt-3.5-turbo';
         }
-        
-        return true;
+
+        // Generuj opis z wybranym modelem / Generate description with selected model
+        GenerateDescriptionJob::dispatch($movie, $request->input('context'), $model);
+
+        return response()->json(['message' => 'Description generation started']);
     }
 }
 ```
 
-### 🎯 Użycie w MovieMind API / Usage in MovieMind API:
-- **AI Generation** - gradual rollout nowych modeli / gradual rollout of new models
-- **Multilingual** - włączanie nowych języków / enabling new languages
-- **Style Packs** - testowanie nowych stylów / testing new styles
-- **Rate Limiting** - różne limity dla różnych użytkowników / different limits for different users
+### ⚙️ Konfiguracja Feature Flags / Feature Flags Configuration:
+```php
+<?php
+// config/feature-flags.php
+return [
+    'ai_description_generation' => true,
+    'gpt4_generation' => [
+        'enabled' => true,
+        'percentage' => 25 // 25% użytkowników / 25% of users
+    ],
+    'multilingual_support' => [
+        'enabled' => true,
+        'percentage' => 50 // 50% użytkowników / 50% of users
+    ],
+    'style_packs' => false // Wyłączone / Disabled
+];
+```
 
 ---
 

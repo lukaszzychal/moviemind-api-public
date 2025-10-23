@@ -1422,14 +1422,15 @@ Używamy **Git Trunk Flow** jako głównej strategii zarządzania kodem dla Movi
 ## 🇵🇱 Feature Flags
 
 ### 🎛️ Strategia Kontroli Funkcji
-Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
+Używamy **oficjalnej integracji Laravel Feature Flags** (`laravel/feature-flags`) zamiast własnej implementacji.
 
-### ✅ Zalety własnej implementacji:
-- **Kontrola** - pełna kontrola nad logiką
-- **Koszt** - brak kosztów zewnętrznych serwisów
-- **Prostota** - dostosowana do potrzeb projektu
-- **Integracja** - łatwa integracja z Laravel
-- **Bezpieczeństwo** - dane nie opuszczają naszej infrastruktury
+### ✅ Zalety oficjalnej integracji Laravel:
+- **Oficjalne wsparcie** - wspierane przez Laravel team
+- **Prostota** - gotowe API i funkcje
+- **Bezpieczeństwo** - przetestowane przez społeczność
+- **Integracja** - idealna integracja z Laravel
+- **Funkcje** - więcej funkcji out-of-the-box
+- **Maintenance** - utrzymywane przez zespół Laravel
 
 ### 🎛️ Typy Feature Flags:
 1. **Boolean flags** - włącz/wyłącz funkcje
@@ -1437,55 +1438,36 @@ Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
 3. **User-based flags** - dla konkretnych użytkowników
 4. **Environment flags** - różne ustawienia per środowisko
 
-### 🔧 Implementacja Laravel:
+### 🔧 Implementacja Laravel Feature Flags:
 ```php
 <?php
-// app/Services/FeatureFlagService.php
-namespace App\Services;
+// Instalacja Laravel Feature Flags
+composer require laravel/feature-flags
 
-use App\Models\User;
-use Illuminate\Support\Facades\Cache;
+// Publikacja konfiguracji
+php artisan vendor:publish --provider="Laravel\FeatureFlags\FeatureFlagsServiceProvider"
+```
 
-class FeatureFlagService
-{
-    public function isEnabled(string $flag, ?User $user = null): bool
-    {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
-        }
-        
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
-        }
-        
-        return true;
-    }
-
-    private function getFlagConfig(string $flag): array
-    {
-        return Cache::remember("feature_flag_{$flag}", 300, function () use ($flag) {
-            return config("feature-flags.{$flag}", [
-                'enabled' => false,
-                'percentage' => 0
-            ]);
-        });
-    }
-
-    private function shouldEnableForPercentage(string $flag, ?User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-
-        $hash = hash('sha256', $flag . $user->id);
-        $hashValue = hexdec(substr($hash, 0, 8));
-        $percentage = $this->getFlagConfig($flag)['percentage'];
-        
-        return ($hashValue % 100) < $percentage;
-    }
-}
+### ⚙️ Konfiguracja Feature Flags:
+```php
+<?php
+// config/feature-flags.php
+return [
+    'default' => env('FEATURE_FLAGS_DEFAULT', false),
+    
+    'flags' => [
+        'ai_description_generation' => true,
+        'gpt4_generation' => [
+            'enabled' => true,
+            'percentage' => 25 // 25% użytkowników
+        ],
+        'multilingual_support' => [
+            'enabled' => true,
+            'percentage' => 50 // 50% użytkowników
+        ],
+        'style_packs' => false // Wyłączone
+    ]
+];
 ```
 
 ### 🎯 Użycie w MovieMind API:
@@ -1494,24 +1476,20 @@ class FeatureFlagService
 // app/Http/Controllers/MovieController.php
 namespace App\Http\Controllers;
 
-use App\Services\FeatureFlagService;
+use Laravel\FeatureFlags\Facades\FeatureFlags;
 use Illuminate\Http\Request;
 
 class MovieController extends Controller
 {
-    public function __construct(
-        private FeatureFlagService $featureFlags
-    ) {}
-
     public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
         // Sprawdź czy funkcja jest włączona
-        if (!$this->featureFlags->isEnabled('ai_description_generation', $request->user())) {
+        if (!FeatureFlags::enabled('ai_description_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
         }
 
         // Sprawdź gradual rollout dla nowych modeli
-        if ($this->featureFlags->isEnabled('gpt4_generation', $request->user())) {
+        if (FeatureFlags::enabled('gpt4_generation')) {
             $model = 'gpt-4';
         } else {
             $model = 'gpt-3.5-turbo';
@@ -1525,31 +1503,50 @@ class MovieController extends Controller
 }
 ```
 
-### ⚙️ Konfiguracja Feature Flags:
+### 🧪 Testy z Feature Flags:
 ```php
 <?php
-// config/feature-flags.php
-return [
-    'ai_description_generation' => [
-        'enabled' => true,
-        'percentage' => 100
-    ],
+// tests/Feature/MovieControllerTest.php
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieControllerTest extends TestCase
+{
+    public function test_can_generate_description_when_feature_enabled(): void
+    {
+        FeatureFlags::enable('ai_description_generation');
+        
+        $movie = Movie::factory()->create();
+        
+        $response = $this->postJson("/api/v1/movies/{$movie->id}/generate");
+        
+        $response->assertStatus(202);
+    }
     
-    'gpt4_generation' => [
-        'enabled' => true,
-        'percentage' => 25 // 25% użytkowników
-    ],
-    
-    'multilingual_support' => [
-        'enabled' => true,
-        'percentage' => 50 // 50% użytkowników
-    ],
-    
-    'style_packs' => [
-        'enabled' => false, // Wyłączone
-        'percentage' => 0
-    ]
-];
+    public function test_cannot_generate_description_when_feature_disabled(): void
+    {
+        FeatureFlags::disable('ai_description_generation');
+        
+        $movie = Movie::factory()->create();
+        
+        $response = $this->postJson("/api/v1/movies/{$movie->id}/generate");
+        
+        $response->assertStatus(403);
+    }
+}
+```
+
+### 🎨 Blade Templates:
+```blade
+{{-- resources/views/movies/show.blade.php --}}
+@if(FeatureFlags::enabled('ai_description_generation'))
+    <button onclick="generateDescription()">Generate AI Description</button>
+@endif
+
+@if(FeatureFlags::enabled('style_packs'))
+    <div class="style-packs">
+        <!-- Style packs content -->
+    </div>
+@endif
 ```
 
 ---
@@ -1585,14 +1582,15 @@ We use **Git Trunk Flow** as the main code management strategy for MovieMind API
 ## 🇬🇧 Feature Flags
 
 ### 🎛️ Feature Control Strategy
-We use **custom Feature Flags implementation** instead of ready-made solutions.
+We use **official Laravel Feature Flags integration** (`laravel/feature-flags`) instead of custom implementation.
 
-### ✅ Custom implementation advantages:
-- **Control** - full control over logic
-- **Cost** - no external service costs
-- **Simplicity** - tailored to project needs
-- **Integration** - easy Laravel integration
-- **Security** - data doesn't leave our infrastructure
+### ✅ Official Laravel integration advantages:
+- **Official support** - supported by Laravel team
+- **Simplicity** - ready-made API and functions
+- **Security** - tested by community
+- **Integration** - perfect Laravel integration
+- **Features** - more features out-of-the-box
+- **Maintenance** - maintained by Laravel team
 
 ### 🎛️ Feature Flag Types:
 1. **Boolean flags** - enable/disable features
@@ -1600,55 +1598,36 @@ We use **custom Feature Flags implementation** instead of ready-made solutions.
 3. **User-based flags** - for specific users
 4. **Environment flags** - different settings per environment
 
-### 🔧 Laravel Implementation:
+### 🔧 Laravel Feature Flags Implementation:
 ```php
 <?php
-// app/Services/FeatureFlagService.php
-namespace App\Services;
+// Install Laravel Feature Flags
+composer require laravel/feature-flags
 
-use App\Models\User;
-use Illuminate\Support\Facades\Cache;
+// Publish configuration
+php artisan vendor:publish --provider="Laravel\FeatureFlags\FeatureFlagsServiceProvider"
+```
 
-class FeatureFlagService
-{
-    public function isEnabled(string $flag, ?User $user = null): bool
-    {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
-        }
-        
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
-        }
-        
-        return true;
-    }
-
-    private function getFlagConfig(string $flag): array
-    {
-        return Cache::remember("feature_flag_{$flag}", 300, function () use ($flag) {
-            return config("feature-flags.{$flag}", [
-                'enabled' => false,
-                'percentage' => 0
-            ]);
-        });
-    }
-
-    private function shouldEnableForPercentage(string $flag, ?User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-
-        $hash = hash('sha256', $flag . $user->id);
-        $hashValue = hexdec(substr($hash, 0, 8));
-        $percentage = $this->getFlagConfig($flag)['percentage'];
-        
-        return ($hashValue % 100) < $percentage;
-    }
-}
+### ⚙️ Feature Flags Configuration:
+```php
+<?php
+// config/feature-flags.php
+return [
+    'default' => env('FEATURE_FLAGS_DEFAULT', false),
+    
+    'flags' => [
+        'ai_description_generation' => true,
+        'gpt4_generation' => [
+            'enabled' => true,
+            'percentage' => 25 // 25% of users
+        ],
+        'multilingual_support' => [
+            'enabled' => true,
+            'percentage' => 50 // 50% of users
+        ],
+        'style_packs' => false // Disabled
+    ]
+];
 ```
 
 ### 🎯 Usage in MovieMind API:
@@ -1657,24 +1636,20 @@ class FeatureFlagService
 // app/Http/Controllers/MovieController.php
 namespace App\Http\Controllers;
 
-use App\Services\FeatureFlagService;
+use Laravel\FeatureFlags\Facades\FeatureFlags;
 use Illuminate\Http\Request;
 
 class MovieController extends Controller
 {
-    public function __construct(
-        private FeatureFlagService $featureFlags
-    ) {}
-
     public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
         // Check if feature is enabled
-        if (!$this->featureFlags->isEnabled('ai_description_generation', $request->user())) {
+        if (!FeatureFlags::enabled('ai_description_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
         }
 
         // Check gradual rollout for new models
-        if ($this->featureFlags->isEnabled('gpt4_generation', $request->user())) {
+        if (FeatureFlags::enabled('gpt4_generation')) {
             $model = 'gpt-4';
         } else {
             $model = 'gpt-3.5-turbo';
@@ -1688,31 +1663,50 @@ class MovieController extends Controller
 }
 ```
 
-### ⚙️ Feature Flags Configuration:
+### 🧪 Testing with Feature Flags:
 ```php
 <?php
-// config/feature-flags.php
-return [
-    'ai_description_generation' => [
-        'enabled' => true,
-        'percentage' => 100
-    ],
+// tests/Feature/MovieControllerTest.php
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieControllerTest extends TestCase
+{
+    public function test_can_generate_description_when_feature_enabled(): void
+    {
+        FeatureFlags::enable('ai_description_generation');
+        
+        $movie = Movie::factory()->create();
+        
+        $response = $this->postJson("/api/v1/movies/{$movie->id}/generate");
+        
+        $response->assertStatus(202);
+    }
     
-    'gpt4_generation' => [
-        'enabled' => true,
-        'percentage' => 25 // 25% of users
-    ],
-    
-    'multilingual_support' => [
-        'enabled' => true,
-        'percentage' => 50 // 50% of users
-    ],
-    
-    'style_packs' => [
-        'enabled' => false, // Disabled
-        'percentage' => 0
-    ]
-];
+    public function test_cannot_generate_description_when_feature_disabled(): void
+    {
+        FeatureFlags::disable('ai_description_generation');
+        
+        $movie = Movie::factory()->create();
+        
+        $response = $this->postJson("/api/v1/movies/{$movie->id}/generate");
+        
+        $response->assertStatus(403);
+    }
+}
+```
+
+### 🎨 Blade Templates:
+```blade
+{{-- resources/views/movies/show.blade.php --}}
+@if(FeatureFlags::enabled('ai_description_generation'))
+    <button onclick="generateDescription()">Generate AI Description</button>
+@endif
+
+@if(FeatureFlags::enabled('style_packs'))
+    <div class="style-packs">
+        <!-- Style packs content -->
+    </div>
+@endif
 ```
 
 ---

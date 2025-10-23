@@ -708,14 +708,15 @@ Używamy **Git Trunk Flow** jako głównej strategii zarządzania kodem dla Movi
 ## 🇵🇱 Feature Flags
 
 ### 🎛️ Strategia Kontroli Funkcji
-Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
+Używamy **oficjalnej integracji Laravel Feature Flags** (`laravel/feature-flags`) zamiast własnej implementacji.
 
-### ✅ Zalety własnej implementacji:
-- **Kontrola** - pełna kontrola nad logiką
-- **Koszt** - brak kosztów zewnętrznych serwisów
-- **Prostota** - dostosowana do potrzeb projektu
-- **Integracja** - łatwa integracja z Laravel
-- **Bezpieczeństwo** - dane nie opuszczają naszej infrastruktury
+### ✅ Zalety oficjalnej integracji Laravel:
+- **Oficjalne wsparcie** - wspierane przez Laravel team
+- **Prostota** - gotowe API i funkcje
+- **Bezpieczeństwo** - przetestowane przez społeczność
+- **Integracja** - idealna integracja z Laravel
+- **Funkcje** - więcej funkcji out-of-the-box
+- **Maintenance** - utrzymywane przez zespół Laravel
 
 ### 🎛️ Typy Feature Flags:
 1. **Boolean flags** - włącz/wyłącz funkcje
@@ -723,33 +724,56 @@ Używamy **własnej implementacji Feature Flags** zamiast gotowych rozwiązań.
 3. **User-based flags** - dla konkretnych użytkowników
 4. **Environment flags** - różne ustawienia per środowisko
 
-### 🔧 Implementacja Laravel:
+### 🔧 Implementacja Laravel Feature Flags:
 ```php
-// app/Services/FeatureFlagService.php
-class FeatureFlagService
+<?php
+// Instalacja
+composer require laravel/feature-flags
+
+// Użycie w kontrolerze
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieController extends Controller
 {
-    public function isEnabled(string $flag, ?User $user = null): bool
+    public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
+        // Sprawdź czy funkcja jest włączona
+        if (!FeatureFlags::enabled('ai_description_generation')) {
+            return response()->json(['error' => 'Feature not available'], 403);
         }
-        
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
+
+        // Sprawdź gradual rollout dla nowych modeli
+        if (FeatureFlags::enabled('gpt4_generation')) {
+            $model = 'gpt-4';
+        } else {
+            $model = 'gpt-3.5-turbo';
         }
-        
-        return true;
+
+        // Generuj opis z wybranym modelem
+        GenerateDescriptionJob::dispatch($movie, $request->input('context'), $model);
+
+        return response()->json(['message' => 'Description generation started']);
     }
 }
 ```
 
-### 🎯 Użycie w MovieMind API:
-- **AI Generation** - gradual rollout nowych modeli
-- **Multilingual** - włączanie nowych języków
-- **Style Packs** - testowanie nowych stylów
-- **Rate Limiting** - różne limity dla różnych użytkowników
+### ⚙️ Konfiguracja Feature Flags:
+```php
+<?php
+// config/feature-flags.php
+return [
+    'ai_description_generation' => true,
+    'gpt4_generation' => [
+        'enabled' => true,
+        'percentage' => 25 // 25% użytkowników
+    ],
+    'multilingual_support' => [
+        'enabled' => true,
+        'percentage' => 50 // 50% użytkowników
+    ],
+    'style_packs' => false // Wyłączone
+];
+```
 
 ---
 
@@ -784,14 +808,15 @@ We use **Git Trunk Flow** as the main code management strategy for MovieMind API
 ## 🇬🇧 Feature Flags
 
 ### 🎛️ Feature Control Strategy
-We use **custom Feature Flags implementation** instead of ready-made solutions.
+We use **official Laravel Feature Flags integration** (`laravel/feature-flags`) instead of custom implementation.
 
-### ✅ Custom implementation advantages:
-- **Control** - full control over logic
-- **Cost** - no external service costs
-- **Simplicity** - tailored to project needs
-- **Integration** - easy Laravel integration
-- **Security** - data doesn't leave our infrastructure
+### ✅ Official Laravel integration advantages:
+- **Official support** - supported by Laravel team
+- **Simplicity** - ready-made API and functions
+- **Security** - tested by community
+- **Integration** - perfect Laravel integration
+- **Features** - more features out-of-the-box
+- **Maintenance** - maintained by Laravel team
 
 ### 🎛️ Feature Flag Types:
 1. **Boolean flags** - enable/disable features
@@ -799,33 +824,56 @@ We use **custom Feature Flags implementation** instead of ready-made solutions.
 3. **User-based flags** - for specific users
 4. **Environment flags** - different settings per environment
 
-### 🔧 Laravel Implementation:
+### 🔧 Laravel Feature Flags Implementation:
 ```php
-// app/Services/FeatureFlagService.php
-class FeatureFlagService
+<?php
+// Installation
+composer require laravel/feature-flags
+
+// Usage in controller
+use Laravel\FeatureFlags\Facades\FeatureFlags;
+
+class MovieController extends Controller
 {
-    public function isEnabled(string $flag, ?User $user = null): bool
+    public function generateDescription(Movie $movie, Request $request): JsonResponse
     {
-        $config = $this->getFlagConfig($flag);
-        
-        if ($config['enabled'] === false) {
-            return false;
+        // Check if feature is enabled
+        if (!FeatureFlags::enabled('ai_description_generation')) {
+            return response()->json(['error' => 'Feature not available'], 403);
         }
-        
-        if ($config['percentage'] < 100) {
-            return $this->shouldEnableForPercentage($flag, $user);
+
+        // Check gradual rollout for new models
+        if (FeatureFlags::enabled('gpt4_generation')) {
+            $model = 'gpt-4';
+        } else {
+            $model = 'gpt-3.5-turbo';
         }
-        
-        return true;
+
+        // Generate description with selected model
+        GenerateDescriptionJob::dispatch($movie, $request->input('context'), $model);
+
+        return response()->json(['message' => 'Description generation started']);
     }
 }
 ```
 
-### 🎯 Usage in MovieMind API:
-- **AI Generation** - gradual rollout of new models
-- **Multilingual** - enabling new languages
-- **Style Packs** - testing new styles
-- **Rate Limiting** - different limits for different users
+### ⚙️ Feature Flags Configuration:
+```php
+<?php
+// config/feature-flags.php
+return [
+    'ai_description_generation' => true,
+    'gpt4_generation' => [
+        'enabled' => true,
+        'percentage' => 25 // 25% of users
+    ],
+    'multilingual_support' => [
+        'enabled' => true,
+        'percentage' => 50 // 50% of users
+    ],
+    'style_packs' => false // Disabled
+];
+```
 
 ---
 
