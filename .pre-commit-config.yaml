@@ -1,0 +1,104 @@
+# Pre-commit hooks configuration for MovieMind API
+# This file configures pre-commit hooks to run before each commit
+
+repos:
+  # GitLeaks - Secret detection
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+        name: GitLeaks - Detect secrets and credentials
+        description: Detect secrets, API keys, passwords, and other sensitive information
+        entry: gitleaks protect --source . --verbose --redact
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit, push]
+
+  # Basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        description: Remove trailing whitespace
+        types: [text]
+        
+      - id: end-of-file-fixer
+        name: Fix End of Files
+        description: Ensure files end with a newline
+        types: [text]
+        
+      - id: check-yaml
+        name: Check YAML
+        description: Check YAML syntax
+        types: [yaml]
+        
+      - id: check-json
+        name: Check JSON
+        description: Check JSON syntax
+        types: [json]
+        
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        description: Check for merge conflict markers
+        types: [text]
+        
+      - id: check-added-large-files
+        name: Check for large files
+        description: Prevent large files from being committed
+        args: ['--maxkb=1000']
+
+  # PHP specific hooks
+  - repo: https://github.com/doctrine/coding-standard
+    rev: 12.0.0
+    hooks:
+      - id: php-cs-fixer
+        name: PHP CS Fixer
+        description: Fix PHP code style issues
+        entry: php-cs-fixer fix --config=.php-cs-fixer.php
+        language: system
+        types: [php]
+        require_serial: true
+        additional_dependencies: [friendsofphp/php-cs-fixer]
+
+  # Security checks
+  - repo: local
+    hooks:
+      - id: check-env-files
+        name: Check for .env files
+        description: Prevent .env files from being committed
+        entry: bash -c 'if git diff --cached --name-only | grep -E "\.env$|\.env\."; then echo "Error: .env files should not be committed"; exit 1; fi'
+        language: system
+        stages: [commit]
+        
+      - id: check-api-keys
+        name: Check for hardcoded API keys
+        description: Check for common API key patterns
+        entry: bash -c 'if git diff --cached | grep -E "(sk-[a-zA-Z0-9]{48}|api[_-]?key\s*=\s*[\"'"'"'][^\"'"'"']{20,}[\"'"'"']|password\s*=\s*[\"'"'"'][^\"'"'"']{8,}[\"'"'"'])"; then echo "Error: Potential API key or password detected"; exit 1; fi'
+        language: system
+        stages: [commit]
+
+  # Docker security
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: Dockerfile Lint
+        description: Lint Dockerfile for security and best practices
+        entry: hadolint
+        language: system
+        types: [dockerfile]
+
+# Configuration for specific hooks
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

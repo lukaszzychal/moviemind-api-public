@@ -1,0 +1,45 @@
+# Code Owners for MovieMind API
+
+# Global owners - all files require review from these users
+* @lukaszzychal
+
+# Security and CI/CD workflows
+/.github/ @lukaszzychal
+/.gitleaks.toml @lukaszzychal
+/.github/workflows/ @lukaszzychal
+/.github/dependabot.yml @lukaszzychal
+
+# Infrastructure and deployment
+/docker-compose.yml @lukaszzychal
+/Dockerfile @lukaszzychal
+/docker/ @lukaszzychal
+
+# Dependencies and package management
+/composer.json @lukaszzychal
+/composer.lock @lukaszzychal
+/package.json @lukaszzychal
+/package-lock.json @lukaszzychal
+
+# Configuration files
+/.env.example @lukaszzychal
+/config/ @lukaszzychal
+
+# Documentation
+/README.md @lukaszzychal
+/docs/ @lukaszzychal
+/SECURITY.md @lukaszzychal
+/LICENSE @lukaszzychal
+
+# Database migrations and schema
+/migrations/ @lukaszzychal
+/schema/ @lukaszzychal
+
+# API documentation
+/openapi.yaml @lukaszzychal
+/openapi.json @lukaszzychal
+
+# Security-related files
+/.gitignore @lukaszzychal
+/.env @lukaszzychal
+/.env.local @lukaszzychal
+/.env.production @lukaszzychal
