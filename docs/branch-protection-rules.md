@@ -24,24 +24,13 @@ This document outlines the recommended branch protection rules for the MovieMind
 
 ### Additional Security Settings / Dodatkowe Ustawienia Bezpieczeństwa
 - ✅ **Require signed commits** (recommended) / **Wymagaj podpisanych commitów** (zalecane)
-- ✅ **Require conversation resolution before merging** / **Wymagaj rozwiązania rozmów przed scaleniem**
-- ✅ **Lock branch** (for critical releases) / **Zablokuj gałąź** (dla krytycznych wydań)
-
-### Advanced Protection Rules / Zaawansowane Zasady Ochrony
-- ✅ **Restrict creations** / **Ogranicz tworzenie**
-  - Only allow users with bypass permission to create matching refs / Pozwól tylko użytkownikom z uprawnieniami bypass tworzyć pasujące referencje
-- ✅ **Restrict updates** / **Ogranicz aktualizacje**
-  - Only allow users with bypass permission to update matching refs / Pozwól tylko użytkownikom z uprawnieniami bypass aktualizować pasujące referencje
-- ✅ **Restrict deletions** / **Ogranicz usuwanie**
-  - Only allow users with bypass permissions to delete matching refs / Pozwól tylko użytkownikom z uprawnieniami bypass usuwać pasujące referencje
 - ✅ **Block force pushes** / **Blokuj force pushy**
-  - Prevent users with push access from force pushing to refs / Zapobiegaj użytkownikom z dostępem push wykonywania force push do referencji
+- ✅ **Restrict creations** / **Ogranicz tworzenie**
+- ✅ **Restrict updates** / **Ogranicz aktualizacje**
+- ✅ **Restrict deletions** / **Ogranicz usuwanie**
 - ✅ **Require deployments to succeed** / **Wymagaj udanych wdrożeń**
-  - Choose which environments must be successfully deployed to before refs can be pushed / Wybierz które środowiska muszą być pomyślnie wdrożone przed push referencji
 - ✅ **Require code scanning results** / **Wymagaj wyników skanowania kodu**
-  - Choose which tools must provide code scanning results before the reference is updated / Wybierz które narzędzia muszą dostarczyć wyniki skanowania kodu przed aktualizacją referencji
 - ✅ **Automatically request Copilot code review** / **Automatycznie żądaj recenzji kodu Copilot**
-  - Request Copilot code review for new pull requests automatically if the author has access / Automatycznie żądaj recenzji kodu Copilot dla nowych pull requestów jeśli autor ma dostęp
 
 ## Branch Naming Conventions / Konwencje Nazewnictwa Gałęzi
 
@@ -116,13 +105,10 @@ Branch Protection Rule for 'main' / Zasada Ochrony Gałęzi dla 'main':
     ✅ Dismiss stale PR approvals when new commits are pushed / ✅ Odrzuć przestarzałe zatwierdzenia PR przy nowych commitach
     ✅ Require review from code owners / ✅ Wymagaj recenzji od właścicieli kodu
   
-  Require status checks to pass before merging / Wymagaj przejścia sprawdzeń statusu przed scaleniem:
+  Require status checks to pass / Wymagaj przejścia sprawdzeń statusu:
     ✅ Required / ✅ Wymagane
     ✅ Require branches to be up to date before merging / ✅ Wymagaj aktualności gałęzi przed scaleniem
     ✅ Status checks: gitleaks-security-scan, security-audit / ✅ Sprawdzenia statusu: gitleaks-security-scan, security-audit
-  
-  Require conversation resolution before merging / Wymagaj rozwiązania rozmów przed scaleniem:
-    ✅ Required / ✅ Wymagane
   
   Require signed commits / Wymagaj podpisanych commitów:
     ✅ Required / ✅ Wymagane
@@ -154,9 +140,6 @@ Branch Protection Rule for 'main' / Zasada Ochrony Gałęzi dla 'main':
     ✅ Required / ✅ Wymagane
   
   Include administrators / Uwzględnij administratorów:
-    ✅ Required / ✅ Wymagane
-  
-  Restrict pushes that create files larger than 100MB / Ogranicz pushy tworzące pliki większe niż 100MB:
     ✅ Required / ✅ Wymagane
 ```
 
