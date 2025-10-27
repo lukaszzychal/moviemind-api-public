@@ -120,19 +120,19 @@ Prywatne repo może zawierać:
 
 ### 🔹 2. Technologie MVP / MVP Technologies
 
-#### 🏗️ Hybrydowa Architektura / Hybrid Architecture
+#### 🏗️ Architektura Laravel / Laravel Architecture
 
-**Dwa backend'y dla różnych celów:**
+**Jeden backend dla API i Admin Panel:**
 
-| Kontener             | Technologia                                           | Odpowiedzialność                                            |
-| ----------           | -------------                                         | ------------------                                          |
-| **API Gateway**      | FastAPI (Python)                                      | Publikuje REST/GraphQL endpointy (filmy, aktorzy, itp)      |
-| **AI Service**       | Python (LangChain / custom microservice z OpenAI SDK) | Generuje opisy, biografie, tagi kontekstowe                 |
-| **Metadata Fetcher** | Node.js / PHP Worker                                  | Pobiera dane z TMDB/TVMaze, normalizuje, uzupełnia braki    |
-| **Database**         | PostgreSQL                                            | Przechowuje treści, metadane, wersje, tagi, ratingi jakości |
-| **Cache**            | Redis                                                 | Cache odpowiedzi API i AI wyników                           |
-| **Task Queue**       | RabbitMQ / Redis Queue                                | Kolejkuje generowanie opisów, porównania, scoring           |
-| **Admin Panel**      | Laravel 11 (PHP 8.3)                                  | Zarządzanie danymi, modelami AI, planami API                |
+| Kontener         | Technologia             | Odpowiedzialność                                            |
+| ----------       | -------------           | ------------------                                          |
+| **Laravel API**  | PHP 8.3 + Laravel 11    | Publikuje REST endpointy (filmy, aktorzy, AI generacja)    |
+| **Admin Panel**  | Laravel (Nova/Breeze)   | Zarządzanie danymi, modelami AI, monitoring                |
+| **AI Service**   | OpenAI SDK (PHP)        | Generuje opisy, biografie, tagi kontekstowe w Laravel Jobs  |
+| **Database**     | PostgreSQL              | Przechowuje treści, metadane, wersje, tagi, ratingi jakości |
+| **Cache**        | Redis                   | Cache odpowiedzi API i AI wyników                           |
+| **Task Queue**   | Laravel Horizon         | Kolejkuje generowanie opisów, async AI processing          |
+| **Metadata**      | Laravel Console Commands| Pobiera dane z TMDB/TVMaze, normalizuje, uzupełnia braki    |
 
 #### ⚡ /src-fastapi/ — lekki, publiczny, skalowalny API Core
 
