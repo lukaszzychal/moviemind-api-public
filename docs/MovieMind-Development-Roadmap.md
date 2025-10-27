@@ -75,20 +75,19 @@ Demonstracja architektury, jakości kodu i podejścia do projektowania bez ujawn
 ### 📁 Struktura Projektu
 ```
 moviemind-api-public/
-├── src-fastapi/          # Python FastAPI (publiczne API)
+├── src/                     # PHP Laravel (API + Admin)
 │   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── models/
-│   │   └── services/
-│   ├── requirements.txt
-│   └── Dockerfile
-├── src-laravel/          # PHP Laravel (admin panel)
-│   ├── src/
-│   │   ├── Controller/
-│   │   ├── Entity/
-│   │   ├── Service/
-│   │   └── Mock/ (mock AI services)
+│   │   ├── Http/Controllers/
+│   │   │   ├── Api/         # Publiczne API endpointy
+│   │   │   └── Admin/       # Admin panel endpointy
+│   │   ├── Models/          # Modele Eloquent
+│   │   ├── Services/        # Logika biznesowa
+│   │   │   └── Mock/        # Mock AI services
+│   │   ├── Jobs/            # Async jobs (OpenAI)
+│   │   └── Providers/
+│   ├── routes/
+│   │   ├── api.php          # V1 API routes
+│   │   └── admin.php        # Admin routes
 │   ├── composer.json
 │   └── Dockerfile
 ├── tests/
@@ -99,33 +98,33 @@ moviemind-api-public/
 
 ### 🔧 Funkcjonalności MVP Publicznego
 
-| Komponent       | Funkcjonalność                      | Status   |
-| --------------- | ----------------------------------- | -------- |
-| **FastAPI**     | Podstawowe endpointy REST           | ✅        |
-| **Laravel**     | Admin panel z CRUD                  | ✅        |
-| **Database**    | PostgreSQL z podstawowym schematem  | ✅        |
-| **Cache**       | Redis dla cache'owania              | ✅        |
-| **Mock AI**     | Symulacja generacji opisów          | ✅        |
-| **Docker**      | Środowisko deweloperskie            | ✅        |
-| **Security**    | GitLeaks, pre-commit hooks          | ✅        |
+| Komponent      | Funkcjonalność                      | Status   |
+| -------------- | ----------------------------------- | -------- |
+| **Laravel**    | Publiczne API + Admin panel          | ✅        |
+| **Database**   | PostgreSQL z podstawowym schematem  | ✅        |
+| **Cache**      | Redis dla cache'owania              | ✅        |
+| **Queue**      | Laravel Horizon dla async jobs       | ✅        |
+| **Mock AI**    | Symulacja generacji opisów          | ✅        |
+| **Docker**     | Środowisko deweloperskie            | ✅        |
+| **Security**   | GitLeaks, pre-commit hooks          | ✅        |
 
 ### 📊 Endpointy MVP
-```python
-# FastAPI - Publiczne API
-GET  /v1/movies              # Lista filmów
-GET  /v1/movies/{id}         # Szczegóły filmu
-GET  /v1/actors/{id}         # Szczegóły aktora
-POST /v1/generate/{type}/{id} # Generacja opisu (mock)
-GET  /v1/jobs/{id}          # Status zadania
+```php
+// Laravel - Publiczne API (routes/api.php)
+GET  /api/v1/movies              # Lista filmów
+GET  /api/v1/movies/{id}         # Szczegóły filmu
+GET  /api/v1/actors/{id}         # Szczegóły aktora
+POST /api/v1/generate            # Generacja opisu (mock)
+GET  /api/v1/jobs/{id}           # Status zadania
 ```
 
 ```php
-// Laravel - Admin Panel
-GET  /admin/movies           # Zarządzanie filmami
-POST /admin/movies           # Dodawanie filmu
-PUT  /admin/movies/{id}     # Edycja filmu
-GET  /admin/actors           # Zarządzanie aktorami
-GET  /admin/jobs            # Monitorowanie zadań
+// Laravel - Admin Panel (routes/admin.php)
+GET  /admin/movies                # Zarządzanie filmami
+POST /admin/movies                # Dodawanie filmu
+PUT  /admin/movies/{id}          # Edycja filmu
+GET  /admin/actors                # Zarządzanie aktorami
+GET  /admin/jobs                  # Monitorowanie zadań
 ```
 
 ---
@@ -138,20 +137,19 @@ Demonstrate architecture, code quality, and design approach without revealing co
 ### 📁 Project Structure
 ```
 moviemind-api-public/
-├── src-fastapi/          # Python FastAPI (public API)
+├── src/                     # PHP Laravel (API + Admin)
 │   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── models/
-│   │   └── services/
-│   ├── requirements.txt
-│   └── Dockerfile
-├── src-laravel/          # PHP Laravel (admin panel)
-│   ├── src/
-│   │   ├── Controller/
-│   │   ├── Entity/
-│   │   ├── Service/
-│   │   └── Mock/ (mock AI services)
+│   │   ├── Http/Controllers/
+│   │   │   ├── Api/         # Public API endpoints
+│   │   │   └── Admin/       # Admin panel endpoints
+│   │   ├── Models/          # Eloquent models
+│   │   ├── Services/        # Business logic
+│   │   │   └── Mock/        # Mock AI services
+│   │   ├── Jobs/            # Async jobs (OpenAI)
+│   │   └── Providers/
+│   ├── routes/
+│   │   ├── api.php          # V1 API routes
+│   │   └── admin.php        # Admin routes
 │   ├── composer.json
 │   └── Dockerfile
 ├── tests/
@@ -162,33 +160,33 @@ moviemind-api-public/
 
 ### 🔧 Public MVP Features
 
-| Component    | Functionality                     | Status   |
-| -----------  | ---------------                   | -------- |
-| **FastAPI**  | Basic REST endpoints              | ✅        |
-| **Laravel**  | Admin panel with CRUD             | ✅        |
+| Component   | Functionality                     | Status   |
+| ----------- | -------------------------------- | -------- |
+| **Laravel** | Public API + Admin panel          | ✅        |
 | **Database** | PostgreSQL with basic schema      | ✅        |
 | **Cache**    | Redis for caching                 | ✅        |
+| **Queue**     | Laravel Horizon for async jobs    | ✅        |
 | **Mock AI**  | Description generation simulation | ✅        |
 | **Docker**   | Development environment           | ✅        |
 | **Security** | GitLeaks, pre-commit hooks        | ✅        |
 
 ### 📊 MVP Endpoints
-```python
-# FastAPI - Public API
-GET  /v1/movies              # List movies
-GET  /v1/movies/{id}         # Movie details
-GET  /v1/actors/{id}         # Actor details
-POST /v1/generate/{type}/{id} # Generate description (mock)
-GET  /v1/jobs/{id}          # Job status
+```php
+// Laravel - Public API (routes/api.php)
+GET  /api/v1/movies              # List movies
+GET  /api/v1/movies/{id}         # Movie details
+GET  /api/v1/actors/{id}        # Actor details
+POST /api/v1/generate            # Generate description (mock)
+GET  /api/v1/jobs/{id}          # Job status
 ```
 
 ```php
-// Laravel - Admin Panel
-GET  /admin/movies           # Manage movies
-POST /admin/movies           # Add movie
-PUT  /admin/movies/{id}     # Edit movie
-GET  /admin/actors           # Manage actors
-GET  /admin/jobs            # Monitor jobs
+// Laravel - Admin Panel (routes/admin.php)
+GET  /admin/movies               # Manage movies
+POST /admin/movies               # Add movie
+PUT  /admin/movies/{id}         # Edit movie
+GET  /admin/actors               # Manage actors
+GET  /admin/jobs                # Monitor jobs
 ```
 
 ---
@@ -269,11 +267,12 @@ GET  /admin/security         # Security dashboard
 **Cel:** Podstawowa infrastruktura i architektura
 
 #### Zadania:
-- [ ] **Setup projektu** - struktura katalogów, Docker
+- [ ] **Setup projektu** - struktura katalogów Laravel, Docker
 - [ ] **Database schema** - podstawowe tabele (movies, actors, descriptions)
-- [ ] **FastAPI setup** - podstawowe endpointy REST
-- [ ] **Laravel setup** - admin panel z CRUD
+- [ ] **Laravel API** - podstawowe endpointy REST publiczne
+- [ ] **Laravel Admin** - panel admin z CRUD
 - [ ] **Redis cache** - podstawowe cache'owanie
+- [ ] **Laravel Horizon** - setup async jobs
 - [ ] **GitLeaks security** - pre-commit hooks
 
 #### Deliverables:
@@ -358,11 +357,12 @@ GET  /admin/security         # Security dashboard
 **Goal:** Basic infrastructure and architecture
 
 #### Tasks:
-- [ ] **Project setup** - directory structure, Docker
+- [ ] **Project setup** - Laravel directory structure, Docker
 - [ ] **Database schema** - basic tables (movies, actors, descriptions)
-- [ ] **FastAPI setup** - basic REST endpoints
-- [ ] **Laravel setup** - admin panel with CRUD
+- [ ] **Laravel API** - basic public REST endpoints
+- [ ] **Laravel Admin** - admin panel with CRUD
 - [ ] **Redis cache** - basic caching
+- [ ] **Laravel Horizon** - setup async jobs
 - [ ] **GitLeaks security** - pre-commit hooks
 
 #### Deliverables:
@@ -441,57 +441,81 @@ GET  /admin/security         # Security dashboard
 
 ---
 
-## 🇵🇱 Architektura Hybrydowa
+## 🇵🇱 Architektura Laravel
 
 ### 🏗️ Komponenty Systemu
 
-| Komponent      | Technologia   | Rola          | Port   |
-| -----------    | ------------- | ------        | ------ |
-| **FastAPI**    | Python 3.11+  | Publiczne API | 8000   |
-| **Laravel**    | PHP 8.3+      | Admin Panel   | 8001   |
-| **Celery**     | Python        | Worker AI     | -      |
-| **PostgreSQL** | 15+           | Baza danych   | 5432   |
-| **Redis**      | 7+            | Cache         | 6379   |
-| **RabbitMQ**   | 3+            | Kolejka zadań | 5672   |
+| Komponent       | Technologia    | Rola                 | Port   |
+| --------------- | -------------- | -------------------- | ------ |
+| **Laravel API** | PHP 8.3+       | Publiczne API + Admin| 8000   |
+| **PostgreSQL**  | 15+            | Baza danych          | 5432   |
+| **Redis**       | 7+             | Cache                | 6379   |
+| **Horizon**     | Laravel Queue  | Kolejka zadań async  | 8001   |
+| **OpenAI API**  | External       | AI generacja treści  | -      |
 
 ### 🔄 Przepływ Danych
 ```
-RapidAPI → FastAPI → RabbitMQ → Celery → OpenAI → PostgreSQL → Redis → FastAPI → Client
+Client → Laravel API → Redis Cache → PostgreSQL
+                              ↓
+                         OpenAI API (async job)
+                              ↓
+                         PostgreSQL → Redis → Client
 ```
 
-### 🧩 Zalety Architektury Hybrydowej
-- **Izolacja ryzyka** - publiczne API oddzielone od wewnętrznego
-- **Skalowalność** - niezależne skalowanie serwisów
-- **Zgodność z RapidAPI** - Python naturalny dla ML/AI
-- **Komfort pracy** - PHP dla domeny, Python dla AI
-- **Rozdział kosztów** - optymalizacja kosztów per serwis
+### 🧩 Zalety Architektury Laravel
+- **Prostota** - jeden framework dla API i admina
+- **Prędkość rozwoju** - Laravel ma wszystko out-of-the-box
+- **Async processing** - Laravel Horizon do zadań AI
+- **Skalowalność** - Horizon scale workers niezależnie
+- **Koszt** - tańsza infrastruktura i utrzymanie
+- **Deweloperski** - łatwiejsze debugowanie jednego stosu
+
+### 🔄 Ewolucja do Hybrydy (opcjonalnie w przyszłości)
+Jeśli kiedykolwiek będziesz potrzebował:
+- **RapidAPI deployment** → Dodaj FastAPI jako proxy
+- **Wysoka skala** (>10k req/min) → Wydziel publiczne API
+- **Zespół Python** → Daj im FastAPI, ty kontrolujesz Laravel admin
+
+📝 **Ale na start - Laravel wystarczy!**
 
 ---
 
-## 🇬🇧 Hybrid Architecture
+## 🇬🇧 Laravel Architecture
 
 ### 🏗️ System Components
 
-| Component      | Technology   | Role        | Port   |
-| -----------    | ------------ | ------      | ------ |
-| **FastAPI**    | Python 3.11+ | Public API  | 8000   |
-| **Symfony**    | PHP 8.3+     | Admin Panel | 8001   |
-| **Celery**     | Python       | AI Worker   | -      |
-| **PostgreSQL** | 15+          | Database    | 5432   |
-| **Redis**      | 7+           | Cache       | 6379   |
-| **RabbitMQ**   | 3+           | Task Queue  | 5672   |
+| Component      | Technology   | Role              | Port   |
+| ---------------| ------------ | ------------------ | ------ |
+| **Laravel API**| PHP 8.3+     | Public API + Admin | 8000   |
+| **PostgreSQL** | 15+          | Database           | 5432   |
+| **Redis**      | 7+           | Cache              | 6379   |
+| **Horizon**    | Laravel Queue| Async task queue   | 8001   |
+| **OpenAI API** | External     | AI content gen      | -      |
 
 ### 🔄 Data Flow
 ```
-RapidAPI → FastAPI → RabbitMQ → Celery → OpenAI → PostgreSQL → Redis → FastAPI → Client
+Client → Laravel API → Redis Cache → PostgreSQL
+                              ↓
+                         OpenAI API (async job)
+                              ↓
+                         PostgreSQL → Redis → Client
 ```
 
-### 🧩 Hybrid Architecture Benefits
-- **Risk isolation** - public API separated from internal
-- **Scalability** - independent service scaling
-- **RapidAPI compatibility** - Python natural for ML/AI
-- **Work comfort** - PHP for domain, Python for AI
-- **Cost separation** - cost optimization per service
+### 🧩 Laravel Architecture Benefits
+- **Simplicity** - single framework for API and admin
+- **Development speed** - Laravel has everything out-of-the-box
+- **Async processing** - Laravel Horizon for AI tasks
+- **Scalability** - Horizon scale workers independently
+- **Cost** - cheaper infrastructure and maintenance
+- **Developer experience** - easier debugging of single stack
+
+### 🔄 Evolution to Hybrid (optional future)
+If you ever need:
+- **RapidAPI deployment** → Add FastAPI as proxy
+- **High scale** (>10k req/min) → Extract public API
+- **Python team** → Give them FastAPI, you control Laravel admin
+
+📝 **But for start - Laravel is enough!**
 
 ---
 
@@ -883,18 +907,18 @@ return [
 
 | Tydzień   | Etap              | Zadania                         | Deliverables          |
 | --------- | ------            | ---------                       | --------------        |
-| **1-2**   | Foundation        | Setup, Docker, DB schema        | Działające środowisko |
-| **3-4**   | AI Integration    | OpenAI, Celery, Quality scoring | Generacja opisów      |
+| **1-2**   | Foundation        | Setup, Docker, DB schema, Laravel | Działające środowisko |
+| **3-4**   | AI Integration    | OpenAI, Laravel Horizon, Quality scoring | Generacja opisów      |
 | **5-6**   | Multilingual      | i18n, Translation, Glossary     | 5+ języków            |
 | **7-8**   | Advanced Features | Style packs, Analytics          | Zaawansowane funkcje  |
 | **9-10**  | Monetization      | RapidAPI, Billing               | Produkt gotowy        |
 
 ### 🎯 Milestones
-- **Tydzień 2** - MVP Publiczne repo gotowe
-- **Tydzień 4** - AI integration działająca
+- **Tydzień 2** - Laravel MVP Publiczne repo gotowe
+- **Tydzień 4** - AI integration działająca (Laravel + OpenAI)
 - **Tydzień 6** - Wielojęzyczność wdrożona
 - **Tydzień 8** - Zaawansowane funkcje
-- **Tydzień 10** - Produkt na RapidAPI
+- **Tydzień 10** - Produkt gotowy (opcjonalnie: dodaj FastAPI jako proxy)
 
 ---
 
@@ -904,28 +928,72 @@ return [
 
 | Week     | Stage             | Tasks                           | Deliverables           |
 | ------   | -------           | -------                         | --------------         |
-| **1-2**  | Foundation        | Setup, Docker, DB schema        | Working environment    |
-| **3-4**  | AI Integration    | OpenAI, Celery, Quality scoring | Description generation |
+| **1-2**  | Foundation        | Setup, Docker, DB schema, Laravel | Working environment    |
+| **3-4**  | AI Integration    | OpenAI, Laravel Horizon, Quality scoring | Description generation |
 | **5-6**  | Multilingual      | i18n, Translation, Glossary     | 5+ languages           |
 | **7-8**  | Advanced Features | Style packs, Analytics          | Advanced features      |
 | **9-10** | Monetization      | RapidAPI, Billing               | Ready product          |
 
 ### 🎯 Milestones
-- **Week 2** - Public MVP repo ready
-- **Week 4** - AI integration working
+- **Week 2** - Laravel MVP Public repo ready
+- **Week 4** - AI integration working (Laravel + OpenAI)
 - **Week 6** - Multilingual implemented
 - **Week 8** - Advanced features
-- **Week 10** - Product on RapidAPI
+- **Week 10** - Ready product (optional: add FastAPI as proxy)
 
 ---
 
 ## 🎯 Podsumowanie / Summary
 
 ### 🇵🇱
-**MovieMind API** to ambitny projekt, który łączy najlepsze praktyki architektury hybrydowej z zaawansowanymi możliwościami AI. Dzięki strategii dual-repository możemy jednocześnie budować portfolio i komercyjny produkt.
+**MovieMind API** to ambitny projekt, który łączy najlepsze praktyki architektury Laravel z zaawansowanymi możliwościami AI. Dzięki strategii dual-repository możemy jednocześnie budować portfolio i komercyjny produkt. Architektura Laravel-only upraszcza MVP, a w przyszłości można ewoluować do hybrydy jeśli będzie potrzeba.
 
 ### 🇬🇧
-**MovieMind API** is an ambitious project that combines best practices of hybrid architecture with advanced AI capabilities. Through the dual-repository strategy, we can simultaneously build a portfolio and a commercial product.
+**MovieMind API** is an ambitious project that combines best practices of Laravel architecture with advanced AI capabilities. Through the dual-repository strategy, we can simultaneously build a portfolio and a commercial product. Laravel-only architecture simplifies MVP, and in the future can evolve to hybrid if needed.
+
+---
+
+## 🔄 Ewolucja Architektury / Architecture Evolution
+
+### 🇵🇱 Strategia Ewolucyjna
+
+**Faza 1 (MVP): Wszystko w Laravel** ✅ Aktualne
+- Jeden framework = szybszy rozwój
+- Prostsze utrzymanie i debugowanie
+- Tańsza infrastruktura
+- Laravel Horizon dla async jobs
+
+**Faza 2 (opcjonalnie, jeśli potrzeba): Wydzielenie Public API**
+Jeśli pojawi się potrzeba:
+- **RapidAPI deployment** → Dodaj FastAPI jako reverse proxy
+- **Wysoka skala** (>10k req/min) → Wydziel publiczne API do FastAPI
+- **Zespół Python** → Daj im FastAPI, ty kontrolujesz Laravel admin
+
+**Kiedy rozdzielać?**
+- ✅ Publikujesz API na RapidAPI
+- ✅ Masz >10k requestów/minutę
+- ✅ Potrzebujesz zaawansowanych Python AI pipeline'ów
+- ✅ Masz osobny zespół Python
+
+### 🇬🇧 Evolutionary Strategy
+
+**Phase 1 (MVP): Everything in Laravel** ✅ Current
+- Single framework = faster development
+- Simpler maintenance and debugging
+- Cheaper infrastructure
+- Laravel Horizon for async jobs
+
+**Phase 2 (optional, if needed): Extract Public API**
+If need arises:
+- **RapidAPI deployment** → Add FastAPI as reverse proxy
+- **High scale** (>10k req/min) → Extract public API to FastAPI
+- **Python team** → Give them FastAPI, you control Laravel admin
+
+**When to split?**
+- ✅ Publishing API on RapidAPI
+- ✅ Have >10k requests/minute
+- ✅ Need advanced Python AI pipelines
+- ✅ Have separate Python team
 
 ---
 
