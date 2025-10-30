@@ -62,7 +62,7 @@ Movie::where('release_year', '>', 2020)->get();
 
 ### 🔤 Podstawowe Terminy
 | Termin | Opis | Przykład |
-|-------|------|---------|
+| --- | --- | --- |
 | Artisan | CLI narzędzie | `php artisan make:controller MovieController` |
 | Blade | System szablonów | `@if($movie) {{ $movie->title }} @endif` |
 | Eloquent | ORM Laravel | `Movie::find(1)` |
