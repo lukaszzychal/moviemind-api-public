@@ -8,12 +8,14 @@ use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
 use App\Repositories\PersonRepository;
 use App\Services\HateoasService;
+use App\Services\AiServiceInterface;
 
 class PersonController extends Controller
 {
     public function __construct(
         private readonly PersonRepository $personRepository,
-        private readonly HateoasService $hateoas
+        private readonly HateoasService $hateoas,
+        private readonly AiServiceInterface $ai
     ) {}
     public function show(string $slug)
     {
@@ -29,6 +31,7 @@ class PersonController extends Controller
         }
 
         $jobId = (string) Str::uuid();
+        $this->ai->queuePersonGeneration($slug, $jobId);
         return response()->json([
             'job_id' => $jobId,
             'status' => 'PENDING',

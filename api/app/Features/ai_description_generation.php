@@ -11,6 +11,6 @@ class ai_description_generation
      */
     public function resolve(mixed $scope): mixed
     {
-        return false;
+        return true;
     }
 }
