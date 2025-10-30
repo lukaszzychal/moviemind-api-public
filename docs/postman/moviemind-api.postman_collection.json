@@ -15,7 +15,16 @@
           "path": ["api","v1","movies"],
           "query": [{"key":"q","value":"matrix"}]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\"\n    }\n  ]\n}"
+        }
+      ]
     },
     {
       "name": "Movies - Show (by slug)",
@@ -26,7 +35,16 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","movies","the-matrix"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 10,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality...\",\n    \"context_tag\": \"modern\"\n  }\n}"
+        }
+      ]
     },
     {
       "name": "People - Show (by slug)",
@@ -37,7 +55,16 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","people","christopher-nolan"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"id\": 123,\n  \"slug\": \"christopher-nolan\",\n  \"name\": \"Christopher Nolan\",\n  \"bios\": [ { \"locale\": \"en-US\", \"text\": \"Short bio...\" } ],\n  \"movies\": [ { \"id\": 2, \"slug\": \"inception\", \"title\": \"Inception\" } ]\n}"
+        }
+      ]
     },
     {
       "name": "Generate - MOVIE",
@@ -53,7 +80,23 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","generate"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\"\n}"
+        },
+        {
+          "name": "403 Feature off",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"error\": \"Feature not available\"\n}"
+        }
+      ]
     },
     {
       "name": "Generate - PERSON",
@@ -69,7 +112,23 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","generate"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\"\n}"
+        },
+        {
+          "name": "403 Feature off",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"error\": \"Feature not available\"\n}"
+        }
+      ]
     },
     {
       "name": "Jobs - Show",
@@ -80,7 +139,16 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","jobs","{{jobId}}"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\\n  \\\"id\\\": \\\"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\\\",\\n  \\\"status\\\": \\\"PENDING\\\"\\n}"
+        }
+      ]
     }
     ,
     {
@@ -92,7 +160,16 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","movies","annihilation"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "202 Accepted",
+          "status": "Accepted",
+          "code": 202,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"job_id\": \"c6de4a2f-1111-2222-3333-abcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"slug\": \"annihilation\"\n}"
+        }
+      ]
     },
     {
       "name": "People - Show (missing slug => 202 when generation on)",
@@ -103,7 +180,16 @@
           "host": ["{{baseUrl}}"],
           "path": ["api","v1","people","john-doe"]
         }
-      }
+      },
+      "response": [
+        {
+          "name": "202 Accepted",
+          "status": "Accepted",
+          "code": 202,
+          "header": [{"key":"Content-Type","value":"application/json"}],
+          "body": "{\n  \"job_id\": \"d7ee4a2f-4444-5555-6666-bbcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"slug\": \"john-doe\"\n}"
+        }
+      ]
     },
     {
       "name": "Admin",
