@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: MovieMind API
+  version: 1.0.0
+  description: |
+    Public REST API for movies and people with AI-powered descriptions and bios.
+    Uses slug-based resource identifiers. When data is missing and the corresponding
+    feature flag is enabled, endpoints return 202 Accepted and queue generation.
+servers:
+  - url: http://localhost:8000/api
+    description: Local
+  - url: https://api.example.com/api
+    description: Production (example)
+tags:
+  - name: Movies
+  - name: People
+  - name: Actors
+  - name: Generation
+  - name: Jobs
+  - name: Admin
+paths:
+  /v1/movies:
+    get:
+      tags: [Movies]
+      summary: List movies
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (title, director, genre)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Movie'
+  /v1/movies/{slug}:
+    get:
+      tags: [Movies]
+      summary: Get movie by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieFull'
+        '202':
+          description: Accepted - generation queued (feature flag on)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+        '404':
+          description: Not Found (feature flag off)
+  /v1/people/{slug}:
+    get:
+      tags: [People]
+      summary: Get person by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonFull'
+        '202':
+          description: Accepted - generation queued (feature flag on)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+        '404':
+          description: Not Found (feature flag off)
+  /v1/actors/{id}:
+    get:
+      tags: [Actors]
+      summary: Get actor by ID (legacy compatibility)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /v1/generate:
+    post:
+      tags: [Generation]
+      summary: Queue generation for an entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Accepted (mock)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+        '403':
+          description: Feature not available
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /v1/jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get job status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /v1/admin/flags:
+    get:
+      tags: [Admin]
+      summary: List feature flags
+      responses:
+        '200':
+          description: OK
+  /v1/admin/flags/{name}:
+    post:
+      tags: [Admin]
+      summary: Toggle a feature flag
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                  enum: [on, off]
+      responses:
+        '200':
+          description: OK
+  /v1/admin/flags/usage:
+    get:
+      tags: [Admin]
+      summary: Flags usage metrics
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    Genre:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+    Movie:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        release_year:
+          type: integer
+          nullable: true
+        director:
+          type: string
+          nullable: true
+    MovieDescription:
+      type: object
+      properties:
+        id:
+          type: integer
+        locale:
+          type: string
+        text:
+          type: string
+        context_tag:
+          type: string
+        origin:
+          type: string
+        ai_model:
+          type: string
+    MovieFull:
+      allOf:
+        - $ref: '#/components/schemas/Movie'
+        - type: object
+          properties:
+            default_description:
+              $ref: '#/components/schemas/MovieDescription'
+            descriptions:
+              type: array
+              items:
+                $ref: '#/components/schemas/MovieDescription'
+            genres:
+              type: array
+              items:
+                $ref: '#/components/schemas/Genre'
+            people:
+              type: array
+              items:
+                $ref: '#/components/schemas/Person'
+    Person:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        birthplace:
+          type: string
+          nullable: true
+    PersonBio:
+      type: object
+      properties:
+        id:
+          type: integer
+        locale:
+          type: string
+        text:
+          type: string
+        context_tag:
+          type: string
+        origin:
+          type: string
+        ai_model:
+          type: string
+    PersonFull:
+      allOf:
+        - $ref: '#/components/schemas/Person'
+        - type: object
+          properties:
+            default_bio:
+              $ref: '#/components/schemas/PersonBio'
+            bios:
+              type: array
+              items:
+                $ref: '#/components/schemas/PersonBio'
+            movies:
+              type: array
+              items:
+                $ref: '#/components/schemas/Movie'
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity_type:
+          type: string
+          enum: [MOVIE, ACTOR, PERSON]
+        entity_id:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, DONE, FAILED]
+        payload_json:
+          type: object
+    AcceptedGeneration:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING]
+        slug:
+          type: string
+    GenerateRequest:
+      type: object
+      required: [entity_type, entity_id]
+      properties:
+        entity_type:
+          type: string
+          enum: [MOVIE, ACTOR, PERSON]
+        entity_id:
+          type: integer
+        locale:
+          type: string
+        context_tag:
+          type: string
+
+
