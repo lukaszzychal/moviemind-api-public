@@ -104,6 +104,59 @@
           "path": ["api","v1","people","john-doe"]
         }
       }
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Flags - List",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","flags"]
+            }
+          }
+        },
+        {
+          "name": "Flags - Toggle ai_description_generation (on)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"state\": \"on\"\n}"},
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags/ai_description_generation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","flags","ai_description_generation"]
+            }
+          }
+        },
+        {
+          "name": "Flags - Toggle ai_bio_generation (on)",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"state\": \"on\"\n}"},
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags/ai_bio_generation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","flags","ai_bio_generation"]
+            }
+          }
+        },
+        {
+          "name": "Flags - Usage",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags/usage",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","flags","usage"]
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [
