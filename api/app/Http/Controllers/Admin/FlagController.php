@@ -42,30 +42,45 @@ class FlagController extends Controller
 
     public function usage()
     {
-        $patterns = [
-            "Feature::active('" => 'active',
-            'Feature::inactive(' => 'inactive',
-            'Feature::for(' => 'scoped',
+        // Regex patterns to extract flag names and usage type
+        $regexes = [
+            ['type' => 'active', 'pattern' => "/Feature::active\\(\\s*['\"][A-Za-z0-9_]+['\"]\\s*\\)/"],
+            ['type' => 'inactive', 'pattern' => "/Feature::inactive\\(\\s*['\"][A-Za-z0-9_]+['\"]\\s*\\)/"],
+            ['type' => 'scoped', 'pattern' => "/Feature::for\\([^)]*\\)->(?:activate|deactivate)\\(\\s*['\"][A-Za-z0-9_]+['\"]\\s*\\)/"],
         ];
+
+        $extractName = function (string $snippet): ?string {
+            if (preg_match("/Feature::(?:active|inactive)\\(\\s*['\"]([A-Za-z0-9_]+)['\"]\\s*\\)/", $snippet, $m)) {
+                return $m[1] ?? null;
+            }
+            if (preg_match("/Feature::for\\([^)]*\\)->(?:activate|deactivate)\\(\\s*['\"]([A-Za-z0-9_]+)['\"]\\s*\\)/", $snippet, $m)) {
+                return $m[1] ?? null;
+            }
+            return null;
+        };
+
         $usage = [];
         $appPath = base_path('app');
         $files = File::allFiles($appPath);
         foreach ($files as $file) {
             if ($file->getExtension() !== 'php') continue;
             $contents = File::get($file->getRealPath());
-            foreach ($patterns as $needle => $type) {
-                $pos = 0;
-                while (($pos = strpos($contents, $needle, $pos)) !== false) {
-                    $line = substr_count(substr($contents, 0, $pos), "\n") + 1;
-                    $usage[] = [
-                        'file' => str_replace(base_path() . '/', '', $file->getRealPath()),
-                        'line' => $line,
-                        'pattern' => $type,
-                    ];
-                    $pos += strlen($needle);
+            foreach ($regexes as $rx) {
+                if (preg_match_all($rx['pattern'], $contents, $matches, PREG_OFFSET_CAPTURE)) {
+                    foreach ($matches[0] as $match) {
+                        [$snippet, $offset] = $match;
+                        $line = substr_count(substr($contents, 0, $offset), "\n") + 1;
+                        $usage[] = [
+                            'file' => str_replace(base_path() . '/', '', $file->getRealPath()),
+                            'line' => $line,
+                            'pattern' => $rx['type'],
+                            'name' => $extractName($snippet),
+                        ];
+                    }
                 }
             }
         }
+
         return response()->json(['usage' => $usage]);
     }
 
@@ -85,46 +100,46 @@ class FlagController extends Controller
     {
         return [
             // Core AI
-            'ai_description_generation' => 'Włącza generowanie opisów filmów/seriali przez AI.',
-            'ai_bio_generation' => 'Włącza generowanie biografii osób przez AI.',
-            'ai_translation_pipeline' => 'Pipeline tłumaczeń (translate-then-adapt).',
-            'ai_quality_scoring' => 'Ocena jakości treści wygenerowanych przez AI.',
-            'ai_plagiarism_detection' => 'Wykrywanie podobieństw/plagiatu treści AI.',
+            'ai_description_generation' => 'Enables AI-generated movie/series descriptions.',
+            'ai_bio_generation' => 'Enables AI-generated person biographies.',
+            'ai_translation_pipeline' => 'Translation pipeline (translate-then-adapt).',
+            'ai_quality_scoring' => 'Quality scoring for AI-generated content.',
+            'ai_plagiarism_detection' => 'Similarity/plagiarism detection for AI content.',
 
             // Experiments / versioning
-            'generate_v2_pipeline' => 'Eksperymentalny nowy flow generowania opisów (WIP/exp).',
-            'description_style_packs' => 'Style opisów (modern, critical, playful, …).',
-            'recommendation_engine' => 'System rekomendacji i podobieństw.',
+            'generate_v2_pipeline' => 'Experimental new generation flow (WIP/exp).',
+            'description_style_packs' => 'Description style packs (modern, critical, playful, …).',
+            'recommendation_engine' => 'Recommendations and similarity engine.',
 
             // Performance & cache
-            'redis_cache_descriptions' => 'Cache opisów w Redis.',
-            'redis_cache_bios' => 'Cache biografii w Redis.',
-            'prewarm_top_titles' => 'Pre-warming cache dla najpopularniejszych tytułów.',
+            'redis_cache_descriptions' => 'Cache descriptions in Redis.',
+            'redis_cache_bios' => 'Cache biographies in Redis.',
+            'prewarm_top_titles' => 'Pre-warm cache for top titles.',
 
             // i18n
-            'multilingual_support' => 'Globalne włączenie wielojęzyczności.',
-            'locale_auto_detect' => 'Automatyczna detekcja języka użytkownika/żądania.',
-            'glossary_enforcement' => 'Wymuszanie glosariusza (terminy bez tłumaczeń).',
+            'multilingual_support' => 'Global enablement of multilingual support.',
+            'locale_auto_detect' => 'Automatic user/request locale detection.',
+            'glossary_enforcement' => 'Glossary enforcement (non-translatable terms).',
 
             // Billing / monetization
-            'rate_limit_free_plan' => 'Dodatkowe limity dla planu Free.',
-            'webhook_billing' => 'Webhooki billingowe (RapidAPI/Stripe…).',
-            'usage_analytics' => 'Zbieranie i raportowanie użycia API.',
+            'rate_limit_free_plan' => 'Additional rate limits for the Free plan.',
+            'webhook_billing' => 'Billing webhooks (RapidAPI/Stripe…).',
+            'usage_analytics' => 'Collect and report API usage analytics.',
 
             // Public API
-            'public_search_advanced' => 'Zaawansowane wyszukiwanie (fuzzy, aliasy, embeddings).',
-            'public_jobs_polling' => 'Polling statusów zadań (jobs) po publicznym API.',
-            'api_v1_deprecation_notice' => 'Komunikaty deprecjacji API v1.',
+            'public_search_advanced' => 'Advanced search (fuzzy, aliases, embeddings).',
+            'public_jobs_polling' => 'Polling job statuses via public API.',
+            'api_v1_deprecation_notice' => 'API v1 deprecation notices.',
 
             // Moderation / quality
-            'human_moderation_required' => 'Ręczna moderacja treści przed publikacją.',
-            'toxicity_filter' => 'Filtr treści toksycznych/NSFW.',
-            'hallucination_guard' => 'Straże anty-halucynacyjne dla AI.',
+            'human_moderation_required' => 'Require manual moderation before publishing.',
+            'toxicity_filter' => 'Toxic/NSFW content filtering.',
+            'hallucination_guard' => 'Anti-hallucination guards for AI.',
 
             // Admin / ops
-            'admin_flag_console' => 'Konsola/endpoint admin do zarządzania flagami.',
-            'admin_bulk_regeneration' => 'Masowe regeneracje treści.',
-            'admin_edit_lock' => 'Blokady edycji podczas operacji wsadowych.',
+            'admin_flag_console' => 'Admin console/endpoint for managing flags.',
+            'admin_bulk_regeneration' => 'Bulk content regenerations.',
+            'admin_edit_lock' => 'Edit locks during batch/ops actions.',
         ];
     }
 }
