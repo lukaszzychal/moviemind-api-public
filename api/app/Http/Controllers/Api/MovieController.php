@@ -4,33 +4,27 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Movie;
+use App\Repositories\MovieRepository;
+use App\Services\HateoasService;
 use Laravel\Pennant\Feature;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class MovieController extends Controller
 {
+    public function __construct(
+        private readonly MovieRepository $movieRepository,
+        private readonly HateoasService $hateoas
+    ) {}
+
     public function index(Request $request)
     {
         $q = $request->query('q');
-        $movies = Movie::query()
-            ->when($q, function ($query) use ($q) {
-                $query->where('title', 'ILIKE', "%$q%")
-                      ->orWhere('director', 'ILIKE', "%$q%")
-                      ->orWhereHas('genres', function ($qg) use ($q) {
-                          $qg->where('name', 'ILIKE', "%$q%");
-                      });
-            })
-            ->with(['defaultDescription', 'genres', 'people'])
-            ->limit(50)
-            ->get();
+        $movies = $this->movieRepository->searchMovies($q, 50);
 
         $data = $movies->map(function (Movie $m) {
             $arr = $m->toArray();
-            $arr['_links'] = [
-                'self' => url("/api/v1/movies/{$m->slug}"),
-                'people' => url("/api/v1/movies/{$m->slug}"), // same resource contains embedded people
-            ];
+            $arr['_links'] = $this->hateoas->movieLinks($m);
             return $arr;
         });
 
@@ -39,21 +33,10 @@ class MovieController extends Controller
 
     public function show(string $slug)
     {
-        $movie = Movie::with(['descriptions', 'defaultDescription'])->where('slug', $slug)->first();
+        $movie = $this->movieRepository->findBySlugWithRelations($slug);
         if ($movie) {
             $payload = $movie->toArray();
-            $payload['_links'] = [
-                'self' => url("/api/v1/movies/{$movie->slug}"),
-                'people' => url("/api/v1/movies/{$movie->slug}"),
-                'generate' => [
-                    'href' => url('/api/v1/generate'),
-                    'method' => 'POST',
-                    'body' => [
-                        'entity_type' => 'MOVIE',
-                        'entity_id' => $movie->id,
-                    ],
-                ],
-            ];
+            $payload['_links'] = $this->hateoas->movieLinks($movie);
             return response()->json($payload);
         }
 
