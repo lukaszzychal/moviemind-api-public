@@ -33,7 +33,15 @@ class AdminFlagsTest extends TestCase
     public function test_usage_endpoint(): void
     {
         $res = $this->getJson('/api/v1/admin/flags/usage');
-        $res->assertOk()->assertJsonStructure(['usage']);
+        $res->assertOk()->assertJsonStructure(['usage' => [['file','line','pattern','name']]]);
+
+        // Ensure GenerateController usage includes a flag name
+        $entries = collect($res->json('usage'))
+            ->where('file', 'app/Http/Controllers/Api/GenerateController.php')
+            ->values();
+        if ($entries->isNotEmpty()) {
+            $this->assertNotEmpty($entries[0]['name'] ?? null);
+        }
     }
 }
 
