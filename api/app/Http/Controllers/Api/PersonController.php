@@ -6,18 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\Person;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
+use App\Repositories\PersonRepository;
+use App\Services\HateoasService;
 
 class PersonController extends Controller
 {
+    public function __construct(
+        private readonly PersonRepository $personRepository,
+        private readonly HateoasService $hateoas
+    ) {}
     public function show(string $slug)
     {
-        $person = Person::with(['bios', 'defaultBio', 'movies'])->where('slug', $slug)->first();
+        $person = $this->personRepository->findBySlugWithRelations($slug);
         if ($person) {
             $payload = $person->toArray();
-            $payload['_links'] = [
-                'self' => url("/api/v1/people/{$person->slug}"),
-                'movies' => url('/api/v1/movies'),
-            ];
+            $payload['_links'] = $this->hateoas->personLinks($person);
             return response()->json($payload);
         }
 
