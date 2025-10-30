@@ -83,7 +83,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
-          args: "detect --no-git --source=."
         continue-on-error: true
 
   docker-build:
