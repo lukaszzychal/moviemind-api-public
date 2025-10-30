@@ -159,7 +159,7 @@ Goal: AI integration and description generation
 Tasks:
 - [ ] OpenAI integration — connection to GPT-4o
 - [ ] Prompt engineering — templates for different contexts
--/ [ ] Async processing — Celery for long tasks
+- [ ] Async processing — Celery for long tasks
 - [ ] Quality scoring — content quality assessment
 - [ ] Plagiarism detection — similarity detection
 - [ ] Version management — description version storage
