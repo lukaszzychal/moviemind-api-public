@@ -164,7 +164,8 @@ Zwróć tylko czysty tekst.
 
 2. **Environment Setup**
    ```bash
-   cp .env.example .env
+   # Choose template from env/ and copy as .env
+   cp env/local.env.example .env
    # Edit .env and add your OpenAI API key
    ```
 
@@ -173,7 +174,7 @@ Zwróć tylko czysty tekst.
    docker-compose up -d --build
    ```
 
-4. **Initialize Laravel (inside php container)**
+4. **Initialize Laravel (inside php container, runs as non-root user)**
    ```bash
    docker-compose exec php bash -lc "composer create-project laravel/laravel . || true"
    docker-compose exec php bash -lc "cp -n .env.example .env || true && php artisan key:generate"
