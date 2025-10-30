@@ -377,22 +377,22 @@ moviemind-api-public/
 │   └── pre-commit-setup.md
 ├── scripts/
 │   └── setup-pre-commit.sh
-├── src-fastapi/          # Python FastAPI (publiczne API)
+├── api/                  # PHP Laravel (API + Admin)
 │   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── models/
-│   │   └── services/
-│   ├── requirements.txt
-│   └── Dockerfile
-├── src-laravel/          # PHP Laravel (admin panel)
-│   ├── src/
-│   │   ├── Controller/
-│   │   ├── Model/
-│   │   ├── Service/
-│   │   └── Mock/ (mock AI services)
+│   │   ├── Http/Controllers/
+│   │   │   ├── Api/
+│   │   │   └── Admin/
+│   │   ├── Models/
+│   │   ├── Features/      # Laravel Pennant flags
+│   │   └── ...
+│   ├── routes/
+│   │   ├── api.php        # /api/v1/* i /api/v1/admin/*
+│   │   └── web.php
+│   ├── database/
+│   │   ├── migrations/
+│   │   └── seeders/
 │   ├── composer.json
-│   └── Dockerfile
+│   └── artisan
 ├── tests/
 ├── docker/
 ├── .env.example

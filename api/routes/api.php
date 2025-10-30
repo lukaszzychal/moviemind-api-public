@@ -15,7 +15,7 @@ Route::prefix('v1')->group(function () {
     Route::get('jobs/{id}', [JobsController::class, 'show']);
 });
 
-Route::prefix('admin/flags')->group(function () {
+Route::prefix('v1/admin/flags')->group(function () {
     Route::get('/', [FlagController::class, 'index']);
     Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
     Route::get('usage', [FlagController::class, 'usage']);
