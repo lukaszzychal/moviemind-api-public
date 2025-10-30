@@ -12,5 +12,3 @@ class ai_bio_generation
         return true;
     }
 }
-
-

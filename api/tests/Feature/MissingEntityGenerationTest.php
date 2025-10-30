@@ -21,7 +21,7 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_description_generation');
         $res = $this->getJson('/api/v1/movies/annihilation');
-        $res->assertStatus(202)->assertJsonStructure(['job_id','status','slug']);
+        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug']);
     }
 
     public function test_movie_missing_returns_404_when_flag_off(): void
@@ -35,7 +35,7 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_bio_generation');
         $res = $this->getJson('/api/v1/people/john-doe');
-        $res->assertStatus(202)->assertJsonStructure(['job_id','status','slug']);
+        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug']);
     }
 
     public function test_person_missing_returns_404_when_flag_off(): void
@@ -45,5 +45,3 @@ class MissingEntityGenerationTest extends TestCase
         $res->assertStatus(404);
     }
 }
-
-

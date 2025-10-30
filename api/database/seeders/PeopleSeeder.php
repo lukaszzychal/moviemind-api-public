@@ -35,5 +35,3 @@ class PeopleSeeder extends Seeder
         }
     }
 }
-
-

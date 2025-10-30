@@ -12,5 +12,3 @@ class recommendation_engine
         return false;
     }
 }
-
-

@@ -12,5 +12,3 @@ class description_style_packs
         return false;
     }
 }
-
-

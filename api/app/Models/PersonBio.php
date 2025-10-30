@@ -28,5 +28,3 @@ class PersonBio extends Model
         return $this->belongsTo(Person::class);
     }
 }
-
-

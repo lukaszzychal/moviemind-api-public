@@ -25,6 +25,7 @@ class MockAiService implements AiServiceInterface
                 'slug' => $slug,
                 'id' => $already->id,
             ], now()->addMinutes(15));
+
             return;
         }
 
@@ -49,6 +50,7 @@ class MockAiService implements AiServiceInterface
                         'slug' => $slug,
                         'id' => $existing->id,
                     ], now()->addMinutes(15));
+
                     return;
                 }
 
@@ -57,10 +59,10 @@ class MockAiService implements AiServiceInterface
                 $title = $parsed['title'] ?? Str::of($slug)->replace('-', ' ')->title();
                 $releaseYear = $parsed['year'] ?? 1999;
                 $director = $parsed['director'] ?? 'Mock AI Director';
-                
+
                 // Generate unique slug using the new method (handles duplicates)
                 $uniqueSlug = Movie::generateSlug($title, $releaseYear, $director);
-                
+
                 $movie = Movie::create([
                     'title' => (string) $title,
                     'slug' => $uniqueSlug,
@@ -116,6 +118,7 @@ class MockAiService implements AiServiceInterface
                 'slug' => $slug,
                 'id' => $already->id,
             ], now()->addMinutes(15));
+
             return;
         }
 
@@ -140,6 +143,7 @@ class MockAiService implements AiServiceInterface
                         'slug' => $slug,
                         'id' => $existing->id,
                     ], now()->addMinutes(15));
+
                     return;
                 }
 
@@ -188,8 +192,6 @@ class MockAiService implements AiServiceInterface
 
     private function cacheKey(string $jobId): string
     {
-        return "ai_job:" . $jobId;
+        return 'ai_job:'.$jobId;
     }
 }
-
-

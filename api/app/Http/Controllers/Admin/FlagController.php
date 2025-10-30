@@ -21,6 +21,7 @@ class FlagController extends Controller
                 'description' => $descriptions[$flag] ?? null,
             ];
         }
+
         return response()->json(['data' => $data]);
     }
 
@@ -34,6 +35,7 @@ class FlagController extends Controller
         } else {
             Feature::deactivate($name);
         }
+
         return response()->json([
             'name' => $name,
             'active' => (bool) Feature::active($name),
@@ -56,6 +58,7 @@ class FlagController extends Controller
             if (preg_match("/Feature::for\\([^)]*\\)->(?:activate|deactivate)\\(\\s*['\"]([A-Za-z0-9_]+)['\"]\\s*\\)/", $snippet, $m)) {
                 return $m[1] ?? null;
             }
+
             return null;
         };
 
@@ -63,7 +66,9 @@ class FlagController extends Controller
         $appPath = base_path('app');
         $files = File::allFiles($appPath);
         foreach ($files as $file) {
-            if ($file->getExtension() !== 'php') continue;
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
             $contents = File::get($file->getRealPath());
             foreach ($regexes as $rx) {
                 if (preg_match_all($rx['pattern'], $contents, $matches, PREG_OFFSET_CAPTURE)) {
@@ -71,7 +76,7 @@ class FlagController extends Controller
                         [$snippet, $offset] = $match;
                         $line = substr_count(substr($contents, 0, $offset), "\n") + 1;
                         $usage[] = [
-                            'file' => str_replace(base_path() . '/', '', $file->getRealPath()),
+                            'file' => str_replace(base_path().'/', '', $file->getRealPath()),
                             'line' => $line,
                             'pattern' => $rx['type'],
                             'name' => $extractName($snippet),
@@ -87,12 +92,15 @@ class FlagController extends Controller
     private function listFeatureClasses(): array
     {
         $dir = app_path('Features');
-        if (!File::exists($dir)) return [];
+        if (! File::exists($dir)) {
+            return [];
+        }
         $flags = [];
         foreach (File::files($dir) as $file) {
             $name = pathinfo($file->getFilename(), PATHINFO_FILENAME);
             $flags[] = $name;
         }
+
         return $flags;
     }
 

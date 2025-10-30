@@ -12,5 +12,3 @@ class admin_edit_lock
         return false;
     }
 }
-
-

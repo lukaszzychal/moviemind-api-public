@@ -12,5 +12,3 @@ class generate_v2_pipeline
         return false;
     }
 }
-
-

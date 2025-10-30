@@ -17,4 +17,3 @@ enum DescriptionOrigin: string
         return in_array($value, self::values(), true);
     }
 }
-

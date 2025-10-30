@@ -12,5 +12,3 @@ class webhook_billing
         return false;
     }
 }
-
-

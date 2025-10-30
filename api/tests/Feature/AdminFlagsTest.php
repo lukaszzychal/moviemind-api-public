@@ -20,7 +20,7 @@ class AdminFlagsTest extends TestCase
     public function test_list_flags(): void
     {
         $res = $this->getJson('/api/v1/admin/flags');
-        $res->assertOk()->assertJsonStructure(['data' => [['name','active','description']]]);
+        $res->assertOk()->assertJsonStructure(['data' => [['name', 'active', 'description']]]);
     }
 
     public function test_toggle_flag(): void
@@ -33,7 +33,7 @@ class AdminFlagsTest extends TestCase
     public function test_usage_endpoint(): void
     {
         $res = $this->getJson('/api/v1/admin/flags/usage');
-        $res->assertOk()->assertJsonStructure(['usage' => [['file','line','pattern','name']]]);
+        $res->assertOk()->assertJsonStructure(['usage' => [['file', 'line', 'pattern', 'name']]]);
 
         // Ensure GenerateController usage includes a flag name
         $entries = collect($res->json('usage'))
@@ -44,5 +44,3 @@ class AdminFlagsTest extends TestCase
         }
     }
 }
-
-

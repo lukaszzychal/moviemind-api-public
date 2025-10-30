@@ -25,14 +25,15 @@ class ActorsApiTest extends TestCase
 
         $personId = null;
         foreach ($movies->json('data') as $m) {
-            if (!empty($m['people'][0]['id'])) { $personId = $m['people'][0]['id']; break; }
+            if (! empty($m['people'][0]['id'])) {
+                $personId = $m['people'][0]['id'];
+                break;
+            }
         }
         $this->assertNotNull($personId, 'Expected at least one person linked to movies');
 
         $res = $this->getJson('/api/v1/actors/'.$personId);
         $res->assertOk()
-            ->assertJsonStructure(['id','name']);
+            ->assertJsonStructure(['id', 'name']);
     }
 }
-
-

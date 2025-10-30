@@ -33,5 +33,3 @@ class MovieDescription extends Model
         return $this->belongsTo(Movie::class);
     }
 }
-
-

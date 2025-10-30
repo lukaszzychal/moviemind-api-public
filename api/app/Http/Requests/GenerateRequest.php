@@ -44,4 +44,3 @@ class GenerateRequest extends FormRequest
         ];
     }
 }
-

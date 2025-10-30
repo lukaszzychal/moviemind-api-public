@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('scope')->default('__laravel_null');
             $table->json('value');
             $table->timestamps();
-            $table->unique(['name','scope']);
+            $table->unique(['name', 'scope']);
         });
     }
 
@@ -22,5 +22,3 @@ return new class extends Migration
         Schema::dropIfExists('features');
     }
 };
-
-

@@ -1,12 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\MovieController;
+use App\Http\Controllers\Admin\FlagController;
 use App\Http\Controllers\Api\ActorController;
 use App\Http\Controllers\Api\GenerateController;
 use App\Http\Controllers\Api\JobsController;
+use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\PersonController;
-use App\Http\Controllers\Admin\FlagController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
@@ -22,5 +22,3 @@ Route::prefix('v1/admin/flags')->group(function () {
     Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
     Route::get('usage', [FlagController::class, 'usage']);
 });
-
-

@@ -12,5 +12,3 @@ class ai_plagiarism_detection
         return false;
     }
 }
-
-

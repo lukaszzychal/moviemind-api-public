@@ -12,5 +12,3 @@ class prewarm_top_titles
         return false;
     }
 }
-
-

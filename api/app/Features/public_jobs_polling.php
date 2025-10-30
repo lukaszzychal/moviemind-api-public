@@ -12,5 +12,3 @@ class public_jobs_polling
         return true;
     }
 }
-
-

@@ -12,5 +12,3 @@ class usage_analytics
         return true;
     }
 }
-
-

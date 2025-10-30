@@ -21,7 +21,7 @@ enum ContextTag: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::DEFAULT => 'Default',
             self::MODERN => 'Modern',
             self::CRITICAL => 'Critical',
@@ -29,4 +29,3 @@ enum ContextTag: string
         };
     }
 }
-

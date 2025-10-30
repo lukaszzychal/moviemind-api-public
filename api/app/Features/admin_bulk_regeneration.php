@@ -12,5 +12,3 @@ class admin_bulk_regeneration
         return false;
     }
 }
-
-

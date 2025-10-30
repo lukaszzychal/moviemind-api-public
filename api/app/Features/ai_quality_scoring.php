@@ -12,5 +12,3 @@ class ai_quality_scoring
         return false;
     }
 }
-
-

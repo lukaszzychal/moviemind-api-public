@@ -22,7 +22,7 @@ enum Locale: string
 
     public function language(): string
     {
-        return match($this) {
+        return match ($this) {
             self::EN_US => 'English',
             self::PL_PL => 'Polish',
             self::DE_DE => 'German',
@@ -33,7 +33,7 @@ enum Locale: string
 
     public function country(): string
     {
-        return match($this) {
+        return match ($this) {
             self::EN_US => 'United States',
             self::PL_PL => 'Poland',
             self::DE_DE => 'Germany',
@@ -42,4 +42,3 @@ enum Locale: string
         };
     }
 }
-

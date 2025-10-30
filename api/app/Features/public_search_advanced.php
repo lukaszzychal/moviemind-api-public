@@ -12,5 +12,3 @@ class public_search_advanced
         return false;
     }
 }
-
-

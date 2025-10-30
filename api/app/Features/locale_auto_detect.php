@@ -12,5 +12,3 @@ class locale_auto_detect
         return false;
     }
 }
-
-

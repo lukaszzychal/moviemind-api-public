@@ -12,5 +12,3 @@ class redis_cache_bios
         return true;
     }
 }
-
-
