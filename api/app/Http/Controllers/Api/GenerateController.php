@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateRequest;
+use App\Services\AiServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
-use App\Services\AiServiceInterface;
 
 class GenerateController extends Controller
 {
@@ -62,5 +62,3 @@ class GenerateController extends Controller
         ], 202);
     }
 }
-
-

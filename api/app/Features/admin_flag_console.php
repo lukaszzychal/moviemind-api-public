@@ -12,5 +12,3 @@ class admin_flag_console
         return false;
     }
 }
-
-

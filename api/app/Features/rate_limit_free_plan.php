@@ -12,5 +12,3 @@ class rate_limit_free_plan
         return true;
     }
 }
-
-

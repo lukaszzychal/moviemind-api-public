@@ -42,7 +42,10 @@ class HateoasTest extends TestCase
         $movies->assertOk();
         $slug = null;
         foreach ($movies->json('data') as $m) {
-            if (!empty($m['people'][0]['slug'])) { $slug = $m['people'][0]['slug']; break; }
+            if (! empty($m['people'][0]['slug'])) {
+                $slug = $m['people'][0]['slug'];
+                break;
+            }
         }
         $this->assertNotNull($slug, 'Expected at least one linked person');
 
@@ -54,5 +57,3 @@ class HateoasTest extends TestCase
         $this->assertArrayHasKey('movies', $body['_links']);
     }
 }
-
-

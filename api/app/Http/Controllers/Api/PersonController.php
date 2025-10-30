@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Person;
+use App\Repositories\PersonRepository;
+use App\Services\AiServiceInterface;
+use App\Services\HateoasService;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
-use App\Repositories\PersonRepository;
-use App\Services\HateoasService;
-use App\Services\AiServiceInterface;
 
 class PersonController extends Controller
 {
@@ -17,12 +16,14 @@ class PersonController extends Controller
         private readonly HateoasService $hateoas,
         private readonly AiServiceInterface $ai
     ) {}
+
     public function show(string $slug)
     {
         $person = $this->personRepository->findBySlugWithRelations($slug);
         if ($person) {
             $payload = $person->toArray();
             $payload['_links'] = $this->hateoas->personLinks($person);
+
             return response()->json($payload);
         }
 
@@ -32,6 +33,7 @@ class PersonController extends Controller
 
         $jobId = (string) Str::uuid();
         $this->ai->queuePersonGeneration($slug, $jobId);
+
         return response()->json([
             'job_id' => $jobId,
             'status' => 'PENDING',
@@ -40,6 +42,3 @@ class PersonController extends Controller
         ], 202);
     }
 }
-
-
-

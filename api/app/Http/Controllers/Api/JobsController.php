@@ -22,8 +22,6 @@ class JobsController extends Controller
 
     private function cacheKey(string $jobId): string
     {
-        return "ai_job:" . $jobId;
+        return 'ai_job:'.$jobId;
     }
 }
-
-

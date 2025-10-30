@@ -21,13 +21,13 @@ class MoviesApiTest extends TestCase
         $response = $this->getJson('/api/v1/movies');
 
         $response->assertOk()
-                 ->assertJsonStructure([
-                     'data' => [
-                         '*' => [
-                             'id', 'title', 'release_year', 'director',
-                         ]
-                     ]
-                 ]);
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'title', 'release_year', 'director',
+                    ],
+                ],
+            ]);
     }
 
     public function test_show_movie_returns_ok(): void
@@ -37,8 +37,6 @@ class MoviesApiTest extends TestCase
 
         $response = $this->getJson('/api/v1/movies/'.$slug);
         $response->assertOk()
-                 ->assertJsonStructure(['id','slug','title']);
+            ->assertJsonStructure(['id', 'slug', 'title']);
     }
 }
-
-

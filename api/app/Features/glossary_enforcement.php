@@ -12,5 +12,3 @@ class glossary_enforcement
         return false;
     }
 }
-
-

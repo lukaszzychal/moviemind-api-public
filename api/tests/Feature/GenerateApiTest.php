@@ -27,7 +27,7 @@ class GenerateApiTest extends TestCase
         ]);
 
         $resp->assertStatus(403)
-             ->assertJson(['error' => 'Feature not available']);
+            ->assertJson(['error' => 'Feature not available']);
     }
 
     public function test_generate_movie_allowed_when_flag_on(): void
@@ -40,16 +40,16 @@ class GenerateApiTest extends TestCase
         ]);
 
         $resp->assertStatus(202)
-             ->assertJsonStructure([
-                 'job_id',
-                 'status',
-                 'message',
-                 'slug'
-             ])
-             ->assertJson([
-                 'status' => 'PENDING',
-                 'slug' => 'the-matrix',
-             ]);
+            ->assertJsonStructure([
+                'job_id',
+                'status',
+                'message',
+                'slug',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'the-matrix',
+            ]);
     }
 
     public function test_generate_person_blocked_when_flag_off(): void
@@ -62,7 +62,7 @@ class GenerateApiTest extends TestCase
         ]);
 
         $resp->assertStatus(403)
-             ->assertJson(['error' => 'Feature not available']);
+            ->assertJson(['error' => 'Feature not available']);
     }
 
     public function test_generate_person_allowed_when_flag_on(): void
@@ -75,16 +75,16 @@ class GenerateApiTest extends TestCase
         ]);
 
         $resp->assertStatus(202)
-             ->assertJsonStructure([
-                 'job_id',
-                 'status',
-                 'message',
-                 'slug'
-             ])
-             ->assertJson([
-                 'status' => 'PENDING',
-                 'slug' => 'keanu-reeves',
-             ]);
+            ->assertJsonStructure([
+                'job_id',
+                'status',
+                'message',
+                'slug',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'keanu-reeves',
+            ]);
     }
 
     public function test_generate_actor_returns_invalid_entity_type(): void
@@ -95,7 +95,7 @@ class GenerateApiTest extends TestCase
         ]);
 
         $resp->assertStatus(400)
-             ->assertJson(['error' => 'Invalid entity type']);
+            ->assertJson(['error' => 'Invalid entity type']);
     }
 
     public function test_generate_requires_string_entity_id(): void
@@ -106,8 +106,6 @@ class GenerateApiTest extends TestCase
         ]);
 
         $resp->assertStatus(422)
-             ->assertJsonValidationErrors(['entity_id']);
+            ->assertJsonValidationErrors(['entity_id']);
     }
 }
-
-

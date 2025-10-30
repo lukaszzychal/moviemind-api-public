@@ -8,5 +8,3 @@ interface AiServiceInterface
 
     public function queuePersonGeneration(string $slug, string $jobId): void;
 }
-
-

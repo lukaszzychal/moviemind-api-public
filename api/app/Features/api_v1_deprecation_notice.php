@@ -12,5 +12,3 @@ class api_v1_deprecation_notice
         return false;
     }
 }
-
-

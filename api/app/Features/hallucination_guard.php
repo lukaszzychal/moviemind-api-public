@@ -12,5 +12,3 @@ class hallucination_guard
         return true;
     }
 }
-
-

@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Movie;
 use App\Repositories\MovieRepository;
-use App\Services\HateoasService;
 use App\Services\AiServiceInterface;
-use Laravel\Pennant\Feature;
-use Illuminate\Support\Str;
+use App\Services\HateoasService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Laravel\Pennant\Feature;
 
 class MovieController extends Controller
 {
@@ -27,6 +27,7 @@ class MovieController extends Controller
         $data = $movies->map(function (Movie $m) {
             $arr = $m->toArray();
             $arr['_links'] = $this->hateoas->movieLinks($m);
+
             return $arr;
         });
 
@@ -57,12 +58,14 @@ class MovieController extends Controller
                             ];
                         })->toArray(),
                     ];
+
                     return response()->json($payload);
                 }
             }
-            
+
             $payload = $movie->toArray();
             $payload['_links'] = $this->hateoas->movieLinks($movie);
+
             return response()->json($payload);
         }
 
@@ -72,6 +75,7 @@ class MovieController extends Controller
 
         $jobId = (string) Str::uuid();
         $this->ai->queueMovieGeneration($slug, $jobId);
+
         return response()->json([
             'job_id' => $jobId,
             'status' => 'PENDING',
@@ -80,5 +84,3 @@ class MovieController extends Controller
         ], 202);
     }
 }
-
-

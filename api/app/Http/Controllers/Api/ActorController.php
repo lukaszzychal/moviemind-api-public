@@ -10,8 +10,7 @@ class ActorController extends Controller
     public function show(int $id)
     {
         $person = Person::with(['bios', 'defaultBio', 'movies'])->findOrFail($id);
+
         return response()->json($person);
     }
 }
-
-

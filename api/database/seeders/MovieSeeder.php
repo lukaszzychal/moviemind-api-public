@@ -5,11 +5,10 @@ namespace Database\Seeders;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
+use App\Models\Genre;
 use App\Models\Movie;
 use App\Models\MovieDescription;
-use App\Models\Genre;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class MovieSeeder extends Seeder
 {
@@ -65,5 +64,3 @@ class MovieSeeder extends Seeder
         $attach($inception, ['Action', 'Sci-Fi', 'Thriller']);
     }
 }
-
-

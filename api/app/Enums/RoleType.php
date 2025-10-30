@@ -9,5 +9,3 @@ enum RoleType: string
     case WRITER = 'WRITER';
     case PRODUCER = 'PRODUCER';
 }
-
-

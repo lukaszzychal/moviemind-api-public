@@ -30,5 +30,3 @@ class ActorSeeder extends Seeder
         $reeves->update(['default_bio_id' => $bio->id]);
     }
 }
-
-

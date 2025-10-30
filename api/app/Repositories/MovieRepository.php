@@ -28,11 +28,11 @@ class MovieRepository
         $movie = Movie::with(['descriptions', 'defaultDescription'])
             ->where('slug', $slug)
             ->first();
-        
+
         if ($movie) {
             return $movie;
         }
-        
+
         // If slug doesn't contain year, try to find by title only
         // This handles backwards compatibility with slugs without year
         $parsed = Movie::parseSlug($slug);
@@ -40,12 +40,13 @@ class MovieRepository
             // Try to match by title slug (without year)
             // Note: This may return the first match if multiple movies share the same title
             $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
+
             return Movie::with(['descriptions', 'defaultDescription'])
-                ->whereRaw("slug LIKE ?", ["{$titleSlug}%"])
+                ->whereRaw('slug LIKE ?', ["{$titleSlug}%"])
                 ->orderBy('release_year', 'desc') // Return most recent by default
                 ->first();
         }
-        
+
         return null;
     }
 
@@ -56,10 +57,8 @@ class MovieRepository
     public function findAllByTitleSlug(string $baseSlug): Collection
     {
         return Movie::with(['descriptions', 'defaultDescription'])
-            ->whereRaw("slug LIKE ?", ["{$baseSlug}%"])
+            ->whereRaw('slug LIKE ?', ["{$baseSlug}%"])
             ->orderBy('release_year', 'desc')
             ->get();
     }
 }
-
-

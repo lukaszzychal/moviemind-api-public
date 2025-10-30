@@ -24,5 +24,3 @@ return new class extends Migration
         DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_role_check');
     }
 };
-
-

@@ -43,5 +43,3 @@ class ActorToPersonSyncSeeder extends Seeder
         });
     }
 }
-
-

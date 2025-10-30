@@ -12,5 +12,3 @@ class redis_cache_descriptions
         return true;
     }
 }
-
-

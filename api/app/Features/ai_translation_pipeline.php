@@ -12,5 +12,3 @@ class ai_translation_pipeline
         return false;
     }
 }
-
-

@@ -32,5 +32,3 @@ class Actor extends Model
         return $this->hasOne(ActorBio::class, 'id', 'default_bio_id');
     }
 }
-
-

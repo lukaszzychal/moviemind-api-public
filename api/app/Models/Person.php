@@ -36,5 +36,3 @@ class Person extends Model
         return $this->hasOne(PersonBio::class, 'id', 'default_bio_id');
     }
 }
-
-

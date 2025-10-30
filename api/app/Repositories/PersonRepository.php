@@ -13,5 +13,3 @@ class PersonRepository
             ->first();
     }
 }
-
-

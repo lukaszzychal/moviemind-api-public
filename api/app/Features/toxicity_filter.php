@@ -12,5 +12,3 @@ class toxicity_filter
         return true;
     }
 }
-
-

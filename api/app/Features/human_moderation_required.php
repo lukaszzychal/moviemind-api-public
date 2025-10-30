@@ -12,5 +12,3 @@ class human_moderation_required
         return false;
     }
 }
-
-

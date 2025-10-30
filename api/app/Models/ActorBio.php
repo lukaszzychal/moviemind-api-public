@@ -33,5 +33,3 @@ class ActorBio extends Model
         return $this->belongsTo(Actor::class);
     }
 }
-
-
