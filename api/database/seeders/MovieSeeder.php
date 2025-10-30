@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Models\Genre;
 use Illuminate\Database\Seeder;
 
 class MovieSeeder extends Seeder
@@ -14,7 +15,6 @@ class MovieSeeder extends Seeder
             'title' => 'The Matrix',
             'release_year' => 1999,
             'director' => 'The Wachowskis',
-            'genres' => ['Action', 'Sci-Fi'],
         ]);
 
         $desc = MovieDescription::create([
@@ -32,7 +32,6 @@ class MovieSeeder extends Seeder
             'title' => 'Inception',
             'release_year' => 2010,
             'director' => 'Christopher Nolan',
-            'genres' => ['Action', 'Sci-Fi', 'Thriller'],
         ]);
 
         $desc2 = MovieDescription::create([
@@ -45,6 +44,19 @@ class MovieSeeder extends Seeder
         ]);
 
         $inception->update(['default_description_id' => $desc2->id]);
+
+        // attach genres via pivot
+        $attach = function (Movie $movie, array $names) {
+            $ids = [];
+            foreach ($names as $name) {
+                $genre = Genre::firstOrCreate(['slug' => \Illuminate\Support\Str::slug($name)], ['name' => $name]);
+                $ids[] = $genre->id;
+            }
+            $movie->genres()->syncWithoutDetaching($ids);
+        };
+
+        $attach($matrix, ['Action', 'Sci-Fi']);
+        $attach($inception, ['Action', 'Sci-Fi', 'Thriller']);
     }
 }
 
