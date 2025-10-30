@@ -9,7 +9,7 @@ class ai_bio_generation
 {
     public function resolve(mixed $scope): mixed
     {
-        return false;
+        return true;
     }
 }
 

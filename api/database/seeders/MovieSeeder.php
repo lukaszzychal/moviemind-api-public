@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ContextTag;
+use App\Enums\DescriptionOrigin;
+use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Models\Genre;
@@ -14,17 +17,17 @@ class MovieSeeder extends Seeder
     {
         $matrix = Movie::create([
             'title' => 'The Matrix',
-            'slug' => Str::slug('The Matrix'),
+            'slug' => Movie::generateSlug('The Matrix', 1999, 'The Wachowskis'),
             'release_year' => 1999,
             'director' => 'The Wachowskis',
         ]);
 
         $desc = MovieDescription::create([
             'movie_id' => $matrix->id,
-            'locale' => 'en-US',
+            'locale' => Locale::EN_US,
             'text' => 'A hacker discovers the truth about reality and leads a rebellion.',
-            'context_tag' => 'modern',
-            'origin' => 'GENERATED',
+            'context_tag' => ContextTag::MODERN,
+            'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => 'mock',
         ]);
 
@@ -32,17 +35,17 @@ class MovieSeeder extends Seeder
 
         $inception = Movie::create([
             'title' => 'Inception',
-            'slug' => Str::slug('Inception'),
+            'slug' => Movie::generateSlug('Inception', 2010, 'Christopher Nolan'),
             'release_year' => 2010,
             'director' => 'Christopher Nolan',
         ]);
 
         $desc2 = MovieDescription::create([
             'movie_id' => $inception->id,
-            'locale' => 'en-US',
+            'locale' => Locale::EN_US,
             'text' => 'A thief enters dreams to steal secrets, facing a final, complex mission.',
-            'context_tag' => 'modern',
-            'origin' => 'GENERATED',
+            'context_tag' => ContextTag::MODERN,
+            'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => 'mock',
         ]);
 
