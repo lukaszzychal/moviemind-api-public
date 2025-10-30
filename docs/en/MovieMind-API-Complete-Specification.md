@@ -247,6 +247,7 @@ services:
 - PostgreSQL data
 - Async AI generation (Laravel Jobs)
 - README and OpenAPI YAML
+ - Postman collection: `docs/postman/moviemind-api.postman_collection.json` (Admin endpoints are grouped under the `Admin` folder)
 
 ---
 

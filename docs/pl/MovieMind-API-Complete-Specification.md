@@ -430,6 +430,7 @@ services:
 - dane w PostgreSQL
 - async generacja opisów (Laravel Jobs)
 - README.md i OpenAPI YAML
+ - Kolekcja Postmana: `docs/postman/moviemind-api.postman_collection.json` (endpointy administracyjne w folderze `Admin`)
 
 ---
 
