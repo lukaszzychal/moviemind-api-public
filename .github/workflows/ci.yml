@@ -38,6 +38,12 @@ jobs:
         working-directory: api
         run: composer install --prefer-dist --no-progress --no-suggest
 
+      - name: Prepare environment
+        working-directory: api
+        run: |
+          php artisan key:generate --force || true
+          php artisan config:clear
+
       - name: Run unit/feature tests
         working-directory: api
         run: composer test
