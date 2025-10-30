@@ -1,0 +1,194 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, curl, libxml, zip
+
+      - name: Cache Composer packages
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Run tests
+        working-directory: api
+        run: composer test
+
+      - name: Run quality checks
+        working-directory: api
+        run: |
+          if [ -f vendor/bin/pint ]; then vendor/bin/pint -v --test; fi
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Extract version from tag (remove 'v' prefix)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Generate changelog for this version
+          echo "## Changes in v$VERSION" > release_notes.md
+          echo "" >> release_notes.md
+          
+          # Get the previous tag using multiple methods
+          echo "=== Tag Detection Debug ==="
+          
+          # Method 1: git describe
+          PREV_TAG_DESC=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          echo "Method 1 (git describe): $PREV_TAG_DESC"
+          
+          # Method 2: git tag list
+          ALL_TAGS=$(git tag --sort=-version:refname)
+          echo "Method 2 (git tag): $ALL_TAGS"
+          
+          # Method 3: fetch all tags first
+          git fetch --tags
+          ALL_TAGS_FETCHED=$(git tag --sort=-version:refname)
+          echo "Method 3 (after fetch): $ALL_TAGS_FETCHED"
+          
+          CURRENT_TAG="v$VERSION"
+          echo "Current tag: $CURRENT_TAG"
+          
+          # Use the best available method
+          if [ -n "$PREV_TAG_DESC" ]; then
+            PREV_TAG="$PREV_TAG_DESC"
+            echo "Using git describe: $PREV_TAG"
+          elif [ -n "$ALL_TAGS_FETCHED" ]; then
+            PREV_TAG=$(echo "$ALL_TAGS_FETCHED" | grep -A1 "^$CURRENT_TAG$" | tail -1)
+            echo "Using fetched tags: $PREV_TAG"
+          else
+            PREV_TAG=""
+            echo "No previous tag found"
+          fi
+          
+          echo "Final previous tag: $PREV_TAG"
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "### What's Changed" >> release_notes.md
+            git log --pretty=format:"- %s" $PREV_TAG..HEAD >> release_notes.md
+            echo "" >> release_notes.md
+          fi
+          
+          # Migration Guide - check for breaking changes
+          BREAKING_CHANGES=$(git log --pretty=format:"%s" --grep="BREAKING CHANGE\|breaking" $PREV_TAG..HEAD)
+          if [ -n "$BREAKING_CHANGES" ]; then
+            echo "### 🚨 Migration Guide" >> release_notes.md
+            echo "**BREAKING CHANGES** - This release contains breaking changes." >> release_notes.md
+            echo "" >> release_notes.md
+            echo "**Breaking Changes:**" >> release_notes.md
+            echo "$BREAKING_CHANGES" >> release_notes.md
+            echo "" >> release_notes.md
+          else
+            echo "### 🚀 Migration Guide" >> release_notes.md
+            echo "**No breaking changes** - This release maintains full backward compatibility." >> release_notes.md
+            echo "" >> release_notes.md
+          fi
+          
+          # Installation instructions
+          echo "### 📦 Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo "composer require lukaszzychal/tvmaze-client-php:^$VERSION" >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          
+          # Full changelog link
+          if [ -n "$PREV_TAG" ]; then
+            echo "**Full Changelog**: https://github.com/$GITHUB_REPOSITORY/compare/$PREV_TAG...v$VERSION" >> release_notes.md
+          else
+            echo "**Full Changelog**: https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION" >> release_notes.md
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: Release ${{ steps.version.outputs.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to production
+        if: ${{ success() }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script_stop: true
+          script: |
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            export IMAGE=ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+            cd ${{ secrets.PROD_DEPLOY_DIR }}
+            sed -i.bak "s|image: .*|image: ${IMAGE}|" docker-compose.yml
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+      - name: Update composer.json version
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          VERSION=${VERSION#v}
+          composer config version $VERSION
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add composer.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update version to $VERSION"
+            git push origin main
+          fi
