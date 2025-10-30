@@ -20,7 +20,7 @@ class AdminFlagsTest extends TestCase
     public function test_list_flags(): void
     {
         $res = $this->getJson('/api/v1/admin/flags');
-        $res->assertOk()->assertJsonStructure(['data' => [['name','active']]]);
+        $res->assertOk()->assertJsonStructure(['data' => [['name','active','description']]]);
     }
 
     public function test_toggle_flag(): void
