@@ -33,11 +33,11 @@ class MoviesApiTest extends TestCase
     public function test_show_movie_returns_ok(): void
     {
         $index = $this->getJson('/api/v1/movies');
-        $id = $index->json('data.0.id');
+        $slug = $index->json('data.0.slug');
 
-        $response = $this->getJson('/api/v1/movies/'.$id);
+        $response = $this->getJson('/api/v1/movies/'.$slug);
         $response->assertOk()
-                 ->assertJsonStructure(['id','title']);
+                 ->assertJsonStructure(['id','slug','title']);
     }
 }
 

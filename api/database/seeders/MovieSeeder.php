@@ -6,6 +6,7 @@ use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Models\Genre;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class MovieSeeder extends Seeder
 {
@@ -13,6 +14,7 @@ class MovieSeeder extends Seeder
     {
         $matrix = Movie::create([
             'title' => 'The Matrix',
+            'slug' => Str::slug('The Matrix'),
             'release_year' => 1999,
             'director' => 'The Wachowskis',
         ]);
@@ -30,6 +32,7 @@ class MovieSeeder extends Seeder
 
         $inception = Movie::create([
             'title' => 'Inception',
+            'slug' => Str::slug('Inception'),
             'release_year' => 2010,
             'director' => 'Christopher Nolan',
         ]);

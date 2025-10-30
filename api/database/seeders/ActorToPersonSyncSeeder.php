@@ -7,6 +7,7 @@ use App\Models\ActorBio;
 use App\Models\Person;
 use App\Models\PersonBio;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class ActorToPersonSyncSeeder extends Seeder
 {
@@ -14,12 +15,14 @@ class ActorToPersonSyncSeeder extends Seeder
     {
         Actor::query()->orderBy('id')->chunk(100, function ($actors) {
             foreach ($actors as $actor) {
-                $person = Person::firstOrCreate([
-                    'name' => $actor->name,
-                ], [
-                    'birth_date' => $actor->birth_date,
-                    'birthplace' => $actor->birthplace,
-                ]);
+                $person = Person::firstOrCreate(
+                    ['name' => $actor->name],
+                    [
+                        'slug' => Str::slug($actor->name),
+                        'birth_date' => $actor->birth_date,
+                        'birthplace' => $actor->birthplace,
+                    ]
+                );
 
                 $actorBios = ActorBio::where('actor_id', $actor->id)->get();
                 foreach ($actorBios as $ab) {
