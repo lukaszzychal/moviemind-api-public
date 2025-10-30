@@ -87,12 +87,13 @@ Prywatne repo może zawierać:
 ### 🔹 1. Zakres Funkcjonalny
 
 **Użytkownik (klient API) może:**
-| Funkcja | Opis |
-| --------- | ------ |
+| Endpoint | Opis |
+| --- | --- |
 | `GET /v1/movies?q=` | wyszukać filmy (tytuł, rok, gatunek) |
 | `GET /v1/movies/{id}` | pobrać szczegóły filmu + opis (AI lub cache) |
-| `GET /v1/actors/{id}` | pobrać dane aktora + biografię |
-| `POST /v1/generate` | wymusić nowe wygenerowanie opisu lub biografii (AI) |
+| `GET /v1/people/{id}` | pobrać dane osoby (aktor, reżyser itd.) + biografię |
+| `GET /v1/actors/{id}` | alias dla wybranych osób typu aktor (kompatybilność) |
+| `POST /v1/generate` | wymusić generację: `entity_type` = `MOVIE` lub `PERSON` |
 | `GET /v1/jobs/{id}` | sprawdzić status generacji (PENDING, DONE, FAILED) |
 
 **System (wewnętrznie):**
