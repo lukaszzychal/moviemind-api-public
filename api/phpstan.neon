@@ -1,0 +1,11 @@
+parameters:
+    level: 5
+    paths:
+        - app
+        - database/seeders
+    excludePaths:
+        - vendor
+        - storage
+        - bootstrap/cache
+    checkUninitializedProperties: false
+
