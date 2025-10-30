@@ -96,6 +96,120 @@ Prywatne repo może zawierać:
 | `POST /v1/generate` | wymusić generację: `entity_type` = `MOVIE` lub `PERSON` |
 | `GET /v1/jobs/{id}` | sprawdzić status generacji (PENDING, DONE, FAILED) |
 
+### 📦 Przykładowe payloady (request/response)
+
+#### GET /v1/movies?q=
+Request:
+```http
+GET /api/v1/movies?q=matrix
+```
+Response (200):
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "The Matrix",
+      "release_year": 1999,
+      "director": "The Wachowskis",
+      "genres": ["Action", "Sci-Fi"],
+      "default_description_id": 10
+    }
+  ]
+}
+```
+
+#### GET /v1/movies/{id}
+Request:
+```http
+GET /api/v1/movies/1
+```
+Response (200):
+```json
+{
+  "id": 1,
+  "title": "The Matrix",
+  "release_year": 1999,
+  "director": "The Wachowskis",
+  "genres": ["Action", "Sci-Fi"],
+  "default_description": {
+    "id": 10,
+    "locale": "pl-PL",
+    "text": "..."
+  }
+}
+```
+
+#### GET /v1/people/{id}
+Request:
+```http
+GET /api/v1/people/123
+```
+Response (200):
+```json
+{
+  "id": 123,
+  "name": "Keanu Reeves",
+  "bios": [
+    {"locale": "pl-PL", "text": "..."}
+  ],
+  "default_bio": {"id": 5, "locale": "pl-PL", "text": "..."},
+  "movies": [
+    {"id": 1, "title": "The Matrix"}
+  ]
+}
+```
+
+#### POST /v1/generate
+Request (MOVIE):
+```http
+POST /api/v1/generate
+Content-Type: application/json
+
+{
+  "entity_type": "MOVIE",
+  "entity_id": 1,
+  "locale": "pl-PL",
+  "context_tag": "modern"
+}
+```
+Request (PERSON):
+```http
+POST /api/v1/generate
+Content-Type: application/json
+
+{
+  "entity_type": "PERSON",
+  "entity_id": 123,
+  "locale": "en-US",
+  "context_tag": "scholarly"
+}
+```
+Response (200):
+```json
+{
+  "job_id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+  "status": "PENDING"
+}
+```
+Response (403, feature off):
+```json
+{ "error": "Feature not available" }
+```
+
+#### GET /v1/jobs/{id}
+Request:
+```http
+GET /api/v1/jobs/7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d
+```
+Response (200):
+```json
+{
+  "id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+  "status": "PENDING"
+}
+```
+
 #### 📘 Przykładowe Payloady (Request/Response)
 
 ##### POST `/v1/generate` — MOVIE
