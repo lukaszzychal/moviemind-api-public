@@ -53,10 +53,10 @@ class FlagController extends Controller
 
         $extractName = function (string $snippet): ?string {
             if (preg_match("/Feature::(?:active|inactive)\\(\\s*['\"]([A-Za-z0-9_]+)['\"]\\s*\\)/", $snippet, $m)) {
-                return $m[1] ?? null;
+                return $m[1] ?? null; // @phpstan-ignore-line
             }
             if (preg_match("/Feature::for\\([^)]*\\)->(?:activate|deactivate)\\(\\s*['\"]([A-Za-z0-9_]+)['\"]\\s*\\)/", $snippet, $m)) {
-                return $m[1] ?? null;
+                return $m[1] ?? null; // @phpstan-ignore-line
             }
 
             return null;

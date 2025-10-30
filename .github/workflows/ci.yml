@@ -68,7 +68,12 @@ jobs:
         run: |
           if [ -f vendor/bin/pint ]; then vendor/bin/pint -v --test; else echo "Pint not installed"; fi
 
-      - name: Gitleaks (secrets scan)
+      - name: PHPStan static analysis
+        working-directory: api
+        run: |
+          if [ -f vendor/bin/phpstan ]; then vendor/bin/phpstan analyse --memory-limit=2G; else echo "PHPStan not installed"; fi
+
+      - name: GitLeaks (secrets scan)
         uses: gitleaks/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
