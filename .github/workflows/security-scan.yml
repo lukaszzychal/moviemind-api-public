@@ -55,6 +55,7 @@ jobs:
         extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, redis
     
     - name: Install Composer dependencies
+      working-directory: api
       run: composer install --no-dev --optimize-autoloader
     
     - name: Run security audit
