@@ -25,14 +25,36 @@ class MovieController extends Controller
             ->limit(50)
             ->get();
 
-        return response()->json(['data' => $movies]);
+        $data = $movies->map(function (Movie $m) {
+            $arr = $m->toArray();
+            $arr['_links'] = [
+                'self' => url("/api/v1/movies/{$m->slug}"),
+                'people' => url("/api/v1/movies/{$m->slug}"), // same resource contains embedded people
+            ];
+            return $arr;
+        });
+
+        return response()->json(['data' => $data]);
     }
 
     public function show(string $slug)
     {
         $movie = Movie::with(['descriptions', 'defaultDescription'])->where('slug', $slug)->first();
         if ($movie) {
-            return response()->json($movie);
+            $payload = $movie->toArray();
+            $payload['_links'] = [
+                'self' => url("/api/v1/movies/{$movie->slug}"),
+                'people' => url("/api/v1/movies/{$movie->slug}"),
+                'generate' => [
+                    'href' => url('/api/v1/generate'),
+                    'method' => 'POST',
+                    'body' => [
+                        'entity_type' => 'MOVIE',
+                        'entity_id' => $movie->id,
+                    ],
+                ],
+            ];
+            return response()->json($payload);
         }
 
         if (! Feature::active('ai_description_generation')) {

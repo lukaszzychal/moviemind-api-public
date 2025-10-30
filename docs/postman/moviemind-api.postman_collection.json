@@ -22,7 +22,7 @@
           "status": "OK",
           "code": 200,
           "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\"\n    }\n  ]\n}"
+          "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n        \"people\": \"http://localhost:8000/api/v1/movies/the-matrix\"\n      }\n    }\n  ]\n}"
         }
       ]
     },
@@ -42,7 +42,7 @@
           "status": "OK",
           "code": 200,
           "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 10,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality...\",\n    \"context_tag\": \"modern\"\n  }\n}"
+          "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 10,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality...\",\n    \"context_tag\": \"modern\"\n  },\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"people\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"entity_id\": 1\n      }\n    }\n  }\n}"
         }
       ]
     },
@@ -62,7 +62,7 @@
           "status": "OK",
           "code": 200,
           "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"id\": 123,\n  \"slug\": \"christopher-nolan\",\n  \"name\": \"Christopher Nolan\",\n  \"bios\": [ { \"locale\": \"en-US\", \"text\": \"Short bio...\" } ],\n  \"movies\": [ { \"id\": 2, \"slug\": \"inception\", \"title\": \"Inception\" } ]\n}"
+          "body": "{\n  \"id\": 123,\n  \"slug\": \"christopher-nolan\",\n  \"name\": \"Christopher Nolan\",\n  \"bios\": [ { \"locale\": \"en-US\", \"text\": \"Short bio...\" } ],\n  \"movies\": [ { \"id\": 2, \"slug\": \"inception\", \"title\": \"Inception\" } ],\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n    \"movies\": \"http://localhost:8000/api/v1/movies\"\n  }\n}"
         }
       ]
     },
