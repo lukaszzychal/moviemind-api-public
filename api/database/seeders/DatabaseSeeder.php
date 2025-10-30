@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             MovieSeeder::class,
             ActorSeeder::class,
             PeopleSeeder::class,
+            ActorToPersonSyncSeeder::class,
         ]);
     }
 }
