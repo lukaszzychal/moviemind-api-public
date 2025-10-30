@@ -13,7 +13,7 @@ class Person extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'birth_date', 'birthplace',
+        'name', 'slug', 'birth_date', 'birthplace',
     ];
 
     protected $casts = [

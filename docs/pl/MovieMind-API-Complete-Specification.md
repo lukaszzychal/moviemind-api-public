@@ -90,8 +90,8 @@ Prywatne repo może zawierać:
 | Endpoint | Opis |
 | --- | --- |
 | `GET /v1/movies?q=` | wyszukać filmy (tytuł, rok, gatunek) |
-| `GET /v1/movies/{id}` | pobrać szczegóły filmu + opis (AI lub cache) |
-| `GET /v1/people/{id}` | pobrać dane osoby (aktor, reżyser itd.) + biografię |
+| `GET /v1/movies/{slug}` | pobrać szczegóły filmu + opis (AI lub cache) |
+| `GET /v1/people/{slug}` | pobrać dane osoby (aktor, reżyser itd.) + biografię |
 | `GET /v1/actors/{id}` | alias dla wybranych osób typu aktor (kompatybilność) |
 | `POST /v1/generate` | wymusić generację: `entity_type` = `MOVIE` lub `PERSON` |
 | `GET /v1/jobs/{id}` | sprawdzić status generacji (PENDING, DONE, FAILED) |
@@ -119,10 +119,10 @@ Response (200):
 }
 ```
 
-#### GET /v1/movies/{id}
+#### GET /v1/movies/{slug}
 Request:
 ```http
-GET /api/v1/movies/1
+GET /api/v1/movies/the-matrix
 ```
 Response (200):
 ```json
@@ -140,10 +140,10 @@ Response (200):
 }
 ```
 
-#### GET /v1/people/{id}
+#### GET /v1/people/{slug}
 Request:
 ```http
-GET /api/v1/people/123
+GET /api/v1/people/christopher-nolan
 ```
 Response (200):
 ```json
@@ -290,7 +290,8 @@ Request
 
 **System (wewnętrznie):**
 - zapisuje dane w PostgreSQL (movies, actors, descriptions, bios, jobs)
-- jeśli danych nie ma → generuje przez AI (np. OpenAI API)
+- jeśli danych nie ma i odpowiednia flaga jest WŁĄCZONA → API zwraca 202 (Accepted) z `{ job_id, status: PENDING, slug }` i kolejkuje generację
+- jeśli flaga jest WYŁĄCZONA → API zwraca 404 (Not Found)
 - wynik trzyma w DB i cache (Redis)
 - przy kolejnym zapytaniu używa cache (nie pyta AI)
 - każde wygenerowanie zapisuje z kontekstem (modern, critical, humorous, …)
@@ -493,7 +494,16 @@ Używamy Git Trunk Flow jako głównej strategii zarządzania kodem dla MovieMin
 ## 🎛️ Feature Flags
 
 ### 🇵🇱 Strategia Kontroli Funkcji
-Używamy oficjalnej integracji Laravel Feature Flags (`laravel/feature-flags`) zamiast własnej implementacji.
+Używamy Laravel Pennant (`laravel/pennant`).
+
+### Zachowanie kontrolowane flagami
+- `ai_description_generation`: gdy `GET /v1/movies/{slug}` nie znajduje rekordu i flaga jest ON → 202 Accepted + `{ job_id, status: PENDING, slug }`; gdy flaga OFF → 404.
+- `ai_bio_generation`: gdy `GET /v1/people/{slug}` nie znajduje rekordu i flaga jest ON → 202 Accepted + `{ job_id, status: PENDING, slug }`; gdy flaga OFF → 404.
+
+### Endpointy administracyjne flag
+- `GET /v1/admin/flags` — lista flag
+- `POST /v1/admin/flags/{name}` — body: `{ "state": "on" | "off" }`
+- `GET /v1/admin/flags/usage` — statystyki użycia
 
 ### ✅ Zalety oficjalnej integracji Laravel
 - Oficjalne wsparcie

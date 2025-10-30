@@ -33,6 +33,22 @@
         }
     },
     "scripts": {
+        "local:env": [
+            "@php -r \"file_exists('.env') || copy('../env/local.env.example', '.env');\"",
+            "@php artisan key:generate --force",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\""
+        ],
+        "local:reset": [
+            "@local:env",
+            "@php artisan migrate:fresh --seed --force"
+        ],
+        "local:seed": [
+            "@php artisan db:seed --force"
+        ],
+        "local:up": [
+            "Composer\\Config::disableProcessTimeout",
+            "php artisan serve"
+        ],
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
@@ -44,6 +60,24 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "docker:up": [
+            "docker compose up -d"
+        ],
+        "docker:down": [
+            "docker compose down -v"
+        ],
+        "docker:reset": [
+            "docker compose exec -T php bash -lc 'composer run local:reset'"
+        ],
+        "docker:seed": [
+            "docker compose exec -T php php artisan db:seed --force"
+        ],
+        "docker:logs:php": [
+            "docker compose logs -f php"
+        ],
+        "docker:logs:nginx": [
+            "docker compose logs -f nginx"
         ],
         "test": [
             "@php artisan config:clear --ansi",

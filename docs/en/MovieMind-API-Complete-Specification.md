@@ -78,8 +78,8 @@ Client can:
 | Endpoint              | Description                                      |
 | --------------------- | ------------------------------------------------ |
 | GET /v1/movies?q=     | search movies (title, year, genre)              |
-| GET /v1/movies/{id}   | get movie details + description (AI or cache)   |
-| GET /v1/people/{id}   | get person (actor, director, etc.) + bio        |
+| GET /v1/movies/{slug} | get movie details + description (AI or cache)   |
+| GET /v1/people/{slug} | get person (actor, director, etc.) + bio        |
 | GET /v1/actors/{id}   | get actor details + biography                    |
 | POST /v1/generate     | force new generation: entity_type = MOVIE or PERSON |
 | GET /v1/jobs/{id}     | check generation status (PENDING, DONE, FAILED) |
@@ -122,7 +122,7 @@ Request
 }
 ```
 
-##### GET `/v1/movies/{id}` — example response
+##### GET `/v1/movies/{slug}` — example response
 ```json
 {
   "id": 123,
@@ -139,7 +139,7 @@ Request
 }
 ```
 
-##### GET `/v1/people/{id}` — example response
+##### GET `/v1/people/{slug}` — example response
 ```json
 {
   "id": 456,
@@ -163,7 +163,7 @@ Request
 
 System internally:
 - stores data in PostgreSQL (movies, actors, descriptions, bios, jobs)
-- if data missing → generates via AI (e.g., OpenAI API)
+- if data missing and feature flag enabled → returns 202 and queues generation (see below)
 - stores result in DB and cache (Redis)
 - next request hits cache (no AI)
 - every generation stored with context (modern, critical, humorous, …)
@@ -276,9 +276,19 @@ Workflow: feature branch → PR → merge → deploy → feature flag control.
 
 ## 🎛️ Feature Flags
 
-We use the official Laravel Feature Flags integration (`laravel/feature-flags`).
+We use Laravel Pennant feature flags (`laravel/pennant`).
 
 Types: boolean, percentage, user-based, environment.
+
+Feature-flag controlled behavior:
+- If `ai_description_generation` is ON and `GET /v1/movies/{slug}` misses, API returns 202 Accepted with `{ job_id, status: PENDING, slug }` and queues generation.
+- If `ai_bio_generation` is ON and `GET /v1/people/{slug}` misses, API returns 202 Accepted with `{ job_id, status: PENDING, slug }` and queues generation.
+- If the corresponding flag is OFF, API returns 404 Not Found.
+
+Admin endpoints for flags:
+- `GET /v1/admin/flags` — list flags
+- `POST /v1/admin/flags/{name}` body `{ "state": "on" | "off" }` — toggle
+- `GET /v1/admin/flags/usage` — usage stats
 
 Example configuration:
 ```php

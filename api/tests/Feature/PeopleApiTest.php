@@ -21,14 +21,14 @@ class PeopleApiTest extends TestCase
         $movies = $this->getJson('/api/v1/movies');
         $movies->assertOk();
 
-        $personId = null;
+        $personSlug = null;
         foreach ($movies->json('data') as $m) {
-            if (!empty($m['people'][0]['id'])) { $personId = $m['people'][0]['id']; break; }
+            if (!empty($m['people'][0]['slug'])) { $personSlug = $m['people'][0]['slug']; break; }
         }
-        $this->assertNotNull($personId, 'Expected at least one person linked to movies');
+        $this->assertNotNull($personSlug, 'Expected at least one person linked to movies');
 
-        $res = $this->getJson('/api/v1/people/'.$personId);
-        $res->assertOk()->assertJsonStructure(['id','name']);
+        $res = $this->getJson('/api/v1/people/'.$personSlug);
+        $res->assertOk()->assertJsonStructure(['id','slug','name']);
     }
 }
 
