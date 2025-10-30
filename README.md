@@ -168,45 +168,26 @@ Zwróć tylko czysty tekst.
    # Edit .env and add your OpenAI API key
    ```
 
-3. **Start Services**
+3. **Start Services (Docker)**
    ```bash
-   docker-compose up -d
+   docker-compose up -d --build
    ```
 
-4. **Database Setup**
+4. **Initialize Laravel (inside php container)**
    ```bash
-   docker-compose exec api php bin/console doctrine:migrations:migrate
+   docker-compose exec php bash -lc "composer create-project laravel/laravel . || true"
+   docker-compose exec php bash -lc "cp -n .env.example .env || true && php artisan key:generate"
+   docker-compose exec php php artisan migrate
    ```
 
-5. **Start Queue Worker**
+5. **Start Horizon (queues)**
    ```bash
-   docker-compose exec api php bin/console messenger:consume async
+   docker-compose logs -f horizon
    ```
 
 ### Docker Compose Configuration
 
-```yaml
-version: "3.9"
-services:
-  api:
-    build: .
-    ports: ["8000:80"]
-    environment:
-      DATABASE_URL: postgresql://moviemind:moviemind@db:5432/moviemind
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      APP_ENV: dev
-    depends_on: [db, redis]
-    
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: moviemind
-      POSTGRES_PASSWORD: moviemind
-      POSTGRES_DB: moviemind
-      
-  redis:
-    image: redis:7
-```
+See docker-compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
 ## 📋 MVP Scope
 
