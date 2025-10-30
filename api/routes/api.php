@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\ActorController;
 use App\Http\Controllers\Api\GenerateController;
 use App\Http\Controllers\Api\JobsController;
 
-Route::prefix('api/v1')->group(function () {
+Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
     Route::get('movies/{id}', [MovieController::class, 'show']);
     Route::get('actors/{id}', [ActorController::class, 'show']);

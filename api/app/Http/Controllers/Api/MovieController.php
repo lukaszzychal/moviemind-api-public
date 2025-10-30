@@ -15,9 +15,11 @@ class MovieController extends Controller
             ->when($q, function ($query) use ($q) {
                 $query->where('title', 'ILIKE', "%$q%")
                       ->orWhere('director', 'ILIKE', "%$q%")
-                      ->orWhereJsonContains('genres', $q);
+                      ->orWhereHas('genres', function ($qg) use ($q) {
+                          $qg->where('name', 'ILIKE', "%$q%");
+                      });
             })
-            ->with('defaultDescription')
+            ->with(['defaultDescription', 'genres', 'people'])
             ->limit(50)
             ->get();
 
