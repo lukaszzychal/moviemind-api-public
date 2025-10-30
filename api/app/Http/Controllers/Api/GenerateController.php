@@ -12,7 +12,7 @@ class GenerateController extends Controller
     public function generate(Request $request)
     {
         $validated = $request->validate([
-            'entity_type' => 'required|in:MOVIE,ACTOR',
+            'entity_type' => 'required|in:MOVIE,ACTOR,PERSON',
             'entity_id' => 'required|integer',
             'locale' => 'nullable|string|max:10',
             'context_tag' => 'nullable|string|max:64',
