@@ -245,6 +245,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Person'
+            _links:
+              type: object
+              additionalProperties: true
     Person:
       type: object
       properties:
@@ -291,6 +294,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Movie'
+            _links:
+              type: object
+              additionalProperties: true
     Job:
       type: object
       properties:
