@@ -96,6 +96,84 @@ Prywatne repo może zawierać:
 | `POST /v1/generate` | wymusić generację: `entity_type` = `MOVIE` lub `PERSON` |
 | `GET /v1/jobs/{id}` | sprawdzić status generacji (PENDING, DONE, FAILED) |
 
+#### 📘 Przykładowe Payloady (Request/Response)
+
+##### POST `/v1/generate` — MOVIE
+Request
+```json
+{
+  "entity_type": "MOVIE",
+  "entity_id": 123,
+  "locale": "pl-PL",
+  "context_tag": "modern"
+}
+```
+
+Response 200 (mock)
+```json
+{
+  "job_id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+  "status": "PENDING"
+}
+```
+
+Response 403 (feature wyłączony)
+```json
+{
+  "error": "Feature not available"
+}
+```
+
+##### POST `/v1/generate` — PERSON
+Request
+```json
+{
+  "entity_type": "PERSON",
+  "entity_id": 456,
+  "locale": "en-US",
+  "context_tag": "scholarly"
+}
+```
+
+##### GET `/v1/movies/{id}` — przykładowa odpowiedź
+```json
+{
+  "id": 123,
+  "title": "The Matrix",
+  "release_year": 1999,
+  "director": "The Wachowskis",
+  "genres": ["Action","Sci-Fi"],
+  "default_description": {
+    "id": 999,
+    "locale": "pl-PL",
+    "text": "Zwięzły opis…",
+    "context_tag": "modern"
+  }
+}
+```
+
+##### GET `/v1/people/{id}` — przykładowa odpowiedź
+```json
+{
+  "id": 456,
+  "name": "Keanu Reeves",
+  "bios": [
+    { "locale": "en-US", "text": "Short bio…" }
+  ],
+  "movies": [
+    { "id": 123, "title": "The Matrix" }
+  ]
+}
+```
+
+##### GET `/v1/jobs/{id}` — przykładowa odpowiedź
+```json
+{
+  "id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+  "status": "PENDING"
+}
+```
+
 **System (wewnętrznie):**
 - zapisuje dane w PostgreSQL (movies, actors, descriptions, bios, jobs)
 - jeśli danych nie ma → generuje przez AI (np. OpenAI API)
