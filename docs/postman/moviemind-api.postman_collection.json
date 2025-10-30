@@ -1,0 +1,92 @@
+{
+  "info": {
+    "name": "MovieMind API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Movies - List",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/movies?q=matrix",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","v1","movies"],
+          "query": [{"key":"q","value":"matrix"}]
+        }
+      }
+    },
+    {
+      "name": "Movies - Show",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/movies/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","v1","movies","1"]
+        }
+      }
+    },
+    {
+      "name": "People - Show",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/people/123",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","v1","people","123"]
+        }
+      }
+    },
+    {
+      "name": "Generate - MOVIE",
+      "request": {
+        "method": "POST",
+        "header": [{"key":"Content-Type","value":"application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"entity_id\": 1,\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/generate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","v1","generate"]
+        }
+      }
+    },
+    {
+      "name": "Generate - PERSON",
+      "request": {
+        "method": "POST",
+        "header": [{"key":"Content-Type","value":"application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"entity_id\": 123,\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/generate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","v1","generate"]
+        }
+      }
+    },
+    {
+      "name": "Jobs - Show",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","v1","jobs","{{jobId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {"key":"baseUrl","value":"http://localhost:8000"},
+    {"key":"jobId","value":"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"}
+  ]
+}
+
+
