@@ -45,8 +45,21 @@ jobs:
           php artisan key:generate --force || true
           php artisan config:clear
 
+      - name: Run database migrations
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+        run: |
+          php artisan migrate --force || true
+
       - name: Run unit/feature tests
         working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
         run: composer test
 
   security:
