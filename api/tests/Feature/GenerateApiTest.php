@@ -2,7 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Events\MovieGenerationRequested;
+use App\Events\PersonGenerationRequested;
+use App\Jobs\MockGenerateMovieJob;
+use App\Jobs\MockGeneratePersonJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
@@ -13,6 +19,8 @@ class GenerateApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
+        Queue::fake();
         $this->artisan('migrate');
         $this->artisan('db:seed');
     }
@@ -50,6 +58,14 @@ class GenerateApiTest extends TestCase
                 'status' => 'PENDING',
                 'slug' => 'the-matrix',
             ]);
+
+        // Verify Event was dispatched
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
+            return $event->slug === 'the-matrix';
+        });
+
+        // Note: Queue::fake() prevents Listener from executing, so we only check Event
+        // If Event is dispatched and Listener is registered, Job will be queued
     }
 
     public function test_generate_person_blocked_when_flag_off(): void
@@ -69,9 +85,10 @@ class GenerateApiTest extends TestCase
     {
         Feature::activate('ai_bio_generation');
 
+        // Use a slug that doesn't exist in seeders
         $resp = $this->postJson('/api/v1/generate', [
             'entity_type' => 'PERSON',
-            'entity_id' => 'keanu-reeves',
+            'entity_id' => 'new-person-slug',
         ]);
 
         $resp->assertStatus(202)
@@ -83,19 +100,47 @@ class GenerateApiTest extends TestCase
             ])
             ->assertJson([
                 'status' => 'PENDING',
-                'slug' => 'keanu-reeves',
+                'slug' => 'new-person-slug',
             ]);
+
+        // Verify Event was dispatched
+        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
+            return $event->slug === 'new-person-slug';
+        });
+
+        // Note: Queue::fake() prevents Listener from executing, so we only check Event
+        // If Event is dispatched and Listener is registered, Job will be queued
     }
 
-    public function test_generate_actor_returns_invalid_entity_type(): void
+    public function test_generate_actor_allowed_when_flag_on(): void
     {
+        Feature::activate('ai_bio_generation');
+
+        // Use a slug that doesn't exist in seeders
         $resp = $this->postJson('/api/v1/generate', [
             'entity_type' => 'ACTOR',
-            'entity_id' => 'keanu-reeves',
+            'entity_id' => 'new-actor-slug',
         ]);
 
-        $resp->assertStatus(400)
-            ->assertJson(['error' => 'Invalid entity type']);
+        $resp->assertStatus(202)
+            ->assertJsonStructure([
+                'job_id',
+                'status',
+                'message',
+                'slug',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'new-actor-slug',
+            ]);
+
+        // Verify Event was dispatched (ACTOR treated same as PERSON)
+        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
+            return $event->slug === 'new-actor-slug';
+        });
+
+        // Note: Queue::fake() prevents Listener from executing, so we only check Event
+        // If Event is dispatched and Listener is registered, Job will be queued
     }
 
     public function test_generate_requires_string_entity_id(): void
