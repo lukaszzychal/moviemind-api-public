@@ -3,8 +3,28 @@ name: CI
 on:
   push:
     branches: [ main, develop ]
+    paths-ignore:
+      # Documentation files - don't trigger CI
+      - 'docs/**'
+      - '*.md'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'LICENSE'
+      # Example workflow files - don't trigger CI
+      - '.github/workflows/*.example.yml'
+      - '.github/workflows/*.example.yaml'
   pull_request:
     branches: [ main, develop ]
+    paths-ignore:
+      # Documentation files - don't trigger CI
+      - 'docs/**'
+      - '*.md'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'LICENSE'
+      # Example workflow files - don't trigger CI
+      - '.github/workflows/*.example.yml'
+      - '.github/workflows/*.example.yaml'
 
 jobs:
   test:
