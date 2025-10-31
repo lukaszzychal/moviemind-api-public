@@ -2,6 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Enums\ContextTag;
+use App\Enums\DescriptionOrigin;
+use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use Illuminate\Bus\Queueable;
@@ -13,7 +16,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class GenerateMovieJob implements ShouldQueue
+/**
+ * Mock Generate Movie Job - simulates AI generation for development/testing.
+ * Used when AI_SERVICE=mock.
+ */
+class MockGenerateMovieJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -35,7 +42,7 @@ class GenerateMovieJob implements ShouldQueue
                 return;
             }
 
-            // Simulate long-running AI generation
+            // Simulate long-running AI generation (mock)
             sleep(3);
 
             // Double-check (race condition protection)
@@ -64,10 +71,10 @@ class GenerateMovieJob implements ShouldQueue
 
             $desc = MovieDescription::create([
                 'movie_id' => $movie->id,
-                'locale' => 'en_US',
-                'text' => "Generated description for {$title}. This text was produced by MockAiService.",
-                'context_tag' => 'DEFAULT',
-                'origin' => 'GENERATED',
+                'locale' => Locale::EN_US,
+                'text' => "Generated description for {$title}. This text was produced by MockGenerateMovieJob (AI_SERVICE=mock).",
+                'context_tag' => ContextTag::DEFAULT,
+                'origin' => DescriptionOrigin::GENERATED,
                 'ai_model' => 'mock-ai-1',
             ]);
 
@@ -76,7 +83,7 @@ class GenerateMovieJob implements ShouldQueue
 
             $this->updateCache('DONE', $movie->id, $uniqueSlug);
         } catch (\Throwable $e) {
-            Log::error('GenerateMovieJob failed', [
+            Log::error('MockGenerateMovieJob failed', [
                 'slug' => $this->slug,
                 'job_id' => $this->jobId,
                 'error' => $e->getMessage(),
@@ -107,7 +114,7 @@ class GenerateMovieJob implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
-        Log::error('GenerateMovieJob permanently failed', [
+        Log::error('MockGenerateMovieJob permanently failed', [
             'slug' => $this->slug,
             'job_id' => $this->jobId,
             'error' => $exception->getMessage(),

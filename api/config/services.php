@@ -35,4 +35,34 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AI Service Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure which AI service implementation to use:
+    | - 'mock' => MockGenerateMovieJob/MockGeneratePersonJob (for local development, testing)
+    | - 'real' => RealGenerateMovieJob/RealGeneratePersonJob (for production with real AI API)
+    |
+    */
+
+    'ai' => [
+        'service' => env('AI_SERVICE', 'mock'), // 'mock' or 'real'
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | OpenAI Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for OpenAI API (used by RealGenerateMovieJob/RealGeneratePersonJob)
+    |
+    */
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
+    ],
+
 ];
