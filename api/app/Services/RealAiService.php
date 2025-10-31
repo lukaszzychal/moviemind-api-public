@@ -7,11 +7,10 @@ use App\Events\PersonGenerationRequested;
 use App\Models\Movie;
 use App\Models\Person;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Real AI Service - dispatches Events instead of Jobs directly.
- * 
+ *
  * This service uses the Events + Jobs architecture.
  * The actual AI generation is handled by GenerateMovieJob/GeneratePersonJob
  * which can be configured to call real AI APIs.
@@ -79,4 +78,3 @@ class RealAiService implements AiServiceInterface
         return 'ai_job:'.$jobId;
     }
 }
-

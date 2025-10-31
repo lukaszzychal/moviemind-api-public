@@ -25,6 +25,7 @@ class MockGeneratePersonJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 90;
 
     public function __construct(
@@ -39,6 +40,7 @@ class MockGeneratePersonJob implements ShouldQueue
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
                 $this->updateCache('DONE', $existing->id);
+
                 return;
             }
 
@@ -49,6 +51,7 @@ class MockGeneratePersonJob implements ShouldQueue
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
                 $this->updateCache('DONE', $existing->id);
+
                 return;
             }
 
@@ -120,4 +123,3 @@ class MockGeneratePersonJob implements ShouldQueue
         ], now()->addMinutes(15));
     }
 }
-

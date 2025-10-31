@@ -20,4 +20,3 @@ interface OpenAiClientInterface
      */
     public function generatePerson(string $slug): array;
 }
-

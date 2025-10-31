@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
-use App\Jobs\MockGenerateMovieJob;
-use App\Jobs\MockGeneratePersonJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;

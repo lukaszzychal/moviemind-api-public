@@ -33,4 +33,3 @@ class MovieGenerationRequestedTest extends TestCase
         $this->assertEquals($event->jobId, $unserialized->jobId);
     }
 }
-

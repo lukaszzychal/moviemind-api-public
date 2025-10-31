@@ -7,19 +7,24 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * OpenAI API Client for generating movie and person data.
- * 
+ *
  * Handles all communication with OpenAI API.
  * Separates API communication logic from business logic.
  */
 class OpenAiClient implements OpenAiClientInterface
 {
     private const DEFAULT_TIMEOUT = 60;
+
     private const DEFAULT_TEMPERATURE = 0.7;
+
     private const DEFAULT_MODEL = 'gpt-4o-mini';
+
     private const DEFAULT_API_URL = 'https://api.openai.com/v1/chat/completions';
 
     private string $apiKey;
+
     private string $model;
+
     private string $apiUrl;
 
     public function __construct()
@@ -80,13 +85,12 @@ class OpenAiClient implements OpenAiClientInterface
 
     /**
      * Make an API call to OpenAI.
-     * 
+     *
      * @param  string  $entityType  Type of entity ('movie' or 'person')
      * @param  string  $slug  Entity slug
      * @param  string  $systemPrompt  System prompt for AI
      * @param  string  $userPrompt  User prompt for AI
      * @param  callable  $successMapper  Callback to map successful response to array
-     * @return array
      */
     private function makeApiCall(string $entityType, string $slug, string $systemPrompt, string $userPrompt, callable $successMapper): array
     {
@@ -95,13 +99,16 @@ class OpenAiClient implements OpenAiClientInterface
 
             if (! $response->successful()) {
                 $this->logApiError($entityType, $slug, $response);
+
                 return $this->errorResponse("API returned status {$response->status()}");
             }
 
             $content = $this->extractContent($response);
+
             return $successMapper($content);
         } catch (\Throwable $e) {
             $this->logException($entityType, $slug, $e);
+
             return $this->errorResponse($e->getMessage());
         }
     }
@@ -134,7 +141,7 @@ class OpenAiClient implements OpenAiClientInterface
     {
         $responseData = $response->json();
         $rawContent = $responseData['choices'][0]['message']['content'] ?? '{}';
-        
+
         return json_decode($rawContent, true) ?? [];
     }
 

@@ -40,4 +40,3 @@ class EventServiceProviderTest extends TestCase
         );
     }
 }
-

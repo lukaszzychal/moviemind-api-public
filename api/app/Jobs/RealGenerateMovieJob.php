@@ -26,6 +26,7 @@ class RealGenerateMovieJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 120; // Longer timeout for real API calls
 
     public function __construct(
@@ -43,6 +44,7 @@ class RealGenerateMovieJob implements ShouldQueue
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
                 $this->updateCache('DONE', $existing->id);
+
                 return;
             }
 
@@ -50,6 +52,7 @@ class RealGenerateMovieJob implements ShouldQueue
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
                 $this->updateCache('DONE', $existing->id);
+
                 return;
             }
 
@@ -58,7 +61,7 @@ class RealGenerateMovieJob implements ShouldQueue
             $aiResponse = $openAiClient->generateMovie($this->slug);
 
             if (! $aiResponse || ! isset($aiResponse['success']) || ! $aiResponse['success']) {
-                throw new \RuntimeException('AI API returned error: ' . ($aiResponse['error'] ?? 'Unknown error'));
+                throw new \RuntimeException('AI API returned error: '.($aiResponse['error'] ?? 'Unknown error'));
             }
 
             $title = $aiResponse['title'] ?? Str::of($this->slug)->replace('-', ' ')->title();
@@ -105,7 +108,6 @@ class RealGenerateMovieJob implements ShouldQueue
         }
     }
 
-
     private function updateCache(string $status, ?int $id = null, ?string $slug = null): void
     {
         Cache::put($this->cacheKey(), [
@@ -139,4 +141,3 @@ class RealGenerateMovieJob implements ShouldQueue
         ], now()->addMinutes(15));
     }
 }
-

@@ -55,7 +55,7 @@ class GeneratePersonJobTest extends TestCase
         // Person should still exist (not duplicated)
         $this->assertDatabaseCount('people', 1);
         $this->assertEquals($person->id, Person::where('slug', 'keanu-reeves')->first()->id);
-        
+
         // Verify cache was updated
         $cached = Cache::get('ai_job:'.$jobId);
         $this->assertNotNull($cached);
@@ -66,15 +66,14 @@ class GeneratePersonJobTest extends TestCase
     public function test_mock_job_implements_should_queue(): void
     {
         $job = new MockGeneratePersonJob('test', 'job-123');
-        
+
         $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $job);
     }
 
     public function test_real_job_implements_should_queue(): void
     {
         $job = new RealGeneratePersonJob('test', 'job-123');
-        
+
         $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $job);
     }
 }
-

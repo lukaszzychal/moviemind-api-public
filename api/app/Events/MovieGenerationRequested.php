@@ -14,4 +14,3 @@ class MovieGenerationRequested
         public string $jobId
     ) {}
 }
-

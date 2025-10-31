@@ -29,4 +29,3 @@ class PersonGenerationRequestedTest extends TestCase
         $this->assertEquals($event->jobId, $unserialized->jobId);
     }
 }
-

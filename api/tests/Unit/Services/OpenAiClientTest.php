@@ -25,14 +25,14 @@ class OpenAiClientTest extends TestCase
             'services.openai.url' => 'https://api.openai.com/v1/chat/completions',
         ]);
 
-        $this->client = new OpenAiClient();
+        $this->client = new OpenAiClient;
     }
 
     public function test_generate_movie_returns_error_when_api_key_missing(): void
     {
         config(['services.openai.api_key' => '']);
 
-        $client = new OpenAiClient();
+        $client = new OpenAiClient;
         $result = $client->generateMovie('the-matrix');
 
         $this->assertFalse($result['success']);
@@ -108,7 +108,7 @@ class OpenAiClientTest extends TestCase
     {
         config(['services.openai.api_key' => '']);
 
-        $client = new OpenAiClient();
+        $client = new OpenAiClient;
         $result = $client->generatePerson('keanu-reeves');
 
         $this->assertFalse($result['success']);
@@ -204,4 +204,3 @@ class OpenAiClientTest extends TestCase
         $this->assertEquals([], $result['genres']);
     }
 }
-
