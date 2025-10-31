@@ -45,11 +45,11 @@ jobs:
           php artisan key:generate --force || true
           php artisan config:clear
 
-      - name: Prepare PHPUnit configuration
+      - name: Setup PHPUnit configuration
         working-directory: api
         run: |
-          # PHPUnit looks for phpunit.xml.dist if phpunit.xml is not found
-          cp phpunit.xml phpunit.xml.dist || true
+          # phpunit.xml is in .gitignore, so copy from .dist template in CI
+          cp phpunit.xml.dist phpunit.xml || true
 
       - name: Run database migrations
         working-directory: api
