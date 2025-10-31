@@ -35,15 +35,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Start services with docker-compose
+      - name: Start services with docker compose
         run: |
-          docker-compose up -d db redis
+          docker compose up -d db redis
           # Wait for services to be ready
-          docker-compose exec -T db pg_isready -U moviemind || sleep 5
+          docker compose exec -T db pg_isready -U moviemind || sleep 5
 
       - name: Run tests in container
         run: |
-          docker-compose run --rm -e APP_ENV=testing \
+          docker compose run --rm -e APP_ENV=testing \
             -e DB_CONNECTION=pgsql \
             -e DB_HOST=db \
             -e DB_DATABASE=moviemind_test \
@@ -53,7 +53,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
   security:
     name: Security & Lint
@@ -76,7 +76,7 @@ jobs:
 
       - name: Run security checks
         run: |
-          docker-compose run --rm php bash -lc "
+          docker compose run --rm php bash -lc "
             composer install &&
             composer audit --no-dev || true &&
             vendor/bin/pint -v --test || echo 'Pint check' &&
