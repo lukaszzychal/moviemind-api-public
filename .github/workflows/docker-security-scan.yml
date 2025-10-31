@@ -65,6 +65,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+          category: 'container-scan'
 
       - name: Run Trivy vulnerability scanner (report)
         uses: aquasecurity/trivy-action@master
@@ -104,3 +105,4 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-fs-results.sarif'
+          category: 'filesystem-scan'
