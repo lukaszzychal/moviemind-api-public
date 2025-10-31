@@ -42,7 +42,12 @@ jobs:
       - name: Prepare environment
         working-directory: api
         run: |
-          php artisan key:generate --force || true
+          # Create .env if it doesn't exist
+          if [ ! -f .env ]; then
+            cp .env.example .env || touch .env
+          fi
+          # Generate APP_KEY and ensure it's set
+          php artisan key:generate --force
           php artisan config:clear
 
       - name: Setup PHPUnit configuration
@@ -50,15 +55,6 @@ jobs:
         run: |
           # phpunit.xml is in .gitignore, so copy from .dist template in CI
           cp phpunit.xml.dist phpunit.xml || true
-
-      - name: Run database migrations
-        working-directory: api
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
-        run: |
-          php artisan migrate --force || true
 
       - name: Run unit/feature tests
         working-directory: api
