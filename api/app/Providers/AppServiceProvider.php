@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         // Use 'mock' for local development/testing
         // Use 'real' for production with Events + Jobs architecture
         $aiService = config('services.ai.service', 'mock');
-        
+
         $this->app->bind(AiServiceInterface::class, function ($app) use ($aiService) {
             return match ($aiService) {
                 'real' => $app->make(RealAiService::class),

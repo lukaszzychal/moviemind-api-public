@@ -14,4 +14,3 @@ class PersonGenerationRequested
         public string $jobId
     ) {}
 }
-

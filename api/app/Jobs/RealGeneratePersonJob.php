@@ -26,6 +26,7 @@ class RealGeneratePersonJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 120; // Longer timeout for real API calls
 
     public function __construct(
@@ -40,6 +41,7 @@ class RealGeneratePersonJob implements ShouldQueue
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
                 $this->updateCache('DONE', $existing->id);
+
                 return;
             }
 
@@ -47,6 +49,7 @@ class RealGeneratePersonJob implements ShouldQueue
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
                 $this->updateCache('DONE', $existing->id);
+
                 return;
             }
 
@@ -55,7 +58,7 @@ class RealGeneratePersonJob implements ShouldQueue
             $aiResponse = $openAiClient->generatePerson($this->slug);
 
             if (! $aiResponse || ! isset($aiResponse['success']) || ! $aiResponse['success']) {
-                throw new \RuntimeException('AI API returned error: ' . ($aiResponse['error'] ?? 'Unknown error'));
+                throw new \RuntimeException('AI API returned error: '.($aiResponse['error'] ?? 'Unknown error'));
             }
 
             $name = $aiResponse['name'] ?? Str::of($this->slug)->replace('-', ' ')->title();
@@ -97,7 +100,6 @@ class RealGeneratePersonJob implements ShouldQueue
         }
     }
 
-
     private function updateCache(string $status, ?int $id = null): void
     {
         Cache::put($this->cacheKey(), [
@@ -131,4 +133,3 @@ class RealGeneratePersonJob implements ShouldQueue
         ], now()->addMinutes(15));
     }
 }
-
