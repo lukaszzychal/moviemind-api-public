@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\MovieGenerationRequested;
 use App\Http\Controllers\Controller;
 use App\Models\Movie;
 use App\Repositories\MovieRepository;
-use App\Services\AiServiceInterface;
 use App\Services\HateoasService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
 
@@ -15,8 +16,7 @@ class MovieController extends Controller
 {
     public function __construct(
         private readonly MovieRepository $movieRepository,
-        private readonly HateoasService $hateoas,
-        private readonly AiServiceInterface $ai
+        private readonly HateoasService $hateoas
     ) {}
 
     public function index(Request $request)
@@ -74,7 +74,17 @@ class MovieController extends Controller
         }
 
         $jobId = (string) Str::uuid();
-        $this->ai->queueMovieGeneration($slug, $jobId);
+
+        // Set initial cache status
+        Cache::put("ai_job:{$jobId}", [
+            'job_id' => $jobId,
+            'status' => 'PENDING',
+            'entity' => 'MOVIE',
+            'slug' => $slug,
+        ], now()->addMinutes(15));
+
+        // Emit event - Listener will queue the Job
+        event(new MovieGenerationRequested($slug, $jobId));
 
         return response()->json([
             'job_id' => $jobId,
