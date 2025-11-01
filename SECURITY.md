@@ -17,7 +17,7 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 **Never** report security vulnerabilities through public GitHub issues, discussions, or any other public channels.
 
 ### 2. Report privately
-Send an email to: **security@moviemind.com**
+Send an email to: **lukasz.zychal.dev@gmail.com**
 
 Include the following information:
 - Description of the vulnerability
@@ -142,7 +142,7 @@ Include the following information:
 ## Contact Information
 
 ### Security Team
-- **Email**: security@moviemind.com
+- **Email**: lukasz.zychal.dev@gmail.com
 - **Response Time**: 24 hours
 - **Escalation**: For urgent issues, mark email as "URGENT"
 
