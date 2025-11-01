@@ -270,8 +270,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/lukaszzychal/moviemind-api-public/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lukaszzychal/moviemind-api-public/discussions)
-- **Email**: support@moviemind.com
+- **Discussions**: [GitHub Discussions](https://github.com/lukaszzychal/moviemind-api-public/discussions) *(enable in repository Settings → Features)*
+- **Email**: lukasz.zychal.dev@gmail.com
 
 ## 🏆 Roadmap
 
