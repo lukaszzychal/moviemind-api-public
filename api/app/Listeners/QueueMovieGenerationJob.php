@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\MovieGenerationRequested;
+use App\Helpers\AiServiceSelector;
 use App\Jobs\MockGenerateMovieJob;
 use App\Jobs\RealGenerateMovieJob;
 
@@ -14,7 +15,8 @@ class QueueMovieGenerationJob
      */
     public function handle(MovieGenerationRequested $event): void
     {
-        $aiService = config('services.ai.service', 'mock');
+        $aiService = AiServiceSelector::getService();
+        AiServiceSelector::validate();
 
         match ($aiService) {
             'real' => RealGenerateMovieJob::dispatch($event->slug, $event->jobId),
