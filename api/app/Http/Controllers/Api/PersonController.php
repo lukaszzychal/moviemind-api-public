@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\PersonGenerationRequested;
 use App\Http\Controllers\Controller;
+use App\Models\Person;
 use App\Repositories\PersonRepository;
 use App\Services\HateoasService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
@@ -16,6 +18,22 @@ class PersonController extends Controller
         private readonly PersonRepository $personRepository,
         private readonly HateoasService $hateoas
     ) {}
+
+    public function index(Request $request)
+    {
+        $q = $request->query('q');
+        $role = $request->query('role'); // Optional: ACTOR, DIRECTOR, WRITER, PRODUCER
+        $people = $this->personRepository->searchPeople($q, $role, 50);
+
+        $data = $people->map(function (Person $person) {
+            $payload = $person->toArray();
+            $payload['_links'] = $this->hateoas->personLinks($person);
+
+            return $payload;
+        });
+
+        return response()->json(['data' => $data]);
+    }
 
     public function show(string $slug)
     {

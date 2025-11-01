@@ -11,13 +11,13 @@ class HateoasService
     {
         return [
             'self' => url("/api/v1/movies/{$movie->slug}"),
-            'people' => url("/api/v1/movies/{$movie->slug}"),
+            'people' => url('/api/v1/people'), // List of all people (future: could be /movies/{slug}/people)
             'generate' => [
                 'href' => url('/api/v1/generate'),
                 'method' => 'POST',
                 'body' => [
                     'entity_type' => 'MOVIE',
-                    'entity_id' => $movie->id,
+                    'slug' => $movie->slug,
                 ],
             ],
         ];

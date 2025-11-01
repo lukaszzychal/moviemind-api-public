@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\MovieGenerationRequested;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MovieResource;
 use App\Models\Movie;
 use App\Repositories\MovieRepository;
 use App\Services\HateoasService;
@@ -24,17 +25,17 @@ class MovieController extends Controller
         $q = $request->query('q');
         $movies = $this->movieRepository->searchMovies($q, 50);
 
-        $data = $movies->map(function (Movie $m) {
-            $arr = $m->toArray();
-            $arr['_links'] = $this->hateoas->movieLinks($m);
+        $data = $movies->map(function (Movie $m) use ($request) {
+            $resource = new MovieResource($m);
+            $resource->additional(['_links' => $this->hateoas->movieLinks($m)]);
 
-            return $arr;
+            return $resource->resolve($request);
         });
 
         return response()->json(['data' => $data]);
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
         $movie = $this->movieRepository->findBySlugWithRelations($slug);
         if ($movie) {
@@ -44,8 +45,9 @@ class MovieController extends Controller
                 $allMovies = $this->movieRepository->findAllByTitleSlug(Str::slug($parsed['title']));
                 if ($allMovies->count() > 1) {
                     // Multiple movies with same title - include disambiguation info
-                    $payload = $movie->toArray();
-                    $payload['_links'] = $this->hateoas->movieLinks($movie);
+                    $resource = new MovieResource($movie);
+                    $resource->additional(['_links' => $this->hateoas->movieLinks($movie)]);
+                    $payload = $resource->resolve($request);
                     $payload['_meta'] = [
                         'ambiguous' => true,
                         'message' => 'Multiple movies found with this title. Showing most recent. Use slug with year (e.g., "bad-boys-1995") for specific version.',
@@ -63,10 +65,11 @@ class MovieController extends Controller
                 }
             }
 
-            $payload = $movie->toArray();
-            $payload['_links'] = $this->hateoas->movieLinks($movie);
+            $resource = new MovieResource($movie);
+            $resource->additional(['_links' => $this->hateoas->movieLinks($movie)]);
 
-            return response()->json($payload);
+            // Use response()->json() to avoid data wrapper from JsonResource::toResponse()
+            return response()->json($resource->resolve($request));
         }
 
         if (! Feature::active('ai_description_generation')) {

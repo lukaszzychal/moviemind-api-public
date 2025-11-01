@@ -91,6 +91,34 @@ paths:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '404':
           description: Not Found (feature flag off)
+  /v1/people:
+    get:
+      tags: [People]
+      summary: List people
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (name, birthplace)
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [ACTOR, DIRECTOR, WRITER, PRODUCER]
+          description: Filter by role in movies (ACTOR, DIRECTOR, WRITER, PRODUCER)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
   /v1/actors/{id}:
     get:
       tags: [Actors]

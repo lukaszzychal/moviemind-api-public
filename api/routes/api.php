@@ -12,6 +12,7 @@ Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
     Route::get('movies/{slug}', [MovieController::class, 'show']);
     Route::get('actors/{id}', [ActorController::class, 'show']);
+    Route::get('people', [PersonController::class, 'index']);
     Route::get('people/{slug}', [PersonController::class, 'show']);
     Route::post('generate', [GenerateController::class, 'generate']);
     Route::get('jobs/{id}', [JobsController::class, 'show']);

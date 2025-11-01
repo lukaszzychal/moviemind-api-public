@@ -5,8 +5,10 @@ namespace App\Jobs;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
+use App\Enums\RoleType;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Models\Person;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -81,9 +83,24 @@ class RealGenerateMovieJob implements ShouldQueue
                 'title' => (string) $title,
                 'slug' => $uniqueSlug,
                 'release_year' => $releaseYear,
-                'director' => $director,
+                'director' => $director, // Keep for backward compatibility, but also create Person relation
                 'genres' => $genres,
             ]);
+
+            // Create or find director as Person and link via movie_person
+            if ($director && $director !== 'Unknown Director') {
+                $directorSlug = Str::slug($director);
+                $directorPerson = Person::firstOrCreate(
+                    ['slug' => $directorSlug],
+                    ['name' => $director]
+                );
+
+                // Attach director relationship
+                $movie->people()->attach($directorPerson->id, [
+                    'role' => RoleType::DIRECTOR->value,
+                    'billing_order' => null, // Director doesn't have billing order
+                ]);
+            }
 
             $desc = MovieDescription::create([
                 'movie_id' => $movie->id,

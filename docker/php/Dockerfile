@@ -7,7 +7,7 @@ RUN apk add --no-cache \
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install -j$(nproc) pdo pdo_pgsql intl mbstring gd
+ && docker-php-ext-install -j$(nproc) pdo pdo_pgsql intl mbstring gd pcntl
 
 # Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1

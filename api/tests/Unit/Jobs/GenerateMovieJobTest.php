@@ -82,6 +82,39 @@ class GenerateMovieJobTest extends TestCase
         $this->assertEquals($movie->id, $cached['id']);
     }
 
+    public function test_job_creates_person_relation_for_director(): void
+    {
+        $jobId = 'test-job-123';
+        $slug = 'inception-2010-christopher-nolan'; // Slug with director in it
+
+        $job = new MockGenerateMovieJob($slug, $jobId);
+        $job->handle();
+
+        $movie = Movie::where('slug', 'like', 'inception-2010%')->first();
+        $this->assertNotNull($movie);
+
+        // Verify director Person was created and linked
+        $director = $movie->people()->wherePivot('role', 'DIRECTOR')->first();
+        $this->assertNotNull($director, 'Director Person should be created and linked');
+        $this->assertStringContainsString('christopher', strtolower($director->slug), 'Director slug should contain director name');
+    }
+
+    public function test_job_handles_mock_director_name(): void
+    {
+        $jobId = 'test-job-456';
+        $slug = 'some-random-movie-2000'; // Slug without director
+
+        $job = new MockGenerateMovieJob($slug, $jobId);
+        $job->handle();
+
+        $movie = Movie::where('slug', 'like', 'some-random-movie-2000%')->first();
+        $this->assertNotNull($movie);
+
+        // MockGenerateMovieJob uses "Mock AI Director" which should not create Person relation
+        $director = $movie->people()->wherePivot('role', 'DIRECTOR')->first();
+        $this->assertNull($director, 'Mock AI Director should not create Person relation');
+    }
+
     public function test_mock_job_implements_should_queue(): void
     {
         $job = new MockGenerateMovieJob('test', 'job-123');

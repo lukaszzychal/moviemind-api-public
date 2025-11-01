@@ -2,194 +2,552 @@
   "info": {
     "name": "MovieMind API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "version": "2.0.0",
+    "description": "REST API for movies and people with AI-powered descriptions and bios. Uses slug-based resource identifiers. When data is missing and the corresponding feature flag is enabled, endpoints return 202 Accepted and queue generation."
   },
   "item": [
     {
-      "name": "Movies - List",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/movies?q=matrix",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","movies"],
-          "query": [{"key":"q","value":"matrix"}]
-        }
-      },
-      "response": [
+      "name": "Movies",
+      "item": [
         {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n        \"people\": \"http://localhost:8000/api/v1/movies/the-matrix\"\n      }\n    }\n  ]\n}"
-        }
-      ]
-    },
-    {
-      "name": "Movies - Show (by slug)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/movies/the-matrix",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","movies","the-matrix"]
-        }
-      },
-      "response": [
-        {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 10,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality...\",\n    \"context_tag\": \"modern\"\n  },\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"people\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"entity_id\": 1\n      }\n    }\n  }\n}"
-        }
-      ]
-    },
-    {
-      "name": "People - Show (by slug)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/people/christopher-nolan",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","people","christopher-nolan"]
-        }
-      },
-      "response": [
-        {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"id\": 123,\n  \"slug\": \"christopher-nolan\",\n  \"name\": \"Christopher Nolan\",\n  \"bios\": [ { \"locale\": \"en-US\", \"text\": \"Short bio...\" } ],\n  \"movies\": [ { \"id\": 2, \"slug\": \"inception\", \"title\": \"Inception\" } ],\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n    \"movies\": \"http://localhost:8000/api/v1/movies\"\n  }\n}"
-        }
-      ]
-    },
-    {
-      "name": "Generate - MOVIE",
-      "request": {
-        "method": "POST",
-        "header": [{"key":"Content-Type","value":"application/json"}],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"entity_id\": 1,\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/generate",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","generate"]
-        }
-      },
-      "response": [
-        {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\"\n}"
+          "name": "Movies - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies?q={{movieSearchQuery}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "movies"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{movieSearchQuery}}",
+                  "description": "Free-text search (title, director, genre)"
+                }
+              ]
+            },
+            "description": "List movies with optional search query parameter 'q'"
+          },
+          "response": [
+            {
+              "name": "200 OK - List with results",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/movies?q=matrix",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "movies"],
+                  "query": [{"key": "q", "value": "matrix"}]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": {\n        \"id\": 1,\n        \"name\": \"The Wachowskis\",\n        \"slug\": \"the-wachowskis\"\n      },\n      \"genres\": [\"Action\", \"Sci-Fi\"],\n      \"people\": [],\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n        \"people\": \"http://localhost:8000/api/v1/people\",\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": \"the-matrix\"\n          }\n        }\n      }\n    }\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "403 Feature off",
-          "status": "Forbidden",
-          "code": 403,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"error\": \"Feature not available\"\n}"
+          "name": "Movies - Show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{movieSlug}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "movies", "{{movieSlug}}"],
+              "variable": [
+                {
+                  "key": "movieSlug",
+                  "value": "the-matrix",
+                  "description": "Movie slug (e.g., 'the-matrix', 'the-matrix-1999', 'annihilation')"
+                }
+              ]
+            },
+            "description": "Get movie details by slug.\n\n**Returns:**\n- `200 OK` - Movie exists in database\n- `202 Accepted` - Movie missing, feature flag enabled, generation queued\n- `404 Not Found` - Movie missing, feature flag disabled"
+          },
+          "response": [
+            {
+              "name": "200 OK - Movie exists",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/movies/the-matrix",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "movies", "the-matrix"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": {\n    \"id\": 1,\n    \"name\": \"The Wachowskis\",\n    \"slug\": \"the-wachowskis\"\n  },\n  \"genres\": [\"Action\", \"Sci-Fi\"],\n  \"people\": [],\n  \"default_description\": {\n    \"id\": 10,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality...\",\n    \"context_tag\": \"modern\"\n  },\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"people\": \"http://localhost:8000/api/v1/people\",\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"slug\": \"the-matrix\"\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "202 Accepted - Missing movie, generation queued",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/movies/annihilation",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "movies", "annihilation"]
+                }
+              },
+              "status": "Accepted",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"c6de4a2f-1111-2222-3333-abcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for movie by slug\",\n  \"slug\": \"annihilation\",\n  \"confidence\": 0.9,\n  \"confidence_level\": \"high\"\n}"
+            },
+            {
+              "name": "404 Not Found - Missing movie, feature flag off",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/movies/annihilation",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "movies", "annihilation"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"error\": \"Movie not found\"\n}"
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Endpoints for movie operations"
     },
     {
-      "name": "Generate - PERSON",
-      "request": {
-        "method": "POST",
-        "header": [{"key":"Content-Type","value":"application/json"}],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"entity_id\": 123,\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}"
+      "name": "People",
+      "item": [
+        {
+          "name": "People - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people?q={{personSearchQuery}}&role={{personRole}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "people"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{personSearchQuery}}",
+                  "description": "Free-text search (name, birthplace)"
+                },
+                {
+                  "key": "role",
+                  "value": "{{personRole}}",
+                  "description": "Filter by role (ACTOR, DIRECTOR, WRITER, PRODUCER)"
+                }
+              ]
+            },
+            "description": "List people with optional search query parameter 'q' and role filter.\n\n**Query Parameters:**\n- `q` - Free-text search (name, birthplace)\n- `role` - Filter by role in movies (ACTOR, DIRECTOR, WRITER, PRODUCER)"
+          },
+          "response": [
+            {
+              "name": "200 OK - List with results",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/people?q=christopher",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "people"],
+                  "query": [{"key": "q", "value": "christopher"}]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 123,\n      \"slug\": \"christopher-nolan\",\n      \"name\": \"Christopher Nolan\",\n      \"birth_date\": \"1970-07-30\",\n      \"birthplace\": \"London, England\",\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n        \"movies\": \"http://localhost:8000/api/v1/movies\"\n      }\n    }\n  ]\n}"
+            },
+            {
+              "name": "200 OK - Empty list",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/people",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "people"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"data\": []\n}"
+            }
+          ]
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/generate",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","generate"]
-        }
-      },
-      "response": [
         {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\"\n}"
+          "name": "People - Show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{personSlug}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "people", "{{personSlug}}"],
+              "variable": [
+                {
+                  "key": "personSlug",
+                  "value": "christopher-nolan",
+                  "description": "Person slug (e.g., 'christopher-nolan', 'keanu-reeves', 'john-doe')"
+                }
+              ]
+            },
+            "description": "Get person details by slug.\n\n**Returns:**\n- `200 OK` - Person exists in database\n- `202 Accepted` - Person missing, feature flag enabled, generation queued\n- `404 Not Found` - Person missing, feature flag disabled"
+          },
+          "response": [
+            {
+              "name": "200 OK - Person exists",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/people/christopher-nolan",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "people", "christopher-nolan"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"id\": 123,\n  \"slug\": \"christopher-nolan\",\n  \"name\": \"Christopher Nolan\",\n  \"birth_date\": \"1970-07-30\",\n  \"birthplace\": \"London, England\",\n  \"bios\": [\n    {\n      \"locale\": \"en-US\",\n      \"text\": \"Christopher Nolan is a British-American filmmaker...\"\n    }\n  ],\n  \"movies\": [\n    {\n      \"id\": 2,\n      \"slug\": \"inception\",\n      \"title\": \"Inception\"\n    }\n  ],\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n    \"movies\": \"http://localhost:8000/api/v1/movies\"\n  }\n}"
+            },
+            {
+              "name": "202 Accepted - Missing person, generation queued",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/people/john-doe",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "people", "john-doe"]
+                }
+              },
+              "status": "Accepted",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"d7ee4a2f-4444-5555-6666-bbcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for person by slug\",\n  \"slug\": \"john-doe\",\n  \"confidence\": 0.85,\n  \"confidence_level\": \"high\"\n}"
+            },
+            {
+              "name": "404 Not Found - Missing person, feature flag off",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/people/john-doe",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "people", "john-doe"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"error\": \"Person not found\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for people operations"
+    },
+    {
+      "name": "Generation",
+      "item": [
+        {
+          "name": "Generate - MOVIE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"{{movieSlug}}\",\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "generate"]
+            },
+            "description": "Queue AI generation for a movie.\n\n**Returns:**\n- `202 Accepted` - Generation queued (feature flag enabled)\n- `403 Forbidden` - Feature flag disabled\n- `400 Bad Request` - Validation error"
+          },
+          "response": [
+            {
+              "name": "202 Accepted - Generation queued",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\",\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/generate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "generate"]
+                }
+              },
+              "status": "Accepted",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for movie by slug\",\n  \"slug\": \"the-matrix-1999\",\n  \"confidence\": 0.9,\n  \"confidence_level\": \"high\"\n}"
+            },
+            {
+              "name": "403 Forbidden - Feature flag off",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\",\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/generate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "generate"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"error\": \"Feature not available\"\n}"
+            },
+            {
+              "name": "400 Bad Request - Validation error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entity_type\": \"INVALID\",\n  \"slug\": \"\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/generate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "generate"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"message\": \"The entity type field is required.\",\n  \"errors\": {\n    \"entity_type\": [\"The entity type must be one of: MOVIE, ACTOR, or PERSON.\"],\n    \"slug\": [\"The slug field is required when entity_id is not present.\"]\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "403 Feature off",
-          "status": "Forbidden",
-          "code": 403,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"error\": \"Feature not available\"\n}"
+          "name": "Generate - PERSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"{{personSlug}}\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "generate"]
+            },
+            "description": "Queue AI generation for a person.\n\n**Returns:**\n- `202 Accepted` - Generation queued (feature flag enabled)\n- `403 Forbidden` - Feature flag disabled\n- `400 Bad Request` - Validation error"
+          },
+          "response": [
+            {
+              "name": "202 Accepted - Generation queued",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"keanu-reeves\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/generate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "generate"]
+                }
+              },
+              "status": "Accepted",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for person by slug\",\n  \"slug\": \"keanu-reeves\",\n  \"confidence\": 0.85,\n  \"confidence_level\": \"high\"\n}"
+            },
+            {
+              "name": "403 Forbidden - Feature flag off",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"keanu-reeves\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/generate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "generate"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"error\": \"Feature not available\"\n}"
+            },
+            {
+              "name": "400 Bad Request - Validation error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entity_type\": \"INVALID\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/generate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "generate"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"message\": \"The entity type field is required.\",\n  \"errors\": {\n    \"entity_type\": [\"The entity type must be one of: MOVIE, ACTOR, or PERSON.\"]\n  }\n}"
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Endpoints for AI generation"
     },
     {
-      "name": "Jobs - Show",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","jobs","{{jobId}}"]
-        }
-      },
-      "response": [
+      "name": "Jobs",
+      "item": [
         {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\\n  \\\"id\\\": \\\"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\\\",\\n  \\\"status\\\": \\\"PENDING\\\"\\n}"
+          "name": "Jobs - Show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "jobs", "{{jobId}}"]
+            },
+            "description": "Check job status. Returns job details or 404 if job not found.\n\n**Possible statuses:**\n- `PENDING` - Job queued, waiting to be processed\n- `PROCESSING` - Job is currently being processed\n- `DONE` - Job completed successfully\n- `FAILED` - Job failed after retries"
+          },
+          "response": [
+            {
+              "name": "200 OK - Job pending",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/jobs/7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "jobs", "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\",\n  \"entity\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\"\n}"
+            },
+            {
+              "name": "200 OK - Job done",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/jobs/7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "jobs", "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"DONE\",\n  \"entity\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\",\n  \"id\": 123,\n  \"confidence\": 0.9,\n  \"confidence_level\": \"high\"\n}"
+            },
+            {
+              "name": "404 Not Found - Job not found",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/jobs/invalid-job-id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "jobs", "invalid-job-id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"job_id\": \"invalid-job-id\",\n  \"status\": \"UNKNOWN\"\n}"
+            }
+          ]
         }
-      ]
-    }
-    ,
-    {
-      "name": "Movies - Show (missing slug => 202 when generation on)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/movies/annihilation",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","movies","annihilation"]
-        }
-      },
-      "response": [
-        {
-          "name": "202 Accepted",
-          "status": "Accepted",
-          "code": 202,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"c6de4a2f-1111-2222-3333-abcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"slug\": \"annihilation\"\n}"
-        }
-      ]
-    },
-    {
-      "name": "People - Show (missing slug => 202 when generation on)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/people/john-doe",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","people","john-doe"]
-        }
-      },
-      "response": [
-        {
-          "name": "202 Accepted",
-          "status": "Accepted",
-          "code": 202,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"d7ee4a2f-4444-5555-6666-bbcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"slug\": \"john-doe\"\n}"
-        }
-      ]
+      ],
+      "description": "Endpoints for job status tracking"
     },
     {
       "name": "Admin",
@@ -198,57 +556,150 @@
           "name": "Flags - List",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags",
               "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags"]
-            }
-          }
+              "path": ["api", "v1", "admin", "flags"]
+            },
+            "description": "List all feature flags and their current states"
+          },
+          "response": []
         },
         {
-          "name": "Flags - Toggle ai_description_generation (on)",
+          "name": "Flags - Toggle ai_description_generation",
           "request": {
             "method": "POST",
-            "header": [{"key":"Content-Type","value":"application/json"}],
-            "body": {"mode":"raw","raw":"{\n  \"state\": \"on\"\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"on\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags/ai_description_generation",
               "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags","ai_description_generation"]
-            }
-          }
+              "path": ["api", "v1", "admin", "flags", "ai_description_generation"]
+            },
+            "description": "Toggle ai_description_generation feature flag. Use 'on' or 'off' for state"
+          },
+          "response": []
         },
         {
-          "name": "Flags - Toggle ai_bio_generation (on)",
+          "name": "Flags - Toggle ai_bio_generation",
           "request": {
             "method": "POST",
-            "header": [{"key":"Content-Type","value":"application/json"}],
-            "body": {"mode":"raw","raw":"{\n  \"state\": \"on\"\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"on\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags/ai_bio_generation",
               "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags","ai_bio_generation"]
-            }
-          }
+              "path": ["api", "v1", "admin", "flags", "ai_bio_generation"]
+            },
+            "description": "Toggle ai_bio_generation feature flag. Use 'on' or 'off' for state"
+          },
+          "response": []
         },
         {
           "name": "Flags - Usage",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags/usage",
               "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags","usage"]
-            }
-          }
+              "path": ["api", "v1", "admin", "flags", "usage"]
+            },
+            "description": "Get feature flags usage statistics"
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Admin endpoints for feature flags"
     }
   ],
   "variable": [
-    {"key":"baseUrl","value":"http://localhost:8000"},
-    {"key":"jobId","value":"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"}
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "Base URL for the API"
+    },
+    {
+      "key": "jobId",
+      "value": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
+      "type": "string",
+      "description": "Job ID for testing job status endpoint"
+    },
+    {
+      "key": "movieSlug",
+      "value": "the-matrix",
+      "type": "string",
+      "description": "Movie slug (examples: 'the-matrix', 'the-matrix-1999', 'annihilation')"
+    },
+    {
+      "key": "personSlug",
+      "value": "christopher-nolan",
+      "type": "string",
+      "description": "Person slug (examples: 'christopher-nolan', 'keanu-reeves', 'john-doe')"
+    },
+    {
+      "key": "movieSearchQuery",
+      "value": "matrix",
+      "type": "string",
+      "description": "Search query for movies list endpoint"
+    },
+    {
+      "key": "personSearchQuery",
+      "value": "christopher",
+      "type": "string",
+      "description": "Search query for people list endpoint"
+    },
+    {
+      "key": "personRole",
+      "value": "DIRECTOR",
+      "type": "string",
+      "description": "Filter by role (ACTOR, DIRECTOR, WRITER, PRODUCER)"
+    }
   ]
 }
-
-

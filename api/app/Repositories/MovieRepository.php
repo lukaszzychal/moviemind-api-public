@@ -25,7 +25,7 @@ class MovieRepository
     public function findBySlugWithRelations(string $slug): ?Movie
     {
         // Try exact match first
-        $movie = Movie::with(['descriptions', 'defaultDescription'])
+        $movie = Movie::with(['descriptions', 'defaultDescription', 'people'])
             ->where('slug', $slug)
             ->first();
 
@@ -41,7 +41,7 @@ class MovieRepository
             // Note: This may return the first match if multiple movies share the same title
             $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
 
-            return Movie::with(['descriptions', 'defaultDescription'])
+            return Movie::with(['descriptions', 'defaultDescription', 'people'])
                 ->whereRaw('slug LIKE ?', ["{$titleSlug}%"])
                 ->orderBy('release_year', 'desc') // Return most recent by default
                 ->first();
