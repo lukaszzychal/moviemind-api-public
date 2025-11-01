@@ -158,7 +158,7 @@ Zwróć tylko czysty tekst.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/moviemind-api-public.git
+   git clone https://github.com/lukaszzychal/moviemind-api-public.git
    cd moviemind-api-public
    ```
 
@@ -269,8 +269,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/moviemind-api-public/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/moviemind-api-public/discussions)
+- **Issues**: [GitHub Issues](https://github.com/lukaszzychal/moviemind-api-public/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/lukaszzychal/moviemind-api-public/discussions)
 - **Email**: support@moviemind.com
 
 ## 🏆 Roadmap
