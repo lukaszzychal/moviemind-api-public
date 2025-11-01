@@ -25,16 +25,47 @@
 
 ---
 
-### **Krok 2: Dodanie środków (Billing)**
+### **Krok 2: 🆓 Sprawdź darmowe opcje PRZED dodaniem płatności**
 
-⚠️ **WAŻNE:** OpenAI wymaga dodania środków przed użyciem API!
+**DARMOWE OPCJE (Rekomendowane najpierw!):**
+
+#### **Opcja A: Sprawdź darmowe kredyty OpenAI**
+
+1. Przejdź do: **Settings → Billing → Usage**
+2. Sprawdź czy masz dostępne **Credits** lub **Free Tier**
+3. 🎁 **OpenAI często daje $5-10 darmowych kredytów** nowym kontom!
+4. Jeśli masz kredyty → możesz testować **BEZ PŁATNOŚCI**!
+
+#### **Opcja B: Użyj Mock AI (Całkowicie darmowe)**
+
+Ustaw w `api/.env`:
+```env
+AI_SERVICE=mock  # Nie wymaga API key!
+```
+
+**Zalety Mock AI:**
+- ✅ **Całkowicie darmowe**
+- ✅ Nie wymaga API key
+- ✅ Szybkie (symuluje odpowiedź w 3 sekundy)
+- ✅ Idealne do testowania logiki aplikacji
+
+**Kiedy użyć real API:**
+- Gdy chcesz przetestować rzeczywistą integrację
+- Gdy masz darmowe kredyty OpenAI
+- Gdy jesteś gotowy na production (koszty są bardzo niskie)
+
+---
+
+### **Krok 3: Dodanie środków (Tylko jeśli potrzebujesz real API)**
+
+⚠️ **WAŻNE:** To jest opcjonalne jeśli nie masz darmowych kredytów!
 
 1. Przejdź do: **Settings → Billing**
 2. Kliknij **"Add payment method"**
 3. Dodaj kartę kredytową lub PayPal
 4. Ustaw limit (np. $5-10 na start)
 
-**Dlaczego?** OpenAI pobiera opłaty za użycie API (pay-as-you-go).
+**Dlaczego?** OpenAI pobiera opłaty za użycie API (pay-as-you-go), ale koszty są bardzo niskie (~$0.09/100 filmów).
 
 ---
 
