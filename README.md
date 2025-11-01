@@ -227,6 +227,7 @@ curl -H "X-API-Key: <REPLACE_ME>" \
 - **API Documentation**: Available at `/api/doc` when running locally
 - **OpenAPI Spec**: `docs/openapi.yaml`
 - **Architecture Diagrams**: `docs/c4/` (C4 model diagrams)
+- **GitHub Projects Setup**: [`docs/GITHUB_PROJECTS_SETUP.md`](docs/GITHUB_PROJECTS_SETUP.md) - Przewodnik zarządzania zadaniami
 
 ## 🧪 Testing
 
