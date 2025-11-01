@@ -161,3 +161,19 @@ echo -e "  • SECURITY.md                 # Security policy"
 echo ""
 echo -e "${YELLOW}⚠️  Remember: Never commit real API keys or passwords!${NC}"
 echo -e "${YELLOW}   Use environment variables and .env files instead.${NC}"
+echo ""
+
+# Install Git pre-commit hook for Laravel Pint and PHPStan
+echo -e "${BLUE}📦 Installing Git pre-commit hook for Laravel Pint & PHPStan...${NC}"
+if [ -f ".git/hooks/pre-commit" ]; then
+    echo -e "${GREEN}✅ Pre-commit hook already exists${NC}"
+else
+    # Copy pre-commit hook if it exists in repo
+    if [ -f "scripts/pre-commit" ]; then
+        cp scripts/pre-commit .git/hooks/pre-commit
+        chmod +x .git/hooks/pre-commit
+        echo -e "${GREEN}✅ Git pre-commit hook installed${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Pre-commit hook template not found in scripts/pre-commit${NC}"
+    fi
+fi
