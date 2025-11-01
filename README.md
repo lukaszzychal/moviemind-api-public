@@ -215,12 +215,21 @@ See docker-compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres,
 
 ## 🔐 Authentication
 
-The API uses simple API key authentication:
+**Current Status (Public MVP):** Authentication is not implemented in this public repository. All endpoints are currently accessible without authentication.
 
+**Planned (Private Repository):** Full authentication system with:
+- API key authentication via `X-API-Key` header
+- Rate limiting based on subscription plans
+- Billing integration (RapidAPI)
+- Usage tracking and analytics
+
+**Example (Future Implementation):**
 ```bash
 curl -H "X-API-Key: <REPLACE_ME>" \
      "https://api.moviemind.com/v1/movies"
 ```
+
+For production deployment with authentication, see the private repository.
 
 ## 📚 Documentation
 
