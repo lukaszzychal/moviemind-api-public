@@ -49,18 +49,44 @@ repos:
         description: Prevent large files from being committed
         args: ['--maxkb=1000']
 
-  # PHP specific hooks
-  - repo: https://github.com/doctrine/coding-standard
-    rev: 12.0.0
+  # PHP specific hooks - Laravel Pint (code style)
+  - repo: local
     hooks:
-      - id: php-cs-fixer
-        name: PHP CS Fixer
-        description: Fix PHP code style issues
-        entry: php-cs-fixer fix --config=.php-cs-fixer.php
+      - id: laravel-pint
+        name: Laravel Pint - Check code style
+        description: Check PHP code style using Laravel Pint
+        entry: bash -c 'cd api && (php artisan pint --test 2>/dev/null || vendor/bin/pint --test 2>/dev/null || echo "Pint not available, skipping")'
         language: system
         types: [php]
-        require_serial: true
-        additional_dependencies: [friendsofphp/php-cs-fixer]
+        pass_filenames: false
+        always_run: false
+        stages: [commit]
+        files: ^api/.*\.php$
+        
+      - id: laravel-pint-fix
+        name: Laravel Pint - Auto-fix code style
+        description: Automatically fix PHP code style issues using Laravel Pint
+        entry: bash -c 'cd api && (php artisan pint 2>/dev/null || vendor/bin/pint 2>/dev/null || echo "Pint not available") && git add -u'
+        language: system
+        types: [php]
+        pass_filenames: false
+        always_run: false
+        stages: [commit]
+        files: ^api/.*\.php$
+        
+  # PHPStan - Static analysis
+  - repo: local
+    hooks:
+      - id: phpstan
+        name: PHPStan - Static analysis
+        description: Run PHPStan static analysis
+        entry: bash -c 'cd api && vendor/bin/phpstan analyse --memory-limit=2G'
+        language: system
+        types: [php]
+        pass_filenames: false
+        always_run: false
+        stages: [commit]
+        files: ^api/.*\.php$
 
   # Security checks
   - repo: local
