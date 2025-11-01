@@ -323,7 +323,7 @@ Thumbs.db
 ### Getting Help
 
 - **Issues**: [GitHub Issues](https://github.com/lukaszzychal/moviemind-api-public/issues)
-- **Security**: security@moviemind.com
+- **Security**: lukasz.zychal.dev@gmail.com
 - **Documentation**: See `SECURITY.md` for security policies
 
 ### Resources
