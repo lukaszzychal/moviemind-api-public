@@ -34,10 +34,12 @@ class RealGenerateMovieJob implements ShouldQueue
         public string $jobId
     ) {}
 
-    // Note: OpenAiClientInterface is resolved via service container in handle()
-    // We can't inject it in constructor because Job is serialized to queue
-
-    public function handle(): void
+    /**
+     * Execute the job.
+     * Note: OpenAiClientInterface is injected via method injection.
+     * Constructor injection is not possible because Jobs are serialized to queue.
+     */
+    public function handle(OpenAiClientInterface $openAiClient): void
     {
         try {
             // Check if movie already exists
@@ -56,8 +58,7 @@ class RealGenerateMovieJob implements ShouldQueue
                 return;
             }
 
-            // Call real AI API using OpenAiClient
-            $openAiClient = app(OpenAiClientInterface::class);
+            // Call real AI API using OpenAiClient (injected via method injection)
             $aiResponse = $openAiClient->generateMovie($this->slug);
 
             if (! $aiResponse || ! isset($aiResponse['success']) || ! $aiResponse['success']) {

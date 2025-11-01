@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Helpers\AiServiceSelector;
 use App\Services\AiServiceInterface;
 use App\Services\MockAiService;
 use App\Services\OpenAiClient;
@@ -22,9 +23,10 @@ class AppServiceProvider extends ServiceProvider
         // Bind AI Service based on configuration
         // Use 'mock' for local development/testing
         // Use 'real' for production with Events + Jobs architecture
-        $aiService = config('services.ai.service', 'mock');
+        $this->app->bind(AiServiceInterface::class, function ($app) {
+            $aiService = AiServiceSelector::getService();
+            AiServiceSelector::validate();
 
-        $this->app->bind(AiServiceInterface::class, function ($app) use ($aiService) {
             return match ($aiService) {
                 'real' => $app->make(RealAiService::class),
                 'mock' => $app->make(MockAiService::class),

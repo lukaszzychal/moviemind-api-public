@@ -34,7 +34,12 @@ class RealGeneratePersonJob implements ShouldQueue
         public string $jobId
     ) {}
 
-    public function handle(): void
+    /**
+     * Execute the job.
+     * Note: OpenAiClientInterface is injected via method injection.
+     * Constructor injection is not possible because Jobs are serialized to queue.
+     */
+    public function handle(OpenAiClientInterface $openAiClient): void
     {
         try {
             // Check if person already exists
@@ -53,8 +58,7 @@ class RealGeneratePersonJob implements ShouldQueue
                 return;
             }
 
-            // Call real AI API using OpenAiClient
-            $openAiClient = app(OpenAiClientInterface::class);
+            // Call real AI API using OpenAiClient (injected via method injection)
             $aiResponse = $openAiClient->generatePerson($this->slug);
 
             if (! $aiResponse || ! isset($aiResponse['success']) || ! $aiResponse['success']) {
