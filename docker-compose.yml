@@ -21,6 +21,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-moviemind}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_CLIENT: predis
     depends_on:
       - db
       - redis
@@ -48,6 +49,7 @@ services:
     environment:
       QUEUE_CONNECTION: redis
       REDIS_HOST: redis
+      REDIS_CLIENT: predis
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
