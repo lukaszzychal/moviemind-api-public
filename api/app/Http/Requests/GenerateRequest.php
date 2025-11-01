@@ -43,4 +43,24 @@ class GenerateRequest extends FormRequest
             'context_tag' => 'context tag',
         ];
     }
+
+    /**
+     * Get custom error messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'entity_type.required' => 'The entity type field is required.',
+            'entity_type.in' => 'The entity type must be one of: MOVIE, ACTOR, or PERSON.',
+            'entity_id.required' => 'The entity ID field is required.',
+            'entity_id.string' => 'The entity ID must be a string.',
+            'entity_id.max' => 'The entity ID may not be greater than 255 characters.',
+            'locale.string' => 'The locale must be a string.',
+            'locale.max' => 'The locale may not be greater than 10 characters.',
+            'context_tag.string' => 'The context tag must be a string.',
+            'context_tag.max' => 'The context tag may not be greater than 64 characters.',
+        ];
+    }
 }
