@@ -317,16 +317,68 @@ private const DEFAULT_TIMEOUT = 120;
 
 ---
 
+### **🆓 Darmowe testy:**
+
+| Metoda | Koszt | Jakość danych | Użycie |
+|--------|------|---------------|--------|
+| **Mock AI** (`AI_SERVICE=mock`) | ✅ Darmowe | Symulowane | Testowanie logiki |
+| **OpenAI Free Credits** | ✅ Darmowe (jeśli masz) | Prawdziwe | Testowanie integracji |
+| **Real API** (pay-as-you-go) | 💰 ~$0.09/100 filmów | Prawdziwe | Production |
+
+**Rekomendacja:**
+1. **Początek:** Użyj `AI_SERVICE=mock` do testowania logiki
+2. **Integracja:** Sprawdź czy masz darmowe kredyty OpenAI
+3. **Production:** Przełącz na `AI_SERVICE=real` gdy gotowe
+
+---
+
 ## ✅ Checklist przed testami
 
 - [ ] Konto OpenAI utworzone
-- [ ] Billing dodany (karta/PayPal)
+- [ ] Sprawdzone darmowe kredyty w Settings → Billing
+- [ ] Billing dodany (karta/PayPal) - jeśli brak kredytów
 - [ ] API key wygenerowany
 - [ ] API key dodany do `api/.env`
-- [ ] `AI_SERVICE=real` w `.env`
+- [ ] `AI_SERVICE=real` w `.env` (lub `mock` dla darmowych testów)
 - [ ] Docker uruchomiony (`docker-compose up -d`)
 - [ ] Queue worker uruchomiony (Horizon lub `queue:work`)
 - [ ] Test request wysłany
+
+---
+
+## 🆓 Testowanie bez kosztów (Darmowe)
+
+### **Opcja 1: Mock AI (Rekomendowane dla początkowych testów)**
+
+Użyj `AI_SERVICE=mock` w `api/.env`:
+
+```env
+AI_SERVICE=mock  # Zamiast 'real'
+```
+
+**Zalety:**
+- ✅ Całkowicie darmowe
+- ✅ Szybkie (symuluje odpowiedź w 3 sekundy)
+- ✅ Idealne do testowania logiki aplikacji
+- ✅ Nie wymaga API key
+
+**Kiedy użyć real:**
+- Gdy chcesz przetestować rzeczywistą integrację z OpenAI
+- Gdy masz darmowe kredyty lub gotówkę na koncie
+
+---
+
+### **Opcja 2: Sprawdź darmowe kredyty OpenAI**
+
+1. Zaloguj się na: https://platform.openai.com/
+2. Przejdź do: **Settings → Billing**
+3. Sprawdź: **Usage** lub **Credits**
+4. Jeśli masz kredyty → możesz testować bez płatności!
+
+**Typowe promocje:**
+- 🎁 $5-10 dla nowych kont
+- 🎁 Specjalne promocje edukacyjne
+- 🎁 Promocje dla developerów
 
 ---
 
