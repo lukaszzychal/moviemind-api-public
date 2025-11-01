@@ -4,12 +4,16 @@ namespace App\Helpers;
 
 class AiServiceSelector
 {
+    private const MOCK = 'mock';
+
+    private const REAL = 'real';
+
     /**
      * Get the configured AI service (mock or real).
      */
     public static function getService(): string
     {
-        return config('services.ai.service', 'mock');
+        return config('services.ai.service', self::MOCK);
     }
 
     /**
@@ -17,7 +21,7 @@ class AiServiceSelector
      */
     public static function isReal(): bool
     {
-        return self::getService() === 'real';
+        return self::getService() === self::REAL;
     }
 
     /**
@@ -25,7 +29,7 @@ class AiServiceSelector
      */
     public static function isMock(): bool
     {
-        return self::getService() === 'mock';
+        return self::getService() === self::MOCK;
     }
 
     /**
@@ -36,8 +40,8 @@ class AiServiceSelector
     public static function validate(): void
     {
         $service = self::getService();
-        if (! in_array($service, ['mock', 'real'])) {
-            throw new \InvalidArgumentException("Invalid AI service: {$service}. Must be 'mock' or 'real'.");
+        if (! in_array($service, [self::MOCK, self::REAL], true)) {
+            throw new \InvalidArgumentException("Invalid AI service: {$service}. Must be ".self::MOCK.' or '.self::REAL.'.');
         }
     }
 }
