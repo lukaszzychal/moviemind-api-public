@@ -32,6 +32,10 @@ COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 # Copy Supervisor configuration
 COPY docker/php/supervisord.conf /etc/supervisord.conf
 
+# Copy start script
+COPY docker/php/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
 # Fix Nginx config to use 127.0.0.1:9000 instead of php:9000
 RUN sed -i 's/fastcgi_pass php:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf || true
 
@@ -56,10 +60,10 @@ RUN chown -R app:app /var/www/html \
 # Run Laravel post-install scripts (now that we have full app context)
 RUN composer dump-autoload --optimize --no-interaction || true
 
-# Expose port 80
+# Expose port (Railway will set PORT env var)
 EXPOSE 80
 
-# Start supervisor (manages both PHP-FPM and Nginx)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+# Start supervisor via start script (configures Nginx with PORT)
+CMD ["/usr/local/bin/start.sh"]
 
 
