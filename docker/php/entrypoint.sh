@@ -67,6 +67,10 @@ if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
     rm -f bootstrap/cache/config.php 2>/dev/null || true
     echo "✅ All caches cleared (including bootstrap cache files)"
     
+    # Clear OPcache to ensure fresh code is loaded (critical for route changes)
+    echo "🔄 Clearing OPcache..."
+    php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'OPcache cleared'; } else { echo 'OPcache not enabled'; }" || echo "⚠️  OPcache reset failed (non-critical)"
+    
     # Ensure storage directories exist before caching (critical for view:cache)
     echo "📁 Re-checking storage directories before caching..."
     mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
@@ -78,6 +82,9 @@ if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
     php artisan route:cache || echo "⚠️  Route cache failed (non-critical)"
     php artisan view:cache || echo "⚠️  View cache failed (non-critical)"
     echo "✅ Configuration cached"
+    
+    # Clear OPcache again after caching to ensure new cache is loaded
+    php -r "if (function_exists('opcache_reset')) { opcache_reset(); }" 2>/dev/null || true
 else
     echo "ℹ️  Skipping cache (APP_ENV=${APP_ENV})"
 fi
