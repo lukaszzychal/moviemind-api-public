@@ -17,10 +17,10 @@ FROM php:8.3-fpm-alpine AS base
 RUN apk add --no-cache \
     bash git unzip curl libpq-dev icu-dev oniguruma-dev linux-headers \
     freetype-dev libjpeg-turbo-dev libpng-dev \
-    redis-dev \
     wget
 
-# Install PECL for Redis extension
+# Install PECL and Redis extension
+# Note: PECL will handle Redis dependencies automatically
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
  && pecl install redis \
  && docker-php-ext-enable redis \
