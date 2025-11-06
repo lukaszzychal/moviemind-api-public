@@ -51,7 +51,9 @@ fi
 
 # Always set permissions (works for all users)
 chmod -R 775 storage bootstrap/cache 2>/dev/null || chmod -R 777 storage bootstrap/cache 2>/dev/null || true
-echo "✅ Storage directories ready with permissions 775"
+# Additional permissive permissions for Railway (group, user, others + write)
+chmod -R guo+w storage 2>/dev/null || true
+echo "✅ Storage directories ready with permissions 775 (guo+w for Railway)"
 
 # Check if APP_KEY is set (required for Laravel)
 if [ -z "$APP_KEY" ]; then
@@ -60,6 +62,10 @@ if [ -z "$APP_KEY" ]; then
 else
     echo "✅ APP_KEY is set"
 fi
+
+# Clear cache early (helps with Railway permissions issues)
+echo "🧹 Clearing cache early (helps with Railway)..."
+php artisan cache:clear || echo "⚠️  Cache clear failed (non-critical)"
 
 # Cache configuration for production (only if not in local/dev)
 if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
@@ -83,6 +89,8 @@ if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
     mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
     mkdir -p bootstrap/cache
     chmod -R 775 storage bootstrap/cache 2>/dev/null || chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+    # Additional permissive permissions for Railway (group, user, others + write)
+    chmod -R guo+w storage 2>/dev/null || true
     
     echo "📦 Caching configuration for production..."
     php artisan config:cache || echo "⚠️  Config cache failed (non-critical)"
