@@ -17,7 +17,14 @@ FROM php:8.3-fpm-alpine AS base
 RUN apk add --no-cache \
     bash git unzip curl libpq-dev icu-dev oniguruma-dev linux-headers \
     freetype-dev libjpeg-turbo-dev libpng-dev \
+    redis-dev \
     wget
+
+# Install PECL for Redis extension
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+ && pecl install redis \
+ && docker-php-ext-enable redis \
+ && apk del .build-deps
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
