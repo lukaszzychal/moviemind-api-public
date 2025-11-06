@@ -29,12 +29,22 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
 done
 
 # Ensure storage directories exist and have correct permissions
+# Run as root if possible, otherwise just set permissions
 echo "📁 Ensuring storage directories exist..."
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
 mkdir -p bootstrap/cache
-chown -R app:app storage bootstrap/cache 2>/dev/null || true
-chmod -R 775 storage bootstrap/cache
-echo "✅ Storage directories ready"
+
+# Try to set ownership (works if running as root)
+if [ "$(id -u)" = "0" ]; then
+    chown -R app:app storage bootstrap/cache 2>/dev/null || true
+    echo "✅ Ownership set (running as root)"
+else
+    echo "⚠️  Running as non-root user, skipping chown"
+fi
+
+# Always set permissions (works for all users)
+chmod -R 775 storage bootstrap/cache 2>/dev/null || chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+echo "✅ Storage directories ready with permissions 775"
 
 # Check if APP_KEY is set (required for Laravel)
 if [ -z "$APP_KEY" ]; then
