@@ -26,7 +26,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV COMPOSER_HOME=/tmp/composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+ENV COMPOSER_CACHE_DIR=/tmp/composer-cache
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+ && rm -rf /tmp/composer-cache
 
 # Create non-root user and group
 RUN addgroup -S app && adduser -S -G app app \
@@ -47,7 +49,9 @@ COPY api/composer.json api/composer.lock* ./
 # Install Composer dependencies
 # Use --no-scripts to avoid running Laravel commands during build
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction || \
-    composer install --optimize-autoloader --no-scripts --no-interaction
+    composer install --optimize-autoloader --no-scripts --no-interaction \
+ && rm -rf /tmp/composer-cache /tmp/composer \
+ && composer clear-cache || true
 
 # ----------------------------------------------------------------------------
 # Stage 3: Local/Dev - PHP-FPM only (for docker-compose with separate Nginx)
@@ -68,7 +72,9 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
  && chmod -R 775 storage bootstrap/cache
 
 # Run Laravel post-install scripts (now that we have full app context)
-RUN composer dump-autoload --optimize --no-interaction || true
+RUN composer dump-autoload --optimize --no-interaction || true \
+ && rm -rf /tmp/composer-cache /tmp/composer \
+ && composer clear-cache || true
 
 # Expose PHP-FPM port
 EXPOSE 9000
@@ -120,7 +126,16 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
  && chmod -R 775 storage bootstrap/cache
 
 # Run Laravel post-install scripts (now that we have full app context)
-RUN composer dump-autoload --optimize --no-interaction || true
+RUN composer dump-autoload --optimize --no-interaction || true \
+ && rm -rf /tmp/composer-cache /tmp/composer \
+ && composer clear-cache || true
+
+# Clean up build artifacts and temporary files to reduce image size
+RUN rm -rf /tmp/* /var/tmp/* \
+ && rm -rf /root/.composer/cache \
+ && rm -rf /var/cache/apk/* \
+ && find /usr/local/lib/php -name "*.a" -delete || true \
+ && find /usr/local/lib/php -name "*.la" -delete || true
 
 # Configure Opcache for production
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini && \

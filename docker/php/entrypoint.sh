@@ -28,6 +28,13 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     sleep 1
 done
 
+# Clean up old logs and cache to free up disk space (critical for Railway)
+echo "🧹 Cleaning up old logs and cache files..."
+find storage/logs -name "*.log" -type f -mtime +7 -delete 2>/dev/null || true
+find storage/framework/cache -type f -mtime +1 -delete 2>/dev/null || true
+find storage/framework/views -name "*.php" -type f -mtime +1 -delete 2>/dev/null || true
+echo "✅ Old cache and logs cleaned"
+
 # Ensure storage directories exist and have correct permissions
 # Run as root if possible, otherwise just set permissions
 echo "📁 Ensuring storage directories exist..."

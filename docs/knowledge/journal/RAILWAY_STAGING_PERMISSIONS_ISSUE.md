@@ -160,3 +160,70 @@ curl ${RAILWAY_STAGING_URL}/api/v1/movies
 
 **Ostatnia aktualizacja:** 2025-11-06 (3) - Problem rozwiązany ✅
 
+## 🔄 Aktualizacja 2025-11-06 (4) - Problem z przestrzenią dyskową
+
+### Problem:
+- Błąd SSH: `Error: crun: open '/dev/ptmx': No space left on device: OCI runtime error`
+- Kontener Railway nie ma wystarczająco dużo miejsca na dysku
+- Problem może być spowodowany przez:
+  - Zbyt duży obraz Docker (niepotrzebne pliki)
+  - Zbyt dużą ilość logów (`storage/logs`)
+  - Zbyt dużą ilość cache'u (`storage/framework/cache`, `bootstrap/cache`)
+  - Composer cache (`/tmp/composer-cache`)
+
+### Rozwiązanie:
+
+#### 1. Optymalizacja Dockerfile:
+- **Czyszczenie Composer cache** po instalacji zależności
+- **Usuwanie build artifacts** (`.a`, `.la` files)
+- **Czyszczenie APK cache** (`/var/cache/apk/*`)
+- **Usuwanie temporary files** (`/tmp/*`, `/var/tmp/*`)
+
+```dockerfile
+# Composer cache cleanup
+ENV COMPOSER_CACHE_DIR=/tmp/composer-cache
+RUN composer install ... \
+ && rm -rf /tmp/composer-cache /tmp/composer \
+ && composer clear-cache || true
+
+# Clean up build artifacts
+RUN rm -rf /tmp/* /var/tmp/* \
+ && rm -rf /root/.composer/cache \
+ && rm -rf /var/cache/apk/* \
+ && find /usr/local/lib/php -name "*.a" -delete || true \
+ && find /usr/local/lib/php -name "*.la" -delete || true
+```
+
+#### 2. Czyszczenie logów i cache w entrypoint.sh:
+- **Automatyczne usuwanie starych logów** (starsze niż 7 dni)
+- **Automatyczne usuwanie starych cache files** (starsze niż 1 dzień)
+- **Czyszczenie przed cache'owaniem** konfiguracji
+
+```bash
+# Clean up old logs and cache to free up disk space
+find storage/logs -name "*.log" -type f -mtime +7 -delete 2>/dev/null || true
+find storage/framework/cache -type f -mtime +1 -delete 2>/dev/null || true
+find storage/framework/views -name "*.php" -type f -mtime +1 -delete 2>/dev/null || true
+```
+
+#### 3. Monitoring:
+- Regularne sprawdzanie rozmiaru kontenera
+- Monitoring logów i cache
+- Alerty przy niskiej przestrzeni dyskowej
+
+### Status:
+- ✅ Dockerfile zoptymalizowany (czyszczenie cache i build artifacts)
+- ✅ Entrypoint.sh z automatycznym czyszczeniem logów i cache
+- ✅ Composer cache czyszczony po instalacji
+- ⏳ Wymaga rebuild i redeploy na Railway
+
+### Następne kroki:
+1. Rebuild obrazu Docker z nowymi optymalizacjami
+2. Deploy na Railway
+3. Monitorowanie przestrzeni dyskowej
+4. Rozważenie log rotation (np. Laravel Daily Log Channel)
+
+---
+
+**Ostatnia aktualizacja:** 2025-11-06 (4) - Optymalizacja przestrzeni dyskowej ✅
+
