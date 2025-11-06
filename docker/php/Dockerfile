@@ -28,7 +28,7 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install -j$(nproc) pdo pdo_pgsql intl mbstring gd opcache
+ && docker-php-ext-install -j$(nproc) pdo pdo_pgsql intl mbstring gd opcache pcntl
 
 # Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
