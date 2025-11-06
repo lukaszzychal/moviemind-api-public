@@ -30,9 +30,10 @@ Każdy dokument odpowiada konkretnemu zadaniu z `docs/issue/TASKS.md` i zawiera:
 ## 🔗 Linki
 
 - [Backlog Zadań](../issue/TASKS.md) - Lista wszystkich zadań
-- [Dokumenty Analityczne](../analysis/) - Analizy techniczne i decyzje
+- [Ksiega Wiedzy](../knowledge/) - Dziennik wiedzy, tutoriale, dokumenty techniczne
+- [Architecture Decision Records](../adr/) - Rekordy decyzji architektonicznych
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-04
+**Ostatnia aktualizacja:** 2025-11-06
 

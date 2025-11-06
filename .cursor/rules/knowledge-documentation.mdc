@@ -1,0 +1,191 @@
+# Tworzenie Dokumentów w Ksiedze Wiedzy
+
+## 📚 Ksiega Wiedzy - Zasady Tworzenia Dokumentów
+
+### 🎯 Kiedy tworzyć dokumenty?
+
+**ZAWSZE** tworz dokumenty w `docs/knowledge/` gdy:
+1. **Rozwiązujesz problem** → `knowledge/journal/`
+2. **Tworzysz tutorial/wprowadzenie** → `knowledge/tutorials/`
+3. **Analizujesz technologię/architekturę** → `knowledge/technical/`
+4. **Dokumentujesz narzędzie/konfigurację** → `knowledge/reference/`
+5. **Odpowiadasz na pytanie techniczne** → `knowledge/journal/`
+6. **Wyjaśniasz koncept** → `knowledge/technical/`
+
+### 📁 Struktura Katalogów
+
+```
+docs/knowledge/
+├── tutorials/    # Krótkie tutoriale i wprowadzenia
+├── journal/      # Dziennik wiedzy - problemy i rozwiązania
+├── technical/    # Dokumenty techniczne i analityczne
+└── reference/    # Dokumenty referencyjne (setup, config, tools)
+```
+
+### 📝 Format Dokumentu
+
+Każdy dokument powinien zawierać:
+
+```markdown
+# Tytuł Dokumentu
+
+> **Data utworzenia:** YYYY-MM-DD  
+> **Kontekst:** Dlaczego dokument został utworzony  
+> **Kategoria:** tutorial/journal/technical/reference
+
+## 🎯 Cel
+
+Krótki opis celu dokumentu.
+
+## 📋 Zawartość
+
+[Treść dokumentu]
+
+## 🔗 Powiązane Dokumenty
+
+- [Link do powiązanego dokumentu](./relative/path.md)
+- [Link do zadania](../tasks/TASK_XXX.md)
+
+## 📌 Notatki
+
+Dodatkowe notatki, uwagi, przyszłe rozważania.
+
+---
+
+**Ostatnia aktualizacja:** YYYY-MM-DD
+```
+
+### 🎨 Kategorie Dokumentów
+
+#### 📘 Tutorials (`knowledge/tutorials/`)
+**Kiedy używać:**
+- Setup i konfiguracja narzędzi
+- Wprowadzenia do technologii
+- Przewodniki krok po kroku
+- Quick start guides
+
+**Przykłady:**
+- `OPENAI_SETUP_AND_TESTING.md`
+- `HORIZON_SETUP.md`
+- `INSOMNIA_SETUP.md`
+
+#### 📔 Journal (`knowledge/journal/`)
+**Kiedy używać:**
+- Napotkane problemy i ich rozwiązania
+- Odpowiedzi na pytania techniczne
+- Notatki z debugowania
+- Dziennik decyzji
+
+**Przykłady:**
+- `HORIZON_NOT_SHOWING_JOBS.md`
+- `CHECK_QUEUE_STATUS.md`
+- `TECHNICAL_QUESTIONS_ANSWERS.md`
+
+#### 🔧 Technical (`knowledge/technical/`)
+**Kiedy używać:**
+- Analizy architektury
+- Porównania technologii
+- Propozycje refaktoryzacji
+- Wyjaśnienia konceptów technicznych
+- Analizy bezpieczeństwa
+
+**Przykłady:**
+- `ARCHITECTURE_ANALYSIS.md`
+- `LARAVEL_EVENTS_JOBS_EXPLAINED.md`
+- `REFACTORING_PROPOSAL.md`
+
+#### 📚 Reference (`knowledge/reference/`)
+**Kiedy używać:**
+- Konfiguracja narzędzi
+- Setup środowisk
+- Dokumentacja narzędzi deweloperskich
+- Standardy i konwencje
+
+**Przykłady:**
+- `CODE_QUALITY_TOOLS.md`
+- `LARASTAN_SETUP.md`
+- `DEPLOYMENT_SETUP.md`
+
+### 🔄 Workflow Tworzenia Dokumentów
+
+1. **Podczas zadawania pytań do AI:**
+   - Jeśli rozwiązujesz problem → automatycznie utwórz dokument w `journal/`
+   - Jeśli tworzysz tutorial → utwórz dokument w `tutorials/`
+   - Jeśli analizujesz → utwórz dokument w `technical/`
+
+2. **Podczas wykonywania zadań:**
+   - Jeśli dokumentujesz implementację → utwórz w `tasks/` (związaną z zadaniem)
+   - Jeśli dokumentujesz wiedzę ogólną → utwórz w `knowledge/`
+
+3. **Po zakończeniu:**
+   - Zaktualizuj datę ostatniej aktualizacji
+   - Dodaj linki do powiązanych dokumentów
+   - Sprawdź czy nie ma duplikatów
+
+### ⚠️ Ważne Zasady
+
+1. **Nie duplikuj** - sprawdź czy podobny dokument już istnieje
+2. **Używaj opisowych nazw** - nazwa pliku powinna jasno opisywać zawartość
+3. **Dodawaj linki** - łącz powiązane dokumenty
+4. **Aktualizuj daty** - zawsze aktualizuj datę ostatniej modyfikacji
+5. **Kategoryzuj poprawnie** - używaj odpowiedniej kategorii
+
+### 🔗 Powiązania z Zadaniami
+
+- Dokumenty związane z **konkretnym zadaniem** → `docs/tasks/TASK_XXX.md`
+- Dokumenty z **wiedzą ogólną** → `docs/knowledge/`
+- **Backlog zadań** → `docs/issue/TASKS.md`
+
+### 📌 Przykłady
+
+#### Przykład: Journal Entry
+```markdown
+# Problem z Horizon nie pokazującym jobów
+
+> **Data utworzenia:** 2025-11-06  
+> **Kontekst:** Podczas debugowania zauważono, że Horizon dashboard nie pokazuje jobów  
+> **Kategoria:** journal
+
+## 🎯 Problem
+
+Horizon dashboard nie wyświetla jobów pomimo że są one przetwarzane.
+
+## 🔍 Analiza
+
+[Szczegóły analizy]
+
+## ✅ Rozwiązanie
+
+[Rozwiązanie problemu]
+
+## 📌 Notatki
+
+- Sprawdzić konfigurację Redis
+- Zweryfikować uprawnienia
+```
+
+#### Przykład: Technical Document
+```markdown
+# Analiza: Laravel Events vs Jobs
+
+> **Data utworzenia:** 2025-11-06  
+> **Kontekst:** Analiza wyboru między Events a Jobs dla asynchronicznego przetwarzania  
+> **Kategoria:** technical
+
+## 🎯 Cel
+
+Porównanie podejść Events vs Jobs w Laravel.
+
+## 📋 Analiza
+
+[Szczegółowa analiza]
+
+## 🔗 Powiązane Dokumenty
+
+- [Laravel Events Explained](./LARAVEL_EVENTS_JOBS_EXPLAINED.md)
+- [Refactoring Proposal](./REFACTORING_PROPOSAL.md)
+```
+
+---
+
+**Pamiętaj:** Dokumentacja to inwestycja w przyszłość projektu. Twórz dokumenty systematycznie!
