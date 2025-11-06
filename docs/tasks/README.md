@@ -1,0 +1,38 @@
+# 📋 Dokumenty Związane z Taskami
+
+Ten katalog zawiera dokumenty techniczne związane z **zakończonymi zadaniami** (tasks) z backlogu.
+
+## 📁 Struktura
+
+Każdy dokument odpowiada konkretnemu zadaniu z `docs/issue/TASKS.md` i zawiera:
+- Szczegóły implementacji
+- Konfigurację
+- Przykłady użycia
+- Testy
+- Dokumentację API
+
+## 📚 Dokumenty
+
+### TASK-011 - Rate Limiting dla Jobs Endpoint
+- **Plik:** `RATE_LIMITING_JOBS_ENDPOINT.md`
+- **Status:** ✅ Zakończone
+- **Opis:** Implementacja rate limiting dla endpointu `/api/v1/jobs/{id}`
+
+### TASK-002 - Weryfikacja Queue Workers i Horizon
+- **Plik:** `HORIZON_SETUP.md`
+- **Status:** ✅ Zakończone
+- **Opis:** Dokumentacja setup i konfiguracji Laravel Horizon
+
+- **Plik:** `HORIZON_QUEUE_WORKERS_VERIFICATION.md`
+- **Status:** ✅ Zakończone
+- **Opis:** Raport weryfikacji konfiguracji queue workers i Horizon
+
+## 🔗 Linki
+
+- [Backlog Zadań](../issue/TASKS.md) - Lista wszystkich zadań
+- [Dokumenty Analityczne](../analysis/) - Analizy techniczne i decyzje
+
+---
+
+**Ostatnia aktualizacja:** 2025-11-04
+

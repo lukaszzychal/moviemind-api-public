@@ -1,0 +1,30 @@
+# Filozofia i Kluczowe Zasady
+
+## 💡 Kluczowe zasady w pigułce
+
+1. **TDD** - Test przed kodem, zawsze
+2. **Narzędzia** - Pint, PHPStan, testy przed commitem
+3. **SOLID** - Stosuj pragmatycznie, nie na siłę
+4. **DRY** - Usuwaj duplikację, ale nie przesadzaj
+5. **Czytelność** - Kod ma być zrozumiały dla innych
+6. **Refaktoryzacja** - Gdy kod jest trudny do utrzymania
+7. **Bezpieczeństwo** - Zawsze sprawdzaj sekrety przed commitem
+
+## Filozofia
+
+**Zasady są narzędziami, nie celem samym w sobie.**
+
+- Kod ma być **czytelny** i **zrozumiały**
+- Stosuj zasady **pragmatycznie**, nie fanatycznie
+- **Prostota** jest lepsza niż nadmierna abstrakcja
+- **Czytelność** jest ważniejsza niż "idealna" architektura
+
+## 📚 Dodatkowe Zasoby
+
+- **Zadania:** `docs/issue/TASKS.md` - ⭐ ZACZYNAJ OD TEGO
+- **Szczegółowe zasady:** `docs/AI_AGENT_CONTEXT_RULES.md`
+- **Testy:** `docs/TESTING_STRATEGY.md`
+- **Narzędzia jakości:** `docs/CODE_QUALITY_TOOLS.md`
+- **Architektura:** `docs/ARCHITECTURE_ANALYSIS.md`
+- **Kontekst projektu:** `CLAUDE.md`
+- **Wyjaśnienie Cursor:** `docs/CURSOR_RULES_EXPLANATION.md`

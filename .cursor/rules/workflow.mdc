@@ -1,0 +1,43 @@
+# Workflow przed Commitem (WYMAGANE)
+
+## Przed każdym commitem MUSISZ uruchomić i naprawić:
+
+### 1. Laravel Pint (formatowanie)
+```bash
+cd api && vendor/bin/pint
+```
+
+### 2. PHPStan (analiza statyczna)
+```bash
+cd api && vendor/bin/phpstan analyse --memory-limit=2G
+```
+Poziom: 5. Zero błędów przed commitem.
+
+### 3. PHPUnit (testy)
+```bash
+cd api && php artisan test
+```
+Wszystkie testy muszą przechodzić.
+
+### 4. GitLeaks (sekrety)
+```bash
+gitleaks protect --source . --verbose --no-banner
+```
+Zero wykrytych sekretów.
+
+### 5. Composer Audit (bezpieczeństwo)
+```bash
+cd api && composer audit
+```
+Napraw krytyczne luki przed commitem.
+
+## Kompletny check (wszystko na raz)
+
+```bash
+cd api && \
+  vendor/bin/pint && \
+  vendor/bin/phpstan analyse --memory-limit=2G && \
+  php artisan test && \
+  gitleaks protect --source . --verbose --no-banner && \
+  composer audit
+```

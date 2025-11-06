@@ -1,0 +1,24 @@
+# System Zarządzania Zadaniami
+
+## ⭐ ZAWSZE ZACZYNAJ OD `docs/issue/TASKS.md`
+
+Przed rozpoczęciem pracy:
+
+1. Przeczytaj `docs/issue/TASKS.md` - znajdź zadanie ze statusem `⏳ PENDING`
+2. Zmień status na `🔄 IN_PROGRESS`
+3. Przeczytaj szczegóły zadania (jeśli jest link)
+4. Wykonaj zadanie zgodnie z opisem
+5. Po zakończeniu: zmień status na `✅ COMPLETED`, przenieś do sekcji "Zakończone"
+
+## Struktura systemu zadań
+
+- **`docs/issue/TASKS.md`** - główny backlog zadań (zaczynaj zawsze od tego)
+- **`docs/issue/README.md`** - instrukcje użycia systemu
+- **`docs/issue/TASK_TEMPLATE.md`** - szablon dla nowych zadań
+- **`docs/issue/*.md`** - szczegółowe opisy zadań (jeśli dostępne)
+
+## Priorytety zadań
+
+- 🔴 **Wysoki** - krytyczne, wykonaj jak najszybciej
+- 🟡 **Średni** - ważne, ale nie krytyczne
+- 🟢 **Niski** - można wykonać później (często roadmap items)

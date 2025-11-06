@@ -1,0 +1,272 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-11-01T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "req_movies_list",
+      "_type": "request",
+      "parentId": "fld_movies",
+      "name": "Movies - List",
+      "url": "{{ _.baseUrl }}/api/v1/movies?q=matrix",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "description": "List movies with optional search query parameter 'q'"
+    },
+    {
+      "_id": "req_movies_show",
+      "_type": "request",
+      "parentId": "fld_movies",
+      "name": "Movies - Show (by slug)",
+      "url": "{{ _.baseUrl }}/api/v1/movies/{{ _.movieSlug }}",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "description": "Get movie details by slug. Returns 200 OK if movie exists, 202 Accepted if missing and feature flag is enabled."
+    },
+    {
+      "_id": "req_people_list",
+      "_type": "request",
+      "parentId": "fld_people",
+      "name": "People - List",
+      "url": "{{ _.baseUrl }}/api/v1/people?q={{ _.personSearchQuery }}&role={{ _.personRole }}",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "description": "List people with optional search query parameter 'q' and role filter.\n\n**Query Parameters:**\n- `q` - Free-text search (name, birthplace)\n- `role` - Filter by role in movies (ACTOR, DIRECTOR, WRITER, PRODUCER)\n\n**Returns:**\n- `200 OK` - Array of people matching criteria"
+    },
+    {
+      "_id": "req_people_show",
+      "_type": "request",
+      "parentId": "fld_people",
+      "name": "People - Show (by slug)",
+      "url": "{{ _.baseUrl }}/api/v1/people/{{ _.personSlug }}",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "description": "Get person details by slug.\n\n**Returns:**\n- `200 OK` - Person exists in database\n- `202 Accepted` - Person missing, feature flag enabled, generation queued\n- `404 Not Found` - Person missing, feature flag disabled"
+    },
+    {
+      "_id": "req_generate_movie",
+      "_type": "request",
+      "parentId": "fld_generation",
+      "name": "Generate - MOVIE",
+      "url": "{{ _.baseUrl }}/api/v1/generate",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\",\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}"
+      },
+      "description": "Queue AI generation for a movie. Returns 202 Accepted with job_id if feature flag is enabled, 403 Forbidden otherwise."
+    },
+    {
+      "_id": "req_generate_person",
+      "_type": "request",
+      "parentId": "fld_generation",
+      "name": "Generate - PERSON",
+      "url": "{{ _.baseUrl }}/api/v1/generate",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"keanu-reeves\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}"
+      },
+      "description": "Queue AI generation for a person. Returns 202 Accepted with job_id if feature flag is enabled, 403 Forbidden otherwise."
+    },
+    {
+      "_id": "req_jobs_show",
+      "_type": "request",
+      "parentId": "fld_jobs",
+      "name": "Jobs - Show",
+      "url": "{{ _.baseUrl }}/api/v1/jobs/{{ _.jobId }}",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "description": "Check job status. Returns 200 OK with job details or 404 if job not found."
+    },
+    {
+      "_id": "req_admin_flags_list",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Flags - List",
+      "url": "{{ _.baseUrl }}/api/v1/admin/flags",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "description": "List all feature flags and their current states."
+    },
+    {
+      "_id": "req_admin_flags_toggle_movie",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Flags - Toggle ai_description_generation",
+      "url": "{{ _.baseUrl }}/api/v1/admin/flags/ai_description_generation",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"state\": \"on\"\n}"
+      },
+      "description": "Toggle ai_description_generation feature flag. Use 'on' or 'off' for state."
+    },
+    {
+      "_id": "req_admin_flags_toggle_person",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Flags - Toggle ai_bio_generation",
+      "url": "{{ _.baseUrl }}/api/v1/admin/flags/ai_bio_generation",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"state\": \"on\"\n}"
+      },
+      "description": "Toggle ai_bio_generation feature flag. Use 'on' or 'off' for state."
+    },
+    {
+      "_id": "req_admin_flags_usage",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Flags - Usage",
+      "url": "{{ _.baseUrl }}/api/v1/admin/flags/usage",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "description": "Get feature flags usage statistics."
+    },
+    {
+      "_id": "fld_movies",
+      "_type": "request_group",
+      "name": "Movies",
+      "description": "Endpoints for movie operations"
+    },
+    {
+      "_id": "fld_people",
+      "_type": "request_group",
+      "name": "People",
+      "description": "Endpoints for people operations"
+    },
+    {
+      "_id": "fld_generation",
+      "_type": "request_group",
+      "name": "Generation",
+      "description": "Endpoints for AI generation"
+    },
+    {
+      "_id": "fld_jobs",
+      "_type": "request_group",
+      "name": "Jobs",
+      "description": "Endpoints for job status tracking"
+    },
+    {
+      "_id": "fld_admin",
+      "_type": "request_group",
+      "name": "Admin",
+      "description": "Admin endpoints for feature flags"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "baseUrl": "http://localhost:8000",
+        "movieSlug": "the-matrix",
+        "personSlug": "christopher-nolan",
+        "personSearchQuery": "christopher",
+        "personRole": "DIRECTOR",
+        "jobId": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"
+      },
+      "dataPropertyOrder": {
+        "&": ["baseUrl", "movieSlug", "personSlug", "personSearchQuery", "personRole", "jobId"]
+      }
+    },
+    {
+      "_id": "env_testing",
+      "_type": "environment",
+      "name": "Testing Environment",
+      "data": {
+        "baseUrl": "http://localhost:8000",
+        "movieSlug": "annihilation",
+        "personSlug": "john-doe",
+        "personSearchQuery": "john",
+        "jobId": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"
+      },
+      "dataPropertyOrder": {
+        "&": ["baseUrl", "movieSlug", "personSlug", "personSearchQuery", "personRole", "jobId"]
+      },
+      "parentId": "env_base"
+    }
+  ]
+}
+

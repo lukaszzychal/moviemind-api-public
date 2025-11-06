@@ -1,0 +1,124 @@
+name: CI (Optimized)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test PHP ${{ matrix.php-versions }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # Don't stop other jobs if one fails
+      matrix:
+        php-versions: ['8.2', '8.3', '8.4']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          extensions: mbstring, dom, curl, libxml, zip, sqlite3, pdo_sqlite
+          coverage: xdebug
+
+      - name: Cache Composer packages
+        uses: actions/cache@v3
+        with:
+          path: api/vendor
+          key: ${{ runner.os }}-php-${{ matrix.php-versions }}-${{ hashFiles('api/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php-versions }}-
+
+      - name: Install dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Prepare environment
+        working-directory: api
+        run: |
+          php artisan key:generate --force || true
+          php artisan config:clear
+
+      - name: Run unit/feature tests
+        working-directory: api
+        run: composer test
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, curl, libxml, zip
+
+      - name: Cache Composer packages
+        uses: actions/cache@v3
+        with:
+          path: api/vendor
+          key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
+
+      - name: Install dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: PHP style (Pint, no fix)
+        working-directory: api
+        run: vendor/bin/pint --test
+
+      - name: PHPStan static analysis
+        working-directory: api
+        run: vendor/bin/phpstan analyse --memory-limit=2G
+
+  docker-build:
+    name: Docker Build & Push
+    needs: [test, lint]  # ← WAIT for tests and lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'  # ← Only on push, not PR
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          docker run --rm ghcr.io/${{ github.repository }}:sha-${{ github.sha }} php --version
+          docker run --rm ghcr.io/${{ github.repository }}:sha-${{ github.sha }} php artisan --version
+
