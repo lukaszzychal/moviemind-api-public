@@ -29,35 +29,32 @@ RUN mkdir -p /var/log/nginx /run/nginx /var/log/supervisor \
 # Copy Nginx configuration
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 
-# Create Supervisor configuration
-RUN echo '[supervisord]' > /etc/supervisord.conf \
- && echo 'nodaemon=true' >> /etc/supervisord.conf \
- && echo 'user=root' >> /etc/supervisord.conf \
- && echo 'logfile=/var/log/supervisor/supervisord.log' >> /etc/supervisord.conf \
- && echo 'pidfile=/var/run/supervisord.pid' >> /etc/supervisord.conf \
- && echo '' >> /etc/supervisord.conf \
- && echo '[program:php-fpm]' >> /etc/supervisord.conf \
- && echo 'command=php-fpm -F' >> /etc/supervisord.conf \
- && echo 'stdout_logfile=/dev/stdout' >> /etc/supervisord.conf \
- && echo 'stdout_logfile_maxbytes=0' >> /etc/supervisord.conf \
- && echo 'stderr_logfile=/dev/stderr' >> /etc/supervisord.conf \
- && echo 'stderr_logfile_maxbytes=0' >> /etc/supervisord.conf \
- && echo 'autorestart=true' >> /etc/supervisord.conf \
- && echo 'startretries=3' >> /etc/supervisord.conf \
- && echo '' >> /etc/supervisord.conf \
- && echo '[program:nginx]' >> /etc/supervisord.conf \
- && echo 'command=nginx -g "daemon off;"' >> /etc/supervisord.conf \
- && echo 'stdout_logfile=/dev/stdout' >> /etc/supervisord.conf \
- && echo 'stdout_logfile_maxbytes=0' >> /etc/supervisord.conf \
- && echo 'stderr_logfile=/dev/stderr' >> /etc/supervisord.conf \
- && echo 'stderr_logfile_maxbytes=0' >> /etc/supervisord.conf \
- && echo 'autorestart=true' >> /etc/supervisord.conf \
- && echo 'startretries=3' >> /etc/supervisord.conf
+# Copy Supervisor configuration
+COPY docker/php/supervisord.conf /etc/supervisord.conf
 
 # Fix Nginx config to use 127.0.0.1:9000 instead of php:9000
 RUN sed -i 's/fastcgi_pass php:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf || true
 
 WORKDIR /var/www/html
+
+# Copy composer files first (for better Docker layer caching)
+COPY api/composer.json api/composer.lock* ./
+
+# Install Composer dependencies
+# Use --no-scripts to avoid running Laravel commands during build
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction || \
+    composer install --optimize-autoloader --no-scripts --no-interaction
+
+# Copy application files
+COPY api/ ./
+
+# Set proper permissions for Laravel
+RUN chown -R app:app /var/www/html \
+ && chmod -R 755 /var/www/html \
+ && chmod -R 775 storage bootstrap/cache || true
+
+# Run Laravel post-install scripts (now that we have full app context)
+RUN composer dump-autoload --optimize --no-interaction || true
 
 # Expose port 80
 EXPOSE 80
