@@ -31,6 +31,40 @@ cd api && composer audit
 ```
 Napraw krytyczne luki przed commitem.
 
+### 6. Aktualizacja Dokumentacji API (jeśli zmieniono endpointy)
+**WAŻNE:** Jeśli dodano/zmieniono/usunięto endpointy API, **ZAWSZE** zaktualizuj:
+
+#### OpenAPI Spec
+```bash
+# Zaktualizuj docs/openapi.yaml
+# Dodaj/zmień/usuń endpointy zgodnie ze zmianami w kodzie
+```
+
+#### Postman Collection
+```bash
+# Zaktualizuj docs/postman/moviemind-api.postman_collection.json
+# Dodaj/zmień/usuń requesty zgodnie ze zmianami w API
+```
+
+#### Insomnia Collection
+```bash
+# Zaktualizuj docs/insomnia/moviemind-api-insomnia.json
+# Dodaj/zmień/usuń requesty zgodnie ze zmianami w API
+```
+
+**Kiedy aktualizować:**
+- ✅ Dodano nowy endpoint
+- ✅ Zmieniono ścieżkę endpointu
+- ✅ Zmieniono parametry requestu/response
+- ✅ Usunięto endpoint
+- ✅ Zmieniono status codes
+- ✅ Dodano/zmieniono autoryzację
+
+**Format aktualizacji:**
+- OpenAPI: Zgodnie z formatem OpenAPI 3.0
+- Postman: JSON format zgodny z Postman Collection v2.1
+- Insomnia: JSON format zgodny z Insomnia Export
+
 ## Kompletny check (wszystko na raz)
 
 ```bash
@@ -41,3 +75,5 @@ cd api && \
   gitleaks protect --source . --verbose --no-banner && \
   composer audit
 ```
+
+**Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację!
