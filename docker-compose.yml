@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+      target: local
     container_name: moviemind-php
     working_dir: /var/www/html
     volumes:
@@ -40,6 +41,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+      target: local
     container_name: moviemind-horizon
     command: sh -lc "php artisan horizon"
     working_dir: /var/www/html

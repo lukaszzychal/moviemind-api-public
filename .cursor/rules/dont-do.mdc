@@ -1,0 +1,18 @@
+# Co NIE robić
+
+## 🚫 Lista zakazów
+
+1. ❌ Commituj bez testów
+2. ❌ Ignoruj failujące testy
+3. ❌ Pomijaj narzędzia jakości kodu (Pint, PHPStan, testy)
+4. ❌ Commituj sekretów (zawsze sprawdź GitLeaks)
+5. ❌ Commituj debugowego kodu (`dd()`, `dump()`, `var_dump()`)
+6. ❌ Twórz zbyt duże commity (jeden commit = jedna logiczna zmiana)
+7. ❌ Stosuj zasady na siłę (nie tworz nadmiernych abstrakcji)
+8. ❌ Ignoruj code smells (naprawiaj gdy utrudniają pracę)
+9. ❌ Twórz kod bez myślenia o czytelności
+10. ❌ Pomijaj type hints i strict types
+
+## Zasada
+
+Jeśli coś jest na liście "NIE robić", oznacza to że jest to **zabronione** i nie powinno się zdarzyć.

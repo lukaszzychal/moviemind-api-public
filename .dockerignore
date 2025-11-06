@@ -1,0 +1,89 @@
+# ============================================================================
+# .dockerignore - Exclude files from Docker build context
+# ============================================================================
+
+# Composer vendor (installed separately in Dockerfile)
+api/vendor/
+
+# Laravel storage and cache
+api/storage/logs/
+api/storage/framework/cache/
+api/storage/framework/sessions/
+api/storage/framework/views/
+api/bootstrap/cache/
+
+# Node modules
+api/node_modules/
+api/npm-debug.log
+api/yarn-error.log
+
+# IDE and editor files
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+*~
+*.sublime-*
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container)
+docs/
+README.md
+CLAUDE.md
+LICENSE
+SECURITY.md
+CHANGELOG.md
+*.md
+!api/README.md
+
+# Environment files (examples only, not actual .env)
+env/
+api/.env
+api/.env.*
+!api/.env.example
+
+# Tests (not needed in production)
+api/tests/
+api/phpunit.xml.dist
+api/phpstan.neon
+api/.phpunit.result.cache
+
+# Build artifacts
+api/public/hot
+api/public/storage
+api/public/build
+api/public/docs/
+
+# Database files
+api/database/*.sqlite
+api/database/*.sqlite-journal
+
+# Scripts (not needed in container)
+scripts/
+
+# Docker files (not needed inside container)
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+Dockerfile
+*.dockerfile
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.circleci/
+.travis.yml
+
+# Other unnecessary files
+*.log
+*.tmp
+*.bak
+*.cache
+.DS_Store
+Thumbs.db
+
