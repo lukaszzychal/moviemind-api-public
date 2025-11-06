@@ -7,7 +7,7 @@
 
 ## 📍 Nazewnictwo
 
-**Railway Staging URL:** `https://peaceful-education-staging.up.railway.app`  
+**Railway Staging URL:** `https://moviemind-api-staging.up.railway.app`  
 **Zmienna środowiskowa:** `RAILWAY_STAGING_URL` (proponowana)  
 **Nazwa w dokumentacji:** Railway Staging Environment / Railway Staging
 
@@ -80,7 +80,11 @@ Po wdrożeniu poprawki:
 
 ```bash
 # Railway Staging URL
-RAILWAY_STAGING_URL="https://peaceful-education-staging.up.railway.app"
+RAILWAY_STAGING_URL="https://moviemind-api-staging.up.railway.app"
+
+# Test root endpoint (welcome payload)
+curl ${RAILWAY_STAGING_URL}/
+# Oczekiwany wynik: JSON z informacjami o API (200 OK)
 
 # Test healthcheck
 curl ${RAILWAY_STAGING_URL}/up
@@ -91,7 +95,7 @@ curl ${RAILWAY_STAGING_URL}/api/v1/movies
 # Oczekiwany wynik: {"data":[]} (200 OK)
 ```
 
-**Uwaga:** URL `peaceful-education-staging.up.railway.app` jest automatycznie generowany przez Railway i może ulec zmianie. W przyszłości należy skonfigurować własną domenę (np. `staging-api.moviemind.com`).
+**Uwaga:** URL `moviemind-api-staging.up.railway.app` jest automatycznie generowany przez Railway. W przyszłości można skonfigurować własną domenę (np. `staging-api.moviemind.com`).
 
 ## 🔗 Powiązane Dokumenty
 
@@ -104,7 +108,7 @@ curl ${RAILWAY_STAGING_URL}/api/v1/movies
 - Problem występuje tylko na **Railway Staging Environment**
 - Lokalnie działa poprawnie (prawdopodobnie inny user/permissions)
 - Rozwiązanie: Dodanie tworzenia katalogów w entrypoint.sh przed cache'owaniem
-- **Railway Staging URL:** `https://peaceful-education-staging.up.railway.app` (auto-generated, tymczasowy)
+- **Railway Staging URL:** `https://moviemind-api-staging.up.railway.app`
 
 ## 🔄 Aktualizacja 2025-11-06 (2)
 
@@ -128,7 +132,31 @@ curl ${RAILWAY_STAGING_URL}/api/v1/movies
 - Zweryfikować czy entrypoint.sh jest uruchamiany jako root
 - Rozważyć alternatywne rozwiązanie (np. volume mounts z odpowiednimi uprawnieniami)
 
+## 🔄 Aktualizacja 2025-11-06 (3) - ROZWIĄZANIE
+
+### Rozwiązanie problemu z endpointem `/`:
+- **Zmieniono route `/` z widoku Blade na JSON response**
+- Endpoint `/` teraz zwraca welcome payload w formacie JSON
+- Eliminuje potrzebę kompilacji widoku `welcome.blade.php`
+- Rozwiązuje problem Permission denied dla `storage/framework/views/`
+
+### Welcome Payload zawiera:
+- `name`: Nazwa API (MovieMind API)
+- `version`: Wersja API (1.0.0)
+- `status`: Status API (ok)
+- `environment`: Środowisko (staging/production)
+- `endpoints`: Lista dostępnych endpointów
+- `documentation`: Linki do dokumentacji (OpenAPI, Postman, Insomnia)
+
+### Status:
+- ✅ Endpoint `/` zwraca teraz JSON (200 OK) zamiast 500
+- ✅ Endpoint `/api/v1/movies` działa poprawnie (200 OK)
+- ✅ Problem z uprawnieniami widoków rozwiązany przez zmianę route
+
+### Nowy URL:
+- **Railway Staging:** `https://moviemind-api-staging.up.railway.app`
+
 ---
 
-**Ostatnia aktualizacja:** 2025-11-06 (2)
+**Ostatnia aktualizacja:** 2025-11-06 (3) - Problem rozwiązany ✅
 
