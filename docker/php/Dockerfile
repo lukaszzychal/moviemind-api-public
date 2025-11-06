@@ -49,7 +49,7 @@ COPY api/composer.json api/composer.lock* ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction || \
     composer install --optimize-autoloader --no-scripts --no-interaction
 
-# Copy application files
+# Copy application files (excluding vendor, logs, cache - handled by .dockerignore)
 COPY api/ ./
 
 # Ensure Laravel storage directories exist and set proper permissions

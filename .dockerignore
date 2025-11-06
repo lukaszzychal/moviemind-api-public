@@ -1,0 +1,49 @@
+# Composer vendor (installed separately in Dockerfile)
+api/vendor/
+
+# Laravel storage and cache
+api/storage/logs/
+api/storage/framework/cache/
+api/storage/framework/sessions/
+api/storage/framework/views/
+api/bootstrap/cache/
+
+# Node modules
+api/node_modules/
+api/npm-debug.log
+api/yarn-error.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+README.md
+
+# Tests
+api/tests/
+api/phpunit.xml.dist
+api/phpstan.neon
+
+# Environment files
+api/.env
+api/.env.*
+!api/.env.example
+
+# Build artifacts
+api/public/hot
+api/public/storage
+api/public/build
+
+# Database
+api/database/*.sqlite
+api/database/*.sqlite-journal
+
