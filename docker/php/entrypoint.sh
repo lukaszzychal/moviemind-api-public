@@ -28,6 +28,14 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     sleep 1
 done
 
+# Ensure storage directories exist and have correct permissions
+echo "📁 Ensuring storage directories exist..."
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
+mkdir -p bootstrap/cache
+chown -R app:app storage bootstrap/cache 2>/dev/null || true
+chmod -R 775 storage bootstrap/cache
+echo "✅ Storage directories ready"
+
 # Check if APP_KEY is set (required for Laravel)
 if [ -z "$APP_KEY" ]; then
     echo "⚠️  WARNING: APP_KEY is not set. Generating new key..."
