@@ -31,9 +31,17 @@ chown -R app:app storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 echo "✅ Storage and bootstrap/cache permissions set"
 
-# Start supervisor (which manages both PHP-FPM and Nginx)
-echo "Starting Supervisor..."
-echo "Nginx will listen on port ${NGINX_PORT}"
-echo "PHP-FPM will listen on 127.0.0.1:9000"
-exec /usr/bin/supervisord -c /etc/supervisord.conf
+# Run entrypoint script for setup (migrations, cache, etc.)
+# Entrypoint runs setup tasks and then executes the command passed to it
+if [ -f /usr/local/bin/entrypoint.sh ]; then
+    echo "Running entrypoint setup..."
+    # Entrypoint will run setup and then exec the supervisor command
+    exec /usr/local/bin/entrypoint.sh /usr/bin/supervisord -c /etc/supervisord.conf
+else
+    # Fallback: start supervisor directly if entrypoint is not available
+    echo "Starting Supervisor..."
+    echo "Nginx will listen on port ${NGINX_PORT}"
+    echo "PHP-FPM will listen on 127.0.0.1:9000"
+    exec /usr/bin/supervisord -c /etc/supervisord.conf
+fi
 
