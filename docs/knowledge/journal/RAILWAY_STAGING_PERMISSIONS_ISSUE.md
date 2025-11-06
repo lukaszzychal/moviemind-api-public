@@ -1,9 +1,15 @@
 # Problem z Uprawnieniami Storage na Railway Staging
 
 > **Data utworzenia:** 2025-11-06  
-> **Kontekst:** Błąd 500 na endpoint `/up` w staging environment Railway  
+> **Kontekst:** Błąd 500 na endpoint `/up` w Railway Staging Environment  
 > **Kategoria:** journal  
 > **Status:** 🔄 W trakcie rozwiązania
+
+## 📍 Nazewnictwo
+
+**Railway Staging URL:** `https://peaceful-education-staging.up.railway.app`  
+**Zmienna środowiskowa:** `RAILWAY_STAGING_URL` (proponowana)  
+**Nazwa w dokumentacji:** Railway Staging Environment / Railway Staging
 
 ## 🎯 Problem
 
@@ -73,14 +79,19 @@ Dockerfile już zawiera:
 Po wdrożeniu poprawki:
 
 ```bash
+# Railway Staging URL
+RAILWAY_STAGING_URL="https://peaceful-education-staging.up.railway.app"
+
 # Test healthcheck
-curl https://peaceful-education-staging.up.railway.app/up
+curl ${RAILWAY_STAGING_URL}/up
 # Oczekiwany wynik: {"status":"ok"} lub podobny (200 OK)
 
 # Test API endpoint
-curl https://peaceful-education-staging.up.railway.app/api/v1/movies
+curl ${RAILWAY_STAGING_URL}/api/v1/movies
 # Oczekiwany wynik: {"data":[]} (200 OK)
 ```
+
+**Uwaga:** URL `peaceful-education-staging.up.railway.app` jest automatycznie generowany przez Railway i może ulec zmianie. W przyszłości należy skonfigurować własną domenę (np. `staging-api.moviemind.com`).
 
 ## 🔗 Powiązane Dokumenty
 
@@ -90,11 +101,34 @@ curl https://peaceful-education-staging.up.railway.app/api/v1/movies
 
 ## 📌 Notatki
 
-- Problem występuje tylko na staging (Railway)
+- Problem występuje tylko na **Railway Staging Environment**
 - Lokalnie działa poprawnie (prawdopodobnie inny user/permissions)
 - Rozwiązanie: Dodanie tworzenia katalogów w entrypoint.sh przed cache'owaniem
+- **Railway Staging URL:** `https://peaceful-education-staging.up.railway.app` (auto-generated, tymczasowy)
+
+## 🔄 Aktualizacja 2025-11-06 (2)
+
+### Problem nadal występuje:
+- Endpoint `/` nadal zwraca 500 (Permission denied)
+- Błąd: `file_put_contents(/var/www/html/storage/framework/views/...): Permission denied`
+
+### Dodatkowe zmiany:
+1. **Sprawdzanie uprawnień root w entrypoint.sh:**
+   - Sprawdzanie czy skrypt jest uruchamiany jako root przed `chown`
+   - Fallback na `chmod 777` jeśli `775` nie działa
+   - Lepsze logowanie statusu uprawnień
+
+2. **Możliwe przyczyny:**
+   - Entrypoint.sh może być uruchamiany jako non-root user
+   - `chown` wymaga uprawnień root
+   - Katalogi mogą być tworzone z niewłaściwymi uprawnieniami
+
+### Następne kroki:
+- Sprawdzić logi Railway po wdrożeniu
+- Zweryfikować czy entrypoint.sh jest uruchamiany jako root
+- Rozważyć alternatywne rozwiązanie (np. volume mounts z odpowiednimi uprawnieniami)
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-06
+**Ostatnia aktualizacja:** 2025-11-06 (2)
 
