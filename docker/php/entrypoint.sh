@@ -56,6 +56,13 @@ fi
 
 # Cache configuration for production (only if not in local/dev)
 if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
+    echo "🧹 Clearing all caches before compilation..."
+    php artisan cache:clear || echo "⚠️  Cache clear failed (non-critical)"
+    php artisan config:clear || echo "⚠️  Config clear failed (non-critical)"
+    php artisan route:clear || echo "⚠️  Route clear failed (non-critical)"
+    php artisan view:clear || echo "⚠️  View clear failed (non-critical)"
+    echo "✅ All caches cleared"
+    
     echo "📦 Caching configuration for production..."
     php artisan config:cache || echo "⚠️  Config cache failed (non-critical)"
     php artisan route:cache || echo "⚠️  Route cache failed (non-critical)"
