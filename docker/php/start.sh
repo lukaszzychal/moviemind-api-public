@@ -23,9 +23,13 @@ if [ ! -d /var/www/html/public ]; then
 fi
 echo "✅ Laravel public directory verified"
 
-# Ensure storage and bootstrap/cache have correct permissions
-chmod -R 775 storage bootstrap/cache || true
-chown -R app:app storage bootstrap/cache || true
+# Ensure storage and bootstrap/cache directories exist and have correct permissions
+# Run as root to set permissions, then switch to app user
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
+mkdir -p bootstrap/cache
+chown -R app:app storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+echo "✅ Storage and bootstrap/cache permissions set"
 
 # Start supervisor (which manages both PHP-FPM and Nginx)
 echo "Starting Supervisor..."

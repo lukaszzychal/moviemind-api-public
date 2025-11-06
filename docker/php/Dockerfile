@@ -52,10 +52,12 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 # Copy application files
 COPY api/ ./
 
-# Set proper permissions for Laravel
-RUN chown -R app:app /var/www/html \
+# Ensure Laravel storage directories exist and set proper permissions
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs \
+ && mkdir -p bootstrap/cache \
+ && chown -R app:app /var/www/html \
  && chmod -R 755 /var/www/html \
- && chmod -R 775 storage bootstrap/cache || true
+ && chmod -R 775 storage bootstrap/cache
 
 # Run Laravel post-install scripts (now that we have full app context)
 RUN composer dump-autoload --optimize --no-interaction || true
