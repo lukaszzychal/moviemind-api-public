@@ -227,3 +227,38 @@ find storage/framework/views -name "*.php" -type f -mtime +1 -delete 2>/dev/null
 
 **Ostatnia aktualizacja:** 2025-11-06 (4) - Optymalizacja przestrzeni dyskowej ✅
 
+## 🔄 Aktualizacja 2025-11-06 (5) - Endpoint / nadal zwraca 500
+
+### Problem:
+- Endpoint `/` nadal zwraca błąd 500 (HTML błędu Laravel)
+- Endpoint `/api/v1/movies` działa poprawnie (200 OK, JSON)
+- Route `/` jest poprawnie zdefiniowany w `web.php`
+- Odpowiedź to HTML (strona błędu Laravel), nie JSON
+
+### Możliwe przyczyny:
+1. **Cache route'ów** - stary cache może blokować nowy route
+2. **Uprawnienia storage** - nadal problem z zapisem do `storage/framework/views/`
+3. **OPcache** - stary bytecode może być cache'owany
+4. **Middleware** - konflikt z middleware dla web routes
+
+### Rozwiązanie:
+1. **Dodano `chmod -R guo+w storage`** - bardziej permissive permissions
+2. **Dodano wczesne `php artisan cache:clear`** - przed cache'owaniem
+3. **Weryfikacja cache route'ów** - sprawdzenie czy route jest poprawnie cache'owany
+
+### Status:
+- ⏳ Wymaga rebuild i redeploy na Railway
+- ⏳ Sprawdzenie logów Railway po deploy
+- ⏳ Weryfikacja czy route `/` jest poprawnie zarejestrowany
+
+### Następne kroki:
+1. Rebuild obrazu Docker z nowymi zmianami
+2. Deploy na Railway
+3. Sprawdzenie logów Railway
+4. Test endpointu `/` po deploy
+5. Jeśli nadal błąd, sprawdzenie czy nie ma konfliktu z innymi route'ami
+
+---
+
+**Ostatnia aktualizacja:** 2025-11-06 (5) - Endpoint / nadal zwraca 500 ⏳
+
