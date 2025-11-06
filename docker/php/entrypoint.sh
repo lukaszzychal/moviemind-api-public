@@ -61,7 +61,17 @@ if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
     php artisan config:clear || echo "⚠️  Config clear failed (non-critical)"
     php artisan route:clear || echo "⚠️  Route clear failed (non-critical)"
     php artisan view:clear || echo "⚠️  View clear failed (non-critical)"
-    echo "✅ All caches cleared"
+    
+    # Remove cached route files manually to ensure clean state
+    rm -f bootstrap/cache/routes*.php 2>/dev/null || true
+    rm -f bootstrap/cache/config.php 2>/dev/null || true
+    echo "✅ All caches cleared (including bootstrap cache files)"
+    
+    # Ensure storage directories exist before caching (critical for view:cache)
+    echo "📁 Re-checking storage directories before caching..."
+    mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
+    mkdir -p bootstrap/cache
+    chmod -R 775 storage bootstrap/cache 2>/dev/null || chmod -R 777 storage bootstrap/cache 2>/dev/null || true
     
     echo "📦 Caching configuration for production..."
     php artisan config:cache || echo "⚠️  Config cache failed (non-critical)"
