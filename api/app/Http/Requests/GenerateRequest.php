@@ -36,7 +36,8 @@ class GenerateRequest extends FormRequest
     {
         return [
             'entity_type' => 'required|in:MOVIE,ACTOR,PERSON',
-            'entity_id' => 'required|string|max:255',
+            'slug' => 'required_without:entity_id|string|max:255',
+            'entity_id' => 'required_without:slug|string|max:255',
             'locale' => 'nullable|string|max:10',
             'context_tag' => 'nullable|string|max:64',
         ];
