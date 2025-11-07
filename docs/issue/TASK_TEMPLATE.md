@@ -11,6 +11,10 @@ Użyj tego szablonu do tworzenia nowych zadań/issues.
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🔴 Wysoki / 🟡 Średni / 🟢 Niski
 - **Szacowany czas:** X godzin (opcjonalnie)
+- **Czas rozpoczęcia:** -- 
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (dla 🤖 AI Agent wpisz `AUTO`)
+- **Realizacja:** 🤖 AI Agent / 👨‍💻 Manualna / ⚙️ Hybrydowa
 - **Opis:** Krótki opis zadania (1-2 zdania)
 - **Szczegóły:** [link do szczegółowego opisu](./PLIK.md) lub bezpośredni opis tutaj
 - **Zależności:** TASK-XXX, TASK-YYY (jeśli wymagane)

@@ -77,3 +77,17 @@ cd api && \
 ```
 
 **Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację!
+
+## Branch Workflow (domyślna zasada)
+
+- **90% zadań** realizuj na krótkich branchach feature (`feature/…`) obejmujących jeden spójny temat.
+- Każdy branch kończ pull requestem do `main` (możesz zatwierdzić sam, ale PR i diff są obowiązkowe).
+- `main` musi pozostać zawsze deployowalny; merguj tylko po przejściu testów/pre-commitów.
+- Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
+
+## Linki zewnętrzne i nazwy własne
+
+- Przy podawaniu publicznie dostępnych nazw własnych (np. sklepy internetowe, dostawcy) **zawsze** dołącz obok wiarygodny link URL.
+- Każdy link zewnętrzny **musisz zweryfikować** (otworzyć/testowo sprawdzić), aby upewnić się, że jest aktywny i prowadzi do właściwego źródła.
+- Jeśli nie możesz potwierdzić linku, **wyraźnie to zaznacz**, dodając alternatywne źródło lub ostrzeżenie.
+- Odpowiedzi formatuj przejrzyście (nagłówki, listy punktowane) zgodnie z guideline Cursor.

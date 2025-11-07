@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-01-27  
+**Ostatnia aktualizacja:** 2025-11-07  
 **Status:** 🔄 Aktywny
 
 ---
@@ -14,6 +14,10 @@ Każde zadanie ma następującą strukturę:
 - `Opis` - Szczegółowy opis lub link do dokumentacji
 - `Priorytet` - 🔴 Wysoki, 🟡 Średni, 🟢 Niski
 - `Szacowany czas` - W godzinach (opcjonalnie)
+- `Czas rozpoczęcia` - Data/godzina rozpoczęcia
+- `Czas zakończenia` - Data/godzina zakończenia
+- `Czas realizacji` - Automatycznie liczony (różnica zakończenie - rozpoczęcie, wypełnia Agent AI przy typie `🤖`)
+- `Realizacja` - Kto wykonał zadanie: `🤖 AI Agent`, `👨‍💻 Manualna`, `⚙️ Hybrydowa`
 
 ---
 
@@ -25,6 +29,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 6-8 godzin
+- **Czas rozpoczęcia:** -- 
+- **Czas zakończenia:** -- 
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Refaktoryzacja kontrolerów API zgodnie z zasadami SOLID i dobrymi praktykami Laravel
 - **Szczegóły:** [docs/issue/REFACTOR_CONTROLLERS_SOLID.md](./REFACTOR_CONTROLLERS_SOLID.md)
 - **Zależności:** Brak
@@ -32,16 +40,16 @@ Każde zadanie ma następującą strukturę:
 
 **Podzadania:**
 - [ ] Faza 1: Utworzenie Services i Resources
-  - [ ] `JobStatusService` - eliminacja duplikacji cache
+  - [x] `JobStatusService` - eliminacja duplikacji cache
   - [ ] `PersonResource` - konsystencja z MovieResource
   - [ ] `MovieDisambiguationService` - wydzielenie logiki disambiguation
 - [ ] Faza 2: Utworzenie Actions
-  - [ ] `QueueMovieGenerationAction`
-  - [ ] `QueuePersonGenerationAction`
+  - [x] `QueueMovieGenerationAction`
+  - [x] `QueuePersonGenerationAction`
 - [ ] Faza 3: Refaktoryzacja Kontrolerów
   - [ ] `MovieController::show()`
   - [ ] `PersonController`
-  - [ ] `GenerateController`
+  - [x] `GenerateController`
   - [ ] `JobsController`
 - [ ] Faza 4: Testy
   - [ ] Testy dla nowych Services
@@ -57,6 +65,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Weryfikacja konfiguracji i działania queue workers/Horizon (jobs obecnie działają, ale wymagają weryfikacji)
 - **Szczegóły:** Sprawdzić konfigurację Horizon, działanie workers w produkcji, monitoring
 - **Zależności:** Brak
@@ -68,6 +80,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 3-4 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Dodanie response caching dla GET movie/person show oraz cache invalidation po zakończeniu generacji
 - **Szczegóły:** 
   - Wprowadzenie cache dla `MovieController::show()` i `PersonController::show()`
@@ -82,6 +98,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
 - **Szacowany czas:** 1 godzina
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Poprawa README.md - zmiana stack info z Symfony na Laravel oraz dodanie instrukcji lokalnego uruchomienia
 - **Szczegóły:** 
   - Aktualizacja sekcji tech stack
@@ -96,6 +116,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Weryfikacja kompletności `docs/openapi.yaml` oraz dodanie linków do OpenAPI w README.md
 - **Szczegóły:** 
   - Weryfikacja wszystkich endpointów w OpenAPI
@@ -110,6 +134,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
 - **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Dodanie przykładów odpowiedzi i testów per request oraz environment templates dla local/staging
 - **Szczegóły:** 
   - Dodanie example responses dla każdego request
@@ -124,6 +152,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Centralizacja konfiguracji flag i dodanie dokumentacji oraz admin endpoints do toggle flags
 - **Szczegóły:** 
   - Centralizacja flags config (`config/pennant.php`)
@@ -138,6 +170,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
 - **Szacowany czas:** 8-10 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Implementacja systemu webhooks dla billing/notifications (zgodnie z roadmap)
 - **Szczegóły:** 
   - Projekt architektury webhooks
@@ -154,6 +190,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
 - **Szacowany czas:** 15-20 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Implementacja admin panel dla zarządzania treścią (Nova/Breeze) zgodnie z roadmap
 - **Szczegóły:** 
   - Wybór narzędzia (Laravel Nova, Filament, Breeze)
@@ -169,6 +209,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
 - **Szacowany czas:** 10-12 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Implementacja dashboardów dla analytics i monitoring (queue jobs, failed jobs, metrics)
 - **Szczegóły:** 
   - Dashboard dla queue jobs status
@@ -186,6 +230,10 @@ Każde zadanie ma następującą strukturę:
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Zakończone:** 2025-01-27
+- **Czas rozpoczęcia:** (uzupełnić)
+- **Czas zakończenia:** (uzupełnić)
+- **Czas realizacji:** (różnica, jeśli możliwe)
+- **Realizacja:** (np. 👨‍💻 Manualna / 🤖 AI Agent / ⚙️ Hybrydowa)
 - **Opis:** Dodanie endpointu GET /api/v1/people z filtrowaniem po role (ACTOR, DIRECTOR, etc.)
 - **Szczegóły:** Implementacja w `PersonController::index()`, `PersonRepository::searchPeople()`
 
@@ -237,5 +285,5 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-27
+**Ostatnia aktualizacja:** 2025-11-07
 
