@@ -245,6 +245,10 @@ Każde zadanie ma następującą strukturę:
 - **Szczegóły:** [link do szczegółowego opisu](./PLIK.md) lub bezpośredni opis
 - **Zależności:** TASK-XXX (jeśli wymagane)
 - **Utworzone:** YYYY-MM-DD
+- **Czas rozpoczęcia:** YYYY-MM-DD HH:MM
+- **Czas zakończenia:** -- (uzupełnij po zakończeniu)
+- **Czas realizacji:** -- (format HHhMMm; wpisz `AUTO` tylko gdy agent policzy)
+- **Realizacja:** 🤖 AI Agent / 👨‍💻 Manualna / ⚙️ Hybrydowa
 ```
 
 ---
