@@ -29,9 +29,9 @@ class OpenAiClient implements OpenAiClientInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.openai.api_key') ?? env('OPENAI_API_KEY') ?? '';
-        $this->model = config('services.openai.model') ?? env('OPENAI_MODEL', self::DEFAULT_MODEL);
-        $this->apiUrl = config('services.openai.url') ?? env('OPENAI_URL', self::DEFAULT_API_URL);
+        $this->apiKey = (string) (config('services.openai.api_key') ?? '');
+        $this->model = (string) (config('services.openai.model') ?? self::DEFAULT_MODEL);
+        $this->apiUrl = (string) (config('services.openai.url') ?? self::DEFAULT_API_URL);
     }
 
     /**

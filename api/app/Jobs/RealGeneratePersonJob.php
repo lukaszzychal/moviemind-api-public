@@ -61,8 +61,10 @@ class RealGeneratePersonJob implements ShouldQueue
             // Call real AI API using OpenAiClient (injected via method injection)
             $aiResponse = $openAiClient->generatePerson($this->slug);
 
-            if (! $aiResponse || ! isset($aiResponse['success']) || ! $aiResponse['success']) {
-                throw new \RuntimeException('AI API returned error: '.($aiResponse['error'] ?? 'Unknown error'));
+            if ($aiResponse['success'] === false) {
+                $error = $aiResponse['error'] ?? 'Unknown error';
+
+                throw new \RuntimeException('AI API returned error: '.$error);
             }
 
             $name = $aiResponse['name'] ?? Str::of($this->slug)->replace('-', ' ')->title();
