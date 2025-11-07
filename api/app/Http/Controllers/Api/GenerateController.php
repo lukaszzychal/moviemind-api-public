@@ -19,7 +19,7 @@ class GenerateController extends Controller
     {
         $validated = $request->validated();
         $entityType = $validated['entity_type'];
-        $slug = (string) $validated['entity_id'];
+        $slug = (string) ($validated['slug'] ?? $validated['entity_id'] ?? '');
         $jobId = (string) Str::uuid();
 
         return match ($entityType) {
