@@ -25,42 +25,6 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
-#### `TASK-001` - Refaktoryzacja Kontrolerów API (SOLID)
-- **Status:** ✅ COMPLETED
-- **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 6-8 godzin
-- **Czas rozpoczęcia:** 2025-11-07 21:45
-- **Czas zakończenia:** 2025-11-07 22:30
-- **Czas realizacji:** AUTO (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Refaktoryzacja kontrolerów API zgodnie z zasadami SOLID i dobrymi praktykami Laravel
-- **Szczegóły:** [docs/issue/REFACTOR_CONTROLLERS_SOLID.md](./REFACTOR_CONTROLLERS_SOLID.md)
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
-**Podzadania:**
-- [x] Faza 1: Utworzenie Services i Resources
-  - [x] `JobStatusService` - eliminacja duplikacji cache
-  - [x] `PersonResource` - konsystencja z MovieResource
-  - [x] `MovieDisambiguationService` - wydzielenie logiki disambiguation
-- [x] Faza 2: Utworzenie Actions
-  - [x] `QueueMovieGenerationAction`
-  - [x] `QueuePersonGenerationAction`
-- [x] Faza 3: Refaktoryzacja Kontrolerów
-  - [x] `MovieController::show()`
-  - [x] `PersonController`
-  - [x] `GenerateController`
-  - [x] `JobsController`
-- [x] Faza 4: Testy
-  - [x] Testy dla nowych Services
-  - [x] Testy dla nowych Actions
-  - [x] Testy dla zrefaktoryzowanych kontrolerów
-- [x] Faza 5: Dokumentacja
-  - [x] Aktualizacja dokumentacji API
-  - [x] Aktualizacja README
-
----
-
 #### `TASK-002` - Weryfikacja Queue Workers i Horizon
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -251,6 +215,20 @@ Każde zadanie ma następującą strukturę:
 - **Realizacja:** (np. 👨‍💻 Manualna / 🤖 AI Agent / ⚙️ Hybrydowa)
 - **Opis:** Dodanie endpointu GET /api/v1/people z filtrowaniem po role (ACTOR, DIRECTOR, etc.)
 - **Szczegóły:** Implementacja w `PersonController::index()`, `PersonRepository::searchPeople()`
+
+---
+
+### `TASK-001` - Refaktoryzacja Kontrolerów API (SOLID)
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Zakończone:** 2025-11-07
+- **Czas rozpoczęcia:** 2025-11-07 21:45
+- **Czas zakończenia:** 2025-11-07 22:30
+- **Czas realizacji:** 00h45m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Refaktoryzacja kontrolerów API zgodnie z zasadami SOLID i dobrymi praktykami Laravel
+- **Szczegóły:** [docs/issue/REFACTOR_CONTROLLERS_SOLID.md](./REFACTOR_CONTROLLERS_SOLID.md)
+- **Zakres wykonanych prac:** Nowe Resources (`MovieResource`, `PersonResource`), `MovieDisambiguationService`, refaktoryzacja kontrolerów (`Movie`, `Person`, `Generate`, `Jobs`), testy jednostkowe i aktualizacja dokumentacji.
 
 ---
 

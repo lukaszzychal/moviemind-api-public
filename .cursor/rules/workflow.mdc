@@ -85,6 +85,17 @@ cd api && \
 - `main` musi pozostać zawsze deployowalny; merguj tylko po przejściu testów/pre-commitów.
 - Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
 
+## Zarządzanie zadaniami (TASKS.md)
+
+- Po rozpoczęciu zadania **zmień status na `🔄 IN_PROGRESS`**, wpisz `Czas rozpoczęcia` (z dokładnością do minuty) oraz oznacz wykonawcę (`🤖/👨‍💻/⚙️`).
+- Po zakończeniu zadania:
+  - uzupełnij `Czas zakończenia` oraz **oblicz `Czas realizacji`** (format `HHhMMm`), nawet gdy skrót mówi o AUTO,
+  - zmień status na `✅ COMPLETED`,
+  - **przenieś cały blok zadania do sekcji „✅ Zakończone Zadania”**,
+  - dopisz krótki opis wykonanych prac (np. lista kluczowych zmian).
+- Nie zostawiaj ukończonych zadań w sekcji „Aktywne”. Sekcja ta powinna zawierać wyłącznie zadania w statusie `⏳` lub `🔄`.
+- Po aktualizacji `TASKS.md` odpal workflow synchronizacji (push/merge do `main` lub ręcznie w GitHub Actions), aby Issues były spójne.
+
 ## Linki zewnętrzne i nazwy własne
 
 - Przy podawaniu publicznie dostępnych nazw własnych (np. sklepy internetowe, dostawcy) **zawsze** dołącz obok wiarygodny link URL.
