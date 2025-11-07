@@ -2,104 +2,118 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\MovieGenerationRequested;
-use App\Events\PersonGenerationRequested;
+use App\Actions\QueueMovieGenerationAction;
+use App\Actions\QueuePersonGenerationAction;
+use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateRequest;
 use App\Models\Movie;
 use App\Models\Person;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
 
 class GenerateController extends Controller
 {
+    public function __construct(
+        private readonly QueueMovieGenerationAction $queueMovieGenerationAction,
+        private readonly QueuePersonGenerationAction $queuePersonGenerationAction
+    ) {}
+
     public function generate(GenerateRequest $request): JsonResponse
     {
         $validated = $request->validated();
         $entityType = $validated['entity_type'];
         $slug = (string) ($validated['slug'] ?? $validated['entity_id'] ?? '');
-        $jobId = (string) Str::uuid();
 
         return match ($entityType) {
-            'MOVIE' => $this->handleMovieGeneration($slug, $jobId),
-            'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug, $jobId),
+            'MOVIE' => $this->handleMovieGeneration($slug),
+            'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug),
             default => response()->json(['error' => 'Invalid entity type'], 400),
         };
     }
 
-    private function handleMovieGeneration(string $slug, string $jobId): JsonResponse
+    private function handleMovieGeneration(string $slug): JsonResponse
     {
         if (! Feature::active('ai_description_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
+        }
+
+        $validation = SlugValidator::validateMovieSlug($slug);
+        if (! $validation['valid']) {
+            return response()->json([
+                'error' => 'Invalid slug format',
+                'message' => $validation['reason'],
+                'confidence' => $validation['confidence'],
+                'slug' => $slug,
+            ], 400);
         }
 
         // Early return if already exists
         $existing = Movie::where('slug', $slug)->first();
         if ($existing) {
             return response()->json([
-                'job_id' => $jobId,
+                'job_id' => (string) Str::uuid(),
                 'status' => 'DONE',
                 'message' => 'Movie already exists',
                 'slug' => $slug,
                 'id' => $existing->id,
+                'confidence' => $validation['confidence'],
+                'confidence_level' => $this->confidenceLevel($validation['confidence']),
             ], 200);
         }
 
-        // Set initial cache status
-        Cache::put("ai_job:{$jobId}", [
-            'job_id' => $jobId,
-            'status' => 'PENDING',
-            'entity' => 'MOVIE',
-            'slug' => $slug,
-        ], now()->addMinutes(15));
+        $result = $this->queueMovieGenerationAction->handle($slug, $validation['confidence']);
 
-        // Emit event - Listener will queue the Job
-        event(new MovieGenerationRequested($slug, $jobId));
-
-        return $this->queuedResponse($jobId, $slug, 'movie');
+        return response()->json($result, 202);
     }
 
-    private function handlePersonGeneration(string $slug, string $jobId): JsonResponse
+    private function handlePersonGeneration(string $slug): JsonResponse
     {
         if (! Feature::active('ai_bio_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
+        }
+
+        $validation = SlugValidator::validatePersonSlug($slug);
+        if (! $validation['valid']) {
+            return response()->json([
+                'error' => 'Invalid slug format',
+                'message' => $validation['reason'],
+                'confidence' => $validation['confidence'],
+                'slug' => $slug,
+            ], 400);
         }
 
         // Early return if already exists
         $existing = Person::where('slug', $slug)->first();
         if ($existing) {
             return response()->json([
-                'job_id' => $jobId,
+                'job_id' => (string) Str::uuid(),
                 'status' => 'DONE',
                 'message' => 'Person already exists',
                 'slug' => $slug,
                 'id' => $existing->id,
+                'confidence' => $validation['confidence'],
+                'confidence_level' => $this->confidenceLevel($validation['confidence']),
             ], 200);
         }
 
-        // Set initial cache status
-        Cache::put("ai_job:{$jobId}", [
-            'job_id' => $jobId,
-            'status' => 'PENDING',
-            'entity' => 'PERSON',
-            'slug' => $slug,
-        ], now()->addMinutes(15));
+        $result = $this->queuePersonGenerationAction->handle($slug, $validation['confidence']);
 
-        // Emit event - Listener will queue the Job
-        event(new PersonGenerationRequested($slug, $jobId));
-
-        return $this->queuedResponse($jobId, $slug, 'person');
+        return response()->json($result, 202);
     }
 
-    private function queuedResponse(string $jobId, string $slug, string $entityName): JsonResponse
+    private function confidenceLevel(?float $confidence): string
     {
-        return response()->json([
-            'job_id' => $jobId,
-            'status' => 'PENDING',
-            'message' => "Generation queued for {$entityName} by slug",
-            'slug' => $slug,
-        ], 202);
+        if ($confidence === null) {
+            return 'unknown';
+        }
+
+        return match (true) {
+            $confidence >= 0.9 => 'high',
+            $confidence >= 0.7 => 'medium',
+            $confidence >= 0.5 => 'low',
+            default => 'very_low',
+        };
     }
 }
