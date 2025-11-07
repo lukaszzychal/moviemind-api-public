@@ -32,7 +32,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             if (in_array(config('app.env'), ['local', 'staging'])) {
                 return true;
             }
-            
+
             // In production, require authentication
             // TODO: Configure authorized emails for production
             return in_array(optional($user)->email, [

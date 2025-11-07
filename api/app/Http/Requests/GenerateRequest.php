@@ -7,6 +7,19 @@ use Illuminate\Foundation\Http\FormRequest;
 class GenerateRequest extends FormRequest
 {
     /**
+     * Prepare the data for validation.
+     * Support both 'slug' and deprecated 'entity_id' fields.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('entity_id') && ! $this->has('slug')) {
+            $this->merge([
+                'slug' => $this->input('entity_id'),
+            ]);
+        }
+    }
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
