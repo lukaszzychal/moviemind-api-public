@@ -224,6 +224,21 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-011` - Stworzenie CI dla staging (GHCR)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Przygotowanie workflow GitHub Actions budującego obraz Docker dla środowiska staging i publikującego go do GitHub Container Registry.
+- **Szczegóły:** Skonfigurować pipeline (trigger np. na push/tag `staging`), dodać logowanie do GHCR, poprawne tagowanie obrazu oraz wymagane sekrety.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-07
+
+---
+
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role
