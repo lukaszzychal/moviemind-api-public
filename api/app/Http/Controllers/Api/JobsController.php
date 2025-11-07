@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Cache;
+use App\Services\JobStatusService;
+use Illuminate\Http\JsonResponse;
 
 class JobsController extends Controller
 {
-    public function show(string $id)
+    public function __construct(private readonly JobStatusService $jobStatusService) {}
+
+    public function show(string $id): JsonResponse
     {
-        $data = Cache::get($this->cacheKey($id));
+        $data = $this->jobStatusService->getStatus($id);
+
         if (! $data) {
             return response()->json([
                 'job_id' => $id,
@@ -18,10 +22,5 @@ class JobsController extends Controller
         }
 
         return response()->json($data);
-    }
-
-    private function cacheKey(string $jobId): string
-    {
-        return 'ai_job:'.$jobId;
     }
 }
