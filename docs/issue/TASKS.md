@@ -26,13 +26,13 @@ Każde zadanie ma następującą strukturę:
 ### ⏳ PENDING
 
 #### `TASK-001` - Refaktoryzacja Kontrolerów API (SOLID)
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 6-8 godzin
-- **Czas rozpoczęcia:** -- 
+- **Czas rozpoczęcia:** 2025-11-07 21:45
 - **Czas zakończenia:** -- 
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Czas realizacji:** AUTO (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Refaktoryzacja kontrolerów API zgodnie z zasadami SOLID i dobrymi praktykami Laravel
 - **Szczegóły:** [docs/issue/REFACTOR_CONTROLLERS_SOLID.md](./REFACTOR_CONTROLLERS_SOLID.md)
 - **Zależności:** Brak
@@ -41,16 +41,16 @@ Każde zadanie ma następującą strukturę:
 **Podzadania:**
 - [ ] Faza 1: Utworzenie Services i Resources
   - [x] `JobStatusService` - eliminacja duplikacji cache
-  - [ ] `PersonResource` - konsystencja z MovieResource
-  - [ ] `MovieDisambiguationService` - wydzielenie logiki disambiguation
+  - [x] `PersonResource` - konsystencja z MovieResource
+  - [x] `MovieDisambiguationService` - wydzielenie logiki disambiguation
 - [ ] Faza 2: Utworzenie Actions
   - [x] `QueueMovieGenerationAction`
   - [x] `QueuePersonGenerationAction`
 - [ ] Faza 3: Refaktoryzacja Kontrolerów
-  - [ ] `MovieController::show()`
-  - [ ] `PersonController`
+  - [x] `MovieController::show()`
+  - [x] `PersonController`
   - [x] `GenerateController`
-  - [ ] `JobsController`
+  - [x] `JobsController`
 - [ ] Faza 4: Testy
   - [ ] Testy dla nowych Services
   - [ ] Testy dla nowych Actions
