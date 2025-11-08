@@ -84,6 +84,7 @@ cd api && \
 - Każdy branch kończ pull requestem do `main` (możesz zatwierdzić sam, ale PR i diff są obowiązkowe).
 - `main` musi pozostać zawsze deployowalny; merguj tylko po przejściu testów/pre-commitów.
 - Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
+- **Commit messages** pisz wyłącznie po angielsku, w stylu `type: short description` (np. `feat: add movie resource`). Niedozwolone są komunikaty w innych językach.
 
 ## Zarządzanie zadaniami (TASKS.md)
 
@@ -95,6 +96,13 @@ cd api && \
   - dopisz krótki opis wykonanych prac (np. lista kluczowych zmian).
 - Nie zostawiaj ukończonych zadań w sekcji „Aktywne”. Sekcja ta powinna zawierać wyłącznie zadania w statusie `⏳` lub `🔄`.
 - Po aktualizacji `TASKS.md` odpal workflow synchronizacji (push/merge do `main` lub ręcznie w GitHub Actions), aby Issues były spójne.
+
+## Dokumentacja (PL / EN)
+
+- Każdy dokument musi mieć wersję polską i angielską (np. w `docs/…/pl` i `docs/…/en`).
+- Przy modyfikacji jednego języka **natychmiast** zaktualizuj drugi – brak synchronizacji traktujemy jako błąd review.
+- Jeśli treść jest długa, dopuszczalne są streszczenia, ale oba języki muszą zawierać komplet kluczowych informacji i linkować do siebie.
+- Pliki indeksowe (np. `docs/issue/README.md`) powinny jasno wskazywać, gdzie znajdują się wersje PL i EN.
 
 ## Linki zewnętrzne i nazwy własne
 
