@@ -25,42 +25,6 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
-#### `TASK-001` - Refaktoryzacja Kontrolerów API (SOLID)
-- **Status:** 🔄 IN_PROGRESS
-- **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 6-8 godzin
-- **Czas rozpoczęcia:** 2025-11-07 21:45
-- **Czas zakończenia:** -- 
-- **Czas realizacji:** AUTO (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Refaktoryzacja kontrolerów API zgodnie z zasadami SOLID i dobrymi praktykami Laravel
-- **Szczegóły:** [docs/issue/REFACTOR_CONTROLLERS_SOLID.md](./REFACTOR_CONTROLLERS_SOLID.md)
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
-**Podzadania:**
-- [ ] Faza 1: Utworzenie Services i Resources
-  - [x] `JobStatusService` - eliminacja duplikacji cache
-  - [x] `PersonResource` - konsystencja z MovieResource
-  - [x] `MovieDisambiguationService` - wydzielenie logiki disambiguation
-- [ ] Faza 2: Utworzenie Actions
-  - [x] `QueueMovieGenerationAction`
-  - [x] `QueuePersonGenerationAction`
-- [ ] Faza 3: Refaktoryzacja Kontrolerów
-  - [x] `MovieController::show()`
-  - [x] `PersonController`
-  - [x] `GenerateController`
-  - [x] `JobsController`
-- [ ] Faza 4: Testy
-  - [ ] Testy dla nowych Services
-  - [ ] Testy dla nowych Actions
-  - [ ] Testy dla zrefaktoryzowanych kontrolerów
-- [ ] Faza 5: Dokumentacja
-  - [ ] Aktualizacja dokumentacji API
-  - [ ] Aktualizacja README
-
----
-
 #### `TASK-002` - Weryfikacja Queue Workers i Horizon
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -254,6 +218,20 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+### `TASK-001` - Refaktoryzacja Kontrolerów API (SOLID)
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Zakończone:** 2025-11-07
+- **Czas rozpoczęcia:** 2025-11-07 21:45
+- **Czas zakończenia:** 2025-11-07 22:30
+- **Czas realizacji:** 00h45m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Refaktoryzacja kontrolerów API zgodnie z zasadami SOLID i dobrymi praktykami Laravel
+- **Szczegóły:** [docs/issue/REFACTOR_CONTROLLERS_SOLID.md](./REFACTOR_CONTROLLERS_SOLID.md)
+- **Zakres wykonanych prac:** Nowe Resources (`MovieResource`, `PersonResource`), `MovieDisambiguationService`, refaktoryzacja kontrolerów (`Movie`, `Person`, `Generate`, `Jobs`), testy jednostkowe i aktualizacja dokumentacji.
+
+---
+
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**
@@ -267,6 +245,10 @@ Każde zadanie ma następującą strukturę:
 - **Szczegóły:** [link do szczegółowego opisu](./PLIK.md) lub bezpośredni opis
 - **Zależności:** TASK-XXX (jeśli wymagane)
 - **Utworzone:** YYYY-MM-DD
+- **Czas rozpoczęcia:** YYYY-MM-DD HH:MM
+- **Czas zakończenia:** -- (uzupełnij po zakończeniu)
+- **Czas realizacji:** -- (format HHhMMm; wpisz `AUTO` tylko gdy agent policzy)
+- **Realizacja:** 🤖 AI Agent / 👨‍💻 Manualna / ⚙️ Hybrydowa
 ```
 
 ---
@@ -293,10 +275,10 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 10
-- **Zakończone:** 1
+- **Aktywne:** 9
+- **Zakończone:** 2
 - **Anulowane:** 0
-- **W trakcie:** 0
+- **W trakcie:** 1
 
 ---
 
