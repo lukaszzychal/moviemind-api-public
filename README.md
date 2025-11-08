@@ -133,7 +133,7 @@ curl -X POST \
 2. **Database Check**: System checks for existing description
 3. **AI Generation** (if needed):
    - Creates job record with `PENDING` status
-   - Triggers async worker via Symfony Messenger
+   - Dispatches a Laravel queue worker (Horizon container)
    - Worker calls OpenAI API with contextual prompt
    - Saves result to database and updates job status
 4. **Response**: Returns movie data with AI-generated description
@@ -191,7 +191,7 @@ Zwróć tylko czysty tekst.
    docker compose exec php php artisan migrate --seed
    ```
 
-7. **Start Horizon (queues)**
+7. **Follow Horizon logs (queues run in dedicated container)**
    ```bash
    docker compose logs -f horizon
    ```
@@ -233,11 +233,11 @@ When you need to preview authenticated flows locally, set up the demo users and 
 ## 🧪 Testing
 
 ```bash
-# Run unit tests
-docker-compose exec api php bin/phpunit
+# Run the full test suite
+docker compose exec php php artisan test
 
-# Run integration tests
-docker-compose exec api php bin/phpunit --testsuite=integration
+# Run only feature tests
+docker compose exec php php artisan test --testsuite=feature
 ```
 
 ## 🤖 AI Service Modes
