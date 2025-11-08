@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-11-07  
+**Ostatnia aktualizacja:** 2025-11-08  
 **Status:** 🔄 Aktywny
 
 ---
@@ -35,60 +35,6 @@ Każde zadanie ma następującą strukturę:
 - **Realizacja:** Do ustalenia
 - **Opis:** Weryfikacja konfiguracji i działania queue workers/Horizon (jobs obecnie działają, ale wymagają weryfikacji)
 - **Szczegóły:** Sprawdzić konfigurację Horizon, działanie workers w produkcji, monitoring
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
----
-
-#### `TASK-003` - Implementacja Redis Caching dla Endpointów
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 3-4 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Dodanie response caching dla GET movie/person show oraz cache invalidation po zakończeniu generacji
-- **Szczegóły:** 
-  - Wprowadzenie cache dla `MovieController::show()` i `PersonController::show()`
-  - Cache invalidation po zakończeniu generacji (job completion)
-  - Strategia cache keys i TTL
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
----
-
-#### `TASK-004` - Aktualizacja README.md (Symfony → Laravel)
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟢 Niski
-- **Szacowany czas:** 1 godzina
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Poprawa README.md - zmiana stack info z Symfony na Laravel oraz dodanie instrukcji lokalnego uruchomienia
-- **Szczegóły:** 
-  - Aktualizacja sekcji tech stack
-  - Dodanie instrukcji dla Laravel app (`api/`), Horizon, Redis, Postgres
-  - Weryfikacja zgodności z aktualną architekturą
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
----
-
-#### `TASK-005` - Weryfikacja i Aktualizacja OpenAPI Spec
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Weryfikacja kompletności `docs/openapi.yaml` oraz dodanie linków do OpenAPI w README.md
-- **Szczegóły:** 
-  - Weryfikacja wszystkich endpointów w OpenAPI
-  - Dodanie przykładów request/response
-  - Linkowanie OpenAPI w root `README.md` i `api/README.md`
 - **Zależności:** Brak
 - **Utworzone:** 2025-01-27
 
@@ -232,6 +178,45 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+### `TASK-003` - Implementacja Redis Caching dla Endpointów
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Zakończone:** 2025-11-08
+- **Czas rozpoczęcia:** 2025-11-08
+- **Czas zakończenia:** 2025-11-08
+- **Czas realizacji:** 00h25m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Dodanie cache'owania odpowiedzi dla `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` z invalidacją po zakończeniu jobów.
+- **Szczegóły:** Aktualizacja kontrolerów, jobów generujących treści oraz testów feature (`MoviesApiTest`, `PeopleApiTest`). Wprowadzenie TTL i czyszczenia cache przy zapisach.
+
+---
+
+### `TASK-004` - Aktualizacja README.md (Symfony → Laravel)
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟢 Niski
+- **Zakończone:** 2025-11-08
+- **Czas rozpoczęcia:** 2025-11-08
+- **Czas zakończenia:** 2025-11-08
+- **Czas realizacji:** 00h10m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Odświeżenie głównych README (PL/EN) po migracji na Laravel 12, aktualizacja kroków Quick Start i poleceń testowych.
+- **Szczegóły:** Nowe badże, instrukcje `docker compose`, `php artisan test`, doprecyzowanie roli Horizona.
+
+---
+
+### `TASK-005` - Weryfikacja i Aktualizacja OpenAPI Spec
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Zakończone:** 2025-11-08
+- **Czas rozpoczęcia:** 2025-11-08
+- **Czas zakończenia:** 2025-11-08
+- **Czas realizacji:** 00h45m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Urealnienie specyfikacji `docs/openapi.yaml` i dodanie linków w `api/README.md`.
+- **Szczegóły:** Dodane przykłady odpowiedzi, rozszerzone schematy (joby, flagi, generation), dopasowane statusy 200/202/400/404. Link w `api/README.md` do OpenAPI i Swagger UI.
+
+---
+
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**
@@ -275,12 +260,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 9
-- **Zakończone:** 2
+- **Aktywne:** 7
+- **Zakończone:** 5
 - **Anulowane:** 0
-- **W trakcie:** 1
+- **W trakcie:** 0
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-07
+**Ostatnia aktualizacja:** 2025-11-08
 

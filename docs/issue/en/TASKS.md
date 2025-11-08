@@ -1,6 +1,6 @@
 # 📋 Task Backlog – MovieMind API
 
-**Last updated:** 2025-11-07  
+**Last updated:** 2025-11-08  
 **Status:** 🔄 Active
 
 ---
@@ -33,60 +33,6 @@ Every entry follows this structure:
 - **Execution:** TBD
 - **Description:** Validate Horizon configuration and live worker behaviour
 - **Details:** Confirm Horizon dashboard, worker liveness, and monitoring in staging/prod
-- **Dependencies:** none
-- **Created:** 2025-01-27
-
----
-
-#### `TASK-003` – Introduce Redis caching for endpoints
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 3–4 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Add response caching for movie/person show endpoints + invalidation
-- **Details:**
-  - Cache responses in `MovieController::show()` and `PersonController::show()`
-  - Invalidate cache after generation completes
-  - Define cache keys and TTL strategy
-- **Dependencies:** none
-- **Created:** 2025-01-27
-
----
-
-#### `TASK-004` – Update README.md (Symfony → Laravel)
-- **Status:** ⏳ PENDING
-- **Priority:** 🟢 Low
-- **Estimated time:** 1 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Refresh README to reflect Laravel stack and add local setup instructions
-- **Details:**
-  - Update tech stack section
-  - Document local run for `api/`, Horizon, Redis, Postgres
-  - Ensure alignment with current architecture
-- **Dependencies:** none
-- **Created:** 2025-01-27
-
----
-
-#### `TASK-005` – Review & update OpenAPI spec
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 2–3 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Audit `docs/openapi.yaml` and add OpenAPI links to README files
-- **Details:**
-  - Check coverage for all endpoints
-  - Add request/response examples
-  - Link OpenAPI from root and `api/` README
 - **Dependencies:** none
 - **Created:** 2025-01-27
 
@@ -230,6 +176,45 @@ Every entry follows this structure:
 
 ---
 
+### `TASK-003` – Introduce Redis caching for endpoints
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟡 Medium
+- **Finished:** 2025-11-08
+- **Start time:** 2025-11-08  
+- **End time:** 2025-11-08  
+- **Duration:** 00h25m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Added response caching for `GET /api/v1/movies/{slug}` and `GET /api/v1/people/{slug}` with proper invalidation.
+- **Details:** Updated controllers, queue jobs, and feature tests to use Redis caching, TTL, and cache eviction after generation.
+
+---
+
+### `TASK-004` – Update README.md (Symfony → Laravel)
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟢 Low
+- **Finished:** 2025-11-08
+- **Start time:** 2025-11-08  
+- **End time:** 2025-11-08  
+- **Duration:** 00h10m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Refreshed root README files (EN/PL) to highlight Laravel 12 stack, new Quick Start, and testing workflow.
+- **Details:** Updated badges, docker compose commands, `php artisan test`, and Horizon guidance.
+
+---
+
+### `TASK-005` – Review & update OpenAPI spec
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟡 Medium
+- **Finished:** 2025-11-08
+- **Start time:** 2025-11-08  
+- **End time:** 2025-11-08  
+- **Duration:** 00h45m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Brought `docs/openapi.yaml` up to date and linked it from `api/README.md`.
+- **Details:** Added realistic response examples, expanded schemas (jobs, feature flags, generation flows), and clarified status codes.
+
+---
+
 ## 📚 Templates
 
 See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TASK_TEMPLATE.md) for the canonical structure.
@@ -248,11 +233,11 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 9  
-- **Completed:** 2  
+- **Active:** 7  
+- **Completed:** 5  
 - **Cancelled:** 0  
-- **In progress:** 1
+- **In progress:** 0
 
 ---
 
-**Last updated:** 2025-11-07
+**Last updated:** 2025-11-08
