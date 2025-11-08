@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synchronise docs/issue/TASKS.md with GitHub Issues."""
+"""Synchronise backlog file with GitHub Issues."""
 from __future__ import annotations
 
 import json
@@ -10,7 +10,10 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-TASK_FILE = "docs/issue/TASKS.md"
+TASK_FILES = [
+    "docs/issue/pl/TASKS.md",
+    "docs/issue/TASKS.md",
+]  # allow backward compatibility until all branches updated
 TASK_HEADER_PATTERN = re.compile(r"^#### `(?P<id>TASK-\d+)` - (?P<title>.+)$")
 
 
@@ -138,8 +141,14 @@ def main() -> None:
     repo = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
 
-    with open(TASK_FILE, "r", encoding="utf-8") as fh:
-        content = fh.read()
+    for candidate in TASK_FILES:
+        if os.path.exists(candidate):
+            with open(candidate, "r", encoding="utf-8") as fh:
+                content = fh.read()
+            break
+    else:  # pragma: no cover - fail fast in CI
+        available = ", ".join(TASK_FILES)
+        raise FileNotFoundError(f"None of the task files exist. Checked: {available}")
 
     tasks = parse_tasks(content)
     client = GitHubClient(repo, token)
