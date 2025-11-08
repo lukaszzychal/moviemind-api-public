@@ -206,13 +206,13 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-016` - Auto-fix błędów PHPStan
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 6-8 godzin
-- **Czas rozpoczęcia:** --
+- **Czas rozpoczęcia:** 2025-11-08 19:55
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Opracowanie narzędzia, które analizuje logi PHPStan/testów i automatycznie proponuje/lub stosuje poprawki kodu bez dostępu do internetu ani AI.
 - **Szczegóły:**
   - Zaprojektować dwa tryby pracy (np. auto-fix oraz tryb sugerowania zmian).

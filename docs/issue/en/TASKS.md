@@ -205,13 +205,13 @@ Every entry follows this structure:
 ---
 
 #### `TASK-016` – PHPStan auto-fix tool
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priority:** 🟡 Medium
 - **Estimated time:** 6–8 h
-- **Start time:** --
+- **Start time:** 2025-11-08 19:55
 - **End time:** --
 - **Duration:** --
-- **Execution:** TBD
+- **Execution:** 🤖 AI Agent
 - **Description:** Build a tool that parses PHPStan/test logs and automatically suggests or applies fixes without Internet or AI access.
 - **Details:**
   - Provide two operating modes (e.g. auto-fix versus dry-run/suggestion).
