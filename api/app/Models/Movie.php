@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Str;
 
+/**
+ * @property-read Pivot|null $pivot
+ */
 class Movie extends Model
 {
     use HasFactory;
