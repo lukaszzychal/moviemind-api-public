@@ -290,6 +290,23 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+### `TASK-016` - Auto-fix błędów PHPStan
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Zakończone:** 2025-11-08 20:10
+- **Czas rozpoczęcia:** 2025-11-08 19:55
+- **Czas zakończenia:** 2025-11-08 20:10
+- **Czas realizacji:** 00h15m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Wdrożenie komendy `phpstan:auto-fix`, która analizuje logi PHPStan i automatycznie proponuje/wykonuje poprawki kodu.
+- **Szczegóły:**
+  - Dodano moduł `App\Support\PhpstanFixer` z parserem logów, serwisem i strategiami napraw (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
+  - Komenda wspiera tryby `suggest` oraz `apply`, opcjonalnie przyjmuje wcześniej wygenerowany log.
+  - Pokryto rozwiązanie testami jednostkowymi i feature z wykorzystaniem fixture JSON.
+- **Dokumentacja:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
+
+---
+
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**

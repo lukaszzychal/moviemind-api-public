@@ -1,0 +1,42 @@
+{
+    "totals": {
+        "errors": 2,
+        "file_errors": 2
+    },
+    "files": {
+        "tests/Temp/HasPivot.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Access to an undefined property Tests\\Fixtures\\Models\\HasPivot::$pivot.",
+                    "line": 10,
+                    "identifier": "property.notFound"
+                }
+            ]
+        },
+        "tests/Temp/NeedsParamDocblock.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Method Tests\\Fixtures\\Models\\NeedsParamDocblock::setRating() has parameter $rating with no typehint specified.",
+                    "line": 10,
+                    "identifier": "missingType.iterableValue"
+                }
+            ]
+        }
+    },
+    "errors": [],
+    "warnings": [],
+    "tips": [],
+    "metadata": {
+        "configFiles": [
+            "phpstan.neon"
+        ],
+        "totals": {
+            "file_errors": 2,
+            "errors": 2
+        }
+    }
+}
+
+

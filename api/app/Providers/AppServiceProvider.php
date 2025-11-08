@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Services\OpenAiClient;
 use App\Services\OpenAiClientInterface;
+use App\Support\PhpstanFixer\AutoFixService;
+use App\Support\PhpstanFixer\Fixers\MissingParamDocblockFixer;
+use App\Support\PhpstanFixer\Fixers\UndefinedPivotPropertyFixer;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,6 +18,14 @@ class AppServiceProvider extends ServiceProvider
     {
         // Bind OpenAI Client
         $this->app->bind(OpenAiClientInterface::class, OpenAiClient::class);
+
+        $this->app->bind(
+            AutoFixService::class,
+            fn ($app) => new AutoFixService([
+                $app->make(UndefinedPivotPropertyFixer::class),
+                $app->make(MissingParamDocblockFixer::class),
+            ])
+        );
 
         // Note: AiServiceInterface binding removed - all controllers now use Events
         // See: MovieController, PersonController, GenerateController - they all emit Events
