@@ -65,26 +65,34 @@ moviemind-api-public/
 └── README.md
 ```
 
-### Public MVP Features
+### Public Demo Features
 
-| Component   | Functionality                     | Status |
-| ----------- | -------------------------------- | ------ |
-| Laravel     | Public API + Admin panel          | ✅     |
-| Database    | PostgreSQL with basic schema      | ✅     |
-| Cache       | Redis for caching                 | ✅     |
-| Queue       | Laravel Horizon for async jobs    | ✅     |
-| Mock AI     | Description generation simulation | ✅     |
-| Docker      | Development environment           | ✅     |
-| Security    | GitLeaks, pre-commit hooks        | ✅     |
+| Component          | Showcase Scope                                                        | Status                   |
+| ------------------ | --------------------------------------------------------------------- | ------------------------ |
+| Laravel API        | REST endpoints (movies, people, jobs) + feature flag toggles          | ✅ Demo-ready             |
+| Admin UI           | CRUD, feature flag management, demo auth roles                        | ✅ Showcase implementation |
+| Webhooks           | Simulator endpoints with payload inspector and retry flow             | ✅ Simulator              |
+| AI Jobs            | `AI_SERVICE=mock` deterministic jobs + `AI_SERVICE=real` OpenAI calls | ✅ Dual-mode              |
+| Queue & Monitoring | Horizon dashboard, Telescope insights, sample Grafana boards          | ✅ Configured             |
+| Database           | PostgreSQL schema with multilingual content tables                    | ✅ Available              |
+| Cache              | Redis integration for hot paths                                       | ✅ Active                 |
+| Security           | GitLeaks, pre-commit hooks, branch protection guides                  | ✅ Enforced               |
+
+### Portfolio Showcases
+
+- Admin UI screencast highlighting feature flags, CRUD flows, and role-based access
+- Webhook simulator walk-through (payload replay, signature verification)
+- AI dual-mode demo: `mock` vs `real` execution with Horizon/Telescope insights
+- Monitoring bundle tour (Grafana JSON, Telescope filters, queue depth alerts)
+- Architecture overview deck covering the single Laravel service strategy and delivery flow
 
 ### MVP Endpoints
 ```php
 // Laravel - Public API (routes/api.php)
-GET  /api/v1/movies              # List movies
-GET  /api/v1/movies/{id}         # Movie details
-GET  /api/v1/actors/{id}         # Actor details
-POST /api/v1/generate            # Generate description (mock)
-GET  /api/v1/jobs/{id}           # Job status
+GET  /api/v1/movies               # List movies
+GET  /api/v1/movies/{slug}        # Movie details + auto-generation when missing (AI)
+POST /api/v1/generate             # Generate description (mock/real)
+GET  /api/v1/jobs/{id}            # Job status
 ```
 
 ```php
@@ -105,30 +113,23 @@ Full commercial product with real AI integration, billing, and SaaS features.
 
 ### Private MVP Features
 
-| Component          | Functionality              | Difference vs Public |
-| -----------        | ---------------            | -------------------- |
-| AI Integration     | OpenAI GPT-4o, Claude      | Mock → Real AI       |
-| Billing            | RapidAPI plans, webhooks   | None → Full billing  |
-| Rate Limiting      | Free/pro/enterprise plans  | None → Advanced      |
-| Monitoring         | Prometheus, Grafana        | Basic → Full         |
-| Security           | OAuth, JWT, encryption     | Basic → Enterprise   |
-| CI/CD              | GitHub Actions, deployment | None → Automation    |
+| Component      | Functionality            | Difference vs Public |
+| -------------- | ------------------------ | -------------------- |
+| AI Integration | OpenAI GPT-4o, Claude    | Mock → Real AI       |
+| Billing        | RapidAPI plans, webhooks | None → Full billing  |
+| Rate Limiting  | Free/pro/enterprise plans| None → Advanced      |
+| Monitoring     | Prometheus, Grafana      | Basic → Full         |
+| Security       | OAuth, JWT, encryption   | Basic → Enterprise   |
+| CI/CD          | GitHub Actions, deploy   | None → Automation    |
 
 ### Additional Private Endpoints
-```python
-# FastAPI - Production API
-POST /v1/billing/webhook     # RapidAPI billing
-GET  /v1/analytics/usage     # Usage statistics
-POST /v1/admin/regenerate    # Force regeneration
-GET  /v1/health/detailed     # Health check
-```
 
 ```php
-// Laravel - Production Admin
-GET  /admin/billing          # Billing management
-GET  /admin/analytics        # Usage analytics
-POST /admin/ai/models        # AI model management
-GET  /admin/security         # Security dashboard
+// Laravel - Single service (Public + Admin)
+POST /admin/billing/webhook   # RapidAPI billing
+GET  /admin/analytics/usage   # Usage statistics
+POST /admin/ai/regenerate     # Force regeneration
+GET  /admin/health/detailed   # Health check
 ```
 
 ---
@@ -159,7 +160,7 @@ Goal: AI integration and description generation
 Tasks:
 - [ ] OpenAI integration — connection to GPT-4o
 - [ ] Prompt engineering — templates for different contexts
-- [ ] Async processing — Celery for long tasks
+- [ ] Async processing — Laravel Horizon workers for long-running jobs
 - [ ] Quality scoring — content quality assessment
 - [ ] Plagiarism detection — similarity detection
 - [ ] Version management — description version storage
@@ -187,39 +188,37 @@ Deliverables:
 - Specialized terms dictionary
 - Culturally adapted content
 
-### Stage 4: Advanced Features (Weeks 7-8)
-Goal: Advanced features and optimization
+### Stage 4: Observability & Integrations (Weeks 7-8)
+Goal: Showcase operations capabilities without exposing secrets
 
 Tasks:
-- [ ] Style packs — different description styles (modern, critical, playful)
-- [ ] Audience targeting — content for different audience groups
-- [ ] Similarity detection — similar movie detection
-- [ ] Recommendation engine — recommendation system
-- [ ] Analytics dashboard — detailed statistics
-- [ ] Performance optimization — performance optimization
+- [ ] Webhook simulator — demo endpoints, signature validation, replay tooling
+- [ ] Monitoring bundle — Telescope, Horizon dashboard presets, sample Grafana json
+- [ ] Alerting demo — mail/slack notifications using fake channels
+- [ ] Admin analytics — lightweight dashboards (jobs, AI usage, feature toggles)
+- [ ] Documentation polish — portfolio walkthrough, diagrams, demo scripts
 
 Deliverables:
-- Diverse description styles
-- Recommendation system
-- Analytics dashboard
-- Performance optimization
+- Webhook showcase with inspector
+- Observability toolkit packaged for demos
+- Admin analytics widgets
+- Updated docs and demo guides
 
-### Stage 5: Monetization (Weeks 9-10)
-Goal: Monetization preparation
+### Stage 5: Monetization & Advanced Features (Weeks 9-10)
+Goal: Bridge from showcase to commercial deployment
 
 Tasks:
-- [ ] RapidAPI integration — RapidAPI publication
-- [ ] Billing system — billing system
-- [ ] Rate limiting — plan limitations
-- [ ] Webhook system — event notifications
-- [ ] API documentation — OpenAPI documentation
-- [ ] Support system — support system
+- [ ] RapidAPI integration — staging publish with mock billing
+- [ ] Subscription plans — plan matrix, rate-limit policies, feature gating
+- [ ] Style packs & recommendation — highlight advanced AI capabilities
+- [ ] Usage analytics — dashboards for AI cost, request volume, locales
+- [ ] Production playbooks — deployment runbooks, security checklist
 
 Deliverables:
-- API published on RapidAPI
-- Billing system
-- API documentation
-- Support system
+- Monetization-ready plan definitions
+- Advanced AI feature demos
+- Usage analytics dashboards
+- Operational playbooks
 
 ---
 
@@ -252,11 +251,11 @@ Client → Laravel API → Redis Cache → PostgreSQL
 - Cost — cheaper infrastructure and maintenance
 - Developer experience — easier debugging of single stack
 
-### Evolution to Hybrid (optional future)
+### Public edge evolution (optional future)
 If you ever need:
-- RapidAPI deployment → Add FastAPI as proxy
-- High scale (>10k req/min) → Extract public API
-- Python team → Give them FastAPI, you control Laravel admin
+- RapidAPI deployment → Place an API Gateway (Kong, Tyk) in front of Laravel
+- High scale (>10k req/min) → Scale Laravel horizontally (Octane, Redis caching)
+- Python team → Let them integrate via queue/SDK without owning a separate API
 
 ---
 
@@ -331,11 +330,11 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ### RapidAPI Plans
 
-| Plan           | Limit                 | Price      | Features                   |
-| ------         | -------               | -------    | ----------                 |
-| Free           | 100 requests/month    | $0         | Basic data, cache          |
-| Pro            | 10,000 requests/month | $29/month  | AI generation, style packs |
-| Enterprise     | Unlimited             | $199/month | Webhooks, dedicated models |
+| Plan       | Limit                 | Price      | Features                   |
+| ---------- | --------------------- | ---------- | -------------------------- |
+| Free       | 100 requests/month    | $0         | Basic data, cache          |
+| Pro        | 10 000 requests/month | $29/month  | AI generation, style packs |
+| Enterprise | Unlimited             | $199/month | Webhooks, dedicated models |
 
 ### Billing Model
 - Pay-per-use — usage-based payment
@@ -354,22 +353,29 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 ## Git Trunk Flow
 
 ### Code Management Strategy
-We use Git Trunk Flow as the main code management strategy for MovieMind API.
+We use **Git Trunk Flow** as the primary code management strategy for MovieMind API with a single always-releasable branch.
 
 ### Trunk Flow Advantages
-- Simpler workflow — single main branch (main)
-- Faster integrations — frequent merging to main
-- Fewer conflicts — shorter feature branch lifetime
-- Better CI/CD — every commit on main can be deployed
-- Feature flags — feature control without branches
-- Rollback — easy rollback through feature flags
+- Single source of truth — we work exclusively on `main`
+- Fast iterations — small changes land on `main` the same day
+- Continuous quality — run tests and linters before every push
+- Feature flags — control feature exposure without branches
+- Simple rollback — `git revert` or flag toggle
+- Lower integration cost — no long-lived branches
 
-### Workflow
-1. Feature branch — `feature/ai-description-generation`
-2. Pull Request — code review and tests
-3. Merge to main — after approval
-4. Deploy — automatic deploy with feature flags
-5. Feature flag — feature enablement control
+### Trunk Flow Workflow
+1. Sync with `main` — `git pull --rebase origin main`
+2. Small change set — implement in one or few commits (optionally behind a flag)
+3. Local validation — Pint, PHPStan, PHPUnit, GitLeaks, Composer audit
+4. Fast review — short PR targeting `main` (no protection blocking merge after approval)
+5. Merge/push to `main` — same day, avoid batching changes
+6. Observability — monitor deploy; use `revert` or disable flag if needed
+
+### Practices That Support Trunk Flow
+- Feature flags to hide incomplete features
+- Toggle routing/feature configuration via `.env`/database instead of branches
+- Pair or async review with max 2h response time
+- Automated CI/CD pipelines on every push to `main`
 
 ---
 
@@ -415,20 +421,20 @@ return [
 
 ### 10-Week Schedule
 
-| Week     | Stage             | Tasks                           | Deliverables           |
-| ------   | -------           | -------                         | --------------         |
-| 1-2      | Foundation        | Setup, Docker, DB schema, Laravel | Working environment  |
-| 3-4      | AI Integration    | OpenAI, Laravel Horizon, Quality scoring | Description generation |
-| 5-6      | Multilingual      | i18n, Translation, Glossary     | 5+ languages           |
-| 7-8      | Advanced Features | Style packs, Analytics          | Advanced features      |
-| 9-10     | Monetization      | RapidAPI, Billing               | Ready product          |
+| Week | Stage                       | Tasks                                      | Deliverables           |
+| ---- | --------------------------- | ------------------------------------------ | ---------------------- |
+| 1-2  | Foundation                  | Setup, Docker, DB schema, Laravel          | Working environment    |
+| 3-4  | AI Integration              | OpenAI, Laravel Horizon, Quality scoring   | Description generation |
+| 5-6  | Multilingual                | i18n, Translation, Glossary                | 5+ languages           |
+| 7-8  | Observability & Integrations| Webhook simulator, Monitoring              | Ops toolkit            |
+| 9-10 | Monetization & Adv. Features| Plans, Style packs, Analytics              | Commercial readiness   |
 
 ### Milestones
 - Week 2 — Laravel MVP Public repo ready
 - Week 4 — AI integration working (Laravel + OpenAI)
 - Week 6 — Multilingual implemented
-- Week 8 — Advanced features
-- Week 10 — Ready product (optional: add FastAPI as proxy)
+- Week 8 — Observability toolkit solidified
+- Week 10 — Commercial handoff package (optional: expose Laravel via API Gateway)
 
 ---
 
@@ -448,10 +454,10 @@ Phase 1 (MVP): Everything in Laravel — Current
 - Cheaper infrastructure
 - Laravel Horizon for async jobs
 
-Phase 2 (optional, if needed): Extract Public API
-- RapidAPI deployment → Add FastAPI as reverse proxy
-- High scale (>10k req/min) → Extract public API to FastAPI
-- Python team → Give them FastAPI, you control Laravel admin
+Phase 2 (optional, if needed): Harden the public edge
+- RapidAPI deployment → Add an API Gateway (Kong/Tyk) in front of Laravel
+- High scale (>10k req/min) → Scale Laravel horizontally (Octane, cache, read replicas)
+- Python team → Integrate via queues (RabbitMQ) or SDK instead of a separate API
 
 When to split?
 - Publishing API on RapidAPI

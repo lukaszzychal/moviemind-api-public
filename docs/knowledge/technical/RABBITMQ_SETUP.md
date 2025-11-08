@@ -186,7 +186,7 @@ Bus::dispatch(new SendEmailJob($user))
 
 **Używaj RabbitMQ gdy:**
 
-1. ✅ Masz wiele serwisów (Laravel + Python FastAPI + Node.js)
+1. ✅ Masz wiele serwisów (Laravel API + dodatkowe mikroserwisy w innych językach)
 2. ✅ Potrzebujesz zaawansowanego routingu (exchanges, routing keys)
 3. ✅ Potrzebujesz priorities w kolejkach
 4. ✅ Integracja z zewnętrznymi systemami (AMQP standard)
@@ -314,7 +314,7 @@ Otwórz: `http://localhost:15672`
 **Obecnie:** Redis + Horizon jest wystarczający dla MVP ✅
 
 **Rozważ RabbitMQ gdy:**
-- Dodasz Python FastAPI serwis (dla AI)
+- Dodasz dedykowany mikroserwis (np. Python dla pipeline'ów AI)
 - Potrzebujesz integracji z zewnętrznymi systemami
 - Masz złożone routing requirements
 - Chcesz standardowy AMQP protocol

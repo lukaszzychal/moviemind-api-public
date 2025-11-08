@@ -36,7 +36,6 @@ Tags: @docs @api @README.md
 ### API
 - [x] GET `/api/v1/movies` — list movies
 - [x] GET `/api/v1/movies/{id}` — movie details
-- [x] GET `/api/v1/actors/{id}` — actor details (compat)
 - [x] GET `/api/v1/people/{id}` — person details (actor/director/etc.) [new]
 - [x] POST `/api/v1/generate` — accepts `entity_type: MOVIE | PERSON`, returns mock `job_id`
 - [x] GET `/api/v1/jobs/{id}` — job status (stub/mocked)

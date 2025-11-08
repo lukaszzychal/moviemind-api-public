@@ -124,7 +124,7 @@ We use **Laravel 11** instead of Symfony 7 for admin panel and internal API.
 
 ### 🎯 Decyzja
 Używamy hybrydowej architektury:
-- **Python FastAPI** - publiczne API (RapidAPI)
+- **API Gateway (Kong/Tyk)** - publiczne API (RapidAPI)
 - **PHP Laravel** - admin panel i wewnętrzne API
 
 ### 💡 Uzasadnienie
@@ -138,7 +138,7 @@ Używamy hybrydowej architektury:
 
 #### 🔄 Przepływ danych:
 ```
-RapidAPI → FastAPI → RabbitMQ → Celery → OpenAI → PostgreSQL → Redis → Laravel → Admin Panel
+RapidAPI → API Gateway → Laravel → RabbitMQ → Horizon Workers → OpenAI → PostgreSQL → Redis → Admin Panel
 ```
 
 ### 📊 Alternatywy rozważane:
@@ -158,7 +158,7 @@ RapidAPI → FastAPI → RabbitMQ → Celery → OpenAI → PostgreSQL → Redis
 
 ### 🎯 Decision
 We use hybrid architecture:
-- **Python FastAPI** - public API (RapidAPI)
+- **API Gateway (Kong/Tyk)** - public API (RapidAPI)
 - **PHP Laravel** - admin panel and internal API
 
 ### 💡 Rationale
@@ -172,7 +172,7 @@ We use hybrid architecture:
 
 #### 🔄 Data flow:
 ```
-RapidAPI → FastAPI → RabbitMQ → Celery → OpenAI → PostgreSQL → Redis → Laravel → Admin Panel
+RapidAPI → API Gateway → Laravel → RabbitMQ → Horizon Workers → OpenAI → PostgreSQL → Redis → Admin Panel
 ```
 
 ### 📊 Alternatives considered:

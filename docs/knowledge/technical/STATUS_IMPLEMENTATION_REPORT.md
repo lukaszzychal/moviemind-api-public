@@ -40,7 +40,6 @@
 |----------|--------|----------------|-------|
 | `GET /v1/movies` | ✅ | `MovieController::index()` | ✅ |
 | `GET /v1/movies/{slug}` | ✅ | `MovieController::show()` | ✅ |
-| `GET /v1/actors/{id}` | ✅ | `ActorController::show()` | ✅ |
 | `GET /v1/people/{slug}` | ✅ | `PersonController::show()` | ✅ |
 | `POST /v1/generate` | ✅ | `GenerateController::generate()` | ✅ |
 | `GET /v1/jobs/{id}` | ✅ | `JobsController::show()` | ✅ |

@@ -80,7 +80,6 @@ Client can:
 | GET /v1/movies?q=     | search movies (title, year, genre)              |
 | GET /v1/movies/{slug} | get movie details + description (AI or cache)   |
 | GET /v1/people/{slug} | get person (actor, director, etc.) + bio        |
-| GET /v1/actors/{id}   | get actor details + biography                    |
 | POST /v1/generate     | force new generation: entity_type = MOVIE or PERSON |
 | GET /v1/jobs/{id}     | check generation status (PENDING, DONE, FAILED) |
 #### 📘 Example Payloads (Request/Response)
@@ -179,7 +178,7 @@ System internally:
 | Cache            | Redis                  | Caching API/AI results                               |
 | Task Queue       | Laravel Horizon        | Queueing AI generation, async processing             |
 
-Optional public layer: `/src-fastapi` — Python + FastAPI + Celery + RabbitMQ + Redis
+Optional public edge: `/deploy/api-gateway` — Kong/Tyk + Redis + Cloud WAF
 
 ### Data Structure (selected tables)
 

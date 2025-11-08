@@ -160,7 +160,6 @@ curl -X POST http://localhost:8000/api/v1/admin/flags/ai_description_generation 
 
 All registered API routes:
 ```
-GET|HEAD   api/v1/actors/{id} ..................... Api\ActorController@show
 GET|HEAD   api/v1/admin/flags ................... Admin\FlagController@index
 GET|HEAD   api/v1/admin/flags/usage ............. Admin\FlagController@usage
 POST       api/v1/admin/flags/{name} .......... Admin\FlagController@setFlag
