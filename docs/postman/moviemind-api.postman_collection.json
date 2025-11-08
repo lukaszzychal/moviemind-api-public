@@ -2,192 +2,545 @@
   "info": {
     "name": "MovieMind API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "item": [
     {
-      "name": "Movies - List",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/movies?q=matrix",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","movies"],
-          "query": [{"key":"q","value":"matrix"}]
-        }
-      },
-      "response": [
+      "name": "Movies",
+      "item": [
         {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n        \"people\": \"http://localhost:8000/api/v1/movies/the-matrix\"\n      }\n    }\n  ]\n}"
-        }
-      ]
-    },
-    {
-      "name": "Movies - Show (by slug)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/movies/the-matrix",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","movies","the-matrix"]
-        }
-      },
-      "response": [
-        {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 10,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality...\",\n    \"context_tag\": \"modern\"\n  },\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"people\": \"http://localhost:8000/api/v1/movies/the-matrix\",\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"entity_id\": 1\n      }\n    }\n  }\n}"
-        }
-      ]
-    },
-    {
-      "name": "People - Show (by slug)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/people/christopher-nolan",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","people","christopher-nolan"]
-        }
-      },
-      "response": [
-        {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"id\": 123,\n  \"slug\": \"christopher-nolan\",\n  \"name\": \"Christopher Nolan\",\n  \"bios\": [ { \"locale\": \"en-US\", \"text\": \"Short bio...\" } ],\n  \"movies\": [ { \"id\": 2, \"slug\": \"inception\", \"title\": \"Inception\" } ],\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n    \"movies\": \"http://localhost:8000/api/v1/movies\"\n  }\n}"
-        }
-      ]
-    },
-    {
-      "name": "Generate - MOVIE",
-      "request": {
-        "method": "POST",
-        "header": [{"key":"Content-Type","value":"application/json"}],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"entity_id\": 1,\n  \"locale\": \"pl-PL\",\n  \"context_tag\": \"modern\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/generate",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","generate"]
-        }
-      },
-      "response": [
-        {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\"\n}"
+          "name": "List movies",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response contains data array\", function () { pm.expect(json).to.have.property('data').that.is.an('array'); });",
+                  "if (Array.isArray(json.data) && json.data.length > 0) {",
+                  "  const first = json.data[0];",
+                  "  if (first.slug) { pm.collectionVariables.set('movieSlug', first.slug); }",
+                  "  if (first.id) { pm.collectionVariables.set('movieId', first.id); }",
+                  "}",
+                  "pm.collectionVariables.set('moviesLastResponse', JSON.stringify(json));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies?q=matrix",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "matrix"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"default_description\": {\n        \"id\": 1,\n        \"movie_id\": 1,\n        \"locale\": \"en-US\",\n        \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 1,\n          \"slug\": \"the-wachowskis\",\n          \"name\": \"The Wachowskis\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n        \"people\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"entity_id\": 1\n          }\n        }\n      }\n    },\n    {\n      \"id\": 2,\n      \"slug\": \"inception-2010\",\n      \"title\": \"Inception\",\n      \"release_year\": 2010,\n      \"director\": \"Christopher Nolan\",\n      \"default_description\": {\n        \"id\": 2,\n        \"movie_id\": 2,\n        \"locale\": \"en-US\",\n        \"text\": \"A thief enters dreams to steal secrets, facing a final, complex mission.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        },\n        {\n          \"id\": 3,\n          \"name\": \"Thriller\",\n          \"slug\": \"thriller\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 2,\n          \"slug\": \"christopher-nolan\",\n          \"name\": \"Christopher Nolan\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": \"http://localhost:8000/api/v1/movies/inception-2010\",\n        \"people\": \"http://localhost:8000/api/v1/movies/inception-2010\",\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"entity_id\": 2\n          }\n        }\n      }\n    }\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "403 Feature off",
-          "status": "Forbidden",
-          "code": 403,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"error\": \"Feature not available\"\n}"
-        }
-      ]
-    },
-    {
-      "name": "Generate - PERSON",
-      "request": {
-        "method": "POST",
-        "header": [{"key":"Content-Type","value":"application/json"}],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"entity_id\": 123,\n  \"locale\": \"en-US\",\n  \"context_tag\": \"scholarly\"\n}"
+          "name": "Get movie by slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response contains movie id and slug\", function () { pm.expect(json).to.have.property('id'); pm.expect(json).to.have.property('slug'); });",
+                  "pm.collectionVariables.set('moviePayload', JSON.stringify(json));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{movieSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{{movieSlug}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix-1999\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 1,\n    \"movie_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"descriptions\": [\n    {\n      \"id\": 1,\n      \"movie_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"genres\": [\n    {\n      \"id\": 1,\n      \"name\": \"Action\",\n      \"slug\": \"action\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sci-Fi\",\n      \"slug\": \"sci-fi\"\n    }\n  ],\n  \"people\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-wachowskis\",\n      \"name\": \"The Wachowskis\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n    \"people\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"entity_id\": 1\n      }\n    }\n  }\n}"
+            }
+          ]
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/generate",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","generate"]
-        }
-      },
-      "response": [
         {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\",\n  \"status\": \"PENDING\"\n}"
+          "name": "Get movie (not found -> 202 Accepted)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/annihilation-2018",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "annihilation-2018"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for movie by slug\",\n  \"slug\": \"annihilation-2018\",\n  \"confidence\": 0.78,\n  \"confidence_level\": \"medium\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "People",
+      "item": [
+        {
+          "name": "Get person by slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response contains person id and slug\", function () { pm.expect(json).to.have.property('id'); pm.expect(json).to.have.property('slug'); });",
+                  "pm.collectionVariables.set('personPayload', JSON.stringify(json));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{personSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "{{personSlug}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-wachowskis\",\n  \"name\": \"The Wachowskis\",\n  \"birth_date\": null,\n  \"birthplace\": null,\n  \"default_bio\": null,\n  \"bios\": [],\n  \"movies\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n    \"movies\": \"http://localhost:8000/api/v1/movies\"\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "403 Feature off",
-          "status": "Forbidden",
-          "code": 403,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"error\": \"Feature not available\"\n}"
+          "name": "Get person (not found -> 202 Accepted)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/greta-gerwig",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "greta-gerwig"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"9fa8c917-7d31-4b54-90d1-2ccf4bd8df52\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for person by slug\",\n  \"slug\": \"greta-gerwig\",\n  \"confidence\": 0.64,\n  \"confidence_level\": \"low\"\n}"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Jobs - Show",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","jobs","{{jobId}}"]
-        }
-      },
-      "response": [
+      "name": "Generation",
+      "item": [
         {
-          "name": "200 OK",
-          "status": "OK",
-          "code": 200,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\\n  \\\"id\\\": \\\"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d\\\",\\n  \\\"status\\\": \\\"PENDING\\\"\\n}"
-        }
-      ]
-    }
-    ,
-    {
-      "name": "Movies - Show (missing slug => 202 when generation on)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/movies/annihilation",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","movies","annihilation"]
-        }
-      },
-      "response": [
+          "name": "Generate movie (existing slug -> 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\\\"Generation status is DONE\\\", function () { pm.expect(json.status).to.eql('DONE'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "generate"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"DONE\",\n  \"message\": \"Movie already exists\",\n  \"slug\": \"the-matrix-1999\",\n  \"id\": 1,\n  \"confidence\": 0.92,\n  \"confidence_level\": \"high\"\n}"
+            }
+          ]
+        },
         {
-          "name": "202 Accepted",
-          "status": "Accepted",
-          "code": 202,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"c6de4a2f-1111-2222-3333-abcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"slug\": \"annihilation\"\n}"
+          "name": "Generate movie (new slug -> 202)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\\\"Status code is 202\\\", function () { pm.response.to.have.status(202); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\\\"Response has job id\\\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"annihilation-2018\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "generate"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for movie by slug\",\n  \"slug\": \"annihilation-2018\",\n  \"confidence\": 0.78,\n  \"confidence_level\": \"medium\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate person (existing slug -> 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\\\"Generation status is DONE\\\", function () { pm.expect(json.status).to.eql('DONE'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"the-wachowskis\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "generate"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"6f52d5f2-aaaa-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"DONE\",\n  \"message\": \"Person already exists\",\n  \"slug\": \"the-wachowskis\",\n  \"id\": 1,\n  \"confidence\": 0.8,\n  \"confidence_level\": \"medium\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate person (new slug -> 202)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\\\"Status code is 202\\\", function () { pm.response.to.have.status(202); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\\\"Response has job id\\\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"greta-gerwig\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "generate"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"9fa8c917-7d31-4b54-90d1-2ccf4bd8df52\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for person by slug\",\n  \"slug\": \"greta-gerwig\",\n  \"confidence\": 0.64,\n  \"confidence_level\": \"low\"\n}"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "People - Show (missing slug => 202 when generation on)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/people/john-doe",
-          "host": ["{{baseUrl}}"],
-          "path": ["api","v1","people","john-doe"]
-        }
-      },
-      "response": [
+      "name": "Jobs",
+      "item": [
         {
-          "name": "202 Accepted",
-          "status": "Accepted",
-          "code": 202,
-          "header": [{"key":"Content-Type","value":"application/json"}],
-          "body": "{\n  \"job_id\": \"d7ee4a2f-4444-5555-6666-bbcdefabcdef\",\n  \"status\": \"PENDING\",\n  \"slug\": \"john-doe\"\n}"
+          "name": "Get job status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test(\"Response has status field\", function () { pm.expect(json).to.have.property('status'); });",
+                  "} else {",
+                  "  pm.test(\"Unknown job response\", function () { pm.expect(json.status).to.eql('UNKNOWN'); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{{jobId}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"PENDING\",\n  \"entity\": \"MOVIE\",\n  \"slug\": \"annihilation-2018\",\n  \"confidence\": 0.78\n}"
+            },
+            {
+              "name": "404 Unknown job",
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"11111111-1111-1111-1111-111111111111\",\n  \"status\": \"UNKNOWN\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -195,60 +548,236 @@
       "name": "Admin",
       "item": [
         {
-          "name": "Flags - List",
+          "name": "Flags - list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Flags response has data array\", function () { pm.expect(json).to.have.property('data').that.is.an('array'); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags",
-              "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"name\": \"ai_description_generation\",\n      \"active\": true,\n      \"description\": \"Enables AI-generated movie descriptions\"\n    },\n    {\n      \"name\": \"ai_bio_generation\",\n      \"active\": false,\n      \"description\": \"Enables AI-generated person biographies\"\n    }\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "Flags - Toggle ai_description_generation (on)",
+          "name": "Flags - toggle ai_description_generation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response contains name and active\", function () { pm.expect(json).to.have.property('name'); pm.expect(json).to.have.property('active'); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{"key":"Content-Type","value":"application/json"}],
-            "body": {"mode":"raw","raw":"{\n  \"state\": \"on\"\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"on\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags/ai_description_generation",
-              "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags","ai_description_generation"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags",
+                "ai_description_generation"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"name\": \"ai_description_generation\",\n  \"active\": true\n}"
+            }
+          ]
         },
         {
-          "name": "Flags - Toggle ai_bio_generation (on)",
+          "name": "Flags - toggle ai_bio_generation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response contains name and active\", function () { pm.expect(json).to.have.property('name'); pm.expect(json).to.have.property('active'); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{"key":"Content-Type","value":"application/json"}],
-            "body": {"mode":"raw","raw":"{\n  \"state\": \"on\"\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"off\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags/ai_bio_generation",
-              "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags","ai_bio_generation"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags",
+                "ai_bio_generation"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"name\": \"ai_bio_generation\",\n  \"active\": false\n}"
+            }
+          ]
         },
         {
-          "name": "Flags - Usage",
+          "name": "Flags - usage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Usage response has array\", function () { pm.expect(json).to.have.property('usage').that.is.an('array'); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/flags/usage",
-              "host": ["{{baseUrl}}"],
-              "path": ["api","v1","admin","flags","usage"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags",
+                "usage"
+              ]
             }
-          }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"usage\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
+            }
+          ]
         }
       ]
     }
   ],
   "variable": [
-    {"key":"baseUrl","value":"http://localhost:8000"},
-    {"key":"jobId","value":"7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d"}
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "movieSlug",
+      "value": "the-matrix-1999",
+      "type": "string"
+    },
+    {
+      "key": "movieId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "personSlug",
+      "value": "the-wachowskis",
+      "type": "string"
+    },
+    {
+      "key": "jobId",
+      "value": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    }
   ]
 }
-
-
