@@ -342,7 +342,6 @@ Każde zadanie ma następującą strukturę:
 - **Dokumentacja:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
-
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**

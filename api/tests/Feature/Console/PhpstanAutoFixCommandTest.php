@@ -14,7 +14,7 @@ final class PhpstanAutoFixCommandTest extends TestCase
     private Filesystem $filesystem;
 
     /**
-     * @var array<string>
+     * @var array<string, string>
      */
     private array $tempFiles;
 

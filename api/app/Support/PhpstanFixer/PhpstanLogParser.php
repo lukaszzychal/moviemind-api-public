@@ -62,10 +62,16 @@ final class PhpstanLogParser
 
     private function normalizePath(string $path, string $workingDirectory): string
     {
-        if (str_starts_with($path, DIRECTORY_SEPARATOR)) {
+        if ($this->isAbsolutePath($path)) {
             return $path;
         }
 
         return rtrim($workingDirectory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$path;
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, DIRECTORY_SEPARATOR)
+            || (strlen($path) > 1 && ctype_alpha($path[0]) && $path[1] === ':');
     }
 }
