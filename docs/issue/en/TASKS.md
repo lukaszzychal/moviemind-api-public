@@ -204,24 +204,6 @@ Every entry follows this structure:
 
 ---
 
-#### `TASK-016` – PHPStan auto-fix tool
-- **Status:** 🔄 IN_PROGRESS
-- **Priority:** 🟡 Medium
-- **Estimated time:** 6–8 h
-- **Start time:** 2025-11-08 19:55
-- **End time:** --
-- **Duration:** --
-- **Execution:** 🤖 AI Agent
-- **Description:** Build a tool that parses PHPStan/test logs and automatically suggests or applies fixes without Internet or AI access.
-- **Details:**
-  - Provide two operating modes (e.g. auto-fix versus dry-run/suggestion).
-  - Implement the solution inside the repo first, with a clear path to extract it later as a standalone library installable via Composer or other dependency managers.
-  - For the MVP, gather logs from the current project and validate the tool against MovieMind API code.
-- **Dependencies:** none
-- **Created:** 2025-11-08
-
----
-
 ## ✅ Completed tasks
 
 ### `TASK-000` – People list endpoint with role filtering
@@ -304,6 +286,23 @@ Every entry follows this structure:
   - Added environment templates (`docs/postman/environments/local.postman_environment.json`, `docs/postman/environments/staging.postman_environment.json`)
   - Documented usage in `docs/postman/README.md`
 - **Notes:** Collection matches `docs/openapi.yaml` and can be executed with Newman (`newman run ...`).
+
+---
+
+### `TASK-016` – PHPStan auto-fix tool
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟡 Medium
+- **Finished:** 2025-11-08 20:10
+- **Start time:** 2025-11-08 19:55  
+- **End time:** 2025-11-08 20:10  
+- **Duration:** 00h15m
+- **Execution:** 🤖 AI Agent
+- **Description:** Delivered the `phpstan:auto-fix` command that parses PHPStan logs and suggests/applies code fixes offline.
+- **Details:**
+  - Introduced the `App\Support\PhpstanFixer` module with log parser, orchestration service, and fix strategies (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
+  - Command supports `suggest` and `apply` modes and accepts pre-generated JSON logs.
+  - Added unit and feature coverage using dedicated fixtures.
+- **Documentation:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
 

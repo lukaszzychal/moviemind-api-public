@@ -205,24 +205,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-016` - Auto-fix błędów PHPStan
-- **Status:** 🔄 IN_PROGRESS
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 6-8 godzin
-- **Czas rozpoczęcia:** 2025-11-08 19:55
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Opracowanie narzędzia, które analizuje logi PHPStan/testów i automatycznie proponuje/lub stosuje poprawki kodu bez dostępu do internetu ani AI.
-- **Szczegóły:**
-  - Zaprojektować dwa tryby pracy (np. auto-fix oraz tryb sugerowania zmian).
-  - Przygotować rozwiązanie w repo jako moduł możliwy do dalszego wydzielenia do osobnej biblioteki (docelowo instalowanej przez Composer lub inny dependency manager).
-  - Na etapie MVP oprzeć działanie na logach z bieżącego projektu i przetestować narzędzie na kodzie MovieMind API.
-- **Zależności:** Brak
-- **Utworzone:** 2025-11-08
-
----
-
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role
@@ -305,6 +287,23 @@ Każde zadanie ma następującą strukturę:
   - Dodano szablony środowisk (`docs/postman/environments/local.postman_environment.json`, `docs/postman/environments/staging.postman_environment.json`)
   - Przygotowano przewodnik użytkowania `docs/postman/README.md`
 - **Uwagi:** Kolekcja jest zgodna z `docs/openapi.yaml` i gotowa do uruchamiania poprzez Newman (`newman run ...`).
+
+---
+
+### `TASK-016` - Auto-fix błędów PHPStan
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Zakończone:** 2025-11-08 20:10
+- **Czas rozpoczęcia:** 2025-11-08 19:55
+- **Czas zakończenia:** 2025-11-08 20:10
+- **Czas realizacji:** 00h15m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Wdrożenie komendy `phpstan:auto-fix`, która analizuje logi PHPStan i automatycznie proponuje/wykonuje poprawki kodu.
+- **Szczegóły:**
+  - Dodano moduł `App\Support\PhpstanFixer` z parserem logów, serwisem i strategiami napraw (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
+  - Komenda wspiera tryby `suggest` oraz `apply`, opcjonalnie przyjmuje wcześniej wygenerowany log.
+  - Pokryto rozwiązanie testami jednostkowymi i feature z wykorzystaniem fixture JSON.
+- **Dokumentacja:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
 

@@ -13,26 +13,36 @@ final class PhpstanAutoFixCommandTest extends TestCase
 {
     private Filesystem $filesystem;
 
-    private string $tempFile;
+    private string $pivotTempFile;
+
+    private string $paramTempFile;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->filesystem = new Filesystem;
-        $this->tempFile = base_path('tests/Temp/HasPivot.php');
+        $this->pivotTempFile = base_path('tests/Temp/HasPivot.php');
+        $this->paramTempFile = base_path('tests/Temp/NeedsParamDocblock.php');
 
-        $this->filesystem->ensureDirectoryExists(dirname($this->tempFile));
+        $this->filesystem->ensureDirectoryExists(dirname($this->pivotTempFile));
         $this->filesystem->copy(
             base_path('tests/Fixtures/Models/HasPivot.php'),
-            $this->tempFile
+            $this->pivotTempFile
+        );
+
+        $this->filesystem->copy(
+            base_path('tests/Fixtures/Models/NeedsParamDocblock.php'),
+            $this->paramTempFile
         );
     }
 
     protected function tearDown(): void
     {
-        if ($this->filesystem->exists($this->tempFile)) {
-            $this->filesystem->delete($this->tempFile);
+        foreach ([$this->pivotTempFile, $this->paramTempFile] as $file) {
+            if ($this->filesystem->exists($file)) {
+                $this->filesystem->delete($file);
+            }
         }
 
         parent::tearDown();
@@ -43,7 +53,7 @@ final class PhpstanAutoFixCommandTest extends TestCase
     {
         $result = Artisan::call('phpstan:auto-fix', [
             '--mode' => 'suggest',
-            '--input' => 'tests/Fixtures/Phpstan/pivot-error.json',
+            '--input' => 'tests/Fixtures/Phpstan/combined-errors.json',
         ]);
 
         $this->assertSame(0, $result);
@@ -51,7 +61,9 @@ final class PhpstanAutoFixCommandTest extends TestCase
         $output = Artisan::output();
 
         $this->assertStringContainsString('Would add @property-read $pivot', $output);
-        $this->assertFalse(str_contains($this->filesystem->get($this->tempFile), '@property-read'));
+        $this->assertStringContainsString('Would add @param mixed $rating docblock', $output);
+        $this->assertFalse(str_contains($this->filesystem->get($this->pivotTempFile), '@property-read'));
+        $this->assertFalse(str_contains($this->filesystem->get($this->paramTempFile), '@param mixed $rating'));
     }
 
     #[Test]
@@ -59,13 +71,15 @@ final class PhpstanAutoFixCommandTest extends TestCase
     {
         $result = Artisan::call('phpstan:auto-fix', [
             '--mode' => 'apply',
-            '--input' => 'tests/Fixtures/Phpstan/pivot-error.json',
+            '--input' => 'tests/Fixtures/Phpstan/combined-errors.json',
         ]);
 
         $this->assertSame(0, $result);
 
-        $updated = $this->filesystem->get($this->tempFile);
+        $pivotUpdated = $this->filesystem->get($this->pivotTempFile);
+        $paramUpdated = $this->filesystem->get($this->paramTempFile);
 
-        $this->assertStringContainsString('@property-read \Illuminate\Database\Eloquent\Relations\Pivot|null $pivot', $updated);
+        $this->assertStringContainsString('@property-read \Illuminate\Database\Eloquent\Relations\Pivot|null $pivot', $pivotUpdated);
+        $this->assertStringContainsString('@param mixed $rating', $paramUpdated);
     }
 }
