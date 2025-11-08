@@ -1,272 +1,75 @@
-# AI Service Configuration - Mock vs Real
+# AI Service Configuration – Tryb Mock vs Real
 
-## 🎯 Overview
+## 🎯 Przegląd
+MovieMind obsługuje dwa tryby działania AI sterowane przez zmienną środowiskową `AI_SERVICE`. Od wybranej wartości zależy, który job zostanie wysłany do kolejki i czy wykonamy prawdziwe wywołanie OpenAI.
 
-Aplikacja wspiera przełączanie między **MockAiService** (dla development/testów) a **RealAiService** (dla production) poprzez konfigurację.
+- **Tryb mock** (`AI_SERVICE=mock`) – deterministyczne dane do demo/CI, bez kosztów API.
+- **Tryb real** (`AI_SERVICE=real`) – joby `RealGenerateMovieJob` / `RealGeneratePersonJob` korzystają z `OpenAiClientInterface` i zapisują realne wyniki.
 
----
+## ⚙️ Szybka konfiguracja
 
-## 📊 Architektura
-
-### MockAiService
-- ✅ Używa `Bus::dispatch(closure)` - stara architektura
-- ✅ Symuluje AI generation (sleep, mock data)
-- ✅ Dla lokalnego development i testów
-- ✅ Nie wymaga prawdziwego AI API
-
-### RealAiService
-- ✅ Używa **Events + Jobs** - nowa architektura
-- ✅ Dispatchuje `MovieGenerationRequested` / `PersonGenerationRequested` events
-- ✅ Listener dispatchuje `GenerateMovieJob` / `GeneratePersonJob`
-- ✅ Dla production - można zintegrować z prawdziwym AI API w Job classes
-
----
-
-## ⚙️ Konfiguracja
-
-### 1. Zmienna Środowiskowa
-
-Dodaj do `.env`:
+1. **Zmiennie w `.env`**
 
 ```env
-# AI Service Configuration
-# Options: 'mock' or 'real'
-AI_SERVICE=mock
+# Konfiguracja trybu AI
+AI_SERVICE=mock            # lub 'real'
+
+# Wymagane tylko przy AI_SERVICE=real
+OPENAI_API_KEY=sk-********
+OPENAI_MODEL=gpt-4o-mini   # opcjonalna zmiana modelu
+OPENAI_URL=https://api.openai.com/v1/chat/completions
 ```
 
-**Wartości:**
-- `mock` - używa MockAiService (domyślne, dla development)
-- `real` - używa RealAiService (dla production)
-
-### 2. Config File
-
-Konfiguracja jest w `config/services.php`:
+2. **Wyciąg z `config/services.php`**
 
 ```php
 'ai' => [
-    'service' => env('AI_SERVICE', 'mock'), // 'mock' or 'real'
+    'service' => env('AI_SERVICE', 'mock'),
+],
+
+'openai' => [
+    'api_key' => env('OPENAI_API_KEY'),
+    'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
 ],
 ```
 
-### 3. Service Provider Binding
+Nie trzeba ręcznie rejestrować serwisów — listener `QueueMovieGenerationJob` korzysta z `AiServiceSelector`, a joby pobierają `OpenAiClientInterface` poprzez wstrzykiwanie zależności.
 
-`AppServiceProvider` automatycznie wybiera implementację:
+## 🔁 Jak działa selector
 
-```php
-$this->app->bind(AiServiceInterface::class, function ($app) use ($aiService) {
-    return match ($aiService) {
-        'real' => $app->make(RealAiService::class),
-        'mock' => $app->make(MockAiService::class),
-        default => throw new \InvalidArgumentException(...),
-    };
-});
+1. Kontrolery emitują eventy `MovieGenerationRequested` / `PersonGenerationRequested`.
+2. Listener (`QueueMovieGenerationJob` / `QueuePersonGenerationJob`) wywołuje `AiServiceSelector::getService()`.
+3. Selector sprawdza `config('services.ai.service')`:
+   - `mock` → dispatch `MockGenerate*Job`.
+   - `real` → dispatch `RealGenerate*Job`.
+4. `RealGenerate*Job` otrzymuje `OpenAiClientInterface`, wykonuje zapytanie do OpenAI i zapisuje wynik w bazie.
+
+## 🔄 Przełączanie trybów
+
+```bash
+# Zmień tryb
+echo "AI_SERVICE=real" >> .env
+echo "OPENAI_API_KEY=sk-..." >> .env
+
+# Odśwież konfigurację
+php artisan config:clear
+php artisan queue:restart
 ```
 
----
+W środowiskach Docker po zmianie zmiennych zrestartuj kontenery.
 
-## 🔄 Różnice
+## ✅ Rekomendowane scenariusze
 
-### MockAiService Flow:
+| Scenariusz | Zalecane ustawienie | Uwagi |
+|------------|--------------------|-------|
+| Lokalny development / CI | `AI_SERVICE=mock` | Stabilne wyniki, brak zależności zewnętrznych |
+| Demo z prawdziwym AI | `AI_SERVICE=real` + klucz demo | Użyj krótkich promptów i limitów |
+| Produkcja | `AI_SERVICE=real` | Przechowuj klucze w managerze sekretów, rotuj je regularnie |
 
-```
-Controller
-  ↓
-$this->ai->queueMovieGeneration($slug, $jobId)
-  ↓
-MockAiService::queueMovieGeneration()
-  ↓
-Bus::dispatch(function() { ... closure ... })
-  ↓
-Queue Worker wykonuje closure
-```
-
-**Charakterystyka:**
-- Używa closure w Bus::dispatch
-- Symuluje AI (sleep, mock data)
-- Brak Events
+Zawsze utrzymuj tryb mock pod ręką — przydaje się w regresji i pracy offline.
 
 ---
 
-### RealAiService Flow:
-
-```
-Controller
-  ↓
-$this->ai->queueMovieGeneration($slug, $jobId)
-  ↓
-RealAiService::queueMovieGeneration()
-  ↓
-event(new MovieGenerationRequested($slug, $jobId))
-  ↓
-EventServiceProvider → Listener
-  ↓
-GenerateMovieJob::dispatch()
-  ↓
-Queue Worker wykonuje Job
-```
-
-**Charakterystyka:**
-- Używa Events + Jobs architecture
-- Można zintegrować z prawdziwym AI API w Job
-- Lepsze separation of concerns
-
----
-
-## 📝 Użycie
-
-### Development (Mock):
-
-```env
-AI_SERVICE=mock
-```
-
-**Korzyści:**
-- ✅ Szybkie testowanie (nie potrzebujesz AI API)
-- ✅ Przewidywalne wyniki
-- ✅ Brak kosztów API calls
-
----
-
-### Production (Real):
-
-```env
-AI_SERVICE=real
-```
-
-**Korzyści:**
-- ✅ Events + Jobs architecture
-- ✅ Można zintegrować prawdziwy AI API w `GenerateMovieJob`
-- ✅ Lepsze monitorowanie (Horizon)
-- ✅ Retry logic out-of-the-box
-
----
-
-## 🔧 Integracja z Prawdziwym AI API
-
-### Obecna Implementacja (Mock):
-
-```php
-// GenerateMovieJob::handle()
-sleep(3);  // Symulacja
-Movie::create([...]);  // Mock data
-```
-
-### Produkcja (Real AI):
-
-```php
-// GenerateMovieJob::handle()
-$response = Http::timeout(30)->post('https://ai-api.com/generate', [
-    'slug' => $this->slug,
-    'job_id' => $this->jobId,
-]);
-
-$result = $response->json();
-// Użyj prawdziwych danych z AI API
-Movie::create([
-    'title' => $result['title'],
-    'slug' => $result['slug'],
-    // ...
-]);
-```
-
----
-
-## 🎯 Kiedy Co Używać?
-
-### MockAiService (`AI_SERVICE=mock`):
-
-**Użyj gdy:**
-- ✅ Lokalny development
-- ✅ Testy jednostkowe/integracyjne
-- ✅ CI/CD pipeline
-- ✅ Demo/prezentacje
-- ✅ Nie masz dostępu do AI API
-
----
-
-### RealAiService (`AI_SERVICE=real`):
-
-**Użyj gdy:**
-- ✅ Production environment
-- ✅ Masz dostęp do prawdziwego AI API
-- ✅ Chcesz używać Events + Jobs architecture
-- ✅ Potrzebujesz retry/timeout logic
-
----
-
-## 📊 Porównanie
-
-| Aspekt | MockAiService | RealAiService |
-|--------|---------------|---------------|
-| **Architektura** | Bus::dispatch(closure) | Events + Jobs |
-| **AI API** | ❌ Symulacja | ✅ Można zintegrować |
-| **Retry Logic** | ❌ Brak | ✅ Wbudowane w Job |
-| **Monitoring** | ❌ Trudne | ✅ Horizon support |
-| **Użycie** | Development/Testy | Production |
-
----
-
-## 🚀 Migracja
-
-### Z Mock do Real:
-
-1. **Zmień `.env`:**
-   ```env
-   AI_SERVICE=real
-   ```
-
-2. **Zaktualizuj `GenerateMovieJob`** (opcjonalnie):
-   ```php
-   // Zamiast sleep(3)
-   $response = Http::post('https://your-ai-api.com/generate', [...]);
-   ```
-
-3. **Testuj:**
-   ```bash
-   php artisan test
-   ```
-
-4. **Deploy:**
-   ```bash
-   # Upewnij się że AI_SERVICE=real w production .env
-   ```
-
----
-
-## 🔍 Debugging
-
-### Sprawdź która implementacja jest używana:
-
-```php
-// W tinker lub controller
-$service = app(AiServiceInterface::class);
-dd(get_class($service));
-// Output: App\Services\MockAiService lub App\Services\RealAiService
-```
-
-### Sprawdź konfigurację:
-
-```php
-dd(config('services.ai.service'));
-// Output: 'mock' lub 'real'
-```
-
----
-
-## 📚 Pliki
-
-- **Interface:** `app/Services/AiServiceInterface.php`
-- **Mock:** `app/Services/MockAiService.php`
-- **Real:** `app/Services/RealAiService.php`
-- **Binding:** `app/Providers/AppServiceProvider.php`
-- **Config:** `config/services.php`
-
----
-
-## ✅ Podsumowanie
-
-1. **MockAiService** = dla development/testów (closure-based)
-2. **RealAiService** = dla production (Events + Jobs)
-3. **Przełączanie** = przez `AI_SERVICE=mock|real` w `.env`
-4. **Binding** = automatyczny w AppServiceProvider
+**Wersja angielska:** [`../en/AI_SERVICE_CONFIGURATION.md`](../en/AI_SERVICE_CONFIGURATION.md)
 

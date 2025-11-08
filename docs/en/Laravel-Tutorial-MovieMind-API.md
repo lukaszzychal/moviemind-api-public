@@ -218,14 +218,13 @@ class MovieController extends Controller
 ```php
 <?php
 use App\Http\Controllers\MovieController;
-use App\Http\Controllers\ActorController;
+use App\Http\Controllers\PersonController;
 
 Route::prefix('v1')->group(function () {
     Route::get('/movies', [MovieController::class, 'index']);
     Route::get('/movies/{movie}', [MovieController::class, 'show']);
     Route::post('/movies/{movie}/generate', [MovieController::class, 'generateDescription']);
-    Route::get('/actors/{actor}', [ActorController::class, 'show']);
-    Route::post('/actors/{actor}/generate', [ActorController::class, 'generateBio']);
+    Route::get('/people/{person:slug}', [PersonController::class, 'show']);
 });
 ```
 

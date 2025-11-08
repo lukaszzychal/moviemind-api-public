@@ -44,7 +44,7 @@ Udostępnić API, które:
 Publiczne repo pokazuje:
 - Podejście do architektury (DDD, CQRS, C4)
 - Strukturę projektu (Docker, README, tests, configi)
-- Czysty kod (Laravel / FastAPI / Python / SQL / YAML)
+- Czysty kod (Laravel / PHP / SQL / YAML)
 - Dobre praktyki: separacja domen, ENV, clean prompt design
 
 **🔹 2. Bezpieczniej i bardziej elastycznie**
@@ -92,7 +92,6 @@ Prywatne repo może zawierać:
 | `GET /v1/movies?q=` | wyszukać filmy (tytuł, rok, gatunek) |
 | `GET /v1/movies/{slug}` | pobrać szczegóły filmu + opis (AI lub cache) |
 | `GET /v1/people/{slug}` | pobrać dane osoby (aktor, reżyser itd.) + biografię |
-| `GET /v1/actors/{id}` | alias dla wybranych osób typu aktor (kompatybilność) |
 | `POST /v1/generate` | wymusić generację: `entity_type` = `MOVIE` lub `PERSON` |
 | `GET /v1/jobs/{id}` | sprawdzić status generacji (PENDING, DONE, FAILED) |
 
@@ -311,7 +310,7 @@ Request
 
 #### ⚡ `/src-fastapi/` — lekki, publiczny, skalowalny API Core
 
-Technologia: Python + FastAPI + Celery + RabbitMQ + Redis
+Technologia: Laravel + PHP + Horizon + RabbitMQ + Redis
 Cel: API-as-a-Service (publiczne endpointy, AI generacja, async jobs)
 
 ### 🔹 3. Struktura Danych

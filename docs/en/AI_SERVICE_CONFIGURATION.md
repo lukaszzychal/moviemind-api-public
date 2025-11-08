@@ -1,103 +1,74 @@
 # AI Service Configuration – Mock vs Real
 
 ## 🎯 Overview
-The application supports switching between **MockAiService** (for development/testing) and **RealAiService** (for staging/production) via configuration.
+MovieMind ships with two AI execution modes controlled by the `AI_SERVICE` environment variable. The mode determines which queue job listeners dispatch and whether a real OpenAI call is made.
 
----
+- **Mock mode** (`AI_SERVICE=mock`) keeps everything deterministic and cost-free for demos and CI.
+- **Real mode** (`AI_SERVICE=real`) calls `OpenAiClientInterface` inside `RealGenerateMovieJob` / `RealGeneratePersonJob` and persists the generated content.
 
-## 📊 Architecture
-### MockAiService
-- Uses the legacy `Bus::dispatch(closure)` flow.
-- Simulates AI generation (sleep + mock payloads).
-- Recommended for local development and automated tests.
-- No external AI API required.
+## ⚙️ Quick Configuration
 
-### RealAiService
-- Uses the new **Events + Jobs** architecture.
-- Dispatches `MovieGenerationRequested` / `PersonGenerationRequested` events.
-- Listeners queue `GenerateMovieJob` / `GeneratePersonJob`.
-- Designed for real integrations (replace job handlers with actual AI provider calls).
-
----
-
-## ⚙️ Configuration
-### 1. Environment variable
-Add to `.env`:
+1. **Environment variables (`.env`)**
 
 ```env
 # AI Service configuration
-# Options: 'mock' or 'real'
-AI_SERVICE=mock
+AI_SERVICE=mock            # or 'real'
+
+# Required only for AI_SERVICE=real
+OPENAI_API_KEY=sk-********
+OPENAI_MODEL=gpt-4o-mini   # optional override
+OPENAI_URL=https://api.openai.com/v1/chat/completions
 ```
 
-**Values:**
-- `mock` – use MockAiService (default for dev/test).
-- `real` – use RealAiService (production/staging).
-
-### 2. Service provider binding
-`app/Providers/AppServiceProvider.php`:
+1. **`config/services.php` excerpt**
 
 ```php
-use App\Services\AiServiceSelector;
-use App\Services\MockAiService;
-use App\Services\RealAiService;
+'ai' => [
+    'service' => env('AI_SERVICE', 'mock'),
+],
 
-public function register(): void
-{
-    $this->app->singleton(MockAiService::class, fn () => new MockAiService());
-    $this->app->singleton(RealAiService::class, fn () => new RealAiService());
-
-    $this->app->bind(AiServiceSelector::class, function () {
-        return new AiServiceSelector(
-            mock: app(MockAiService::class),
-            real: app(RealAiService::class),
-            driver: config('services.ai.service')
-        );
-    });
-}
+'openai' => [
+    'api_key' => env('OPENAI_API_KEY'),
+    'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
+],
 ```
 
-### 3. Service selector helper
-`app/Services/AiServiceSelector.php`:
+No manual container binding is required — the listeners use `AiServiceSelector` and the jobs resolve `OpenAiClientInterface` automatically.
 
-```php
-class AiServiceSelector
-{
-    public function __construct(
-        private readonly MockAiService $mock,
-        private readonly RealAiService $real,
-        private readonly string $driver = 'mock',
-    ) {}
+## 🔁 How the Selector Works
 
-    public function get(): MockAiService|RealAiService
-    {
-        return match ($this->driver) {
-            'real' => $this->real,
-            default => $this->mock,
-        };
-    }
-}
+1. `MovieGenerationRequested` / `PersonGenerationRequested` events are fired by controllers and actions.
+2. `QueueMovieGenerationJob` / `QueuePersonGenerationJob` call `AiServiceSelector::getService()`.
+3. The selector checks `config('services.ai.service')`:
+   - `mock` → dispatches `MockGenerate*Job`.
+   - `real` → dispatches `RealGenerate*Job`.
+4. `RealGenerate*Job` receives `OpenAiClientInterface` via method injection and performs the actual API call using the OpenAI credentials above.
+
+## 🔄 Switching Modes
+
+```bash
+# Toggle mode
+echo "AI_SERVICE=real" >> .env
+echo "OPENAI_API_KEY=sk-..." >> .env
+
+# Refresh configuration
+php artisan config:clear
+php artisan queue:restart
 ```
 
-### 4. Usage in controllers/actions
-```php
-$aiService = app(AiServiceSelector::class)->get();
-$aiService->queueMovieGeneration($slug, $jobId);
-```
+In Docker environments, rebuild/restart the containers after changing env vars.
+
+## ✅ Recommended Usage
+
+| Scenario | Suggested Setting | Notes |
+|----------|-------------------|-------|
+| Local development & CI | `AI_SERVICE=mock` | Fast, stable outputs, no external dependencies |
+| Demo showcasing real AI | `AI_SERVICE=real` with a demo key | Use rate limits and shorter prompts |
+| Production | `AI_SERVICE=real` | Ensure secrets are stored in your secret manager and rotate keys regularly |
+
+Always keep mock mode available — it is valuable for regression tests and offline development.
 
 ---
 
-## 🔄 Runtime switching
-- Update `AI_SERVICE` in `.env` and clear config cache (`php artisan config:clear`).
-- For Docker deployments ensure the environment variable is passed into the container.
-
----
-
-## ✅ Testing tips
-- Keep `AI_SERVICE=mock` for local/dev pipelines.
-- Smoke test production/staging with `AI_SERVICE=real` and mocked API credentials until real integration is ready.
-- Unit-test both services separately: Mock service with deterministic payloads, Real service with fake HTTP client / recorded fixtures.
-
----
-
-**Polish source:** [`../pl/AI_SERVICE_CONFIGURATION.md`](../pl/AI_SERVICE_CONFIGURATION.md)
+**Polish version:** [`../pl/AI_SERVICE_CONFIGURATION.md`](../pl/AI_SERVICE_CONFIGURATION.md)

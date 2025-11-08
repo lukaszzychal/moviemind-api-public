@@ -91,19 +91,6 @@ paths:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '404':
           description: Not Found (feature flag off)
-  /v1/actors/{id}:
-    get:
-      tags: [Actors]
-      summary: Get actor by ID (legacy compatibility)
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
   /v1/generate:
     post:
       tags: [Generation]

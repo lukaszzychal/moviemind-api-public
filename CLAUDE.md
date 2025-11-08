@@ -154,7 +154,7 @@ Database (save result)
 ## 📝 Konwencje Nazewnictwa
 
 ### Klasy
-- **Controllers:** `MovieController`, `ActorController` (sufiks: Controller)
+- **Controllers:** `MovieController`, `PersonController` (sufiks: Controller)
 - **Models:** `Movie`, `MovieDescription`, `Actor` (PascalCase, singular)
 - **Services:** `MovieService`, `AiService` (sufiks: Service)
 - **Jobs:** `GenerateMovieJob`, `GenerateActorBioJob` (sufiks: Job)
