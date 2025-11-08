@@ -151,6 +151,60 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-013` - Konfiguracja dostępu do Horizon
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Uporządkowanie reguł dostępu do panelu Horizon poza środowiskiem lokalnym.
+- **Szczegóły:**
+  - Przeniesienie listy autoryzowanych adresów e-mail do konfiguracji/ENV.
+  - Dodanie testów/reguł zapobiegających przypadkowemu otwarciu panelu w produkcji.
+  - Aktualizacja dokumentacji operacyjnej.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-08
+
+---
+
+#### `TASK-014` - Usprawnienie linków HATEOAS dla filmów
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Korekta linków HATEOAS zwracanych przez `HateoasService`, aby odpowiadały dokumentacji i relacjom.
+- **Szczegóły:**
+  - Poprawa linku `people` (obecnie wskazuje na sam film).
+  - Weryfikacja konsekwencji w OpenAPI oraz kolekcji Postman.
+  - Dodanie testów jednostkowych/feature weryfikujących strukturę `_links`.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-08
+
+---
+
+#### `TASK-015` - Automatyczne testy Newman w CI
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Integracja kolekcji Postman z pipeline CI poprzez uruchamianie Newman.
+- **Szczegóły:**
+  - Dodanie kroku w `.github/workflows/ci.yml` uruchamiającego testy API.
+  - Przygotowanie odpowiednich environmentów/sekretów do CI.
+  - Raportowanie wyników (CLI/JUnit) i dokumentacja.
+- **Zależności:** Wymaga aktualnych szablonów environmentów Postman.
+- **Utworzone:** 2025-11-08
+
+---
+
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role
@@ -279,7 +333,7 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 7
+- **Aktywne:** 10
 - **Zakończone:** 6
 - **Anulowane:** 0
 - **W trakcie:** 0
