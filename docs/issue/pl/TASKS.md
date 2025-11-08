@@ -205,6 +205,24 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-016` - Auto-fix błędów PHPStan
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 6-8 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Opracowanie narzędzia, które analizuje logi PHPStan/testów i automatycznie proponuje/lub stosuje poprawki kodu bez dostępu do internetu ani AI.
+- **Szczegóły:**
+  - Zaprojektować dwa tryby pracy (np. auto-fix oraz tryb sugerowania zmian).
+  - Przygotować rozwiązanie w repo jako moduł możliwy do dalszego wydzielenia do osobnej biblioteki (docelowo instalowanej przez Composer lub inny dependency manager).
+  - Na etapie MVP oprzeć działanie na logach z bieżącego projektu i przetestować narzędzie na kodzie MovieMind API.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-08
+
+---
+
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role

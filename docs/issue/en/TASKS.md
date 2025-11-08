@@ -204,6 +204,24 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-016` – PHPStan auto-fix tool
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 6–8 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Build a tool that parses PHPStan/test logs and automatically suggests or applies fixes without Internet or AI access.
+- **Details:**
+  - Provide two operating modes (e.g. auto-fix versus dry-run/suggestion).
+  - Implement the solution inside the repo first, with a clear path to extract it later as a standalone library installable via Composer or other dependency managers.
+  - For the MVP, gather logs from the current project and validate the tool against MovieMind API code.
+- **Dependencies:** none
+- **Created:** 2025-11-08
+
+---
+
 ## ✅ Completed tasks
 
 ### `TASK-000` – People list endpoint with role filtering
