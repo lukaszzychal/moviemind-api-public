@@ -150,6 +150,60 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-013` – Horizon access configuration
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 1–2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Secure Horizon dashboard access outside local environments.
+- **Details:**
+  - Move the authorized email list to configuration/environment variables.
+  - Add safeguards/tests ensuring Horizon isn’t exposed in production by default.
+  - Update operational documentation.
+- **Dependencies:** none
+- **Created:** 2025-11-08
+
+---
+
+#### `TASK-014` – Fix movie HATEOAS links
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 1–2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Correct links returned by `HateoasService` so they match API docs and relations.
+- **Details:**
+  - Adjust the `people` link (currently points back to the movie endpoint).
+  - Align OpenAPI examples and Postman collection.
+  - Add unit/feature tests verifying `_links` structure.
+- **Dependencies:** none
+- **Created:** 2025-11-08
+
+---
+
+#### `TASK-015` – Run Postman Newman tests in CI
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Execute Postman collection as part of the CI pipeline.
+- **Details:**
+  - Add a Newman step to `.github/workflows/ci.yml`.
+  - Provide required environment variables/secrets for CI.
+  - Publish results (CLI/JUnit) and document the workflow.
+- **Dependencies:** Requires up-to-date Postman environments.
+- **Created:** 2025-11-08
+
+---
+
 ## ✅ Completed tasks
 
 ### `TASK-000` – People list endpoint with role filtering
@@ -253,7 +307,7 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 7  
+- **Active:** 10  
 - **Completed:** 6  
 - **Cancelled:** 0  
 - **In progress:** 0
