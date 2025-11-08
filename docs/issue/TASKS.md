@@ -275,10 +275,10 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 10
-- **Zakończone:** 1
+- **Aktywne:** 9
+- **Zakończone:** 2
 - **Anulowane:** 0
-- **W trakcie:** 0
+- **W trakcie:** 1
 
 ---
 
