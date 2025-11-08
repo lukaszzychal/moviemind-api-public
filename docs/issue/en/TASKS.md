@@ -204,6 +204,25 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-018` – Extract PhpstanFixer as a Composer package
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 3–4 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Move the `App\Support\PhpstanFixer` module into a standalone Composer package reusable by other projects.
+- **Details:**
+  - Create a dedicated repository/package with namespace such as `Moviemind\PhpstanFixer`.
+  - Provide `composer.json`, PSR-4 autoloading, and installation/setup documentation.
+  - Replace in-project classes with the packaged dependency and adjust DI wiring.
+  - Prepare publishing workflow (Packagist or private registry) and versioning guidelines.
+- **Dependencies:** TASK-017
+- **Created:** 2025-11-08
+
+---
+
 ## ✅ Completed tasks
 
 ### `TASK-000` – People list endpoint with role filtering
@@ -299,13 +318,29 @@ Every entry follows this structure:
 - **Execution:** 🤖 AI Agent
 - **Description:** Delivered the `phpstan:auto-fix` command that parses PHPStan logs and suggests/applies code fixes offline.
 - **Details:**
-  - Introduced the `App\Support\PhpstanFixer` module with log parser, orchestration service, and fix strategies (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
-  - Command supports `suggest` and `apply` modes and accepts pre-generated JSON logs.
+  - Introduced the `App\Support\PhpstanFixer` module with log parser, orchestration service, and initial fix strategies (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
+  - Command supports `suggest` and `apply` modes and accepts pre-generated JSON logs, presenting results in a table.
   - Added unit and feature coverage using dedicated fixtures.
 - **Documentation:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
 
+### `TASK-017` – Extend PHPStan fixer with additional strategies
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟡 Medium
+- **Finished:** 2025-11-08 20:55
+- **Start time:** 2025-11-08 20:20  
+- **End time:** 2025-11-08 20:55  
+- **Duration:** 00h35m
+- **Execution:** 🤖 AI Agent
+- **Description:** Expanded the `PhpstanFixer` module with extra strategies and refreshed the documentation.
+- **Details:**
+  - Implemented `MissingReturnDocblockFixer`, `MissingPropertyDocblockFixer`, and `CollectionGenericDocblockFixer`.
+  - Updated the command wiring/DI, produced extended PHPStan JSON fixtures, and added unit + feature coverage.
+  - Revised task documentation (`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX*.md`) to reflect the completed checklist.
+- **Documentation:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
+
+---
 ## 📚 Templates
 
 See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TASK_TEMPLATE.md) for the canonical structure.

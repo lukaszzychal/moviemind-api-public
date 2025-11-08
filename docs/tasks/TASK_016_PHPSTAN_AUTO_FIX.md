@@ -11,6 +11,12 @@ Przygotowanie lokalnego narzędzia, które potrafi odczytać logi PHPStan (forma
   - `Fixers/*` – katalog strategii (każda implementuje interfejs `FixStrategy`).
     - `UndefinedPivotPropertyFixer` – dodaje adnotację `@property-read ... $pivot` w modelach.
     - `MissingParamDocblockFixer` – uzupełnia docblock o `@param mixed $…` gdy brak typu parametru.
+<<<<<<< HEAD
+    - `MissingReturnDocblockFixer` – dodaje `@return mixed` gdy PHPStan raportuje brak typu zwrotu.
+    - `MissingPropertyDocblockFixer` – wstawia `@property` dla dynamicznych właściwości modeli.
+    - `CollectionGenericDocblockFixer` – uzupełnia generic w adnotacjach `Collection<int, Model>`.
+=======
+>>>>>>> main
 - Rejestracja w kontenerze DI: `AppServiceProvider`.
 - Rejestracja komendy w `app/Console/Kernel.php`.
 
@@ -33,6 +39,18 @@ Komenda domyślnie uruchamia `vendor/bin/phpstan analyse --error-format=json`. J
 ## 🧪 Testy
 - `Tests\Unit\Support\PhpstanFixer\PhpstanLogParserTest` – poprawność parsowania logów.
 - `Tests\Unit\Support\PhpstanFixer\Fixers\*` – pokrycie strategii naprawy.
+<<<<<<< HEAD
+- `Tests\Feature\Console\PhpstanAutoFixCommandTest` – scenariusze `suggest` i `apply` na rozszerzonym zbiorze fixture JSON.
+
+## 🔮 Rozszerzenia
+- Zaimplementowane strategie napraw:
+  - [x] `MissingReturnDocblockFixer`
+  - [x] `MissingPropertyDocblockFixer`
+  - [x] `CollectionGenericDocblockFixer`
+- Kolejne kroki:
+  - Przygotowanie konfiguracji exportu jako osobny pakiet Composer.
+  - Integracja z pipeline CI (tryb `suggest` jako raport).
+=======
 - `Tests\Feature\Console\PhpstanAutoFixCommandTest` – scenariusze `suggest` i `apply` na fixture z wieloma błędami.
 
 ## 🔮 Rozszerzenia
@@ -42,6 +60,7 @@ Komenda domyślnie uruchamia `vendor/bin/phpstan analyse --error-format=json`. J
   - [ ] `CollectionGenericDocblockFixer` – uzupełnia generic w adnotacjach `Collection<int, Model>` gdy PHPStan zgłasza brakujące typy kolekcji.
 - Przygotowanie konfiguracji exportu jako osobny pakiet Composer.
 - Integracja z pipeline CI (tryb `suggest` jako raport).
+>>>>>>> main
 
 ## 📚 Powiązane pliki
 - `docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md` – wersja angielska.

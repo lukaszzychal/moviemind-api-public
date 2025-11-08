@@ -13,35 +13,35 @@ final class PhpstanAutoFixCommandTest extends TestCase
 {
     private Filesystem $filesystem;
 
-    private string $pivotTempFile;
-
-    private string $paramTempFile;
+    /**
+     * @var array<string, string>
+     */
+    private array $tempFiles;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->filesystem = new Filesystem;
-        $this->pivotTempFile = base_path('tests/Temp/HasPivot.php');
-        $this->paramTempFile = base_path('tests/Temp/NeedsParamDocblock.php');
+        $this->tempFiles = [
+            base_path('tests/Temp/HasPivot.php') => base_path('tests/Fixtures/Models/HasPivot.php'),
+            base_path('tests/Temp/NeedsParamDocblock.php') => base_path('tests/Fixtures/Models/NeedsParamDocblock.php'),
+            base_path('tests/Temp/NeedsReturnDocblock.php') => base_path('tests/Fixtures/Models/NeedsReturnDocblock.php'),
+            base_path('tests/Temp/HasDynamicProperty.php') => base_path('tests/Fixtures/Models/HasDynamicProperty.php'),
+            base_path('tests/Temp/HasCollectionProperty.php') => base_path('tests/Fixtures/Models/HasCollectionProperty.php'),
+        ];
 
-        $this->filesystem->ensureDirectoryExists(dirname($this->pivotTempFile));
-        $this->filesystem->copy(
-            base_path('tests/Fixtures/Models/HasPivot.php'),
-            $this->pivotTempFile
-        );
-
-        $this->filesystem->copy(
-            base_path('tests/Fixtures/Models/NeedsParamDocblock.php'),
-            $this->paramTempFile
-        );
+        foreach ($this->tempFiles as $tempPath => $fixturePath) {
+            $this->filesystem->ensureDirectoryExists(dirname($tempPath));
+            $this->filesystem->copy($fixturePath, $tempPath);
+        }
     }
 
     protected function tearDown(): void
     {
-        foreach ([$this->pivotTempFile, $this->paramTempFile] as $file) {
-            if ($this->filesystem->exists($file)) {
-                $this->filesystem->delete($file);
+        foreach (array_keys($this->tempFiles) as $tempPath) {
+            if ($this->filesystem->exists($tempPath)) {
+                $this->filesystem->delete($tempPath);
             }
         }
 
@@ -49,37 +49,63 @@ final class PhpstanAutoFixCommandTest extends TestCase
     }
 
     #[Test]
-    public function it_suggests_fixes_from_phpstan_log(): void
+    public function it_reports_all_available_fixes_in_suggest_mode(): void
     {
-        $result = Artisan::call('phpstan:auto-fix', [
+        $exitCode = Artisan::call('phpstan:auto-fix', [
             '--mode' => 'suggest',
-            '--input' => 'tests/Fixtures/Phpstan/combined-errors.json',
+            '--input' => 'tests/Fixtures/Phpstan/extended-errors.json',
         ]);
 
-        $this->assertSame(0, $result);
+        $this->assertSame(0, $exitCode);
 
         $output = Artisan::output();
 
         $this->assertStringContainsString('Would add @property-read $pivot', $output);
         $this->assertStringContainsString('Would add @param mixed $rating docblock', $output);
-        $this->assertFalse(str_contains($this->filesystem->get($this->pivotTempFile), '@property-read'));
-        $this->assertFalse(str_contains($this->filesystem->get($this->paramTempFile), '@param mixed $rating'));
+        $this->assertStringContainsString('Would add @return mixed docblock', $output);
+        $this->assertStringContainsString('Would add @property mixed $aliases docblock', $output);
+        $this->assertStringContainsString('Would add @property Collection<int, mixed> $items docblock', $output);
+
+        $this->assertFalse(str_contains($this->filesystem->get(base_path('tests/Temp/HasPivot.php')), '@property-read'));
+        $this->assertFalse(str_contains($this->filesystem->get(base_path('tests/Temp/NeedsParamDocblock.php')), '@param mixed'));
+        $this->assertFalse(str_contains($this->filesystem->get(base_path('tests/Temp/NeedsReturnDocblock.php')), '@return'));
+        $this->assertFalse(str_contains($this->filesystem->get(base_path('tests/Temp/HasDynamicProperty.php')), '@property mixed $aliases'));
+        $this->assertFalse(str_contains($this->filesystem->get(base_path('tests/Temp/HasCollectionProperty.php')), 'Collection<int, mixed>'));
     }
 
     #[Test]
-    public function it_applies_fixes_in_apply_mode(): void
+    public function it_applies_all_fixes_in_apply_mode(): void
     {
-        $result = Artisan::call('phpstan:auto-fix', [
+        $exitCode = Artisan::call('phpstan:auto-fix', [
             '--mode' => 'apply',
-            '--input' => 'tests/Fixtures/Phpstan/combined-errors.json',
+            '--input' => 'tests/Fixtures/Phpstan/extended-errors.json',
         ]);
 
-        $this->assertSame(0, $result);
+        $this->assertSame(0, $exitCode);
 
-        $pivotUpdated = $this->filesystem->get($this->pivotTempFile);
-        $paramUpdated = $this->filesystem->get($this->paramTempFile);
+        $this->assertStringContainsString(
+            '@property-read \Illuminate\Database\Eloquent\Relations\Pivot|null $pivot',
+            $this->filesystem->get(base_path('tests/Temp/HasPivot.php'))
+        );
 
-        $this->assertStringContainsString('@property-read \Illuminate\Database\Eloquent\Relations\Pivot|null $pivot', $pivotUpdated);
-        $this->assertStringContainsString('@param mixed $rating', $paramUpdated);
+        $this->assertStringContainsString(
+            '@param mixed $rating',
+            $this->filesystem->get(base_path('tests/Temp/NeedsParamDocblock.php'))
+        );
+
+        $this->assertStringContainsString(
+            '@return mixed',
+            $this->filesystem->get(base_path('tests/Temp/NeedsReturnDocblock.php'))
+        );
+
+        $this->assertStringContainsString(
+            '@property mixed $aliases',
+            $this->filesystem->get(base_path('tests/Temp/HasDynamicProperty.php'))
+        );
+
+        $this->assertStringContainsString(
+            '@property \Illuminate\Support\Collection<int, mixed> $items',
+            $this->filesystem->get(base_path('tests/Temp/HasCollectionProperty.php'))
+        );
     }
 }

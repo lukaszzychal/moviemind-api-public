@@ -205,6 +205,25 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-018` - Wydzielenie PhpstanFixer jako paczki Composer
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 3-4 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Przeniesienie modułu `App\Support\PhpstanFixer` do osobnej paczki Composer instalowanej jako zależność projektu.
+- **Szczegóły:**
+  - Wydzielić kod do repozytorium/paczki z przestrzenią nazw np. `Moviemind\PhpstanFixer`.
+  - Przygotować `composer.json`, autoload PSR-4 i dokumentację instalacji/konfiguracji.
+  - Zastąpić bieżącą implementację importem paczki i zaktualizować DI w aplikacji.
+  - Dodać pipeline publikacji (packagist lub private repo) oraz opis wersjonowania.
+- **Zależności:** TASK-017
+- **Utworzone:** 2025-11-08
+
+---
+
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role
@@ -300,13 +319,29 @@ Każde zadanie ma następującą strukturę:
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Wdrożenie komendy `phpstan:auto-fix`, która analizuje logi PHPStan i automatycznie proponuje/wykonuje poprawki kodu.
 - **Szczegóły:**
-  - Dodano moduł `App\Support\PhpstanFixer` z parserem logów, serwisem i strategiami napraw (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
-  - Komenda wspiera tryby `suggest` oraz `apply`, opcjonalnie przyjmuje wcześniej wygenerowany log.
+  - Dodano moduł `App\Support\PhpstanFixer` z parserem logów, serwisem oraz początkowymi strategiami napraw (`UndefinedPivotPropertyFixer`, `MissingParamDocblockFixer`).
+  - Komenda wspiera tryby `suggest` oraz `apply`, opcjonalnie przyjmuje wcześniej wygenerowany log i raportuje wynik w formie tabeli.
   - Pokryto rozwiązanie testami jednostkowymi i feature z wykorzystaniem fixture JSON.
 - **Dokumentacja:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
 
+### `TASK-017` - Rozszerzenie fixera PHPStan o dodatkowe strategie
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Zakończone:** 2025-11-08 20:55
+- **Czas rozpoczęcia:** 2025-11-08 20:20
+- **Czas zakończenia:** 2025-11-08 20:55
+- **Czas realizacji:** 00h35m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Rozbudowa modułu `PhpstanFixer` o kolejne strategie auto-poprawek oraz aktualizacja dokumentacji.
+- **Szczegóły:**
+  - Dodano fixery: `MissingReturnDocblockFixer`, `MissingPropertyDocblockFixer`, `CollectionGenericDocblockFixer`.
+  - Zaktualizowano komendę `phpstan:auto-fix` i DI (`AppServiceProvider`), przygotowano rozszerzone fixture JSON i testy.
+  - Uporządkowano dokumentację zadania (`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX*.md`) i checklistę rozszerzeń.
+- **Dokumentacja:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
+
+---
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**

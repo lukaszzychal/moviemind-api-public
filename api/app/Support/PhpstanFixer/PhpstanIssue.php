@@ -20,6 +20,14 @@ final class PhpstanIssue
             return $matches[1];
         }
 
+        if (preg_match('/Method\s+([A-Za-z0-9_\\\\]+)::/', $this->message, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('/Property\s+([A-Za-z0-9_\\\\]+)::/', $this->message, $matches)) {
+            return $matches[1];
+        }
+
         if (preg_match('/of class ([A-Za-z0-9_\\\\]+)/', $this->message, $matches)) {
             return $matches[1];
         }

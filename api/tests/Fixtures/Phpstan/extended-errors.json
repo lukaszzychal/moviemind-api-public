@@ -1,0 +1,72 @@
+{
+    "totals": {
+        "errors": 5,
+        "file_errors": 5
+    },
+    "files": {
+        "tests/Temp/HasPivot.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Access to an undefined property Tests\\Fixtures\\Models\\HasPivot::$pivot.",
+                    "line": 10,
+                    "identifier": "property.notFound"
+                }
+            ]
+        },
+        "tests/Temp/NeedsParamDocblock.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Method Tests\\Fixtures\\Models\\NeedsParamDocblock::setRating() has parameter $rating with no typehint specified.",
+                    "line": 10,
+                    "identifier": "missingType.iterableValue"
+                }
+            ]
+        },
+        "tests/Temp/NeedsReturnDocblock.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Method Tests\\Fixtures\\Models\\NeedsReturnDocblock::getRating() has no return type specified.",
+                    "line": 9,
+                    "identifier": "missingType.return"
+                }
+            ]
+        },
+        "tests/Temp/HasDynamicProperty.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Access to an undefined property Tests\\Fixtures\\Models\\HasDynamicProperty::$aliases.",
+                    "line": 10,
+                    "identifier": "property.notFound"
+                }
+            ]
+        },
+        "tests/Temp/HasCollectionProperty.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Property Tests\\Fixtures\\Models\\HasCollectionProperty::$items has no value type specified in iterable type Illuminate\\Support\\Collection.",
+                    "line": 9,
+                    "identifier": "missingType.iterableValue"
+                }
+            ]
+        }
+    },
+    "errors": [],
+    "warnings": [],
+    "tips": [],
+    "metadata": {
+        "configFiles": [
+            "phpstan.neon"
+        ],
+        "totals": {
+            "file_errors": 5,
+            "errors": 5
+        }
+    }
+}
+
+

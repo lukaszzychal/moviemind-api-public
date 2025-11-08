@@ -1,0 +1,32 @@
+{
+    "totals": {
+        "errors": 1,
+        "file_errors": 1
+    },
+    "files": {
+        "tests/Temp/HasCollectionProperty.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Property Tests\\Fixtures\\Models\\HasCollectionProperty::$items has no value type specified in iterable type Illuminate\\Support\\Collection.",
+                    "line": 9,
+                    "identifier": "missingType.iterableValue"
+                }
+            ]
+        }
+    },
+    "errors": [],
+    "warnings": [],
+    "tips": [],
+    "metadata": {
+        "configFiles": [
+            "phpstan.neon"
+        ],
+        "totals": {
+            "file_errors": 1,
+            "errors": 1
+        }
+    }
+}
+
+

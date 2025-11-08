@@ -1,0 +1,32 @@
+{
+    "totals": {
+        "errors": 1,
+        "file_errors": 1
+    },
+    "files": {
+        "tests/Temp/HasDynamicProperty.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Access to an undefined property Tests\\Fixtures\\Models\\HasDynamicProperty::$aliases.",
+                    "line": 10,
+                    "identifier": "property.notFound"
+                }
+            ]
+        }
+    },
+    "errors": [],
+    "warnings": [],
+    "tips": [],
+    "metadata": {
+        "configFiles": [
+            "phpstan.neon"
+        ],
+        "totals": {
+            "file_errors": 1,
+            "errors": 1
+        }
+    }
+}
+
+
