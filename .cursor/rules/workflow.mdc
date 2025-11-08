@@ -97,6 +97,13 @@ cd api && \
 - Nie zostawiaj ukończonych zadań w sekcji „Aktywne”. Sekcja ta powinna zawierać wyłącznie zadania w statusie `⏳` lub `🔄`.
 - Po aktualizacji `TASKS.md` odpal workflow synchronizacji (push/merge do `main` lub ręcznie w GitHub Actions), aby Issues były spójne.
 
+## Dokumentacja (PL / EN)
+
+- Każdy dokument musi mieć wersję polską i angielską (np. w `docs/…/pl` i `docs/…/en`).
+- Przy modyfikacji jednego języka **natychmiast** zaktualizuj drugi – brak synchronizacji traktujemy jako błąd review.
+- Jeśli treść jest długa, dopuszczalne są streszczenia, ale oba języki muszą zawierać komplet kluczowych informacji i linkować do siebie.
+- Pliki indeksowe (np. `docs/issue/README.md`) powinny jasno wskazywać, gdzie znajdują się wersje PL i EN.
+
 ## Linki zewnętrzne i nazwy własne
 
 - Przy podawaniu publicznie dostępnych nazw własnych (np. sklepy internetowe, dostawcy) **zawsze** dołącz obok wiarygodny link URL.
