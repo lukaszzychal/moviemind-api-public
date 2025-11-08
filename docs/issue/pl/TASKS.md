@@ -205,6 +205,26 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-017` - Rozszerzenie fixera PHPStan o dodatkowe strategie
+- **Status:** 🔄 IN_PROGRESS
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** 2025-11-08 20:20
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Dodanie kolejnych strategii naprawy w module `PhpstanFixer` zgodnie z listą w dokumentacji zadania.
+- **Szczegóły:**
+  - Zaimplementować `MissingReturnDocblockFixer` (uzupełnienie `@return mixed` dla metod wskazanych przez PHPStan).
+  - Zaimplementować `MissingPropertyDocblockFixer` (dodanie `@property` dla dynamicznych właściwości).
+  - Zaimplementować `CollectionGenericDocblockFixer` (uzupełnienie typów generics dla kolekcji).
+  - Dodać testy jednostkowe i integracyjne dla nowych strategii.
+  - Zaktualizować dokumentację `docs/tasks/TASK_016_PHPSTAN_AUTO_FIX*.md`.
+- **Zależności:** TASK-016
+- **Utworzone:** 2025-11-08
+
+---
+
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role

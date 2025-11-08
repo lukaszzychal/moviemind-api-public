@@ -1,0 +1,32 @@
+{
+    "totals": {
+        "errors": 1,
+        "file_errors": 1
+    },
+    "files": {
+        "tests/Temp/NeedsReturnDocblock.php": {
+            "errors": 1,
+            "messages": [
+                {
+                    "message": "Method Tests\\Fixtures\\Models\\NeedsReturnDocblock::getRating() has no return type specified.",
+                    "line": 9,
+                    "identifier": "missingType.return"
+                }
+            ]
+        }
+    },
+    "errors": [],
+    "warnings": [],
+    "tips": [],
+    "metadata": {
+        "configFiles": [
+            "phpstan.neon"
+        ],
+        "totals": {
+            "file_errors": 1,
+            "errors": 1
+        }
+    }
+}
+
+

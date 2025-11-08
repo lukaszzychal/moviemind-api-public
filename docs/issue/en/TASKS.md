@@ -204,6 +204,26 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-017` – Extend PHPStan fixer with additional strategies
+- **Status:** 🔄 IN_PROGRESS
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2 h
+- **Start time:** 2025-11-08 20:20
+- **End time:** --
+- **Duration:** --
+- **Execution:** 🤖 AI Agent
+- **Description:** Implement the remaining fixer strategies listed in task documentation for the `PhpstanFixer` module.
+- **Details:**
+  - Implement `MissingReturnDocblockFixer` to add `@return mixed` hints when PHPStan reports missing return types.
+  - Implement `MissingPropertyDocblockFixer` to add `@property` annotations for dynamic properties.
+  - Implement `CollectionGenericDocblockFixer` to fill in collection generics (e.g. `Collection<int, Model>`).
+  - Add unit and feature coverage (fixtures + command tests) for the new strategies.
+  - Update `docs/tasks/TASK_016_PHPSTAN_AUTO_FIX*.md` with current status.
+- **Dependencies:** TASK-016
+- **Created:** 2025-11-08
+
+---
+
 ## ✅ Completed tasks
 
 ### `TASK-000` – People list endpoint with role filtering

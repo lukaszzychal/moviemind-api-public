@@ -18,6 +18,11 @@ Każdy dokument odpowiada konkretnemu zadaniu z `docs/issue/TASKS.md` i zawiera:
 - **Status:** ✅ Zakończone
 - **Opis:** Implementacja rate limiting dla endpointu `/api/v1/jobs/{id}`
 
+### TASK-016 - Auto-fix błędów PHPStan
+- **Pliki:** `TASK_016_PHPSTAN_AUTO_FIX.md`, `TASK_016_PHPSTAN_AUTO_FIX.en.md`
+- **Status:** ✅ Zakończone
+- **Opis:** Narzędzie CLI (`phpstan:auto-fix`) do analizy logów PHPStan i automatycznych poprawek kodu.
+
 ### TASK-002 - Weryfikacja Queue Workers i Horizon
 - **Plik:** `HORIZON_SETUP.md`
 - **Status:** ✅ Zakończone
