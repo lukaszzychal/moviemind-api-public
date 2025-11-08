@@ -131,6 +131,20 @@ Dodatkowe notatki, uwagi, przyszłe rozważania.
 5. **Kategoryzuj poprawnie** - używaj odpowiedniej kategorii
 6. **Formatuj tabele** - generując tabele Markdown zawsze wyrównuj nagłówki i kolumny (dodaj spacje tam, gdzie trzeba), tak aby **każde pole było czytelne i ustawione pionowo**.
 
+### 🤖 Automatycznie generowane szkice
+
+1. **Lokalizacja robocza:** Wszystkie dokumenty tworzone automatycznie zapisuj w `docs/auto-generated/` (lub w podkatalogach tego folderu). W tym katalogu pozostają one oznaczone jako szkice.
+2. **Metadane:** Każdy plik wygenerowany automatycznie rozpoczynaj blokiem z informacją o źródle i dacie, np.:
+   ```
+   > Źródło: auto (YYYY-MM-DD)
+   ```
+3. **Przegląd okresowy:** Najpóźniej raz na sprint/tydzień przeprowadź manualny przegląd `docs/auto-generated/`. Dla każdego pliku zdecyduj:
+   - ✅ przenieść do `docs/knowledge/...` (po pełnym dostosowaniu do szablonu i dodaniu wersji PL/EN),
+   - ♻️ zaktualizować i pozostawić jako szkic (oczekuje na doprecyzowanie),
+   - 🗑️ usunąć, jeśli treść nie wnosi wartości.
+4. **Promocja do bazy wiedzy:** Plik przenoszony do `docs/knowledge/` traktuj jak nowy dokument – uzupełnij wymagane sekcje szablonu, dodaj tłumaczenia oraz linki do powiązanych materiałów.
+5. **Kontrola jakości:** Automatyczne szkice **nigdy** nie trafiają bezpośrednio do `docs/knowledge/` bez ręcznego przeglądu. Brak przeglądu traktuj jako dług dokumentacyjny do zamknięcia w najbliższym cyklu.
+
 ### 🔗 Powiązania z Zadaniami
 
 - Dokumenty związane z **konkretnym zadaniem** → `docs/tasks/TASK_XXX.md`
