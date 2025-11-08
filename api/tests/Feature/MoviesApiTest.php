@@ -42,6 +42,14 @@ class MoviesApiTest extends TestCase
         $response = $this->getJson('/api/v1/movies/'.$slug);
         $response->assertOk()
             ->assertJsonStructure(['id', 'slug', 'title']);
+
+        $response->assertJsonPath('_links.self.href', url('/api/v1/movies/'.$slug));
+
+        $peopleLinks = $response->json('_links.people');
+        $this->assertIsArray($peopleLinks);
+        $this->assertNotEmpty($peopleLinks, 'Expected movie links to include people entries');
+        $this->assertArrayHasKey('href', $peopleLinks[0]);
+        $this->assertStringStartsWith(url('/api/v1/people/'), $peopleLinks[0]['href']);
     }
 
     public function test_show_movie_response_is_cached(): void

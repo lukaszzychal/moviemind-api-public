@@ -86,6 +86,17 @@ cd api && \
 - Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
 - **Commit messages** pisz wyłącznie po angielsku, w stylu `type: short description` (np. `feat: add movie resource`). Niedozwolone są komunikaty w innych językach.
 
+## Cursor Task Flow (zadania @TASKS.md)
+
+1. Otrzymaj listę tasków do realizacji (np. `TASK-012`, `TASK-014`).
+2. Wykonaj `git pull` na `main`, następnie utwórz nową gałąź `task###`.
+3. Pracuj w podejściu TDD: zacznij od testów (jeśli zasadne), zaimplementuj zmianę i uruchom pełny pakiet testów; każdy błąd z lintów/analityki/testów naprawiaj natychmiast (nie przechodź dalej, dopóki wszystko nie jest zielone).
+4. Jeżeli sytuacja wymaga, utwórz dodatkowe dokumenty w `docs/*`.
+5. Zaktualizuj istniejącą dokumentację, jeśli zmiany tego wymagają.
+6. Zaktualizuj wpis w `docs/issue/.../TASKS.md`, oznaczając zadanie jako `✅ COMPLETED`.
+7. Wykonaj commit oraz push zmian na bieżącą gałąź.
+8. Przełącz się z powrotem na `main` i ponownie wykonaj `git pull`, aby odświeżyć lokalny stan.
+
 ## Zarządzanie zadaniami (TASKS.md)
 
 - Po rozpoczęciu zadania **zmień status na `🔄 IN_PROGRESS`**, wpisz `Czas rozpoczęcia` (z dokładnością do minuty) oraz oznacz wykonawcę (`🤖/👨‍💻/⚙️`).

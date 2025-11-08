@@ -67,6 +67,11 @@ paths:
                         _links:
                           self:
                             href: /api/v1/movies/the-matrix-1999
+                          people:
+                            - href: /api/v1/people/keanu-reeves
+                              title: Keanu Reeves
+                              role: ACTOR
+                              character_name: Neo
   /v1/movies/{slug}:
     get:
       tags: [Movies]
@@ -120,7 +125,16 @@ paths:
                       self:
                         href: /api/v1/movies/the-matrix-1999
                       people:
-                        href: /api/v1/people/keanu-reeves
+                        - href: /api/v1/people/keanu-reeves
+                          title: Keanu Reeves
+                          role: ACTOR
+                          character_name: Neo
+                      generate:
+                        href: /api/v1/generate
+                        method: POST
+                        body:
+                          entity_type: MOVIE
+                          entity_id: 1
                     _meta:
                       matched_slug: the-matrix-1999
                       disambiguation:
@@ -199,7 +213,10 @@ paths:
                       self:
                         href: /api/v1/people/keanu-reeves
                       movies:
-                        href: /api/v1/movies/the-matrix-1999
+                        - href: /api/v1/movies/the-matrix-1999
+                          title: The Matrix
+                          role: ACTOR
+                          character_name: Neo
         '202':
           description: Accepted - generation queued (feature flag on)
           content:
