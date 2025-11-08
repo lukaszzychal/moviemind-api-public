@@ -84,6 +84,7 @@ cd api && \
 - Każdy branch kończ pull requestem do `main` (możesz zatwierdzić sam, ale PR i diff są obowiązkowe).
 - `main` musi pozostać zawsze deployowalny; merguj tylko po przejściu testów/pre-commitów.
 - Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
+- **Commit messages** pisz wyłącznie po angielsku, w stylu `type: short description` (np. `feat: add movie resource`). Niedozwolone są komunikaty w innych językach.
 
 ## Zarządzanie zadaniami (TASKS.md)
 
