@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3-blue.svg)](https://php.net)
-[![Symfony](https://img.shields.io/badge/Symfony-7.0-green.svg)](https://symfony.com)
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-ff2d20.svg)](https://laravel.com)
 
 > 🇵🇱 **Wersja polska:** [`README.pl.md`](README.pl.md)
 
@@ -27,7 +27,7 @@ MovieMind API is a RESTful service that generates and stores unique descriptions
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Backend** | Laravel 11 (PHP 8.3) | API + Admin |
+| **Backend** | Laravel 12 (PHP 8.3) | API (public demo) |
 | **Database** | PostgreSQL | Data persistence |
 | **Cache** | Redis | Performance optimization |
 | **AI Integration** | OpenAI API | Content generation |
@@ -166,26 +166,34 @@ Zwróć tylko czysty tekst.
 
 2. **Environment Setup**
    ```bash
-   # Choose template from env/ and copy as .env
-   cp env/local.env.example .env
-   # Edit .env and add your OpenAI API key
+   # Copy template into the Laravel app directory
+   cp env/local.env.example api/.env
+   # Edit api/.env and add your OpenAI API key
    ```
 
 3. **Start Services (Docker)**
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
 
-4. **Initialize Laravel (inside php container, runs as non-root user)**
+4. **Install backend dependencies**
    ```bash
-   docker-compose exec php bash -lc "composer create-project laravel/laravel . || true"
-   docker-compose exec php bash -lc "cp -n .env.example .env || true && php artisan key:generate"
-   docker-compose exec php php artisan migrate
+   docker compose exec php composer install
    ```
 
-5. **Start Horizon (queues)**
+5. **Generate application key**
    ```bash
-   docker-compose logs -f horizon
+   docker compose exec php php artisan key:generate
+   ```
+
+6. **Run database migrations & seed demo data**
+   ```bash
+   docker compose exec php php artisan migrate --seed
+   ```
+
+7. **Start Horizon (queues)**
+   ```bash
+   docker compose logs -f horizon
    ```
 
 ### Docker Compose Configuration
@@ -252,13 +260,13 @@ After changing the environment variables, run `php artisan config:clear` (or res
 
 This is a public demonstration repository. For commercial features and full functionality, see the private repository.
 
-### Development Setup
+### Development Workflow (Trunk-Based)
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+1. **Sync `main` frequently** – keep the trunk clean, releasable, and up to date.
+2. **Use short-lived topic branches (optional)** – create a branch only if needed, keep it alive for hours rather than days, or pair/mob directly on `main`.
+3. **Ship in small slices** – break features into incremental, production-safe changes guarded by feature flags or runtime config.
+4. **Run the full test/CI suite** – both locally and in the pipeline; merges happen only when CI is green.
+5. **Merge back to `main` immediately** – integrate without long-lived PRs; rely on lightweight reviews (pair review) or auto-merge once CI passes.
 
 ## 📄 License
 

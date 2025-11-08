@@ -4,7 +4,7 @@
 
 [![Licencja: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Wersja PHP](https://img.shields.io/badge/PHP-8.3-blue.svg)](https://php.net)
-[![Symfony](https://img.shields.io/badge/Symfony-7.0-green.svg)](https://symfony.com)
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-ff2d20.svg)](https://laravel.com)
 
 > ℹ️ **English version:** [`README.md`](README.md)
 
@@ -27,7 +27,7 @@ MovieMind API to usługa REST, która generuje i przechowuje unikalne opisy film
 
 | Komponent | Technologia | Cel |
 |-----------|-------------|-----|
-| **Backend** | Laravel 11 (PHP 8.3) | API + panel administracyjny |
+| **Backend** | Laravel 12 (PHP 8.3) | API (demo publiczne) |
 | **Baza danych** | PostgreSQL | Persistencja danych |
 | **Cache** | Redis | Optymalizacja wydajności |
 | **Integracja AI** | OpenAI API | Generowanie treści |
@@ -165,26 +165,34 @@ Zwróć tylko czysty tekst.
 
 2. **Konfiguracja środowiska**
    ```bash
-   # wybierz szablon z katalogu env/ i skopiuj jako .env
-   cp env/local.env.example .env
-   # uzupełnij .env o klucz OpenAI
+   # skopiuj szablon do katalogu aplikacji Laravel
+   cp env/local.env.example api/.env
+   # uzupełnij api/.env o klucz OpenAI
    ```
 
 3. **Uruchomienie usług (Docker)**
    ```bash
-    docker-compose up -d --build
+   docker compose up -d --build
    ```
 
-4. **Inicjalizacja Laravel (w kontenerze php, użytkownik bez uprawnień root)**
+4. **Instalacja zależności backendu**
    ```bash
-   docker-compose exec php bash -lc "composer create-project laravel/laravel . || true"
-   docker-compose exec php bash -lc "cp -n .env.example .env || true && php artisan key:generate"
-   docker-compose exec php php artisan migrate
+   docker compose exec php composer install
    ```
 
-5. **Start Horizon (kolejki)**
+5. **Wygenerowanie klucza aplikacji**
    ```bash
-   docker-compose logs -f horizon
+   docker compose exec php php artisan key:generate
+   ```
+
+6. **Migracje bazy i dane demo**
+   ```bash
+   docker compose exec php php artisan migrate --seed
+   ```
+
+7. **Start Horizon (kolejki)**
+   ```bash
+   docker compose logs -f horizon
    ```
 
 ### Konfiguracja docker-compose
@@ -263,13 +271,13 @@ Po zmianie zmiennych środowiskowych wykonaj `php artisan config:clear` (lub zre
 
 To publiczne repo demonstracyjne. Pełne funkcje komercyjne dostępne są w repo prywatnym.
 
-### Proces deweloperski
+### Proces deweloperski (Trunk-Based)
 
-1. Fork repozytorium
-2. Utwórz branch feature
-3. Wprowadź zmiany
-4. Dodaj testy
-5. Wyślij pull request
+1. **Zsynchronizuj `main`** – regularnie pobieraj świeże zmiany i utrzymuj bazę releasowalną.
+2. **Krótko żyjący branch (opcjonalnie)** – jeśli potrzebujesz, utwórz topic branch i utrzymuj go przez godziny, nie dni; alternatywnie pracuj bezpośrednio na `main` przy parach lub mob-programmingu.
+3. **Wprowadź małe zmiany** – dziel duże feature'y na inkrementy chronione flagami funkcji lub configiem runtime.
+4. **Uruchom pełne testy/CI** – lokalnie i w pipeline; merge jest możliwy tylko przy zielonym statusie.
+5. **Szybki merge do `main`** – integruj bez czekania na długie PR; lekki review (np. pair review) lub auto-merge po pozytywnym CI.
 
 ## 📄 Licencja
 

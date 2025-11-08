@@ -18,9 +18,9 @@
 - **Documentation** - OpenAPI, Postman, README
 
 ### ⚠️ Wymaga Weryfikacji/Ulepszeń
-- **Redis Caching** - skonfigurowany, ale nie wszystkie endpointy go używają
-- **Queue Workers** - konfiguracja istnieje, wymaga weryfikacji działania
-- **README Alignment** - README wspomina Symfony, kod jest Laravel
+- **Redis Caching** - status jobów wykorzystują Redis, brak cache warstwy read
+- **Queue Workers** - Horizon działa po ręcznym uruchomieniu, brak stałego procesu
+- **Feature Flags Ops** - potrzeba jasnej strategii środowiskowej i audytu
 
 ### ❌ Nie Zaimplementowane (Roadmap)
 - Admin panel dla zarządzania treścią
@@ -153,7 +153,6 @@ return Cache::remember($cacheKey, 3600, function() use ($slug) {
   - `GenerateApiTest` - testy endpointu `/generate`
   - `MoviesApiTest` - testy endpointu `/movies`
   - `PeopleApiTest` - testy endpointu `/people`
-  - `ActorsApiTest` - testy endpointu `/actors`
   - `HateoasTest` - testy linków HATEOAS
   - `MissingEntityGenerationTest` - testy generacji brakujących encji
   - `AdminFlagsTest` - testy feature flags

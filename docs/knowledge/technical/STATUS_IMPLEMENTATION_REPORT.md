@@ -18,9 +18,9 @@
 - **Documentation** - OpenAPI, Postman, README
 
 ### ⚠️ Wymaga Weryfikacji/Ulepszeń
-- **Redis Caching** - skonfigurowany, ale nie wszystkie endpointy go używają
-- **Queue Workers** - konfiguracja istnieje, wymaga weryfikacji działania
-- **README Alignment** - README wspomina Symfony, kod jest Laravel
+- **Redis Caching** - status jobów trafia do Redis, brak cache warstwy odczytu
+- **Queue Workers** - Horizon wymaga stałego worker setupu
+- **Feature Flags Ops** - potrzebna strategia środowiskowa / audyt użycia
 
 ### ❌ Nie Zaimplementowane (Roadmap)
 - Admin panel dla zarządzania treścią
@@ -153,7 +153,6 @@ return Cache::remember($cacheKey, 3600, function() use ($slug) {
   - `GenerateApiTest` - testy endpointu `/generate`
   - `MoviesApiTest` - testy endpointu `/movies`
   - `PeopleApiTest` - testy endpointu `/people`
-  - `ActorsApiTest` - testy endpointu `/actors`
   - `HateoasTest` - testy linków HATEOAS
   - `MissingEntityGenerationTest` - testy generacji brakujących encji
   - `AdminFlagsTest` - testy feature flags
@@ -175,7 +174,7 @@ return Cache::remember($cacheKey, 3600, function() use ($slug) {
 ### 7. Documentation - ✅ ZREALIZOWANE
 
 **Dokumentacja techniczna:**
-- ✅ `README.md` - główna dokumentacja (wymaga aktualizacji stack info)
+- ✅ `README.md` - główna dokumentacja (stack zaktualizowany na Laravel)
 - ✅ `docs/openapi.yaml` - OpenAPI specification
 - ✅ `docs/postman/` - Postman collection
 - ✅ `docs/pl/` - dokumentacja po polsku

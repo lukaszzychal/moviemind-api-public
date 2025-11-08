@@ -45,22 +45,19 @@ Demonstracja architektury, jakości kodu i podejścia do projektowania bez ujawn
 ### 📁 Struktura Projektu
 ```
 moviemind-api-public/
-├── src/                     # PHP Laravel (API + Admin)
+├── api/                     # Aplikacja Laravel (publiczne API)
 │   ├── app/
-│   │   ├── Http/Controllers/
-│   │   │   ├── Api/         # Publiczne API endpointy
-│   │   │   └── Admin/       # Admin panel endpointy
-│   │   ├── Models/          # Modele Eloquent
-│   │   ├── Services/        # Logika biznesowa
-│   │   │   └── Mock/        # Mock AI services
-│   │   ├── Jobs/            # Async jobs (OpenAI)
-│   │   └── Providers/
+│   │   ├── Actions/
+│   │   ├── Http/Controllers/Api/
+│   │   ├── Jobs/
+│   │   ├── Services/
+│   │   └── ...
 │   ├── routes/
-│   │   ├── api.php          # V1 API routes
-│   │   └── admin.php        # Admin routes
+│   │   ├── api.php          # Publiczne REST API (v1)
+│   │   ├── web.php          # Strona statusowa root
+│   │   └── console.php
 │   ├── composer.json
-│   └── Dockerfile
-├── tests/
+│   └── package.json
 ├── docs/
 ├── docker-compose.yml
 └── README.md
@@ -70,13 +67,13 @@ moviemind-api-public/
 
 | Komponent            | Zakres showcase                                                      | Status                |
 | -------------------- | -------------------------------------------------------------------- | --------------------- |
-| Laravel API          | Endpointy REST (filmy, osoby, zadania) + feature flagi               | ✅ Gotowe do demo      |
-| Admin UI             | CRUD, zarządzanie flagami, demo role                                 | ✅ Showcase            |
-| Webhooki             | Symulator endpointów z podglądem payloadów i retry                   | ✅ Symulator           |
-| AI Jobs              | `AI_SERVICE=mock` deterministyczny + `AI_SERVICE=real` OpenAI        | ✅ Dwa tryby           |
-| Kolejki & Monitoring | Horizon, Telescope, próbki dashboardów Grafana                       | ✅ Skonfigurowane      |
+| Laravel API          | Endpointy REST (filmy, osoby, status zadań) + feature flagi           | ✅ Gotowe do demo      |
+| Admin UI             | Panel CRUD i zarządzanie flagami                                     | ❌ W repo prywatnym    |
+| Webhooki             | Symulator endpointów, podpisy, retry                                 | ❌ Planowane           |
+| AI Jobs              | `AI_SERVICE=mock` + `AI_SERVICE=real` (OpenAI, kolejki)              | ✅ Dwa tryby           |
+| Kolejki & Monitoring | Laravel Horizon, konfiguracja workerów                               | ⚠️ Wymaga ręcznego uruchomienia |
 | Baza danych          | PostgreSQL z tabelami wielojęzycznymi                                | ✅ Dostępne            |
-| Cache                | Redis dla popularnych zapytań                                        | ✅ Aktywne             |
+| Cache                | Redis dla statusów jobów / dalsze scenariusze                        | ⚠️ Do rozszerzenia     |
 | Security             | GitLeaks, pre-commit, zasady branch protection                       | ✅ Wymuszone           |
 
 ### 🎥 Showcase portfolio
@@ -97,12 +94,10 @@ GET  /api/v1/jobs/{id}            # Status zadania
 ```
 
 ```php
-// Laravel - Admin Panel (routes/admin.php)
-GET  /admin/movies                # Zarządzanie filmami
-POST /admin/movies                # Dodawanie filmu
-PUT  /admin/movies/{id}          # Edycja filmu
-GET  /admin/actors                # Zarządzanie aktorami
-GET  /admin/jobs                  # Monitorowanie zadań
+// Laravel - Admin API (routes/api.php)
+GET  /api/v1/admin/flags          # Lista i status feature flag
+POST /api/v1/admin/flags/{name}   # Przełącz flagę (on/off)
+GET  /api/v1/admin/flags/usage    # Raport użycia flag w kodzie
 ```
 
 ---
