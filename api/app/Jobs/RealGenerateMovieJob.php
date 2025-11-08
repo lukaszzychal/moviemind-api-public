@@ -45,6 +45,7 @@ class RealGenerateMovieJob implements ShouldQueue
             // Check if movie already exists
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
+                $this->invalidateCache($this->slug);
                 $this->updateCache('DONE', $existing->id);
 
                 return;
@@ -53,6 +54,7 @@ class RealGenerateMovieJob implements ShouldQueue
             // Double-check (race condition protection)
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
+                $this->invalidateCache($this->slug);
                 $this->updateCache('DONE', $existing->id);
 
                 return;
@@ -96,6 +98,7 @@ class RealGenerateMovieJob implements ShouldQueue
             $movie->default_description_id = $desc->id;
             $movie->save();
 
+            $this->invalidateCache($this->slug, $uniqueSlug);
             $this->updateCache('DONE', $movie->id, $uniqueSlug);
         } catch (\Throwable $e) {
             Log::error('RealGenerateMovieJob failed', [
@@ -125,6 +128,13 @@ class RealGenerateMovieJob implements ShouldQueue
     private function cacheKey(): string
     {
         return 'ai_job:'.$this->jobId;
+    }
+
+    private function invalidateCache(string ...$slugs): void
+    {
+        foreach (array_filter($slugs) as $slug) {
+            Cache::forget('movie:'.$slug);
+        }
     }
 
     public function failed(\Throwable $exception): void
