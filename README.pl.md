@@ -213,6 +213,18 @@ Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
 Aby lokalnie przetestować logowanie, włącz konta demo i zaloguj się do panelu admin. Dostęp do wersji produkcyjnej wymaga zgody na repo prywatne.
 
+### Usuwanie ujawnionych sekretów z historii Git
+
+1. **Usuń sekret w bieżącej gałęzi** – usuń plik lub wrażliwe dane i wykonaj commit zabezpieczający (np. dodaj wpis do `.gitignore`).
+2. **Przepisz historię repozytorium** – zastosuj `git filter-repo` (zalecane) albo `git filter-branch`/`BFG Repo-Cleaner`, aby usunąć sekret z wcześniejszych commitów. Przykład:
+   ```bash
+   git filter-repo --path sekrety.txt --invert-paths
+   git push --force
+   ```
+3. **Zrotuj sekret** – potraktuj ujawnione hasła/klucze jako skompromitowane i wygeneruj nowe dane logowania.
+4. **Poinformuj zespół** – współpracownicy muszą zaktualizować swoje klony (`git fetch --all`, `git reset --hard origin/<branch>` lub ponowne klonowanie).
+5. **Włącz monitoring** – skonfiguruj skanowanie sekretów (np. GitHub Secret Scanning) i dodaj kontrolę w CI, która blokuje ponowne dodanie wrażliwych plików.
+
 ## 📚 Dokumentacja
 
 - **Dokumentacja API**: dostępna pod `/api/doc` lokalnie
