@@ -40,24 +40,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-006` - Ulepszenie Postman Collection
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟢 Niski
-- **Szacowany czas:** 2 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Dodanie przykładów odpowiedzi i testów per request oraz environment templates dla local/staging
-- **Szczegóły:** 
-  - Dodanie example responses dla każdego request
-  - Dodanie testów automatycznych w Postman
-  - Utworzenie environment templates (local, staging)
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
----
-
 #### `TASK-007` - Feature Flags Hardening
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -149,6 +131,26 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-012` - Lock + Multi-Description Handling przy generowaniu
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 4-5 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Wprowadzenie locka zapobiegającego race condition przy równoległej generacji opisów oraz obsługa wielu opisów per film/osobę.
+- **Szczegóły:**
+  - Dodać blokadę (cache/Redis lock) w jobach generujących (`Movie`, `Person`), aby pierwszy zakończony opis stawał się domyślny, a równoległe joby zapisywały swoje wyniki jako dodatkowe opisy bez nadpisywania domyślnego.
+  - Zmodyfikować endpoint `POST /api/v1/generate`, aby oprócz `job_id` zwracał `description_id` (gdy generacja już istnieje) lub informację o kolejce ze śledzeniem docelowego `description_id`.
+  - Dodać do endpointów `GET /api/v1/movies/{slug}` i `GET /api/v1/people/{slug}` możliwość podania parametru `description_id` w celu zwrócenia konkretnej wersji opisu.
+  - Upewnić się, że cache (show endpoints) respektuje parametr `description_id` i prawidłowo unieważnia się po zapisie nowego opisu.
+  - Dodać testy pokrywające równoległą generację oraz nowe ścieżki API.
+- **Zależności:** Wymaga działających kolejek i storage opisów.
+- **Utworzone:** 2025-11-08
+
+---
+
 ## ✅ **Zakończone Zadania**
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role
@@ -217,6 +219,23 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+### `TASK-006` - Ulepszenie Postman Collection
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟢 Niski
+- **Zakończone:** 2025-11-08
+- **Czas rozpoczęcia:** 2025-11-08 16:30
+- **Czas zakończenia:** 2025-11-08 18:45
+- **Czas realizacji:** 00h00m + [2025-11-08 16:30–16:45] + [2025-11-08 17:30–18:45]
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Dodanie przykładów odpowiedzi i testów per request oraz environment templates dla local/staging
+- **Zakres wykonanych prac:**
+  - Zaktualizowano `docs/postman/moviemind-api.postman_collection.json` (nowe testy, przykłady, zmienne)
+  - Dodano szablony środowisk (`docs/postman/environments/local.postman_environment.json`, `docs/postman/environments/staging.postman_environment.json`)
+  - Przygotowano przewodnik użytkowania `docs/postman/README.md`
+- **Uwagi:** Kolekcja jest zgodna z `docs/openapi.yaml` i gotowa do uruchamiania poprzez Newman (`newman run ...`).
+
+---
+
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**
@@ -261,7 +280,7 @@ Każde zadanie ma następującą strukturę:
 ## 📊 **Statystyki**
 
 - **Aktywne:** 7
-- **Zakończone:** 5
+- **Zakończone:** 6
 - **Anulowane:** 0
 - **W trakcie:** 0
 

@@ -39,23 +39,6 @@ Every entry follows this structure:
 ---
 
 #### `TASK-006` – Improve Postman collection
-- **Status:** ⏳ PENDING
-- **Priority:** 🟢 Low
-- **Estimated time:** 2 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Add sample responses, tests, and env templates
-- **Details:**
-  - Provide example responses per request
-  - Add Postman tests
-  - Prepare environment files (local, staging)
-- **Dependencies:** none
-- **Created:** 2025-01-27
-
----
-
 #### `TASK-007` – Feature flag hardening
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -147,6 +130,26 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-012` – Lock + multi-description handling for generation
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 4–5 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Prevent race conditions during concurrent generation and support multiple descriptions per entity.
+- **Details:**
+  - Add a Redis lock in generation jobs (`Movie`, `Person`) so the first completed job becomes default while others store alternative descriptions.
+  - Update `POST /api/v1/generate` to return `description_id` when available or include tracking details for queued jobs.
+  - Allow `GET /api/v1/movies/{slug}` and `GET /api/v1/people/{slug}` to accept `description_id` for fetching a specific version.
+  - Ensure caching respects `description_id` and invalidates correctly after new descriptions are saved.
+  - Add tests covering parallel generation and new API flows.
+- **Dependencies:** Requires functioning queues and description storage.
+- **Created:** 2025-11-08
+
+---
+
 ## ✅ Completed tasks
 
 ### `TASK-000` – People list endpoint with role filtering
@@ -215,6 +218,23 @@ Every entry follows this structure:
 
 ---
 
+### `TASK-006` – Improve Postman collection
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟢 Low
+- **Finished:** 2025-11-08
+- **Start time:** 2025-11-08 16:30  
+- **End time:** 2025-11-08 18:45  
+- **Duration:** 00h00m + [2025-11-08 16:30–16:45] + [2025-11-08 17:30–18:45]
+- **Execution:** 🤖 AI Agent
+- **Description:** Add sample responses, tests, and env templates
+- **Scope completed:**
+  - Updated `docs/postman/moviemind-api.postman_collection.json` with request tests, response examples, and shared variables
+  - Added environment templates (`docs/postman/environments/local.postman_environment.json`, `docs/postman/environments/staging.postman_environment.json`)
+  - Documented usage in `docs/postman/README.md`
+- **Notes:** Collection matches `docs/openapi.yaml` and can be executed with Newman (`newman run ...`).
+
+---
+
 ## 📚 Templates
 
 See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TASK_TEMPLATE.md) for the canonical structure.
@@ -234,7 +254,7 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 ## 📊 Stats
 
 - **Active:** 7  
-- **Completed:** 5  
+- **Completed:** 6  
 - **Cancelled:** 0  
 - **In progress:** 0
 
