@@ -36,7 +36,10 @@ Komenda domyślnie uruchamia `vendor/bin/phpstan analyse --error-format=json`. J
 - `Tests\Feature\Console\PhpstanAutoFixCommandTest` – scenariusze `suggest` i `apply` na fixture z wieloma błędami.
 
 ## 🔮 Rozszerzenia
-- Dodanie kolejnych fixerów (np. generowanie `@return` docblocków, brakujących typów kolekcji).
+- Planowane strategie napraw:
+  - [ ] `MissingReturnDocblockFixer` – dodaje `@return mixed` dla metod raportowanych przez PHPStan jako brak typu zwracanego.
+  - [ ] `MissingPropertyDocblockFixer` – wstawia `@property` dla dynamicznych właściwości modeli (np. Eloquent `$pivot`, `$appends`).
+  - [ ] `CollectionGenericDocblockFixer` – uzupełnia generic w adnotacjach `Collection<int, Model>` gdy PHPStan zgłasza brakujące typy kolekcji.
 - Przygotowanie konfiguracji exportu jako osobny pakiet Composer.
 - Integracja z pipeline CI (tryb `suggest` jako raport).
 

@@ -36,7 +36,10 @@ When `--input` is not provided, the command runs `vendor/bin/phpstan analyse --e
 - `Tests\Feature\Console\PhpstanAutoFixCommandTest` – exercises suggest/apply flows against combined fixtures.
 
 ## 🔮 Next steps
-- Add more fixer strategies (e.g. return type docblocks, generic collections).
+- Planned fixer strategies:
+  - [ ] `MissingReturnDocblockFixer` – adds a `@return mixed` doc when PHPStan reports missing return type information.
+  - [ ] `MissingPropertyDocblockFixer` – inserts `@property` hints for dynamic model properties (e.g., Eloquent `$pivot`, `$appends`).
+  - [ ] `CollectionGenericDocblockFixer` – fills in collection generics such as `Collection<int, Model>` when PHPStan complains about missing generics.
 - Extract the module into a standalone Composer package.
 - Integrate the command into CI (suggest mode for reporting).
 
