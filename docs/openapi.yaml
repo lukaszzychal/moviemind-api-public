@@ -14,7 +14,6 @@ servers:
 tags:
   - name: Movies
   - name: People
-  - name: Actors
   - name: Generation
   - name: Jobs
   - name: Admin
@@ -41,6 +40,33 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Movie'
+              examples:
+                default:
+                  value:
+                    data:
+                      - id: 1
+                        slug: the-matrix-1999
+                        title: The Matrix
+                        release_year: 1999
+                        director: Lana Wachowski & Lilly Wachowski
+                        default_description:
+                          id: 10
+                          locale: en-US
+                          text: 'A hacker discovers the true nature of reality and joins a rebellion against the machines.'
+                          context_tag: modern
+                          origin: GENERATED
+                          ai_model: gpt-4o-mini
+                        genres:
+                          - id: 3
+                            name: Science Fiction
+                            slug: science-fiction
+                        people:
+                          - id: 5
+                            slug: keanu-reeves
+                            name: Keanu Reeves
+                        _links:
+                          self:
+                            href: /api/v1/movies/the-matrix-1999
   /v1/movies/{slug}:
     get:
       tags: [Movies]
@@ -58,14 +84,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MovieFull'
+              examples:
+                default:
+                  value:
+                    id: 1
+                    slug: the-matrix-1999
+                    title: The Matrix
+                    release_year: 1999
+                    director: Lana Wachowski & Lilly Wachowski
+                    default_description:
+                      id: 10
+                      locale: en-US
+                      text: 'A hacker discovers the true nature of reality and joins a rebellion against the machines.'
+                      context_tag: modern
+                      origin: GENERATED
+                      ai_model: gpt-4o-mini
+                    descriptions:
+                      - id: 10
+                        locale: en-US
+                        text: 'A hacker discovers the true nature of reality and joins a rebellion against the machines.'
+                        context_tag: modern
+                        origin: GENERATED
+                        ai_model: gpt-4o-mini
+                    genres:
+                      - id: 3
+                        name: Science Fiction
+                        slug: science-fiction
+                    people:
+                      - id: 5
+                        slug: keanu-reeves
+                        name: Keanu Reeves
+                        role: ACTOR
+                        character_name: Neo
+                    _links:
+                      self:
+                        href: /api/v1/movies/the-matrix-1999
+                      people:
+                        href: /api/v1/people/keanu-reeves
+                    _meta:
+                      matched_slug: the-matrix-1999
+                      disambiguation:
+                        - slug: the-matrix-1999
+                          release_year: 1999
         '202':
           description: Accepted - generation queued (feature flag on)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
+                $ref: '#/components/schemas/GenerationQueued'
+              examples:
+                default:
+                  value:
+                    job_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: PENDING
+                    message: Generation queued for movie by slug
+                    slug: annihilation
+                    confidence: 0.78
+                    confidence_level: medium
         '404':
           description: Not Found (feature flag off)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   /v1/people/{slug}:
     get:
       tags: [People]
@@ -83,14 +167,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PersonFull'
+              examples:
+                default:
+                  value:
+                    id: 5
+                    slug: keanu-reeves
+                    name: Keanu Reeves
+                    birth_date: '1964-09-02'
+                    birthplace: Beirut, Lebanon
+                    default_bio:
+                      id: 21
+                      locale: en-US
+                      text: 'Canadian actor known for The Matrix and John Wick franchises.'
+                      context_tag: modern
+                      origin: GENERATED
+                      ai_model: gpt-4o-mini
+                    bios:
+                      - id: 21
+                        locale: en-US
+                        text: 'Canadian actor known for The Matrix and John Wick franchises.'
+                        context_tag: modern
+                        origin: GENERATED
+                        ai_model: gpt-4o-mini
+                    movies:
+                      - id: 1
+                        slug: the-matrix-1999
+                        title: The Matrix
+                        role: ACTOR
+                        character_name: Neo
+                    _links:
+                      self:
+                        href: /api/v1/people/keanu-reeves
+                      movies:
+                        href: /api/v1/movies/the-matrix-1999
         '202':
           description: Accepted - generation queued (feature flag on)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
+                $ref: '#/components/schemas/GenerationQueued'
+              examples:
+                default:
+                  value:
+                    job_id: 9fa8c917-7d31-4b54-90d1-2ccf4bd8df52
+                    status: PENDING
+                    message: Generation queued for person by slug
+                    slug: john-doe
+                    confidence: 0.64
+                    confidence_level: low
         '404':
           description: Not Found (feature flag off)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   /v1/generate:
     post:
       tags: [Generation]
@@ -101,13 +234,63 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenerateRequest'
+            examples:
+              movie:
+                summary: Queue movie generation
+                value:
+                  entity_type: MOVIE
+                  slug: annihilation
+                  locale: en-US
+                  context_tag: modern
       responses:
         '200':
-          description: Accepted (mock)
+          description: Entity already exists (no job queued)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
+                $ref: '#/components/schemas/GenerationCompleted'
+              examples:
+                default:
+                  value:
+                    job_id: 1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b
+                    status: DONE
+                    message: Movie already exists
+                    slug: the-matrix-1999
+                    id: 1
+                    confidence: 0.92
+                    confidence_level: high
+        '202':
+          description: Accepted - job queued for generation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationQueued'
+              examples:
+                default:
+                  value:
+                    job_id: 0d3f1976-b7d0-4d18-90d3-ef5d547d9300
+                    status: PENDING
+                    message: Generation queued for movie by slug
+                    slug: annihilation
+                    confidence: 0.74
+                    confidence_level: medium
+        '400':
+          description: Invalid payload (slug validation failed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  confidence:
+                    type: number
+                    format: float
+                    nullable: true
+                  slug:
+                    type: string
         '403':
           description: Feature not available
           content:
@@ -117,6 +300,10 @@ paths:
                 properties:
                   error:
                     type: string
+              examples:
+                flag-disabled:
+                  value:
+                    error: Feature not available
   /v1/jobs/{id}:
     get:
       tags: [Jobs]
@@ -135,6 +322,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Job'
+              examples:
+                queued:
+                  value:
+                    job_id: 0d3f1976-b7d0-4d18-90d3-ef5d547d9300
+                    status: PENDING
+                    entity: MOVIE
+                    slug: annihilation
+                    confidence: 0.74
+                completed:
+                  value:
+                    job_id: 1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b
+                    status: DONE
+                    entity: MOVIE
+                    entity_id: 1
+                    slug: the-matrix-1999
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+              examples:
+                unknown:
+                  value:
+                    job_id: 11111111-1111-1111-1111-111111111111
+                    status: UNKNOWN
   /v1/admin/flags:
     get:
       tags: [Admin]
@@ -142,6 +360,25 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FeatureFlag'
+              examples:
+                default:
+                  value:
+                    data:
+                      - name: ai_description_generation
+                        active: true
+                        description: Enables AI-generated movie/series descriptions.
+                      - name: ai_bio_generation
+                        active: false
+                        description: Enables AI-generated person biographies.
   /v1/admin/flags/{name}:
     post:
       tags: [Admin]
@@ -165,6 +402,15 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagToggle'
+              examples:
+                default:
+                  value:
+                    name: ai_description_generation
+                    active: true
   /v1/admin/flags/usage:
     get:
       tags: [Admin]
@@ -172,6 +418,23 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usage:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FeatureFlagUsage'
+              examples:
+                default:
+                  value:
+                    usage:
+                      - file: app/Http/Controllers/Api/MovieController.php
+                        line: 42
+                        pattern: active
+                        name: ai_description_generation
 components:
   schemas:
     Genre:
@@ -198,6 +461,19 @@ components:
         director:
           type: string
           nullable: true
+        default_description:
+          $ref: '#/components/schemas/MovieDescription'
+        genres:
+          type: array
+          items:
+            $ref: '#/components/schemas/Genre'
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonContribution'
+        _links:
+          type: object
+          additionalProperties: true
     MovieDescription:
       type: object
       properties:
@@ -218,23 +494,28 @@ components:
         - $ref: '#/components/schemas/Movie'
         - type: object
           properties:
-            default_description:
-              $ref: '#/components/schemas/MovieDescription'
             descriptions:
               type: array
               items:
                 $ref: '#/components/schemas/MovieDescription'
-            genres:
-              type: array
-              items:
-                $ref: '#/components/schemas/Genre'
-            people:
-              type: array
-              items:
-                $ref: '#/components/schemas/Person'
-            _links:
+            _meta:
               type: object
               additionalProperties: true
+    PersonContribution:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          nullable: true
+        character_name:
+          type: string
+          nullable: true
     Person:
       type: object
       properties:
@@ -251,6 +532,19 @@ components:
         birthplace:
           type: string
           nullable: true
+        default_bio:
+          $ref: '#/components/schemas/PersonBio'
+        bios:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonBio'
+        movies:
+          type: array
+          items:
+            $ref: '#/components/schemas/MovieContribution'
+        _links:
+          type: object
+          additionalProperties: true
     PersonBio:
       type: object
       properties:
@@ -271,36 +565,53 @@ components:
         - $ref: '#/components/schemas/Person'
         - type: object
           properties:
-            default_bio:
-              $ref: '#/components/schemas/PersonBio'
-            bios:
-              type: array
-              items:
-                $ref: '#/components/schemas/PersonBio'
-            movies:
-              type: array
-              items:
-                $ref: '#/components/schemas/Movie'
-            _links:
+            _meta:
               type: object
               additionalProperties: true
-    Job:
+    MovieContribution:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
-        entity_type:
-          type: string
-          enum: [MOVIE, ACTOR, PERSON]
-        entity_id:
           type: integer
-        status:
+        slug:
           type: string
-          enum: [PENDING, DONE, FAILED]
-        payload_json:
-          type: object
-    AcceptedGeneration:
+        title:
+          type: string
+        role:
+          type: string
+          nullable: true
+        character_name:
+          type: string
+          nullable: true
+    FeatureFlag:
+      type: object
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+    FeatureFlagToggle:
+      type: object
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+    FeatureFlagUsage:
+      type: object
+      properties:
+        file:
+          type: string
+        line:
+          type: integer
+        pattern:
+          type: string
+        name:
+          type: string
+    Job:
       type: object
       properties:
         job_id:
@@ -308,21 +619,88 @@ components:
           format: uuid
         status:
           type: string
-          enum: [PENDING]
+          enum: [PENDING, DONE, FAILED, UNKNOWN]
+        entity:
+          type: string
+          enum: [MOVIE, PERSON]
+        entity_id:
+          type: integer
+          nullable: true
         slug:
           type: string
+          nullable: true
+        confidence:
+          type: number
+          format: float
+          nullable: true
+        error:
+          type: string
+          nullable: true
+    GenerationQueued:
+      type: object
+      required: [job_id, status, message, slug]
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING]
+        message:
+          type: string
+        slug:
+          type: string
+        confidence:
+          type: number
+          format: float
+          nullable: true
+        confidence_level:
+          type: string
+          nullable: true
+    GenerationCompleted:
+      type: object
+      required: [job_id, status, message, slug, id]
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [DONE]
+        message:
+          type: string
+        slug:
+          type: string
+        id:
+          type: integer
+        confidence:
+          type: number
+          format: float
+          nullable: true
+        confidence_level:
+          type: string
+          nullable: true
     GenerateRequest:
       type: object
-      required: [entity_type, entity_id]
+      required: [entity_type]
       properties:
         entity_type:
           type: string
           enum: [MOVIE, ACTOR, PERSON]
+          description: Entity type to generate content for.
+        slug:
+          type: string
+          description: Preferred identifier of the entity (e.g. `the-matrix-1999`).
+          example: the-matrix-1999
         entity_id:
-          type: integer
+          type: string
+          description: Deprecated alias for `slug` (still accepted for backwards compatibility).
+          example: the-matrix-1999
         locale:
           type: string
+          example: en-US
         context_tag:
           type: string
+          example: modern
 
 
