@@ -190,7 +190,7 @@ Zwróć tylko czysty tekst.
    docker compose exec php php artisan migrate --seed
    ```
 
-7. **Start Horizon (kolejki)**
+7. **Podgląd logów Horizon (kolejki działają w osobnym kontenerze)**
    ```bash
    docker compose logs -f horizon
    ```
@@ -244,11 +244,11 @@ Aby lokalnie przetestować logowanie, włącz konta demo i zaloguj się do panel
 ## 🧪 Testowanie
 
 ```bash
-# Testy jednostkowe
-docker-compose exec api php bin/phpunit
+# Pełen zestaw testów
+docker compose exec php php artisan test
 
-# Testy integracyjne
-docker-compose exec api php bin/phpunit --testsuite=integration
+# Tylko testy feature
+docker compose exec php php artisan test --testsuite=feature
 ```
 
 ## 🤖 Tryby AI
