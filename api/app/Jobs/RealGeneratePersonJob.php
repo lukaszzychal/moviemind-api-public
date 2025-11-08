@@ -45,6 +45,7 @@ class RealGeneratePersonJob implements ShouldQueue
             // Check if person already exists
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
+                $this->invalidateCache($this->slug);
                 $this->updateCache('DONE', $existing->id);
 
                 return;
@@ -53,6 +54,7 @@ class RealGeneratePersonJob implements ShouldQueue
             // Double-check (race condition protection)
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
+                $this->invalidateCache($this->slug);
                 $this->updateCache('DONE', $existing->id);
 
                 return;
@@ -91,6 +93,7 @@ class RealGeneratePersonJob implements ShouldQueue
             $person->default_bio_id = $bio->id;
             $person->save();
 
+            $this->invalidateCache($this->slug);
             $this->updateCache('DONE', $person->id);
         } catch (\Throwable $e) {
             Log::error('RealGeneratePersonJob failed', [
@@ -120,6 +123,13 @@ class RealGeneratePersonJob implements ShouldQueue
     private function cacheKey(): string
     {
         return 'ai_job:'.$this->jobId;
+    }
+
+    private function invalidateCache(string ...$slugs): void
+    {
+        foreach (array_filter($slugs) as $slug) {
+            Cache::forget('person:'.$slug);
+        }
     }
 
     public function failed(\Throwable $exception): void

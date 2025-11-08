@@ -11,10 +11,13 @@ use App\Services\HateoasService;
 use App\Services\MovieDisambiguationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Pennant\Feature;
 
 class MovieController extends Controller
 {
+    private const CACHE_TTL_SECONDS = 3600;
+
     public function __construct(
         private readonly MovieRepository $movieRepository,
         private readonly HateoasService $hateoas,
@@ -33,6 +36,10 @@ class MovieController extends Controller
 
     public function show(string $slug): JsonResponse
     {
+        if ($cached = Cache::get($this->cacheKey($slug))) {
+            return response()->json($cached);
+        }
+
         $movie = $this->movieRepository->findBySlugWithRelations($slug);
         if ($movie) {
             return $this->respondWithExistingMovie($movie, $slug);
@@ -49,7 +56,10 @@ class MovieController extends Controller
 
     private function respondWithExistingMovie(Movie $movie, string $slug): JsonResponse
     {
-        return response()->json($this->transformMovie($movie, $slug));
+        $payload = $this->transformMovie($movie, $slug);
+        Cache::put($this->cacheKey($slug), $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+        return response()->json($payload);
     }
 
     private function transformMovie(Movie $movie, ?string $slug = null): array
@@ -65,5 +75,10 @@ class MovieController extends Controller
         }
 
         return $resource->resolve();
+    }
+
+    private function cacheKey(string $slug): string
+    {
+        return 'movie:'.$slug;
     }
 }
