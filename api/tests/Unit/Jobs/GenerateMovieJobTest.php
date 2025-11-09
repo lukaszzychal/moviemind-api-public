@@ -8,6 +8,7 @@ use App\Models\Movie;
 use App\Models\MovieDescription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class GenerateMovieJobTest extends TestCase
@@ -38,6 +39,26 @@ class GenerateMovieJobTest extends TestCase
         $this->assertEquals($jobId, $job->jobId);
         $this->assertEquals(3, $job->tries);
         $this->assertEquals(120, $job->timeout); // Longer timeout for real API
+    }
+
+    public function test_real_job_backoff_uses_configuration(): void
+    {
+        Config::set('services.openai.backoff.enabled', true);
+        Config::set('services.openai.backoff.intervals', [5, 15, 30]);
+
+        $job = new RealGenerateMovieJob('test-slug', 'job-1');
+
+        $this->assertSame([5, 15, 30], $job->backoff());
+    }
+
+    public function test_real_job_backoff_can_be_disabled(): void
+    {
+        Config::set('services.openai.backoff.enabled', false);
+        Config::set('services.openai.backoff.intervals', [5, 15, 30]);
+
+        $job = new RealGenerateMovieJob('test-slug', 'job-1');
+
+        $this->assertSame([], $job->backoff());
     }
 
     public function test_job_appends_description_for_existing_movie(): void

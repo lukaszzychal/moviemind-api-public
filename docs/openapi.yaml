@@ -363,6 +363,53 @@ paths:
                   value:
                     job_id: 11111111-1111-1111-1111-111111111111
                     status: UNKNOWN
+  /v1/health/openai:
+    get:
+      tags: [Health]
+      summary: Check OpenAI connectivity
+      description: Performs a lightweight request to verify that OpenAI credentials work and the API is reachable.
+      responses:
+        '200':
+          description: OpenAI reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                  model:
+                    type: string
+                  rate_limit:
+                    type: object
+                    additionalProperties: true
+              examples:
+                default:
+                  value:
+                    success: true
+                    message: OpenAI API reachable
+                    status: 200
+                    model: gpt-4o-mini
+                    rate_limit:
+                      requests_remaining: "2"
+                      tokens_remaining: "5000"
+        '503':
+          description: OpenAI unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+                  status:
+                    type: integer
   /v1/admin/flags:
     get:
       tags: [Admin]

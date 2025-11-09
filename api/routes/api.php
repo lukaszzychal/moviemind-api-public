@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\FlagController;
 use App\Http\Controllers\Api\GenerateController;
+use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\JobsController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\PersonController;
@@ -13,6 +14,7 @@ Route::prefix('v1')->group(function () {
     Route::get('people/{slug}', [PersonController::class, 'show']);
     Route::post('generate', [GenerateController::class, 'generate']);
     Route::get('jobs/{id}', [JobsController::class, 'show']);
+    Route::get('health/openai', [HealthController::class, 'openAi']);
 });
 
 Route::prefix('v1/admin/flags')->group(function () {

@@ -114,6 +114,22 @@ class RealGenerateMovieJob implements ShouldQueue
         }
     }
 
+    /**
+     * Configure retry backoff for rate-limited responses (e.g. OpenAI trial limits: 3 RPM).
+     *
+     * @return array<int>
+     */
+    public function backoff(): array
+    {
+        if (! config('services.openai.backoff.enabled', true)) {
+            return [];
+        }
+
+        $intervals = config('services.openai.backoff.intervals', []);
+
+        return ! empty($intervals) ? $intervals : [20, 60, 180];
+    }
+
     private function refreshExistingMovie(Movie $movie, OpenAiClientInterface $openAiClient): void
     {
         $aiResponse = $openAiClient->generateMovie($this->slug);

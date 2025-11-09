@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Workflow przed Commitem (WYMAGANE)
 
 ## Przed każdym commitem MUSISZ uruchomić i naprawić:
@@ -12,6 +16,16 @@ cd api && vendor/bin/pint
 cd api && vendor/bin/phpstan analyse --memory-limit=2G
 ```
 Poziom: 5. Zero błędów przed commitem.
+
+#### Archiwizacja logów PHPStan
+- Po każdym uruchomieniu PHPStan zapisz pełny output (`stdout` + `stderr`) do pliku logów.
+- Używaj katalogu `docs/logs/phpstan/` (utwórz przy pierwszym użyciu, np. `mkdir -p docs/logs/phpstan`).
+- Nazwa pliku: `phpstan-YYYYMMDD-HHMMSS.log` (np. `phpstan-20251109-153000.log`).
+- Rekomendowane polecenie:
+```bash
+cd api && vendor/bin/phpstan analyse --memory-limit=2G 2>&1 | tee ../docs/logs/phpstan/phpstan-$(date +"%Y%m%d-%H%M%S").log
+```
+- Nie usuwaj istniejących plików logów — będą potrzebne w przyszłych projektach.
 
 ### 3. PHPUnit (testy)
 ```bash

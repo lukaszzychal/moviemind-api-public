@@ -109,6 +109,22 @@ class RealGeneratePersonJob implements ShouldQueue
         }
     }
 
+    /**
+     * Configure retry backoff tuned for OpenAI free-tier limits.
+     *
+     * @return array<int>
+     */
+    public function backoff(): array
+    {
+        if (! config('services.openai.backoff.enabled', true)) {
+            return [];
+        }
+
+        $intervals = config('services.openai.backoff.intervals', []);
+
+        return ! empty($intervals) ? $intervals : [20, 60, 180];
+    }
+
     private function refreshExistingPerson(Person $person, OpenAiClientInterface $openAiClient): void
     {
         $aiResponse = $openAiClient->generatePerson($this->slug);
