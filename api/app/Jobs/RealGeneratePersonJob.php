@@ -45,8 +45,7 @@ class RealGeneratePersonJob implements ShouldQueue
             // Check if person already exists
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingPerson($existing, $openAiClient);
 
                 return;
             }
@@ -54,8 +53,7 @@ class RealGeneratePersonJob implements ShouldQueue
             // Double-check (race condition protection)
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingPerson($existing, $openAiClient);
 
                 return;
             }
@@ -81,11 +79,13 @@ class RealGeneratePersonJob implements ShouldQueue
                 'birthplace' => $birthplace,
             ]);
 
+            $contextTag = $this->nextContextTag($person);
+
             $bio = PersonBio::create([
                 'person_id' => $person->id,
                 'locale' => Locale::EN_US,
                 'text' => (string) $biography,
-                'context_tag' => ContextTag::DEFAULT,
+                'context_tag' => $contextTag,
                 'origin' => DescriptionOrigin::GENERATED,
                 'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
             ]);
@@ -94,7 +94,7 @@ class RealGeneratePersonJob implements ShouldQueue
             $person->save();
 
             $this->invalidateCache($this->slug);
-            $this->updateCache('DONE', $person->id);
+            $this->updateCache('DONE', $person->id, $bio->id);
         } catch (\Throwable $e) {
             Log::error('RealGeneratePersonJob failed', [
                 'slug' => $this->slug,
@@ -109,7 +109,38 @@ class RealGeneratePersonJob implements ShouldQueue
         }
     }
 
-    private function updateCache(string $status, ?int $id = null): void
+    private function refreshExistingPerson(Person $person, OpenAiClientInterface $openAiClient): void
+    {
+        $aiResponse = $openAiClient->generatePerson($this->slug);
+
+        if ($aiResponse['success'] === false) {
+            $error = $aiResponse['error'] ?? 'Unknown error';
+
+            throw new \RuntimeException('AI API returned error: '.$error);
+        }
+
+        $biography = $aiResponse['biography']
+            ?? sprintf('Regenerated biography for %s via RealGeneratePersonJob.', $person->name);
+
+        $contextTag = $this->nextContextTag($person);
+
+        $bio = PersonBio::create([
+            'person_id' => $person->id,
+            'locale' => Locale::EN_US,
+            'text' => (string) $biography,
+            'context_tag' => $contextTag,
+            'origin' => DescriptionOrigin::GENERATED,
+            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+        ]);
+
+        $person->default_bio_id = $bio->id;
+        $person->save();
+
+        $this->invalidateCache($person->slug);
+        $this->updateCache('DONE', $person->id, $bio->id);
+    }
+
+    private function updateCache(string $status, ?int $id = null, ?int $bioId = null): void
     {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
@@ -117,7 +148,36 @@ class RealGeneratePersonJob implements ShouldQueue
             'entity' => 'PERSON',
             'slug' => $this->slug,
             'id' => $id,
+            'bio_id' => $bioId,
         ], now()->addMinutes(15));
+    }
+
+    private function nextContextTag(Person $person): string
+    {
+        $existingTags = array_map(
+            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
+            $person->bios()->pluck('context_tag')->all()
+        );
+        $preferredOrder = [
+            ContextTag::DEFAULT->value,
+            ContextTag::MODERN->value,
+            ContextTag::CRITICAL->value,
+            ContextTag::HUMOROUS->value,
+        ];
+
+        foreach ($preferredOrder as $candidate) {
+            if (! in_array($candidate, $existingTags, true)) {
+                return $candidate;
+            }
+        }
+
+        $suffix = 2;
+        do {
+            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
+            $suffix++;
+        } while (in_array($candidate, $existingTags, true));
+
+        return $candidate;
     }
 
     private function cacheKey(): string

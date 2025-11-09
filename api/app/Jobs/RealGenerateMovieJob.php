@@ -45,8 +45,7 @@ class RealGenerateMovieJob implements ShouldQueue
             // Check if movie already exists
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingMovie($existing, $openAiClient);
 
                 return;
             }
@@ -54,8 +53,7 @@ class RealGenerateMovieJob implements ShouldQueue
             // Double-check (race condition protection)
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingMovie($existing, $openAiClient);
 
                 return;
             }
@@ -86,11 +84,13 @@ class RealGenerateMovieJob implements ShouldQueue
                 'genres' => $genres,
             ]);
 
+            $contextTag = $this->nextContextTag($movie);
+
             $desc = MovieDescription::create([
                 'movie_id' => $movie->id,
                 'locale' => Locale::EN_US,
                 'text' => (string) $description,
-                'context_tag' => ContextTag::DEFAULT,
+                'context_tag' => $contextTag,
                 'origin' => DescriptionOrigin::GENERATED,
                 'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
             ]);
@@ -99,7 +99,7 @@ class RealGenerateMovieJob implements ShouldQueue
             $movie->save();
 
             $this->invalidateCache($this->slug, $uniqueSlug);
-            $this->updateCache('DONE', $movie->id, $uniqueSlug);
+            $this->updateCache('DONE', $movie->id, $uniqueSlug, $desc->id);
         } catch (\Throwable $e) {
             Log::error('RealGenerateMovieJob failed', [
                 'slug' => $this->slug,
@@ -114,7 +114,38 @@ class RealGenerateMovieJob implements ShouldQueue
         }
     }
 
-    private function updateCache(string $status, ?int $id = null, ?string $slug = null): void
+    private function refreshExistingMovie(Movie $movie, OpenAiClientInterface $openAiClient): void
+    {
+        $aiResponse = $openAiClient->generateMovie($this->slug);
+
+        if ($aiResponse['success'] === false) {
+            $error = $aiResponse['error'] ?? 'Unknown error';
+
+            throw new \RuntimeException('AI API returned error: '.$error);
+        }
+
+        $descriptionText = $aiResponse['description']
+            ?? sprintf('Regenerated description for %s via RealGenerateMovieJob.', $movie->title);
+
+        $contextTag = $this->nextContextTag($movie);
+
+        $description = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => Locale::EN_US,
+            'text' => (string) $descriptionText,
+            'context_tag' => $contextTag,
+            'origin' => DescriptionOrigin::GENERATED,
+            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+        ]);
+
+        $movie->default_description_id = $description->id;
+        $movie->save();
+
+        $this->invalidateCache($movie->slug);
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id);
+    }
+
+    private function updateCache(string $status, ?int $id = null, ?string $slug = null, ?int $descriptionId = null): void
     {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
@@ -122,7 +153,36 @@ class RealGenerateMovieJob implements ShouldQueue
             'entity' => 'MOVIE',
             'slug' => $slug ?? $this->slug,
             'id' => $id,
+            'description_id' => $descriptionId,
         ], now()->addMinutes(15));
+    }
+
+    private function nextContextTag(Movie $movie): string
+    {
+        $existingTags = array_map(
+            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
+            $movie->descriptions()->pluck('context_tag')->all()
+        );
+        $preferredOrder = [
+            ContextTag::DEFAULT->value,
+            ContextTag::MODERN->value,
+            ContextTag::CRITICAL->value,
+            ContextTag::HUMOROUS->value,
+        ];
+
+        foreach ($preferredOrder as $candidate) {
+            if (! in_array($candidate, $existingTags, true)) {
+                return $candidate;
+            }
+        }
+
+        $suffix = 2;
+        do {
+            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
+            $suffix++;
+        } while (in_array($candidate, $existingTags, true));
+
+        return $candidate;
     }
 
     private function cacheKey(): string

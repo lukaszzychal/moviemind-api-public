@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
+use App\Models\Movie;
+use App\Models\Person;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -66,6 +68,28 @@ class GenerateApiTest extends TestCase
         // If Event is dispatched and Listener is registered, Job will be queued
     }
 
+    public function test_generate_movie_existing_slug_triggers_regeneration_flow(): void
+    {
+        Feature::activate('ai_description_generation');
+        $movie = Movie::firstOrFail();
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $movie->slug,
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => $movie->slug,
+                'existing_id' => $movie->id,
+            ]);
+
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) use ($movie) {
+            return $event->slug === $movie->slug;
+        });
+    }
+
     public function test_generate_person_blocked_when_flag_off(): void
     {
         Feature::deactivate('ai_bio_generation');
@@ -108,6 +132,28 @@ class GenerateApiTest extends TestCase
 
         // Note: Queue::fake() prevents Listener from executing, so we only check Event
         // If Event is dispatched and Listener is registered, Job will be queued
+    }
+
+    public function test_generate_person_existing_slug_triggers_regeneration_flow(): void
+    {
+        Feature::activate('ai_bio_generation');
+        $person = Person::firstOrFail();
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'PERSON',
+            'entity_id' => $person->slug,
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => $person->slug,
+                'existing_id' => $person->id,
+            ]);
+
+        Event::assertDispatched(PersonGenerationRequested::class, function ($event) use ($person) {
+            return $event->slug === $person->slug;
+        });
     }
 
     public function test_generate_actor_allowed_when_flag_on(): void

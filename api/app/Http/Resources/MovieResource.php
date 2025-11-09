@@ -14,6 +14,11 @@ class MovieResource extends JsonResource
     {
         $data = parent::toArray($request);
 
+        $descriptionsCount = $this->resource->descriptions_count
+            ?? ($this->resource->relationLoaded('descriptions') ? $this->resource->descriptions->count() : 0);
+
+        $data['descriptions_count'] = $descriptionsCount;
+
         if ($links = $this->additional['links'] ?? $this->additional['_links'] ?? null) {
             $data['_links'] = $links;
         }

@@ -28,10 +28,12 @@ class MoviesApiTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'title', 'release_year', 'director',
+                        'id', 'title', 'release_year', 'director', 'descriptions_count',
                     ],
                 ],
             ]);
+
+        $this->assertIsInt($response->json('data.0.descriptions_count'));
     }
 
     public function test_show_movie_returns_ok(): void
@@ -41,7 +43,9 @@ class MoviesApiTest extends TestCase
 
         $response = $this->getJson('/api/v1/movies/'.$slug);
         $response->assertOk()
-            ->assertJsonStructure(['id', 'slug', 'title']);
+            ->assertJsonStructure(['id', 'slug', 'title', 'descriptions_count']);
+
+        $this->assertIsInt($response->json('descriptions_count'));
 
         $response->assertJsonPath('_links.self.href', url('/api/v1/movies/'.$slug));
 

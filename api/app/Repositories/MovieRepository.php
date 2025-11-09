@@ -18,6 +18,7 @@ class MovieRepository
                     });
             })
             ->with(['defaultDescription', 'genres', 'people'])
+            ->withCount('descriptions')
             ->limit($limit)
             ->get();
     }
@@ -26,6 +27,7 @@ class MovieRepository
     {
         // Try exact match first
         $movie = Movie::with(['descriptions', 'defaultDescription'])
+            ->withCount('descriptions')
             ->where('slug', $slug)
             ->first();
 
@@ -42,6 +44,7 @@ class MovieRepository
             $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
 
             return Movie::with(['descriptions', 'defaultDescription'])
+                ->withCount('descriptions')
                 ->whereRaw('slug LIKE ?', ["{$titleSlug}%"])
                 ->orderBy('release_year', 'desc') // Return most recent by default
                 ->first();
@@ -57,6 +60,7 @@ class MovieRepository
     public function findAllByTitleSlug(string $baseSlug): Collection
     {
         return Movie::with(['descriptions', 'defaultDescription'])
+            ->withCount('descriptions')
             ->whereRaw('slug LIKE ?', ["{$baseSlug}%"])
             ->orderBy('release_year', 'desc')
             ->get();
