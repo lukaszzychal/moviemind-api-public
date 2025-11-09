@@ -39,8 +39,7 @@ class MockGenerateMovieJob implements ShouldQueue
             // Check if movie already exists
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingMovie($existing);
 
                 return;
             }
@@ -51,8 +50,7 @@ class MockGenerateMovieJob implements ShouldQueue
             // Double-check (race condition protection)
             $existing = Movie::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingMovie($existing);
 
                 return;
             }
@@ -74,11 +72,13 @@ class MockGenerateMovieJob implements ShouldQueue
                 'genres' => ['Sci-Fi', 'Action'],
             ]);
 
+            $contextTag = $this->nextContextTag($movie);
+
             $desc = MovieDescription::create([
                 'movie_id' => $movie->id,
                 'locale' => Locale::EN_US,
                 'text' => "Generated description for {$title}. This text was produced by MockGenerateMovieJob (AI_SERVICE=mock).",
-                'context_tag' => ContextTag::DEFAULT,
+                'context_tag' => $contextTag,
                 'origin' => DescriptionOrigin::GENERATED,
                 'ai_model' => 'mock-ai-1',
             ]);
@@ -87,7 +87,7 @@ class MockGenerateMovieJob implements ShouldQueue
             $movie->save();
 
             $this->invalidateCache($this->slug, $uniqueSlug);
-            $this->updateCache('DONE', $movie->id, $uniqueSlug);
+            $this->updateCache('DONE', $movie->id, $uniqueSlug, $desc->id);
         } catch (\Throwable $e) {
             Log::error('MockGenerateMovieJob failed', [
                 'slug' => $this->slug,
@@ -102,7 +102,31 @@ class MockGenerateMovieJob implements ShouldQueue
         }
     }
 
-    private function updateCache(string $status, ?int $id = null, ?string $slug = null): void
+    private function refreshExistingMovie(Movie $movie): void
+    {
+        $contextTag = $this->nextContextTag($movie);
+
+        $description = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => Locale::EN_US,
+            'text' => sprintf(
+                'Regenerated description for %s on %s (MockGenerateMovieJob).',
+                $movie->title,
+                now()->toIso8601String()
+            ),
+            'context_tag' => $contextTag,
+            'origin' => DescriptionOrigin::GENERATED,
+            'ai_model' => 'mock-ai-1',
+        ]);
+
+        $movie->default_description_id = $description->id;
+        $movie->save();
+
+        $this->invalidateCache($movie->slug);
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id);
+    }
+
+    private function updateCache(string $status, ?int $id = null, ?string $slug = null, ?int $descriptionId = null): void
     {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
@@ -110,7 +134,36 @@ class MockGenerateMovieJob implements ShouldQueue
             'entity' => 'MOVIE',
             'slug' => $slug ?? $this->slug,
             'id' => $id,
+            'description_id' => $descriptionId,
         ], now()->addMinutes(15));
+    }
+
+    private function nextContextTag(Movie $movie): string
+    {
+        $existingTags = array_map(
+            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
+            $movie->descriptions()->pluck('context_tag')->all()
+        );
+        $preferredOrder = [
+            ContextTag::DEFAULT->value,
+            ContextTag::MODERN->value,
+            ContextTag::CRITICAL->value,
+            ContextTag::HUMOROUS->value,
+        ];
+
+        foreach ($preferredOrder as $candidate) {
+            if (! in_array($candidate, $existingTags, true)) {
+                return $candidate;
+            }
+        }
+
+        $suffix = 2;
+        do {
+            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
+            $suffix++;
+        } while (in_array($candidate, $existingTags, true));
+
+        return $candidate;
     }
 
     private function cacheKey(): string

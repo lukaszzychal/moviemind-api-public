@@ -14,6 +14,8 @@ services:
       APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-1}
       APP_URL: http://localhost:8000
+      QUEUE_CONNECTION: redis
+      AI_SERVICE: ${AI_SERVICE:-mock}
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
@@ -50,6 +52,9 @@ services:
     environment:
       QUEUE_CONNECTION: redis
       REDIS_HOST: redis
+      AI_SERVICE: ${AI_SERVICE:-mock}
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-1}
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432

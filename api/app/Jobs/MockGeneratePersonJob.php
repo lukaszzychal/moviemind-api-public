@@ -39,8 +39,7 @@ class MockGeneratePersonJob implements ShouldQueue
             // Check if person already exists
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingPerson($existing);
 
                 return;
             }
@@ -51,8 +50,7 @@ class MockGeneratePersonJob implements ShouldQueue
             // Double-check (race condition protection)
             $existing = Person::where('slug', $this->slug)->first();
             if ($existing) {
-                $this->invalidateCache($this->slug);
-                $this->updateCache('DONE', $existing->id);
+                $this->refreshExistingPerson($existing);
 
                 return;
             }
@@ -65,11 +63,13 @@ class MockGeneratePersonJob implements ShouldQueue
                 'birthplace' => 'Mock City',
             ]);
 
+            $contextTag = $this->nextContextTag($person);
+
             $bio = PersonBio::create([
                 'person_id' => $person->id,
                 'locale' => Locale::EN_US,
                 'text' => "Generated biography for {$name}. This text was produced by MockGeneratePersonJob (AI_SERVICE=mock).",
-                'context_tag' => ContextTag::DEFAULT,
+                'context_tag' => $contextTag,
                 'origin' => DescriptionOrigin::GENERATED,
                 'ai_model' => 'mock-ai-1',
             ]);
@@ -78,7 +78,7 @@ class MockGeneratePersonJob implements ShouldQueue
             $person->save();
 
             $this->invalidateCache($this->slug);
-            $this->updateCache('DONE', $person->id);
+            $this->updateCache('DONE', $person->id, $bio->id);
         } catch (\Throwable $e) {
             Log::error('MockGeneratePersonJob failed', [
                 'slug' => $this->slug,
@@ -93,7 +93,31 @@ class MockGeneratePersonJob implements ShouldQueue
         }
     }
 
-    private function updateCache(string $status, ?int $id = null): void
+    private function refreshExistingPerson(Person $person): void
+    {
+        $contextTag = $this->nextContextTag($person);
+
+        $bio = PersonBio::create([
+            'person_id' => $person->id,
+            'locale' => Locale::EN_US,
+            'text' => sprintf(
+                'Regenerated biography for %s on %s (MockGeneratePersonJob).',
+                $person->name,
+                now()->toIso8601String()
+            ),
+            'context_tag' => $contextTag,
+            'origin' => DescriptionOrigin::GENERATED,
+            'ai_model' => 'mock-ai-1',
+        ]);
+
+        $person->default_bio_id = $bio->id;
+        $person->save();
+
+        $this->invalidateCache($person->slug);
+        $this->updateCache('DONE', $person->id, $bio->id);
+    }
+
+    private function updateCache(string $status, ?int $id = null, ?int $bioId = null): void
     {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
@@ -101,7 +125,36 @@ class MockGeneratePersonJob implements ShouldQueue
             'entity' => 'PERSON',
             'slug' => $this->slug,
             'id' => $id,
+            'bio_id' => $bioId,
         ], now()->addMinutes(15));
+    }
+
+    private function nextContextTag(Person $person): string
+    {
+        $existingTags = array_map(
+            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
+            $person->bios()->pluck('context_tag')->all()
+        );
+        $preferredOrder = [
+            ContextTag::DEFAULT->value,
+            ContextTag::MODERN->value,
+            ContextTag::CRITICAL->value,
+            ContextTag::HUMOROUS->value,
+        ];
+
+        foreach ($preferredOrder as $candidate) {
+            if (! in_array($candidate, $existingTags, true)) {
+                return $candidate;
+            }
+        }
+
+        $suffix = 2;
+        do {
+            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
+            $suffix++;
+        } while (in_array($candidate, $existingTags, true));
+
+        return $candidate;
     }
 
     private function cacheKey(): string

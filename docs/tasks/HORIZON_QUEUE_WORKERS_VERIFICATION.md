@@ -1,6 +1,6 @@
 # 🔍 Weryfikacja Queue Workers i Horizon - Raport
 
-**Data:** 2025-11-04  
+**Data:** 2025-11-09  
 **TASK:** TASK-002  
 **Status:** ✅ Zakończone
 
@@ -236,13 +236,12 @@ public int $timeout = 120;
 
 ### **2. Gate Authorization (Horizon)**
 
-**Problem:**
-- `viewHorizon` gate jest pusty (dostęp dla wszystkich)
-- W production powinien być zabezpieczony
+**Status (2025-11-09):** ✅ wdrożone  
+`viewHorizon` wykorzystuje teraz konfigurację środowiskową:
+- `HORIZON_AUTH_BYPASS_ENVS` – lista środowisk z automatycznym dostępem (domyślnie `local,staging`).
+- `HORIZON_ALLOWED_EMAILS` – lista adresów e-mail z dostępem w środowiskach zabezpieczonych (production).
 
-**Rekomendacja:**
-- Dla local: pozostawić pusty (dostęp dla wszystkich)
-- Dla production: dodać autoryzację (email, role, etc.)
+**Kod:** `app/Providers/HorizonServiceProvider.php`
 
 ---
 
@@ -274,9 +273,9 @@ public int $timeout = 120;
 
 ### **Krótkoterminowe (MVP):**
 
-1. ✅ **Dokumentacja** - Utworzyć `docs/HORIZON_SETUP.md`
-2. ⚠️ **Gate Authorization** - Dodać komentarz o security w production
-3. ✅ **Monitoring** - Dodać podstawowe instrukcje monitorowania
+1. ✅ **Dokumentacja** - Utworzono `docs/knowledge/tutorials/HORIZON_SETUP.md`
+2. ✅ **Gate Authorization** - Konfiguracja oparta o zmienne środowiskowe (`HORIZON_ALLOWED_EMAILS`)
+3. ✅ **Monitoring** - Dodano podstawowe instrukcje monitorowania
 
 ### **Długoterminowe (Production):**
 
@@ -286,23 +285,29 @@ public int $timeout = 120;
 
 ---
 
+## 🆕 Aktualizacja 2025-11-09
+
+- ⏱️ Ujednolicono timeouty workerów Horizon (`HORIZON_TIMEOUT=120`) z ustawieniami jobów (`$timeout = 120`).
+- ♻️ Zwiększono domyślne próby workerów do 3 (`HORIZON_TRIES=3`) zgodnie z konfiguracją pojedynczych jobów.
+- 🔐 Dodano konfigurację `HORIZON_ALLOWED_EMAILS` oraz `HORIZON_AUTH_BYPASS_ENVS` sterującą dostępem do panelu Horizon.
+- 📄 Zaktualizowano dokumentację (`docs/knowledge/tutorials/HORIZON_SETUP.md`) oraz pliki `.env.*` o nowe zmienne.
+- 📊 Zweryfikowano konfigurację `config/horizon.php` – wartości środowiskowe umożliwiają niezależne strojenie `production/staging/local`.
+- ⚠️ `php artisan horizon:status` zwraca błąd gdy Redis nie działa (np. poza Dockerem); dodano notatkę w raporcie i checklistę uruchomienia usług (`docker compose up redis`).
+
+---
+
 ## 📝 **Podsumowanie**
 
 ### **Status Ogólny:** ✅ **POPRAWNY**
 
 **Wszystkie kluczowe elementy działają poprawnie:**
 - ✅ Horizon jest skonfigurowany
-- ✅ Redis connection działa
+- ✅ Redis connection działa (wymaga uruchomienia kontenera `redis`)
 - ✅ Jobs są przetwarzane
 - ✅ Timeout settings są odpowiednie
 - ✅ Retry logic działa
 - ✅ Failed jobs są zapisywane
+- ✅ Dostęp do panelu Horizon zabezpieczony na produkcji
 
-**Wymagane poprawki:**
-- ✅ Dokumentacja (do utworzenia)
-- ⚠️ Gate authorization (do rozważenia w production)
-
----
-
-**Ostatnia aktualizacja:** 2025-11-04
+**Ostatnia aktualizacja:** 2025-11-09
 

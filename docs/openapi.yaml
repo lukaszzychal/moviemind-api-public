@@ -256,34 +256,27 @@ paths:
                 summary: Queue movie generation
                 value:
                   entity_type: MOVIE
-                  slug: annihilation
+                  entity_id: annihilation-2018
                   locale: en-US
                   context_tag: modern
       responses:
-        '200':
-          description: Entity already exists (no job queued)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenerationCompleted'
-              examples:
-                default:
-                  value:
-                    job_id: 1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b
-                    status: DONE
-                    message: Movie already exists
-                    slug: the-matrix-1999
-                    id: 1
-                    confidence: 0.92
-                    confidence_level: high
         '202':
-          description: Accepted - job queued for generation
+          description: Accepted - job queued for generation (new or existing entity)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerationQueued'
               examples:
-                default:
+                regeneration:
+                  value:
+                    job_id: 7e1e6e2d-5b5d-4c83-8f6d-83c21c53e4c2
+                    status: PENDING
+                    message: Generation queued for existing movie slug
+                    slug: the-matrix-1999
+                    confidence: 0.92
+                    confidence_level: high
+                    existing_id: 1
+                new:
                   value:
                     job_id: 0d3f1976-b7d0-4d18-90d3-ef5d547d9300
                     status: PENDING
@@ -653,6 +646,12 @@ components:
         error:
           type: string
           nullable: true
+        description_id:
+          type: integer
+          nullable: true
+        bio_id:
+          type: integer
+          nullable: true
     GenerationQueued:
       type: object
       required: [job_id, status, message, slug]
@@ -673,6 +672,15 @@ components:
           nullable: true
         confidence_level:
           type: string
+          nullable: true
+        description_id:
+          type: integer
+          nullable: true
+        bio_id:
+          type: integer
+          nullable: true
+        existing_id:
+          type: integer
           nullable: true
     GenerationCompleted:
       type: object
@@ -707,11 +715,11 @@ components:
           description: Entity type to generate content for.
         slug:
           type: string
-          description: Preferred identifier of the entity (e.g. `the-matrix-1999`).
+          description: Preferred identifier for the entity (e.g. `the-matrix-1999`). Required when `entity_id` is omitted.
           example: the-matrix-1999
         entity_id:
           type: string
-          description: Deprecated alias for `slug` (still accepted for backwards compatibility).
+          description: Alias for `slug` used by legacy clients (still accepted). Required when `slug` is omitted.
           example: the-matrix-1999
         locale:
           type: string
@@ -719,5 +727,8 @@ components:
         context_tag:
           type: string
           example: modern
+      oneOf:
+        - required: [slug]
+        - required: [entity_id]
 
 

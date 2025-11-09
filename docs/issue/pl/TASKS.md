@@ -25,21 +25,6 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
-#### `TASK-002` - Weryfikacja Queue Workers i Horizon
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Weryfikacja konfiguracji i działania queue workers/Horizon (jobs obecnie działają, ale wymagają weryfikacji)
-- **Szczegóły:** Sprawdzić konfigurację Horizon, działanie workers w produkcji, monitoring
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
----
-
 #### `TASK-007` - Feature Flags Hardening
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -166,6 +151,22 @@ Każde zadanie ma następującą strukturę:
   - Aktualizacja dokumentacji operacyjnej.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-08
+
+### `TASK-002` - Weryfikacja Queue Workers i Horizon
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** 2025-11-09 13:40
+- **Czas zakończenia:** 2025-11-09 15:05
+- **Czas realizacji:** 01h25m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Weryfikacja i utwardzenie konfiguracji Horizon oraz queue workers.
+- **Szczegóły:**
+  - Zrównano timeouty i liczbę prób workerów Horizon (`config/horizon.php`, nowe zmienne `.env`).
+  - Wprowadzono konfigurowalną listę e-maili i środowisk z automatycznym dostępem do panelu Horizon.
+  - Zaktualizowano dokumentację (`docs/tasks/HORIZON_QUEUE_WORKERS_VERIFICATION.md`, `docs/knowledge/tutorials/HORIZON_SETUP.md`) wraz z checklistą uruchomienia Redis/Horizon.
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-27
 
 ---
 

@@ -28,16 +28,25 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     protected function gate(): void
     {
         Gate::define('viewHorizon', function ($user = null) {
-            // Allow access in local/staging environments
-            if (in_array(config('app.env'), ['local', 'staging'])) {
+            $bypassEnvironments = collect(config('horizon.auth.bypass_environments', []))
+                ->map(fn ($env) => trim((string) $env))
+                ->filter()
+                ->all();
+
+            if (in_array(config('app.env'), $bypassEnvironments, true)) {
                 return true;
             }
 
-            // In production, require authentication
-            // TODO: Configure authorized emails for production
-            return in_array(optional($user)->email, [
-                // Add authorized emails here for production
-            ]);
+            $authorizedEmails = collect(config('horizon.auth.allowed_emails', []))
+                ->map(fn ($email) => mb_strtolower(trim($email)))
+                ->filter()
+                ->all();
+
+            if (empty($authorizedEmails)) {
+                return false;
+            }
+
+            return in_array(mb_strtolower(optional($user)->email ?? ''), $authorizedEmails, true);
         });
     }
 }

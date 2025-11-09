@@ -60,42 +60,62 @@ QUEUE_CONNECTION=redis
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_CLIENT=predis
+HORIZON_TIMEOUT=120
+HORIZON_TRIES=3
+HORIZON_ALLOWED_EMAILS=admin@example.com,ops@example.com
+HORIZON_AUTH_BYPASS_ENVS=local,staging
 ```
 
-**Dla Docker:**
+**Dla Docker / CI:**
 ```env
 QUEUE_CONNECTION=redis
 REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_CLIENT=predis
+HORIZON_TIMEOUT=120
+HORIZON_TRIES=3
+HORIZON_ALLOWED_EMAILS=
+HORIZON_AUTH_BYPASS_ENVS=local,staging
 ```
 
 ### **2. Horizon Configuration**
 
 **`config/horizon.php`:**
-```php
-'environments' => [
-    'production' => [
+[
+    'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
             'queue' => ['default'],
-            'balance' => 'auto',
-            'maxProcesses' => 10,
-            'balanceMaxShift' => 1,
-            'balanceCooldown' => 3,
-            'tries' => 3,
+            'balance' => env('HORIZON_BALANCE', 'auto'),
+            'autoScalingStrategy' => env('HORIZON_AUTOSCALING_STRATEGY', 'time'),
+            'maxProcesses' => (int) env('HORIZON_MAX_PROCESSES', 1),
+            'tries' => (int) env('HORIZON_TRIES', 3),
+            'timeout' => (int) env('HORIZON_TIMEOUT', 120),
         ],
     ],
-    'local' => [
-        'supervisor-1' => [
-            'connection' => 'redis',
-            'queue' => ['default'],
-            'balance' => 'simple',
-            'maxProcesses' => 3,
-            'tries' => 3,
+    'environments' => [
+        'production' => [
+            'supervisor-1' => [
+                'maxProcesses' => (int) env('HORIZON_PROD_MAX_PROCESSES', 10),
+                'balanceMaxShift' => (int) env('HORIZON_PROD_BALANCE_MAX_SHIFT', 1),
+                'balanceCooldown' => (int) env('HORIZON_PROD_BALANCE_COOLDOWN', 3),
+                'tries' => (int) env('HORIZON_PROD_TRIES', env('HORIZON_TRIES', 3)),
+                'timeout' => (int) env('HORIZON_PROD_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
+            ],
+        ],
+        'local' => [
+            'supervisor-1' => [
+                'maxProcesses' => (int) env('HORIZON_LOCAL_MAX_PROCESSES', 3),
+                'tries' => (int) env('HORIZON_LOCAL_TRIES', env('HORIZON_TRIES', 3)),
+                'timeout' => (int) env('HORIZON_LOCAL_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
+            ],
         ],
     ],
-],
+    'auth' => [
+        'bypass_environments' => explode(',', env('HORIZON_AUTH_BYPASS_ENVS', 'local,staging')),
+        'allowed_emails' => array_filter(array_map('trim', explode(',', env('HORIZON_ALLOWED_EMAILS', '')))),
+    ],
+];
 ```
 
 ---

@@ -47,7 +47,13 @@
                   "value": "matrix"
                 }
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -93,7 +99,13 @@
                 "movies",
                 "{{movieSlug}}"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -139,7 +151,13 @@
                 "movies",
                 "annihilation-2018"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -190,7 +208,13 @@
                 "people",
                 "{{personSlug}}"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -236,7 +260,13 @@
                 "people",
                 "greta-gerwig"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -259,16 +289,17 @@
       "name": "Generation",
       "item": [
         {
-          "name": "Generate movie (existing slug -> 200)",
+          "name": "Generate movie (existing slug -> 202)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
                   "const json = pm.response.json();",
-                  "pm.test(\\\"Generation status is DONE\\\", function () { pm.expect(json.status).to.eql('DONE'); });"
+                  "pm.test(\"Generation is queued\", function () { pm.expect(json.status).to.eql('PENDING'); });",
+                  "pm.test(\"Existing ID present\", function () { pm.expect(json).to.have.property('existing_id'); });"
                 ]
               }
             }
@@ -279,11 +310,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"the-matrix-1999\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"the-matrix-1999\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -299,16 +334,16 @@
           },
           "response": [
             {
-              "name": "200 OK",
-              "status": "OK",
-              "code": 200,
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"job_id\": \"1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"DONE\",\n  \"message\": \"Movie already exists\",\n  \"slug\": \"the-matrix-1999\",\n  \"id\": 1,\n  \"confidence\": 0.92,\n  \"confidence_level\": \"high\"\n}"
+              "body": "{\n  \"job_id\": \"1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for existing movie slug\",\n  \"slug\": \"the-matrix-1999\",\n  \"existing_id\": 1,\n  \"confidence\": 0.92,\n  \"confidence_level\": \"high\"\n}"
             }
           ]
         },
@@ -334,11 +369,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"annihilation-2018\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"annihilation-2018\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -368,16 +407,17 @@
           ]
         },
         {
-          "name": "Generate person (existing slug -> 200)",
+          "name": "Generate person (existing slug -> 202)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
                   "const json = pm.response.json();",
-                  "pm.test(\\\"Generation status is DONE\\\", function () { pm.expect(json.status).to.eql('DONE'); });"
+                  "pm.test(\"Generation is queued\", function () { pm.expect(json.status).to.eql('PENDING'); });",
+                  "pm.test(\"Existing ID present\", function () { pm.expect(json).to.have.property('existing_id'); });"
                 ]
               }
             }
@@ -388,11 +428,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"the-wachowskis\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"the-wachowskis\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -408,16 +452,16 @@
           },
           "response": [
             {
-              "name": "200 OK",
-              "status": "OK",
-              "code": 200,
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"job_id\": \"6f52d5f2-aaaa-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"DONE\",\n  \"message\": \"Person already exists\",\n  \"slug\": \"the-wachowskis\",\n  \"id\": 1,\n  \"confidence\": 0.8,\n  \"confidence_level\": \"medium\"\n}"
+              "body": "{\n  \"job_id\": \"5f52d5f2-3cdc-4c1b-8726-762ebf49ea4c\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for existing person slug\",\n  \"slug\": \"the-wachowskis\",\n  \"existing_id\": 2,\n  \"confidence\": 0.88,\n  \"confidence_level\": \"high\"\n}"
             }
           ]
         },
@@ -443,11 +487,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"slug\": \"greta-gerwig\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\"\n}"
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"greta-gerwig\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -513,7 +561,13 @@
                 "jobs",
                 "{{jobId}}"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -575,7 +629,13 @@
                 "admin",
                 "flags"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {
@@ -612,6 +672,10 @@
             "header": [
               {
                 "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
@@ -668,6 +732,10 @@
             "header": [
               {
                 "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
@@ -733,7 +801,13 @@
                 "flags",
                 "usage"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
           },
           "response": [
             {

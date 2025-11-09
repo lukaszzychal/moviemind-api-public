@@ -5,6 +5,7 @@ namespace Tests\Unit\Jobs;
 use App\Jobs\MockGenerateMovieJob;
 use App\Jobs\RealGenerateMovieJob;
 use App\Models\Movie;
+use App\Models\MovieDescription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -39,7 +40,7 @@ class GenerateMovieJobTest extends TestCase
         $this->assertEquals(120, $job->timeout); // Longer timeout for real API
     }
 
-    public function test_job_marks_existing_movie_as_done(): void
+    public function test_job_appends_description_for_existing_movie(): void
     {
         $movie = Movie::create([
             'title' => 'The Matrix',
@@ -47,20 +48,40 @@ class GenerateMovieJobTest extends TestCase
             'release_year' => 1999,
             'director' => 'The Wachowskis',
         ]);
+        $originalDescription = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Original seeded description.',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $movie->default_description_id = $originalDescription->id;
+        $movie->save();
         $jobId = 'test-job-123';
 
         $job = new MockGenerateMovieJob('the-matrix', $jobId);
         $job->handle();
 
-        // Movie should still exist (not duplicated)
+        $movie->refresh();
+
+        // Movie should still exist (not duplicated) and have new default description
         $this->assertDatabaseCount('movies', 1);
-        $this->assertEquals($movie->id, Movie::where('slug', 'the-matrix')->first()->id);
+        $this->assertEquals(2, $movie->descriptions()->count());
+        $this->assertNotEquals($originalDescription->id, $movie->default_description_id);
+        $tags = $movie->descriptions()
+            ->pluck('context_tag')
+            ->map(fn ($tag) => $tag instanceof \BackedEnum ? $tag->value : (string) $tag)
+            ->all();
+        $this->assertCount(count($tags), array_unique($tags), 'Expected unique context_tag per description');
 
         // Verify cache was updated
         $cached = Cache::get('ai_job:'.$jobId);
         $this->assertNotNull($cached);
         $this->assertEquals('DONE', $cached['status']);
         $this->assertEquals($movie->id, $cached['id']);
+        $this->assertNotNull($cached['description_id']);
+        $this->assertEquals($movie->default_description_id, $cached['description_id']);
     }
 
     public function test_job_creates_movie_when_not_exists(): void
@@ -74,12 +95,18 @@ class GenerateMovieJobTest extends TestCase
         $movie = Movie::where('slug', 'like', 'new-movie-test%')->first();
         $this->assertNotNull($movie);
         $this->assertDatabaseCount('movies', 1);
+        $this->assertEquals(1, $movie->descriptions()->count());
+        $this->assertEquals(
+            $movie->default_description_id,
+            $movie->descriptions()->first()->id
+        );
 
         // Verify cache was updated
         $cached = Cache::get('ai_job:'.$jobId);
         $this->assertNotNull($cached);
         $this->assertEquals('DONE', $cached['status']);
         $this->assertEquals($movie->id, $cached['id']);
+        $this->assertEquals($movie->default_description_id, $cached['description_id']);
     }
 
     public function test_mock_job_implements_should_queue(): void
