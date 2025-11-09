@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Movie;
 use App\Models\Person;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class HateoasService
@@ -11,7 +12,13 @@ class HateoasService
     public function movieLinks(Movie $movie): array
     {
         /** @var \Illuminate\Support\Collection<int, Person> $people */
-        $people = $movie->people;
+        $people = $movie->people
+            ->sortBy(function (Model $related, int $index): int {
+                /** @var Person $person */
+                $person = $related;
+
+                return $person->pivot?->getAttribute('billing_order') ?? PHP_INT_MAX;
+            });
 
         return [
             'self' => [

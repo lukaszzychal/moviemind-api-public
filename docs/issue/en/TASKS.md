@@ -168,24 +168,6 @@ Every entry follows this structure:
 
 ---
 
-#### `TASK-014` – Fix movie HATEOAS links
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 1–2 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Correct links returned by `HateoasService` so they match API docs and relations.
-- **Details:**
-  - Adjust the `people` link (currently points back to the movie endpoint).
-  - Align OpenAPI examples and Postman collection.
-  - Add unit/feature tests verifying `_links` structure.
-- **Dependencies:** none
-- **Created:** 2025-11-08
-
----
-
 #### `TASK-015` – Run Postman Newman tests in CI
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -224,6 +206,22 @@ Every entry follows this structure:
 ---
 
 ## ✅ Completed tasks
+
+### `TASK-014` – Fix movie HATEOAS links
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟡 Medium
+- **Estimated time:** 1–2 h
+- **Start time:** 2025-11-09 12:45  
+- **End time:** 2025-11-09 13:25  
+- **Duration:** 00h40m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Corrected movie `_links.people` so they match API relations and documentation.
+- **Details:**
+  - Sorted people links by `billing_order` in `HateoasService`.
+  - Updated Postman collection and server status docs to reflect the array of person links.
+  - Expanded `HateoasTest` feature coverage to assert `_links.people` structure.
+- **Dependencies:** none
+- **Created:** 2025-11-08
 
 ### `TASK-000` – People list endpoint with role filtering
 - **Status:** ✅ COMPLETED
