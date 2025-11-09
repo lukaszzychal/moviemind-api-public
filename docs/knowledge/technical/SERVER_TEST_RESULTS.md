@@ -63,7 +63,16 @@ All containers running:
         "ai_model": "mock"
       },
       "_links": {
-        "self": "http://localhost:8000/api/v1/movies/the-matrix-1999",
+        "self": {
+          "href": "http://localhost:8000/api/v1/movies/the-matrix-1999"
+        },
+        "people": [
+          {
+            "href": "http://localhost:8000/api/v1/people/the-wachowskis",
+            "title": "The Wachowskis",
+            "role": "DIRECTOR"
+          }
+        ],
         "generate": {...}
       }
     }

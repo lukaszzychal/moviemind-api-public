@@ -169,24 +169,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-014` - Usprawnienie linków HATEOAS dla filmów
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
-- **Opis:** Korekta linków HATEOAS zwracanych przez `HateoasService`, aby odpowiadały dokumentacji i relacjom.
-- **Szczegóły:**
-  - Poprawa linku `people` (obecnie wskazuje na sam film).
-  - Weryfikacja konsekwencji w OpenAPI oraz kolekcji Postman.
-  - Dodanie testów jednostkowych/feature weryfikujących strukturę `_links`.
-- **Zależności:** Brak
-- **Utworzone:** 2025-11-08
-
----
-
 #### `TASK-015` - Automatyczne testy Newman w CI
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -225,6 +207,22 @@ Każde zadanie ma następującą strukturę:
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-014` - Usprawnienie linków HATEOAS dla filmów
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** 2025-11-09 12:45
+- **Czas zakończenia:** 2025-11-09 13:25
+- **Czas realizacji:** 00h40m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Korekta linków HATEOAS zwracanych przez `HateoasService`, aby odpowiadały dokumentacji i relacjom.
+- **Szczegóły:**
+  - Posortowano linki osób wg `billing_order` w `HateoasService`.
+  - Zaktualizowano przykłady HATEOAS w kolekcji Postman oraz dokumentacji serwerowej (PL/EN).
+  - Rozszerzono testy feature `HateoasTest` o weryfikację struktury `_links.people`.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-08
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role
 - **Status:** ✅ COMPLETED
