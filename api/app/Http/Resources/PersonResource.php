@@ -14,6 +14,11 @@ class PersonResource extends JsonResource
     {
         $data = parent::toArray($request);
 
+        $biosCount = $this->resource->bios_count
+            ?? ($this->resource->relationLoaded('bios') ? $this->resource->bios->count() : 0);
+
+        $data['bios_count'] = $biosCount;
+
         $data['movies'] = $this->when(
             $this->resource->relationLoaded('movies'),
             fn () => $this->resource->movies->map(fn ($movie) => [
