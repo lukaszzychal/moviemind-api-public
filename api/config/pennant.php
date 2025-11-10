@@ -7,6 +7,7 @@ use App\Features\admin_edit_lock;
 use App\Features\admin_flag_console;
 use App\Features\ai_bio_generation;
 use App\Features\ai_description_generation;
+use App\Features\ai_generation_baseline_locking;
 use App\Features\ai_plagiarism_detection;
 use App\Features\ai_quality_scoring;
 use App\Features\ai_translation_pipeline;
@@ -65,6 +66,13 @@ $flags = [
         'category' => 'ai_quality',
         'default' => false,
         'togglable' => false,
+    ],
+    'ai_generation_baseline_locking' => [
+        'class' => ai_generation_baseline_locking::class,
+        'description' => 'Locking + baseline update flow for AI generation (TASK-012).',
+        'category' => 'core_ai',
+        'default' => false,
+        'togglable' => true,
     ],
 
     // Experiments

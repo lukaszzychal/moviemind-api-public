@@ -26,6 +26,7 @@ Ten katalog zawiera dokumenty **analityczne**, **techniczne** i **PO** (Product 
 - `HORIZON_DASHBOARD_VS_WORKER.md` - Porównanie Horizon Dashboard vs Worker
 - `HORIZON_ROUTES_EXPLANATION.md` - Wyjaśnienie routingu Horizon
 - `HORIZON_NOT_SHOWING_JOBS.md` - Rozwiązywanie problemów z Horizon
+- `AI_BASELINE_LOCKING_PLAN.md` - Plan dalszych prac nad lockami baseline w jobach
 
 ### 🔍 Analizy Techniczne
 - `JOBS_ENDPOINT_ANALYSIS.md` - Analiza bezpieczeństwa endpointu `/api/v1/jobs/{id}`
@@ -61,4 +62,3 @@ Dokumenty w tym katalogu służą do:
 ---
 
 **Ostatnia aktualizacja:** 2025-11-10
-

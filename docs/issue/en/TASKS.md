@@ -227,6 +227,137 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-024` – Execute baseline-locking improvement plan
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 4 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Implement and verify the follow-up actions listed in `docs/knowledge/technical/AI_BASELINE_LOCKING_PLAN.md`.
+- **Details:**
+  - Validate flag configuration (`ai_generation_baseline_locking`) on staging/production and prepare rollout SOP.
+  - Extend test coverage (Mock/Real jobs) for the flag-on scenario, including cache/slug edge cases.
+  - Add telemetry/logging to monitor baseline-locking mode in Horizon.
+  - Produce rollout/rollback recommendation once staging validation is complete.
+- **Dependencies:** TASK-012, TASK-023
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-025` – Standardise product vs developer feature flags
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 1 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Update `.cursor/rules/coding-standards.mdc` with guidance for two feature-flag classes (product vs developer) and align supporting docs.
+- **Details:**
+  - Introduce a subsection distinguishing product flags (long-term toggles for live functionality) from developer flags (temporary, default-off gates used while a feature is under construction).
+  - Document the lifecycle for developer flags: create alongside new work, enable for testing only, remove once the feature ships.
+  - Clarify when developer flags are mandatory (every new or high-risk feature that could destabilise production) and outline naming/documentation expectations.
+  - Sync any related material in `docs/knowledge/reference/FEATURE_FLAGS*.md` (if updates are needed) and ensure PL/EN parity.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-026` – Investigate confidence fields for queued generation responses
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 1–2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Verify the `confidence` and `confidence_level` fields returned when show endpoints auto-trigger generation for missing entities.
+- **Details:**
+  - Reproduce the response for `GET /api/v1/movies/{slug}` and `GET /api/v1/people/{slug}` when the entity is absent and a job is queued.
+  - Identify why `confidence` is `null` and `confidence_level` is `unknown` in the queued payload and determine the expected values.
+  - Add regression tests (feature/unit) to cover the corrected behaviour and update API documentation if the contract changes.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-027` – Diagnose duplicated generation events (movies/people)
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
+- **Details:**
+  - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
+  - Audit controllers, services, and job listeners for repeated dispatches of generation events.
+  - Inspect queue/log outputs and craft a remediation plan with regression tests.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-028` – Verify priority label sync from TASKS to Issues
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 0.5–1 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Confirm whether the `docs/issue/TASKS.md` → GitHub Issues sync workflow can attach labels reflecting each task's priority.
+- **Details:**
+  - Review the current sync workflow to see if priority metadata is transmitted.
+  - Define mapping between priority icons (`🔴/🟡/🟢`) and GitHub Issue labels.
+  - Propose required adjustments (if any) and document the updated process.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-029` – Standardise tests around AAA or GWT
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2–3 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Analyse and unify the structure of unit/feature tests, choosing between Arrange-Act-Assert (AAA) and Given-When-Then (GWT).
+- **Details:**
+  - Gather reference material covering AAA and GWT (pros/cons, PHP or Laravel-oriented examples).
+  - Produce a concise comparison and recommendation tailored to MovieMind API.
+  - Draft a refactor plan for existing tests (file order, scope, effort).
+  - Update PL/EN testing guidelines and add supporting documentation if warranted.
+  - Evaluate the “three-line test” helper approach (Given/When/Then expressed via named helper methods) as a candidate pattern.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-030` – Document the “three-line test” technique
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low
+- **Estimated time:** 1–2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Collect references and produce a knowledge document describing the practice of structuring tests with only three helper calls (Given/When/Then).
+- **Details:**
+  - Gather sources (articles, PHP/Laravel examples) discussing “three-line” / “three-act” tests.
+  - Create a PL/EN tutorial in `docs/knowledge/tutorials/` explaining the technique, code samples, benefits, and trade-offs.
+  - Suggest naming conventions for helper methods (`given*`, `when*`, `then*`) and guidance for PHPUnit integration.
+  - Link the document with `TASK-029` and update testing guidelines once the approach is adopted.
+- **Dependencies:** `TASK-029`
+- **Created:** 2025-11-10
+
+---
+
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` – OpenAI integration repair
@@ -468,7 +599,7 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 12  
+- **Active:** 13  
 - **Completed:** 6  
 - **Cancelled:** 0  
 - **In progress:** 2

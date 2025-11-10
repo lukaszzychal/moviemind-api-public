@@ -17,6 +17,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Laravel\Pennant\Feature;
 
 /**
  * Real Generate Person Job - calls actual AI API for production.
@@ -101,17 +102,27 @@ class RealGeneratePersonJob implements ShouldQueue
             ?? sprintf('Regenerated biography for %s via RealGeneratePersonJob.', $person->name);
 
         $locale = $this->resolveLocale();
-        $contextTag = $this->determineContextTag($person, $locale);
-
-        $bio = $this->persistBio($person, $locale, $contextTag, [
-            'text' => (string) $biography,
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
-        ]);
+        $bio = $this->shouldUpdateBaseline($person, $locale)
+            ? $this->updateBaselineBio($person, $locale, [
+                'text' => (string) $biography,
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+            ])
+            : $this->persistBio(
+                $person,
+                $locale,
+                $this->determineContextTag($person, $locale),
+                [
+                    'text' => (string) $biography,
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                ]
+            );
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
-        $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextTag);
+        $contextForCache = $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag;
+        $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextForCache);
     }
 
     private function updateCache(
@@ -240,6 +251,48 @@ class RealGeneratePersonJob implements ShouldQueue
         ], $attributes));
     }
 
+    private function shouldUpdateBaseline(Person $person, Locale $locale): bool
+    {
+        if (! $this->baselineLockingEnabled() || $this->baselineBioId === null || $this->contextTag !== null) {
+            return false;
+        }
+
+        $baseline = $this->getBaselineBio($person);
+
+        if (! $baseline instanceof PersonBio) {
+            return false;
+        }
+
+        if ($this->locale !== null && strtolower($baseline->locale->value) !== strtolower($locale->value)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function getBaselineBio(Person $person): ?PersonBio
+    {
+        $bio = $person->bios->firstWhere('id', $this->baselineBioId);
+
+        return $bio instanceof PersonBio ? $bio : PersonBio::find($this->baselineBioId);
+    }
+
+    private function updateBaselineBio(Person $person, Locale $locale, array $attributes): PersonBio
+    {
+        $baseline = $this->getBaselineBio($person);
+
+        if (! $baseline instanceof PersonBio) {
+            return $this->persistBio($person, $locale, $this->determineContextTag($person, $locale), $attributes);
+        }
+
+        $baseline->fill(array_merge($attributes, [
+            'locale' => $locale->value,
+        ]));
+        $baseline->save();
+
+        return $baseline->fresh();
+    }
+
     public function failed(\Throwable $exception): void
     {
         Log::error('RealGeneratePersonJob permanently failed', [
@@ -329,15 +382,26 @@ class RealGeneratePersonJob implements ShouldQueue
         ]);
 
         $locale = $this->resolveLocale();
-        $contextTag = $this->determineContextTag($person, $locale);
+        $bio = $this->shouldUpdateBaseline($person, $locale)
+            ? $this->updateBaselineBio($person, $locale, [
+                'text' => (string) $biography,
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+            ])
+            : $this->persistBio(
+                $person,
+                $locale,
+                $this->determineContextTag($person, $locale),
+                [
+                    'text' => (string) $biography,
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                ]
+            );
 
-        $bio = $this->persistBio($person, $locale, $contextTag, [
-            'text' => (string) $biography,
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
-        ]);
+        $contextForCache = $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag;
 
-        return [$person->fresh(['bios']), $bio, $locale->value, $contextTag];
+        return [$person->fresh(['bios']), $bio, $locale->value, $contextForCache];
     }
 
     private function promoteDefaultIfEligible(Person $person, PersonBio $bio): void
@@ -395,5 +459,10 @@ class RealGeneratePersonJob implements ShouldQueue
                 Cache::forget('person:'.$slug.':bio:'.$bioId);
             }
         }
+    }
+
+    private function baselineLockingEnabled(): bool
+    {
+        return Feature::active('ai_generation_baseline_locking');
     }
 }

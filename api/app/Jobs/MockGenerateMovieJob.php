@@ -16,6 +16,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Laravel\Pennant\Feature;
 
 /**
  * Mock Generate Movie Job - simulates AI generation for development/testing.
@@ -148,21 +149,35 @@ class MockGenerateMovieJob implements ShouldQueue
     {
         $movie->loadMissing('descriptions');
         $locale = $this->resolveLocale();
-        $contextTag = $this->determineContextTag($movie, $locale);
-
-        $description = $this->persistDescription($movie, $locale, $contextTag, [
-            'text' => sprintf(
-                'Regenerated description for %s on %s (MockGenerateMovieJob).',
-                $movie->title,
-                now()->toIso8601String()
-            ),
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => 'mock-ai-1',
-        ]);
+        $description = $this->shouldUpdateBaseline($movie, $locale)
+            ? $this->updateBaselineDescription($movie, $locale, [
+                'text' => sprintf(
+                    'Regenerated description for %s on %s (MockGenerateMovieJob).',
+                    $movie->title,
+                    now()->toIso8601String()
+                ),
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => 'mock-ai-1',
+            ])
+            : $this->persistDescription(
+                $movie,
+                $locale,
+                $this->determineContextTag($movie, $locale),
+                [
+                    'text' => sprintf(
+                        'Regenerated description for %s on %s (MockGenerateMovieJob).',
+                        $movie->title,
+                        now()->toIso8601String()
+                    ),
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => 'mock-ai-1',
+                ]
+            );
 
         $this->promoteDefaultIfEligible($movie, $description);
         $this->invalidateMovieCaches($movie);
-        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextTag);
+        $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextForCache);
     }
 
     private function updateCache(
@@ -256,6 +271,50 @@ class MockGenerateMovieJob implements ShouldQueue
             'locale' => $locale->value,
             'context_tag' => $contextTag,
         ], $attributes));
+    }
+
+    private function shouldUpdateBaseline(Movie $movie, Locale $locale): bool
+    {
+        if (! $this->baselineLockingEnabled() || $this->baselineDescriptionId === null || $this->contextTag !== null) {
+            return false;
+        }
+
+        $baseline = $this->getBaselineDescription($movie);
+
+        if (! $baseline instanceof MovieDescription) {
+            return false;
+        }
+
+        if ($this->locale !== null && strtolower($baseline->locale->value) !== strtolower($locale->value)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function getBaselineDescription(Movie $movie): ?MovieDescription
+    {
+        $description = $movie->descriptions->firstWhere('id', $this->baselineDescriptionId);
+
+        return $description instanceof MovieDescription
+            ? $description
+            : MovieDescription::find($this->baselineDescriptionId);
+    }
+
+    private function updateBaselineDescription(Movie $movie, Locale $locale, array $attributes): MovieDescription
+    {
+        $baseline = $this->getBaselineDescription($movie);
+
+        if (! $baseline instanceof MovieDescription) {
+            return $this->persistDescription($movie, $locale, $this->determineContextTag($movie, $locale), $attributes);
+        }
+
+        $baseline->fill(array_merge($attributes, [
+            'locale' => $locale->value,
+        ]));
+        $baseline->save();
+
+        return $baseline->fresh();
     }
 
     private function nextContextTag(Movie $movie): string
@@ -366,5 +425,10 @@ class MockGenerateMovieJob implements ShouldQueue
                 Cache::forget('movie:'.$slug.':desc:'.$descriptionId);
             }
         }
+    }
+
+    private function baselineLockingEnabled(): bool
+    {
+        return Feature::active('ai_generation_baseline_locking');
     }
 }
