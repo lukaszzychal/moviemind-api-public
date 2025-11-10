@@ -44,24 +44,6 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
-#### `TASK-007` - Feature Flags Hardening
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Centralizacja konfiguracji flag i dodanie dokumentacji oraz admin endpoints do toggle flags
-- **Szczegóły:** 
-  - Centralizacja flags config (`config/pennant.php`)
-  - Dodanie dokumentacji feature flags
-  - Rozszerzenie admin endpoints o toggle flags (guarded)
-- **Zależności:** Brak
-- **Utworzone:** 2025-01-27
-
----
-
 #### `TASK-008` - Webhooks System (Roadmap)
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
@@ -191,6 +173,28 @@ Każde zadanie ma następującą strukturę:
 ### 🔄 IN_PROGRESS
 
 _Brak aktywnych zadań._
+
+---
+
+### `TASK-007` - Feature Flags Hardening
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** 2025-11-10 10:36
+- **Czas zakończenia:** 2025-11-10 11:08
+- **Czas realizacji:** 00h32m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Centralizacja konfiguracji flag i dodanie dokumentacji oraz admin endpoints do toggle flags
+- **Szczegóły:** 
+  - Centralizacja flags config (`config/pennant.php`)
+  - Dodanie dokumentacji feature flags
+  - Rozszerzenie admin endpoints o toggle flags (guarded)
+- **Zakres wykonanych prac:**
+  - Wprowadzono `BaseFeature` oraz aktualizację wszystkich klas w `app/Features/*` do odczytu wartości z konfiguracji.
+  - Dodano nowy plik `config/pennant.php` z metadanymi (kategorie, domyślne wartości, `togglable`) oraz zabezpieczenia toggle w `FlagController`.
+  - Rozszerzono testy (`AdminFlagsTest`), dokumentację API (OpenAPI, Postman) i przygotowano wpis referencyjny `docs/knowledge/reference/FEATURE_FLAGS*.md`.
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-27
 
 ---
 

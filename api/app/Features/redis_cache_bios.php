@@ -1,14 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features;
 
 /**
  * Cache biografii osób w Redis.
  */
-class redis_cache_bios
-{
-    public function resolve(mixed $scope): mixed
-    {
-        return true;
-    }
-}
+class redis_cache_bios extends BaseFeature {}

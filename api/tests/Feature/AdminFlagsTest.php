@@ -20,7 +20,7 @@ class AdminFlagsTest extends TestCase
     public function test_list_flags(): void
     {
         $res = $this->getJson('/api/v1/admin/flags');
-        $res->assertOk()->assertJsonStructure(['data' => [['name', 'active', 'description']]]);
+        $res->assertOk()->assertJsonStructure(['data' => [['name', 'active', 'description', 'category', 'default', 'togglable']]]);
     }
 
     public function test_toggle_flag(): void
@@ -28,6 +28,18 @@ class AdminFlagsTest extends TestCase
         Feature::deactivate('ai_description_generation');
         $res = $this->postJson('/api/v1/admin/flags/ai_description_generation', ['state' => 'on']);
         $res->assertOk()->assertJson(['name' => 'ai_description_generation', 'active' => true]);
+    }
+
+    public function test_toggle_flag_rejects_unknown_name(): void
+    {
+        $res = $this->postJson('/api/v1/admin/flags/unknown-feature', ['state' => 'on']);
+        $res->assertStatus(404);
+    }
+
+    public function test_toggle_flag_rejects_non_togglable_flag(): void
+    {
+        $res = $this->postJson('/api/v1/admin/flags/hallucination_guard', ['state' => 'off']);
+        $res->assertStatus(403);
     }
 
     public function test_usage_endpoint(): void

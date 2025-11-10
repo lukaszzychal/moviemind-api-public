@@ -1,14 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features;
 
 /**
  * Wymuszanie glosariusza (terminy, których nie tłumaczymy).
  */
-class glossary_enforcement
-{
-    public function resolve(mixed $scope): mixed
-    {
-        return false;
-    }
-}
+class glossary_enforcement extends BaseFeature {}
