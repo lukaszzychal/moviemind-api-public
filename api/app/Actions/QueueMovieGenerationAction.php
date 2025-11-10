@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ContextTag;
+use App\Enums\Locale;
 use App\Events\MovieGenerationRequested;
 use App\Models\Movie;
 use App\Services\JobStatusService;
@@ -13,24 +15,41 @@ class QueueMovieGenerationAction
         private readonly JobStatusService $jobStatusService
     ) {}
 
-    public function handle(string $slug, ?float $confidence = null, ?Movie $existingMovie = null): array
-    {
-        $jobId = (string) Str::uuid();
+    public function handle(
+        string $slug,
+        ?float $confidence = null,
+        ?Movie $existingMovie = null,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): array {
+        $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
+        $normalizedContextTag = $this->normalizeContextTag($contextTag);
+
         $existingMovie ??= Movie::where('slug', $slug)->first();
+
+        if ($existingJob = $this->jobStatusService->findActiveJobForSlug('MOVIE', $slug, $normalizedLocale, $normalizedContextTag)) {
+            return $this->buildExistingJobResponse($slug, $existingJob, $existingMovie, $normalizedLocale, $normalizedContextTag);
+        }
+
+        $jobId = (string) Str::uuid();
         $baselineDescriptionId = $existingMovie?->default_description_id;
 
         $this->jobStatusService->initializeStatus(
             $jobId,
             'MOVIE',
             $slug,
-            $confidence
+            $confidence,
+            $normalizedLocale,
+            $normalizedContextTag
         );
 
         event(new MovieGenerationRequested(
             $slug,
             $jobId,
             existingMovieId: $existingMovie?->id,
-            baselineDescriptionId: $baselineDescriptionId
+            baselineDescriptionId: $baselineDescriptionId,
+            locale: $normalizedLocale,
+            contextTag: $normalizedContextTag
         ));
 
         $response = [
@@ -40,11 +59,52 @@ class QueueMovieGenerationAction
             'slug' => $slug,
             'confidence' => $confidence,
             'confidence_level' => $this->confidenceLabel($confidence),
+            'locale' => $normalizedLocale,
         ];
 
         if ($existingMovie) {
             $response['existing_id'] = $existingMovie->id;
             $response['description_id'] = $baselineDescriptionId;
+        }
+
+        if ($normalizedContextTag !== null) {
+            $response['context_tag'] = $normalizedContextTag;
+        }
+
+        return $response;
+    }
+
+    /**
+     * @param  array{job_id: string, status: string, confidence?: mixed, locale?: string|null, context_tag?: string|null}  $existingJob
+     */
+    private function buildExistingJobResponse(
+        string $slug,
+        array $existingJob,
+        ?Movie $existingMovie = null,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): array {
+        $confidence = $existingJob['confidence'] ?? null;
+        $status = (string) $existingJob['status'];
+        $response = [
+            'job_id' => $existingJob['job_id'],
+            'status' => $status,
+            'message' => 'Generation already queued for movie slug',
+            'slug' => $slug,
+            'confidence' => $confidence,
+            'confidence_level' => $this->confidenceLabel(is_numeric($confidence) ? (float) $confidence : null),
+            'locale' => $existingJob['locale'] ?? $locale ?? Locale::EN_US->value,
+        ];
+
+        if ($existingMovie) {
+            $response['existing_id'] = $existingMovie->id;
+            $response['description_id'] = $existingMovie->default_description_id;
+        }
+
+        if (array_key_exists('context_tag', $existingJob) && $existingJob['context_tag'] !== null) {
+            $response['context_tag'] = $existingJob['context_tag'];
+        } elseif ($contextTag !== null) {
+            $response['context_tag'] = $contextTag;
         }
 
         return $response;
@@ -62,5 +122,40 @@ class QueueMovieGenerationAction
             $confidence >= 0.5 => 'low',
             default => 'very_low',
         };
+    }
+
+    private function normalizeLocale(?string $locale): ?string
+    {
+        if ($locale === null || $locale === '') {
+            return null;
+        }
+
+        $candidate = str_replace('_', '-', $locale);
+        $candidateLower = strtolower($candidate);
+
+        foreach (Locale::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeContextTag(?string $contextTag): ?string
+    {
+        if ($contextTag === null || $contextTag === '') {
+            return null;
+        }
+
+        $candidateLower = strtolower($contextTag);
+
+        foreach (ContextTag::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
     }
 }

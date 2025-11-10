@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\QueueMovieGenerationAction;
+use App\Enums\Locale;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MovieResource;
 use App\Models\Movie;
@@ -71,7 +72,7 @@ class MovieController extends Controller
             return response()->json(['error' => 'Movie not found'], 404);
         }
 
-        $result = $this->queueMovieGenerationAction->handle($slug);
+        $result = $this->queueMovieGenerationAction->handle($slug, locale: Locale::EN_US->value);
 
         return response()->json($result, 202);
     }

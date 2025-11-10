@@ -113,7 +113,7 @@ class GenerateMovieJobTest extends TestCase
         $job->handle();
 
         // Verify movie was created
-        $movie = Movie::where('slug', 'like', 'new-movie-test%')->first();
+        $movie = Movie::where('slug', 'new-movie-test')->first();
         $this->assertNotNull($movie);
         $this->assertDatabaseCount('movies', 1);
         $this->assertEquals(1, $movie->descriptions()->count());
@@ -121,6 +121,7 @@ class GenerateMovieJobTest extends TestCase
             $movie->default_description_id,
             $movie->descriptions()->first()->id
         );
+        $this->assertSame('en-US', $movie->descriptions()->first()->locale->value);
 
         // Verify cache was updated
         $cached = Cache::get('ai_job:'.$jobId);
@@ -128,6 +129,28 @@ class GenerateMovieJobTest extends TestCase
         $this->assertEquals('DONE', $cached['status']);
         $this->assertEquals($movie->id, $cached['id']);
         $this->assertEquals($movie->default_description_id, $cached['description_id']);
+        $this->assertEquals('en-US', $cached['locale']);
+        $this->assertEquals('DEFAULT', $cached['context_tag']);
+        $this->assertEquals('new-movie-test', $cached['requested_slug']);
+    }
+
+    public function test_job_respects_provided_locale_and_context(): void
+    {
+        $jobId = 'test-job-456';
+
+        $job = new MockGenerateMovieJob('localized-movie', $jobId, locale: 'pl-PL', contextTag: 'critical');
+        $job->handle();
+
+        $movie = Movie::where('slug', 'localized-movie')->firstOrFail();
+        $description = $movie->descriptions()->first();
+        $this->assertSame('pl-PL', $description->locale->value);
+        $contextValue = $description->context_tag instanceof \BackedEnum ? $description->context_tag->value : (string) $description->context_tag;
+        $this->assertSame('critical', $contextValue);
+
+        $cached = Cache::get('ai_job:'.$jobId);
+        $this->assertNotNull($cached);
+        $this->assertEquals('pl-PL', $cached['locale']);
+        $this->assertEquals('critical', $cached['context_tag']);
     }
 
     public function test_mock_job_implements_should_queue(): void

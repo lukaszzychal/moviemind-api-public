@@ -33,7 +33,9 @@ class MockGenerateMovieJob implements ShouldQueue
         public string $slug,
         public string $jobId,
         public ?int $existingMovieId = null,
-        public ?int $baselineDescriptionId = null
+        public ?int $baselineDescriptionId = null,
+        public ?string $locale = null,
+        public ?string $contextTag = null
     ) {}
 
     public function handle(): void
@@ -87,11 +89,11 @@ class MockGenerateMovieJob implements ShouldQueue
                     return;
                 }
 
-                [$movie, $description] = $this->createMovieRecord();
+                [$movie, $description, $localeValue, $contextTag] = $this->createMovieRecord();
 
                 $this->promoteDefaultIfEligible($movie, $description);
                 $this->invalidateMovieCaches($movie);
-                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id);
+                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
             });
         } catch (LockTimeoutException $exception) {
             $existing = $this->findExistingMovie();
@@ -106,7 +108,7 @@ class MockGenerateMovieJob implements ShouldQueue
     }
 
     /**
-     * @return array{0: Movie, 1: MovieDescription}
+     * @return array{0: Movie, 1: MovieDescription, 2: string, 3: string}
      */
     private function createMovieRecord(): array
     {
@@ -118,63 +120,142 @@ class MockGenerateMovieJob implements ShouldQueue
         $releaseYear = $parsed['year'] ?? 1999;
         $director = $parsed['director'] ?? 'Mock AI Director';
 
-        $uniqueSlug = Movie::generateSlug($title, $releaseYear, $director);
-
         $movie = Movie::create([
             'title' => (string) $title,
-            'slug' => $uniqueSlug,
+            'slug' => $this->slug,
             'release_year' => $releaseYear,
             'director' => $director,
             'genres' => ['Sci-Fi', 'Action'],
         ]);
 
-        $contextTag = $this->nextContextTag($movie);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($movie, $locale);
 
-        $description = MovieDescription::create([
-            'movie_id' => $movie->id,
-            'locale' => Locale::EN_US,
-            'text' => "Generated description for {$title}. This text was produced by MockGenerateMovieJob (AI_SERVICE=mock).",
-            'context_tag' => $contextTag,
+        $description = $this->persistDescription($movie, $locale, $contextTag, [
+            'text' => sprintf(
+                'Generated description for %s (%s locale). This text was produced by MockGenerateMovieJob (AI_SERVICE=mock).',
+                $title,
+                $locale->value
+            ),
             'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => 'mock-ai-1',
         ]);
 
-        return [$movie->fresh(['descriptions']), $description];
+        return [$movie->fresh(['descriptions']), $description, $locale->value, $contextTag];
     }
 
     private function refreshExistingMovie(Movie $movie): void
     {
         $movie->loadMissing('descriptions');
-        $contextTag = $this->nextContextTag($movie);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($movie, $locale);
 
-        $description = MovieDescription::create([
-            'movie_id' => $movie->id,
-            'locale' => Locale::EN_US,
+        $description = $this->persistDescription($movie, $locale, $contextTag, [
             'text' => sprintf(
                 'Regenerated description for %s on %s (MockGenerateMovieJob).',
                 $movie->title,
                 now()->toIso8601String()
             ),
-            'context_tag' => $contextTag,
             'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => 'mock-ai-1',
         ]);
 
         $this->promoteDefaultIfEligible($movie, $description);
         $this->invalidateMovieCaches($movie);
-        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id);
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextTag);
     }
 
-    private function updateCache(string $status, ?int $id = null, ?string $slug = null, ?int $descriptionId = null): void
-    {
+    private function updateCache(
+        string $status,
+        ?int $id = null,
+        ?string $slug = null,
+        ?int $descriptionId = null,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): void {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'MOVIE',
             'slug' => $slug ?? $this->slug,
+            'requested_slug' => $this->slug,
             'id' => $id,
             'description_id' => $descriptionId,
+            'locale' => $locale ?? $this->locale,
+            'context_tag' => $contextTag ?? $this->contextTag,
         ], now()->addMinutes(15));
+    }
+
+    private function resolveLocale(): Locale
+    {
+        if ($this->locale) {
+            $normalized = $this->normalizeLocale($this->locale);
+            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
+                return $enum;
+            }
+        }
+
+        return Locale::EN_US;
+    }
+
+    private function normalizeLocale(string $locale): ?string
+    {
+        $candidate = str_replace('_', '-', $locale);
+        $candidateLower = strtolower($candidate);
+
+        foreach (Locale::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function determineContextTag(Movie $movie, Locale $locale): string
+    {
+        if ($this->contextTag !== null) {
+            $normalized = $this->normalizeContextTag($this->contextTag);
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        return $this->nextContextTag($movie);
+    }
+
+    private function normalizeContextTag(string $contextTag): ?string
+    {
+        $candidateLower = strtolower($contextTag);
+
+        foreach (ContextTag::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function persistDescription(Movie $movie, Locale $locale, string $contextTag, array $attributes): MovieDescription
+    {
+        $existing = MovieDescription::where('movie_id', $movie->id)
+            ->where('locale', $locale->value)
+            ->where('context_tag', $contextTag)
+            ->first();
+
+        if ($existing) {
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing->fresh();
+        }
+
+        return MovieDescription::create(array_merge([
+            'movie_id' => $movie->id,
+            'locale' => $locale->value,
+            'context_tag' => $contextTag,
+        ], $attributes));
     }
 
     private function nextContextTag(Movie $movie): string
@@ -223,7 +304,10 @@ class MockGenerateMovieJob implements ShouldQueue
             'status' => 'FAILED',
             'entity' => 'MOVIE',
             'slug' => $this->slug,
+            'requested_slug' => $this->slug,
             'error' => $exception->getMessage(),
+            'locale' => $this->locale,
+            'context_tag' => $this->contextTag,
         ], now()->addMinutes(15));
     }
 

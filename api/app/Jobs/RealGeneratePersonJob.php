@@ -34,7 +34,9 @@ class RealGeneratePersonJob implements ShouldQueue
         public string $slug,
         public string $jobId,
         public ?int $existingPersonId = null,
-        public ?int $baselineBioId = null
+        public ?int $baselineBioId = null,
+        public ?string $locale = null,
+        public ?string $contextTag = null
     ) {}
 
     /**
@@ -98,31 +100,38 @@ class RealGeneratePersonJob implements ShouldQueue
         $biography = $aiResponse['biography']
             ?? sprintf('Regenerated biography for %s via RealGeneratePersonJob.', $person->name);
 
-        $contextTag = $this->nextContextTag($person);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($person, $locale);
 
-        $bio = PersonBio::create([
-            'person_id' => $person->id,
-            'locale' => Locale::EN_US,
+        $bio = $this->persistBio($person, $locale, $contextTag, [
             'text' => (string) $biography,
-            'context_tag' => $contextTag,
             'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
         ]);
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
-        $this->updateCache('DONE', $person->id, $bio->id, $person->slug);
+        $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextTag);
     }
 
-    private function updateCache(string $status, ?int $id = null, ?int $bioId = null, ?string $slug = null): void
-    {
+    private function updateCache(
+        string $status,
+        ?int $id = null,
+        ?int $bioId = null,
+        ?string $slug = null,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): void {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'PERSON',
             'slug' => $slug ?? $this->slug,
+            'requested_slug' => $this->slug,
             'id' => $id,
             'bio_id' => $bioId,
+            'locale' => $locale ?? $this->locale,
+            'context_tag' => $contextTag ?? $this->contextTag,
         ], now()->addMinutes(15));
     }
 
@@ -159,6 +168,78 @@ class RealGeneratePersonJob implements ShouldQueue
         return 'ai_job:'.$this->jobId;
     }
 
+    private function resolveLocale(): Locale
+    {
+        if ($this->locale) {
+            $normalized = $this->normalizeLocale($this->locale);
+            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
+                return $enum;
+            }
+        }
+
+        return Locale::EN_US;
+    }
+
+    private function normalizeLocale(string $locale): ?string
+    {
+        $candidate = str_replace('_', '-', $locale);
+        $candidateLower = strtolower($candidate);
+
+        foreach (Locale::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function determineContextTag(Person $person, Locale $locale): string
+    {
+        if ($this->contextTag !== null) {
+            $normalized = $this->normalizeContextTag($this->contextTag);
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        return $this->nextContextTag($person);
+    }
+
+    private function normalizeContextTag(string $contextTag): ?string
+    {
+        $candidateLower = strtolower($contextTag);
+
+        foreach (ContextTag::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function persistBio(Person $person, Locale $locale, string $contextTag, array $attributes): PersonBio
+    {
+        $existing = PersonBio::where('person_id', $person->id)
+            ->where('locale', $locale->value)
+            ->where('context_tag', $contextTag)
+            ->first();
+
+        if ($existing) {
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing->fresh();
+        }
+
+        return PersonBio::create(array_merge([
+            'person_id' => $person->id,
+            'locale' => $locale->value,
+            'context_tag' => $contextTag,
+        ], $attributes));
+    }
+
     public function failed(\Throwable $exception): void
     {
         Log::error('RealGeneratePersonJob permanently failed', [
@@ -172,7 +253,10 @@ class RealGeneratePersonJob implements ShouldQueue
             'status' => 'FAILED',
             'entity' => 'PERSON',
             'slug' => $this->slug,
+            'requested_slug' => $this->slug,
             'error' => $exception->getMessage(),
+            'locale' => $this->locale,
+            'context_tag' => $this->contextTag,
         ], now()->addMinutes(15));
     }
 
@@ -201,11 +285,11 @@ class RealGeneratePersonJob implements ShouldQueue
                     return;
                 }
 
-                [$person, $bio] = $this->createPersonRecord($openAiClient);
+                [$person, $bio, $localeValue, $contextTag] = $this->createPersonRecord($openAiClient);
 
                 $this->promoteDefaultIfEligible($person, $bio);
                 $this->invalidatePersonCaches($person);
-                $this->updateCache('DONE', $person->id, $bio->id, $person->slug);
+                $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $localeValue, $contextTag);
             });
         } catch (LockTimeoutException $exception) {
             $existing = $this->findExistingPerson();
@@ -220,7 +304,7 @@ class RealGeneratePersonJob implements ShouldQueue
     }
 
     /**
-     * @return array{0: Person, 1: PersonBio}
+     * @return array{0: Person, 1: PersonBio, 2: string, 3: string}
      */
     private function createPersonRecord(OpenAiClientInterface $openAiClient): array
     {
@@ -244,18 +328,16 @@ class RealGeneratePersonJob implements ShouldQueue
             'birthplace' => $birthplace,
         ]);
 
-        $contextTag = $this->nextContextTag($person);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($person, $locale);
 
-        $bio = PersonBio::create([
-            'person_id' => $person->id,
-            'locale' => Locale::EN_US,
+        $bio = $this->persistBio($person, $locale, $contextTag, [
             'text' => (string) $biography,
-            'context_tag' => $contextTag,
             'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
         ]);
 
-        return [$person->fresh(['bios']), $bio];
+        return [$person->fresh(['bios']), $bio, $locale->value, $contextTag];
     }
 
     private function promoteDefaultIfEligible(Person $person, PersonBio $bio): void

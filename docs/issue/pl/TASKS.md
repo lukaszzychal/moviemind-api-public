@@ -170,9 +170,41 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-11-10
 ---
 
+#### `TASK-022` - Endpoint listy osób (List People)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Dodanie endpointu `GET /api/v1/people` zwracającego listę osób w formacie analogicznym do listy filmów.
+- **Szczegóły:**
+  - Ujednolicić parametry filtrowania, sortowania i paginacji z endpointem `List movies`.
+  - Zaimplementować kontroler, resource oraz testy feature dla nowego endpointu.
+  - Zaktualizować dokumentację (OpenAPI, Postman, Insomnia) oraz przykłady odpowiedzi.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+---
+
 ### 🔄 IN_PROGRESS
 
-_Brak aktywnych zadań._
+#### `TASK-023` - Integracja i naprawa połączenia z OpenAI
+- **Status:** 🔄 IN_PROGRESS
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 3 godziny
+- **Czas rozpoczęcia:** 2025-11-10 14:00
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Integracja i naprawa połączenia z OpenAI.
+- **Szczegóły:**
+  - Diagnoza błędów komunikacji (timeouty, odpowiedzi HTTP, limity).
+  - Weryfikacja konfiguracji kluczy (`OPENAI_API_KEY`, endpointy, modele).
+  - Aktualizacja serwisów i fallbacków obsługujących OpenAI w API.
+  - Przygotowanie testów (unit/feature) potwierdzających poprawną integrację.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
 
 ---
 
@@ -254,6 +286,25 @@ _Brak aktywnych zadań._
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-021` - Naprawa duplikacji eventów przy generowaniu filmu
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** 2025-11-10 16:05
+- **Czas zakończenia:** 2025-11-10 18:30
+- **Czas realizacji:** 02h25m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Zidentyfikowanie i usunięcie przyczyny wielokrotnego uruchamiania jobów generujących opisy filmów oraz duplikowania opisów w bazie dla endpointu `GET /api/v1/movies/{movieSlug}`.
+- **Szczegóły:**
+  - Reprodukcja błędu i analiza źródeł eventów (kontroler, listener, job).
+  - Poprawa logiki wyzwalania eventów/jobs tak, aby każdy opis powstawał tylko raz.
+  - Dodanie testów regresyjnych (unit/feature) zabezpieczających przed ponownym duplikowaniem.
+  - Weryfikacja skutków ubocznych (np. kolejka Horizon, zapisy w bazie) i aktualizacja dokumentacji jeśli potrzebna.
+- **Zakres wykonanych prac:**
+  - Wymuszenie utrzymania żądanego sluga przy tworzeniu encji i powiązanych opisów/bio.
+  - Obsługa parametrów `locale` i `context_tag` w akcjach, eventach, JobStatusService oraz jobach generujących.
+  - Dodanie mechanizmu upsertu opisów/bio per `locale`+`context_tag` oraz rozszerzenie testów feature/unit (Generate API, MissingEntity, job listeners) potwierdzających brak duplikacji i poprawne przekazywanie parametrów.
 
 ### `TASK-021` - Refaktoryzacja FlagController
 - **Status:** ✅ COMPLETED
@@ -457,10 +508,10 @@ _Brak aktywnych zadań._
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 11
+- **Aktywne:** 12
 - **Zakończone:** 7
 - **Anulowane:** 0
-- **W trakcie:** 0
+- **W trakcie:** 2
 
 ---
 

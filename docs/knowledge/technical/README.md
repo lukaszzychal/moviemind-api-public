@@ -31,6 +31,7 @@ Ten katalog zawiera dokumenty **analityczne**, **techniczne** i **PO** (Product 
 - `JOBS_ENDPOINT_ANALYSIS.md` - Analiza bezpieczeństwa endpointu `/api/v1/jobs/{id}`
 - `UUID_V4_EXPLANATION.md` - Wyjaśnienie UUID v4 i nieprzewidywalności
 - `LOWER_LIKE_EXPLANATION.md` - Wyjaśnienie LOWER() LIKE dla case-insensitive search
+- `LOOSE_ARRAYS_VS_DTO.md` - Porównanie luźnych tablic i DTO dla statusów jobów
 
 ### 🔧 Refaktoryzacja
 - `REFACTORING_PROPOSAL.md` - Propozycja refaktoryzacji
@@ -58,5 +59,5 @@ Dokumenty w tym katalogu służą do:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-04
+**Ostatnia aktualizacja:** 2025-11-10
 

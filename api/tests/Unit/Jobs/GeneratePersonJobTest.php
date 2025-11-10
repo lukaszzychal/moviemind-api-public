@@ -103,6 +103,48 @@ class GeneratePersonJobTest extends TestCase
         $this->assertEquals($person->default_bio_id, $cached['bio_id']);
     }
 
+    public function test_job_creates_person_when_not_exists(): void
+    {
+        $jobId = 'person-job-123';
+
+        $job = new MockGeneratePersonJob('fresh-person', $jobId);
+        $job->handle();
+
+        $person = Person::where('slug', 'fresh-person')->first();
+        $this->assertNotNull($person);
+        $this->assertEquals(1, $person->bios()->count());
+        $bio = $person->bios()->first();
+        $this->assertSame('en-US', $bio->locale->value);
+
+        $cached = Cache::get('ai_job:'.$jobId);
+        $this->assertNotNull($cached);
+        $this->assertEquals('DONE', $cached['status']);
+        $this->assertEquals($person->id, $cached['id']);
+        $this->assertEquals($bio->id, $cached['bio_id']);
+        $this->assertEquals('en-US', $cached['locale']);
+        $this->assertEquals('DEFAULT', $cached['context_tag']);
+        $this->assertEquals('fresh-person', $cached['requested_slug']);
+    }
+
+    public function test_job_respects_person_locale_and_context(): void
+    {
+        $jobId = 'person-job-456';
+
+        $job = new MockGeneratePersonJob('localized-person', $jobId, locale: 'pl-PL', contextTag: 'humorous');
+        $job->handle();
+
+        $person = Person::where('slug', 'localized-person')->firstOrFail();
+        $bio = $person->bios()->first();
+        $this->assertSame('pl-PL', $bio->locale->value);
+        $contextValue = $bio->context_tag instanceof \BackedEnum ? $bio->context_tag->value : (string) $bio->context_tag;
+        $this->assertSame('humorous', $contextValue);
+
+        $cached = Cache::get('ai_job:'.$jobId);
+        $this->assertNotNull($cached);
+        $this->assertEquals('pl-PL', $cached['locale']);
+        $this->assertEquals('humorous', $cached['context_tag']);
+    }
+
     public function test_mock_job_implements_should_queue(): void
     {
         $job = new MockGeneratePersonJob('test', 'job-123');

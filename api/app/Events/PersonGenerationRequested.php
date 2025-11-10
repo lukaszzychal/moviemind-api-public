@@ -13,6 +13,8 @@ class PersonGenerationRequested
         public string $slug,
         public string $jobId,
         public ?int $existingPersonId = null,
-        public ?int $baselineBioId = null
+        public ?int $baselineBioId = null,
+        public ?string $locale = null,
+        public ?string $contextTag = null
     ) {}
 }

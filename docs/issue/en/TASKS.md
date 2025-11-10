@@ -172,6 +172,24 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-022` – People list endpoint parity
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2–3 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Add `GET /api/v1/people` listing endpoint mirroring the data contract of the movie listing.
+- **Details:**
+  - Align filtering, sorting, and pagination parameters with the existing `List movies` endpoint.
+  - Implement controller/resource logic plus feature tests covering the new collection response.
+  - Update documentation artefacts (OpenAPI, Postman, Insomnia) and sample payloads.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
 #### `TASK-015` – Run Postman Newman tests in CI
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -211,7 +229,39 @@ Every entry follows this structure:
 
 ### 🔄 IN_PROGRESS
 
-_No active tasks._
+#### `TASK-023` – OpenAI integration repair
+- **Status:** 🔄 IN_PROGRESS
+- **Priority:** 🔴 High
+- **Estimated time:** 3 h
+- **Start time:** 2025-11-10 14:00
+- **End time:** --
+- **Duration:** --
+- **Execution:** 🤖 AI Agent
+- **Description:** Restore and harden the OpenAI integration.
+- **Details:**
+  - Diagnose communication issues (timeouts, HTTP responses, rate limits).
+  - Verify configuration secrets (`OPENAI_API_KEY`, endpoints, models).
+  - Update the services and fallbacks that mediate OpenAI traffic within the API.
+  - Add unit/feature tests confirming the integration works end-to-end.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+#### `TASK-021` – Fix duplicated generation events
+- **Status:** 🔄 IN_PROGRESS
+- **Priority:** 🔴 High
+- **Estimated time:** 2 h
+- **Start time:** 2025-11-10 16:05
+- **End time:** --
+- **Duration:** --
+- **Execution:** 🤖 AI Agent
+- **Description:** Identify and eliminate the cause of multiple jobs/descriptions being created for the movie generation flow.
+- **Details:**
+  - Reproduce the bug and audit event sources (controller, listener, job).
+  - Adjust event/job triggering so each description is generated exactly once.
+  - Add regression tests (unit/feature) preventing duplicate descriptions.
+  - Verify side effects (Horizon queue, database writes) and update docs if needed.
+- **Dependencies:** none
+- **Created:** 2025-11-10
 
 ---
 
@@ -418,10 +468,10 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 11  
+- **Active:** 12  
 - **Completed:** 6  
 - **Cancelled:** 0  
-- **In progress:** 0
+- **In progress:** 2
 
 ---
 
