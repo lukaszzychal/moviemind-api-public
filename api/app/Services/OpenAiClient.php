@@ -27,11 +27,14 @@ class OpenAiClient implements OpenAiClientInterface
 
     private string $apiUrl;
 
+    private string $healthUrl;
+
     public function __construct()
     {
         $this->apiKey = (string) (config('services.openai.api_key') ?? '');
         $this->model = (string) (config('services.openai.model') ?? self::DEFAULT_MODEL);
         $this->apiUrl = (string) (config('services.openai.url') ?? self::DEFAULT_API_URL);
+        $this->healthUrl = (string) (config('services.openai.health_url') ?? 'https://api.openai.com/v1/models');
     }
 
     /**
@@ -81,6 +84,46 @@ class OpenAiClient implements OpenAiClientInterface
                 'model' => $this->model,
             ];
         });
+    }
+
+    /**
+     * Perform a lightweight health check request against OpenAI.
+     */
+    public function health(): array
+    {
+        if (empty($this->apiKey)) {
+            return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
+        }
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders([
+                    'Authorization' => "Bearer {$this->apiKey}",
+                    'Content-Type' => 'application/json',
+                ])
+                ->get($this->healthUrl.'?limit=1');
+
+            if (! $response->successful()) {
+                return [
+                    'success' => false,
+                    'status' => $response->status(),
+                    'error' => "API returned status {$response->status()}",
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'OpenAI API reachable',
+                'status' => $response->status(),
+                'model' => $this->model,
+                'rate_limit' => $this->extractRateLimitHeaders($response),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     /**
@@ -178,5 +221,19 @@ class OpenAiClient implements OpenAiClientInterface
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
         ]);
+    }
+
+    /**
+     * Extract selected rate limit headers.
+     */
+    private function extractRateLimitHeaders($response): array
+    {
+        $headers = [
+            'requests_remaining' => $response->header('x-ratelimit-remaining-requests') ?? $response->header('x-ratelimit-remaining-requests-1m'),
+            'tokens_remaining' => $response->header('x-ratelimit-remaining-tokens') ?? $response->header('x-ratelimit-remaining-tokens-1m'),
+            'reset_at' => $response->header('x-ratelimit-reset-requests') ?? $response->header('x-ratelimit-reset-tokens'),
+        ];
+
+        return array_filter($headers, static fn ($value) => $value !== null && $value !== '');
     }
 }

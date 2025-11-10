@@ -8,6 +8,7 @@ use App\Models\Person;
 use App\Models\PersonBio;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class GeneratePersonJobTest extends TestCase
@@ -38,6 +39,25 @@ class GeneratePersonJobTest extends TestCase
         $this->assertEquals($jobId, $job->jobId);
         $this->assertEquals(3, $job->tries);
         $this->assertEquals(120, $job->timeout); // Longer timeout for real API
+    }
+
+    public function test_real_person_job_backoff_uses_configuration(): void
+    {
+        Config::set('services.openai.backoff.enabled', true);
+        Config::set('services.openai.backoff.intervals', [10, 20]);
+
+        $job = new RealGeneratePersonJob('test-person', 'job-1');
+
+        $this->assertSame([10, 20], $job->backoff());
+    }
+
+    public function test_real_person_job_backoff_can_be_disabled(): void
+    {
+        Config::set('services.openai.backoff.enabled', false);
+
+        $job = new RealGeneratePersonJob('test-person', 'job-1');
+
+        $this->assertSame([], $job->backoff());
     }
 
     public function test_job_appends_bio_for_existing_person(): void

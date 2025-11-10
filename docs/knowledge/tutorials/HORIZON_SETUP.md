@@ -101,10 +101,10 @@ HORIZON_AUTH_BYPASS_ENVS=local,staging
                 'balanceCooldown' => (int) env('HORIZON_PROD_BALANCE_COOLDOWN', 3),
                 'tries' => (int) env('HORIZON_PROD_TRIES', env('HORIZON_TRIES', 3)),
                 'timeout' => (int) env('HORIZON_PROD_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
-            ],
         ],
-        'local' => [
-            'supervisor-1' => [
+    ],
+    'local' => [
+        'supervisor-1' => [
                 'maxProcesses' => (int) env('HORIZON_LOCAL_MAX_PROCESSES', 3),
                 'tries' => (int) env('HORIZON_LOCAL_TRIES', env('HORIZON_TRIES', 3)),
                 'timeout' => (int) env('HORIZON_LOCAL_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
@@ -114,7 +114,7 @@ HORIZON_AUTH_BYPASS_ENVS=local,staging
     'auth' => [
         'bypass_environments' => explode(',', env('HORIZON_AUTH_BYPASS_ENVS', 'local,staging')),
         'allowed_emails' => array_filter(array_map('trim', explode(',', env('HORIZON_ALLOWED_EMAILS', '')))),
-    ],
+        ],
 ];
 ```
 

@@ -19,4 +19,11 @@ interface OpenAiClientInterface
      * @return array{success: bool, name?: string, birth_date?: string, birthplace?: string, biography?: string, model?: string, error?: string}
      */
     public function generatePerson(string $slug): array;
+
+    /**
+     * Perform a lightweight health check against the OpenAI API.
+     *
+     * @return array{success: bool, message?: string, status?: int, model?: string, rate_limit?: array<string, int|string|null>, error?: string}
+     */
+    public function health(): array;
 }

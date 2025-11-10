@@ -66,7 +66,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"default_description\": {\n        \"id\": 1,\n        \"movie_id\": 1,\n        \"locale\": \"en-US\",\n        \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 1,\n          \"slug\": \"the-wachowskis\",\n          \"name\": \"The Wachowskis\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n            \"title\": \"The Wachowskis\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"entity_id\": 1\n          }\n        }\n      }\n    },\n    {\n      \"id\": 2,\n      \"slug\": \"inception-2010\",\n      \"title\": \"Inception\",\n      \"release_year\": 2010,\n      \"director\": \"Christopher Nolan\",\n      \"default_description\": {\n        \"id\": 2,\n        \"movie_id\": 2,\n        \"locale\": \"en-US\",\n        \"text\": \"A thief enters dreams to steal secrets, facing a final, complex mission.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        },\n        {\n          \"id\": 3,\n          \"name\": \"Thriller\",\n          \"slug\": \"thriller\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 2,\n          \"slug\": \"christopher-nolan\",\n          \"name\": \"Christopher Nolan\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/inception-2010\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n            \"title\": \"Christopher Nolan\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"entity_id\": 2\n          }\n        }\n      }\n    }\n  ]\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"default_description\": {\n        \"id\": 1,\n        \"movie_id\": 1,\n        \"locale\": \"en-US\",\n        \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 1,\n          \"slug\": \"the-wachowskis\",\n          \"name\": \"The Wachowskis\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n            \"title\": \"The Wachowskis\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": 1\n          }\n        }\n      }\n    },\n    {\n      \"id\": 2,\n      \"slug\": \"inception-2010\",\n      \"title\": \"Inception\",\n      \"release_year\": 2010,\n      \"director\": \"Christopher Nolan\",\n      \"default_description\": {\n        \"id\": 2,\n        \"movie_id\": 2,\n        \"locale\": \"en-US\",\n        \"text\": \"A thief enters dreams to steal secrets, facing a final, complex mission.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        },\n        {\n          \"id\": 3,\n          \"name\": \"Thriller\",\n          \"slug\": \"thriller\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 2,\n          \"slug\": \"christopher-nolan\",\n          \"name\": \"Christopher Nolan\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/inception-2010\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n            \"title\": \"Christopher Nolan\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": 2\n          }\n        }\n      }\n    }\n  ]\n}"
             }
           ]
         },
@@ -118,7 +118,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix-1999\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 1,\n    \"movie_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"descriptions\": [\n    {\n      \"id\": 1,\n      \"movie_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"genres\": [\n    {\n      \"id\": 1,\n      \"name\": \"Action\",\n      \"slug\": \"action\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sci-Fi\",\n      \"slug\": \"sci-fi\"\n    }\n  ],\n  \"people\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-wachowskis\",\n      \"name\": \"The Wachowskis\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n    },\n    \"people\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n        \"title\": \"The Wachowskis\",\n        \"role\": \"DIRECTOR\"\n      }\n    ],\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"entity_id\": 1\n      }\n    }\n  }\n}"
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix-1999\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 1,\n    \"movie_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"descriptions\": [\n    {\n      \"id\": 1,\n      \"movie_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"genres\": [\n    {\n      \"id\": 1,\n      \"name\": \"Action\",\n      \"slug\": \"action\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sci-Fi\",\n      \"slug\": \"sci-fi\"\n    }\n  ],\n  \"people\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-wachowskis\",\n      \"name\": \"The Wachowskis\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n    },\n    \"people\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n        \"title\": \"The Wachowskis\",\n        \"role\": \"DIRECTOR\"\n      }\n    ],\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"slug\": 1\n      }\n    }\n  }\n}"
             }
           ]
         },
@@ -318,7 +318,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"the-matrix-1999\"\n}\n"
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"slug\": \"the-matrix-1999\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -377,7 +377,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"annihilation-2018\"\n}\n"
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"slug\": \"annihilation-2018\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -436,7 +436,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"the-wachowskis\"\n}\n"
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"slug\": \"the-wachowskis\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -495,7 +495,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"entity_id\": \"greta-gerwig\"\n}\n"
+              "raw": "{\n  \"entity_type\": \"PERSON\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"modern\",\n  \"slug\": \"greta-gerwig\"\n}\n"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/generate",
@@ -821,6 +821,48 @@
                 }
               ],
               "body": "{\n  \"usage\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "OpenAI health check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health/openai",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                "openai"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 503\", function () { pm.expect([200, 503]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response contains success flag\", function () { pm.expect(json).to.have.property('success'); });"
+                ]
+              }
             }
           ]
         }

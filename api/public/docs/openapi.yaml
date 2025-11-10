@@ -135,6 +135,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Job'
+  /v1/health/openai:
+    get:
+      tags: [Health]
+      summary: Check OpenAI connectivity
+      responses:
+        '200':
+          description: OpenAI reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                  rate_limit:
+                    type: object
+                    additionalProperties: true
+        '503':
+          description: OpenAI unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+                  status:
+                    type: integer
   /v1/admin/flags:
     get:
       tags: [Admin]
