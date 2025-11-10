@@ -151,6 +151,24 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-020` – Audit AI behaviour for non-existent films/people
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Verify what happens when generation is triggered for slugs that don’t map to real-world movies or people.
+- **Details:**
+  - Review current generation jobs (`RealGenerateMovieJob`, `RealGeneratePersonJob`) for creation of fictional entities.
+  - Propose/implement safeguards (e.g. configuration flag, source validation, enhanced logging) to prevent undesired records.
+  - Add regression tests and update documentation (OpenAPI, README) to describe the behaviour explicitly.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+
+---
+
 #### `TASK-015` – Run Postman Newman tests in CI
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
