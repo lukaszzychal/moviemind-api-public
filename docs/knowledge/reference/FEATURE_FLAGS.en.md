@@ -23,11 +23,11 @@ Document the new approach to feature-flag management in MovieMind API: the conso
 
 ### Hardened admin API
 
-- `GET /api/v1/admin/flags` now exposes `category`, `default`, `togglable`.
-- `POST /api/v1/admin/flags/{name}`:
+- `GET /api/v1/admin/flags` now exposes `category`, `default`, `togglable`; values are provided by the `App\Services\FeatureFlag\FeatureFlagManager` service.
+- `POST /api/v1/admin/flags/{name}` (validated by `App\Http\Requests\Admin\SetFlagRequest`):
   - returns `404` for unknown flags,
   - returns `403` when `togglable === false`.
-- `GET /api/v1/admin/flags/usage` only reports flags defined in the configuration.
+- `GET /api/v1/admin/flags/usage` only reports flags defined in the configuration, powered by `App\Services\FeatureFlag\FeatureFlagUsageScanner`.
 
 ### Feature classes integration
 
