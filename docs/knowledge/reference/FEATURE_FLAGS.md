@@ -23,7 +23,7 @@ Udokumentowanie nowego podejścia do zarządzania feature flagami w MovieMind AP
 
 ### Rozszerzone API admina
 
-- `GET /api/v1/admin/flags` zwraca dodatkowe pola `category`, `default`, `togglable`. Dane pochodzą z nowego serwisu `App\Services\FeatureFlag\FeatureFlagManager`.
+- `GET /api/v1/admin/flags` zwraca dodatkowe pola `category`, `default`, `togglable`. Dane pochodzą z serwisu `App\Services\FeatureFlag\FeatureFlagManager`.
 - `POST /api/v1/admin/flags/{name}` (walidacja w `App\Http\Requests\Admin\SetFlagRequest`):
   - `404` dla nieznanych flag,
   - `403` gdy `togglable === false`.
