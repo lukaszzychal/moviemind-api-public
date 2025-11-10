@@ -2,7 +2,7 @@
   "info": {
     "name": "MovieMind API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "item": [
     {
@@ -19,10 +19,12 @@
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test(\"Response contains data array\", function () { pm.expect(json).to.have.property('data').that.is.an('array'); });",
+                  "pm.test(\"Movies expose descriptions_count\", function () { if (Array.isArray(json.data)) { json.data.forEach(function (item) { pm.expect(item).to.have.property('descriptions_count'); }); } });",
                   "if (Array.isArray(json.data) && json.data.length > 0) {",
                   "  const first = json.data[0];",
                   "  if (first.slug) { pm.collectionVariables.set('movieSlug', first.slug); }",
                   "  if (first.id) { pm.collectionVariables.set('movieId', first.id); }",
+                  "  if (first.default_description && first.default_description.id) { pm.collectionVariables.set('movieDefaultDescriptionId', first.default_description.id); }",
                   "}",
                   "pm.collectionVariables.set('moviesLastResponse', JSON.stringify(json));"
                 ]
@@ -66,7 +68,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"default_description\": {\n        \"id\": 1,\n        \"movie_id\": 1,\n        \"locale\": \"en-US\",\n        \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 1,\n          \"slug\": \"the-wachowskis\",\n          \"name\": \"The Wachowskis\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n            \"title\": \"The Wachowskis\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": 1\n          }\n        }\n      }\n    },\n    {\n      \"id\": 2,\n      \"slug\": \"inception-2010\",\n      \"title\": \"Inception\",\n      \"release_year\": 2010,\n      \"director\": \"Christopher Nolan\",\n      \"default_description\": {\n        \"id\": 2,\n        \"movie_id\": 2,\n        \"locale\": \"en-US\",\n        \"text\": \"A thief enters dreams to steal secrets, facing a final, complex mission.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        },\n        {\n          \"id\": 3,\n          \"name\": \"Thriller\",\n          \"slug\": \"thriller\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 2,\n          \"slug\": \"christopher-nolan\",\n          \"name\": \"Christopher Nolan\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/inception-2010\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n            \"title\": \"Christopher Nolan\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": 2\n          }\n        }\n      }\n    }\n  ]\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"release_year\": 1999,\n      \"director\": \"The Wachowskis\",\n      \"descriptions_count\": 2,\n      \"default_description\": {\n        \"id\": 1,\n        \"movie_id\": 1,\n        \"locale\": \"en-US\",\n        \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 1,\n          \"slug\": \"the-wachowskis\",\n          \"name\": \"The Wachowskis\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n            \"title\": \"The Wachowskis\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": \"the-matrix-1999\"\n          }\n        }\n      }\n    },\n    {\n      \"id\": 2,\n      \"slug\": \"inception-2010\",\n      \"title\": \"Inception\",\n      \"release_year\": 2010,\n      \"director\": \"Christopher Nolan\",\n      \"descriptions_count\": 3,\n      \"default_description\": {\n        \"id\": 2,\n        \"movie_id\": 2,\n        \"locale\": \"en-US\",\n        \"text\": \"A thief enters dreams to steal secrets, facing a final, complex mission.\",\n        \"context_tag\": \"modern\",\n        \"origin\": \"GENERATED\",\n        \"ai_model\": \"mock\"\n      },\n      \"genres\": [\n        {\n          \"id\": 1,\n          \"name\": \"Action\",\n          \"slug\": \"action\"\n        },\n        {\n          \"id\": 2,\n          \"name\": \"Sci-Fi\",\n          \"slug\": \"sci-fi\"\n        },\n        {\n          \"id\": 3,\n          \"name\": \"Thriller\",\n          \"slug\": \"thriller\"\n        }\n      ],\n      \"people\": [\n        {\n          \"id\": 2,\n          \"slug\": \"christopher-nolan\",\n          \"name\": \"Christopher Nolan\",\n          \"role\": \"DIRECTOR\",\n          \"character_name\": null\n        }\n      ],\n      \"_links\": {\n        \"self\": {\n          \"href\": \"http://localhost:8000/api/v1/movies/inception-2010\"\n        },\n        \"people\": [\n          {\n            \"href\": \"http://localhost:8000/api/v1/people/christopher-nolan\",\n            \"title\": \"Christopher Nolan\",\n            \"role\": \"DIRECTOR\"\n          }\n        ],\n        \"generate\": {\n          \"href\": \"http://localhost:8000/api/v1/generate\",\n          \"method\": \"POST\",\n          \"body\": {\n            \"entity_type\": \"MOVIE\",\n            \"slug\": \"inception-2010\"\n          }\n        }\n      }\n    }\n  ]\n}"
             }
           ]
         },
@@ -81,6 +83,8 @@
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test(\"Response contains movie id and slug\", function () { pm.expect(json).to.have.property('id'); pm.expect(json).to.have.property('slug'); });",
+                  "pm.test(\"Response exposes descriptions_count\", function () { pm.expect(json).to.have.property('descriptions_count'); });",
+                  "if (json.default_description && json.default_description.id) { pm.collectionVariables.set('movieDefaultDescriptionId', json.default_description.id); }",
                   "pm.collectionVariables.set('moviePayload', JSON.stringify(json));"
                 ]
               }
@@ -118,7 +122,72 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix-1999\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"default_description\": {\n    \"id\": 1,\n    \"movie_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"descriptions\": [\n    {\n      \"id\": 1,\n      \"movie_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"genres\": [\n    {\n      \"id\": 1,\n      \"name\": \"Action\",\n      \"slug\": \"action\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sci-Fi\",\n      \"slug\": \"sci-fi\"\n    }\n  ],\n  \"people\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-wachowskis\",\n      \"name\": \"The Wachowskis\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n    },\n    \"people\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n        \"title\": \"The Wachowskis\",\n        \"role\": \"DIRECTOR\"\n      }\n    ],\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"slug\": 1\n      }\n    }\n  }\n}"
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix-1999\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"descriptions_count\": 2,\n  \"default_description\": {\n    \"id\": 1,\n    \"movie_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"descriptions\": [\n    {\n      \"id\": 1,\n      \"movie_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    },\n    {\n      \"id\": 42,\n      \"movie_id\": 1,\n      \"locale\": \"pl-PL\",\n      \"text\": \"Haker odkrywa prawd\\u0119 o rzeczywisto\\u015bci i prowadzi bunt.\",\n      \"context_tag\": \"critical\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"genres\": [\n    {\n      \"id\": 1,\n      \"name\": \"Action\",\n      \"slug\": \"action\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sci-Fi\",\n      \"slug\": \"sci-fi\"\n    }\n  ],\n  \"people\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-wachowskis\",\n      \"name\": \"The Wachowskis\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n    },\n    \"people\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n        \"title\": \"The Wachowskis\",\n        \"role\": \"DIRECTOR\"\n      }\n    ],\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"slug\": \"the-matrix-1999\"\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get movie by slug (selected description)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "const descriptionIdVar = pm.collectionVariables.get('movieDescriptionId') || pm.collectionVariables.get('movieDefaultDescriptionId');",
+                  "if (descriptionIdVar) {",
+                  "  const descriptionId = Number(descriptionIdVar);",
+                  "  pm.test(\\\"Selected description returned\\\", function () { pm.expect(json).to.have.property('selected_description'); });",
+                  "  if (json.selected_description) {",
+                  "    pm.test(\\\"Selected description id matches\\\", function () { pm.expect(json.selected_description.id).to.eql(descriptionId); });",
+                  "  }",
+                  "}",
+                  "pm.collectionVariables.set('moviePayload', JSON.stringify(json));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{movieSlug}}?description_id={{movieDescriptionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{{movieSlug}}"
+              ],
+              "query": [
+                {
+                  "key": "description_id",
+                  "value": "{{movieDescriptionId}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-matrix-1999\",\n  \"title\": \"The Matrix\",\n  \"release_year\": 1999,\n  \"director\": \"The Wachowskis\",\n  \"descriptions_count\": 2,\n  \"default_description\": {\n    \"id\": 1,\n    \"movie_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"descriptions\": [\n    {\n      \"id\": 1,\n      \"movie_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"A hacker discovers the truth about reality and leads a rebellion.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    },\n    {\n      \"id\": 42,\n      \"movie_id\": 1,\n      \"locale\": \"pl-PL\",\n      \"text\": \"Haker odkrywa prawd\\u0119 o rzeczywisto\\u015bci i prowadzi bunt.\",\n      \"context_tag\": \"critical\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"genres\": [\n    {\n      \"id\": 1,\n      \"name\": \"Action\",\n      \"slug\": \"action\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sci-Fi\",\n      \"slug\": \"sci-fi\"\n    }\n  ],\n  \"people\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-wachowskis\",\n      \"name\": \"The Wachowskis\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\"\n    },\n    \"people\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\",\n        \"title\": \"The Wachowskis\",\n        \"role\": \"DIRECTOR\"\n      }\n    ],\n    \"generate\": {\n      \"href\": \"http://localhost:8000/api/v1/generate\",\n      \"method\": \"POST\",\n      \"body\": {\n        \"entity_type\": \"MOVIE\",\n        \"slug\": \"the-matrix-1999\"\n      }\n    }\n  },\n  \"selected_description\": {\n    \"id\": 42,\n    \"movie_id\": 1,\n    \"locale\": \"pl-PL\",\n    \"text\": \"Haker odkrywa prawd\\u0119 o rzeczywisto\\u015bci i prowadzi bunt.\",\n    \"context_tag\": \"critical\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  }\n}"
             }
           ]
         },
@@ -190,6 +259,8 @@
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test(\"Response contains person id and slug\", function () { pm.expect(json).to.have.property('id'); pm.expect(json).to.have.property('slug'); });",
+                  "pm.test(\"Response exposes bios_count\", function () { pm.expect(json).to.have.property('bios_count'); });",
+                  "if (json.default_bio && json.default_bio.id) { pm.collectionVariables.set('personDefaultBioId', json.default_bio.id); }",
                   "pm.collectionVariables.set('personPayload', JSON.stringify(json));"
                 ]
               }
@@ -227,7 +298,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-wachowskis\",\n  \"name\": \"The Wachowskis\",\n  \"birth_date\": null,\n  \"birthplace\": null,\n  \"default_bio\": null,\n  \"bios\": [],\n  \"movies\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\"\n    },\n    \"movies\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n        \"title\": \"The Matrix\",\n        \"role\": \"DIRECTOR\"\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-wachowskis\",\n  \"name\": \"The Wachowskis\",\n  \"birth_date\": null,\n  \"birthplace\": null,\n  \"bios_count\": 2,\n  \"default_bio\": {\n    \"id\": 10,\n    \"person_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"Visionary filmmaking duo behind The Matrix trilogy.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"bios\": [\n    {\n      \"id\": 10,\n      \"person_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"Visionary filmmaking duo behind The Matrix trilogy.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    },\n    {\n      \"id\": 11,\n      \"person_id\": 1,\n      \"locale\": \"pl-PL\",\n      \"text\": \"Tw\\u00f3rcze rodze\\u0144stwo odpowiedzialne za Matrix i rewolucj\\u0119 w kinie SF.\",\n      \"context_tag\": \"critical\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"movies\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\"\n    },\n    \"movies\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n        \"title\": \"The Matrix\",\n        \"role\": \"DIRECTOR\"\n      }\n    ]\n  }\n}"
             }
           ]
         },
@@ -282,6 +353,71 @@
               "body": "{\n  \"job_id\": \"9fa8c917-7d31-4b54-90d1-2ccf4bd8df52\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for person by slug\",\n  \"slug\": \"greta-gerwig\",\n  \"confidence\": 0.64,\n  \"confidence_level\": \"low\"\n}"
             }
           ]
+        },
+        {
+          "name": "Get person by slug (selected bio)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "const bioIdVar = pm.collectionVariables.get('personBioId') || pm.collectionVariables.get('personDefaultBioId');",
+                  "if (bioIdVar) {",
+                  "  const bioId = Number(bioIdVar);",
+                  "  pm.test(\\\"Selected bio returned\\\", function () { pm.expect(json).to.have.property('selected_bio'); });",
+                  "  if (json.selected_bio) {",
+                  "    pm.test(\\\"Selected bio id matches\\\", function () { pm.expect(json.selected_bio.id).to.eql(bioId); });",
+                  "  }",
+                  "}",
+                  "pm.collectionVariables.set('personPayload', JSON.stringify(json));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{personSlug}}?bio_id={{personBioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "{{personSlug}}"
+              ],
+              "query": [
+                {
+                  "key": "bio_id",
+                  "value": "{{personBioId}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"slug\": \"the-wachowskis\",\n  \"name\": \"The Wachowskis\",\n  \"birth_date\": null,\n  \"birthplace\": null,\n  \"bios_count\": 2,\n  \"default_bio\": {\n    \"id\": 10,\n    \"person_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"Visionary filmmaking duo behind The Matrix trilogy.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"bios\": [\n    {\n      \"id\": 10,\n      \"person_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"Visionary filmmaking duo behind The Matrix trilogy.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    },\n    {\n      \"id\": 11,\n      \"person_id\": 1,\n      \"locale\": \"pl-PL\",\n      \"text\": \"Tw\\u00f3rcze rodze\\u0144stwo odpowiedzialne za Matrix i rewolucj\\u0119 w kinie SF.\",\n      \"context_tag\": \"critical\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"movies\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\"\n    },\n    \"movies\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n        \"title\": \"The Matrix\",\n        \"role\": \"DIRECTOR\"\n      }\n    ]\n  },\n  \"selected_bio\": {\n    \"id\": 11,\n    \"person_id\": 1,\n    \"locale\": \"pl-PL\",\n    \"text\": \"Tw\\u00f3rcze rodze\\u0144stwo odpowiedzialne za Matrix i rewolucj\\u0119 w kinie SF.\",\n    \"context_tag\": \"critical\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  }\n}"
+            }
+          ]
         }
       ]
     },
@@ -299,7 +435,9 @@
                   "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
                   "const json = pm.response.json();",
                   "pm.test(\"Generation is queued\", function () { pm.expect(json.status).to.eql('PENDING'); });",
-                  "pm.test(\"Existing ID present\", function () { pm.expect(json).to.have.property('existing_id'); });"
+                  "pm.test(\"Existing ID present\", function () { pm.expect(json).to.have.property('existing_id'); });",
+                  "pm.test(\"Baseline description ID present\", function () { pm.expect(json).to.have.property('description_id'); });",
+                  "if (json.description_id) { pm.collectionVariables.set('movieDescriptionId', json.description_id); }"
                 ]
               }
             }
@@ -343,7 +481,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"job_id\": \"1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for existing movie slug\",\n  \"slug\": \"the-matrix-1999\",\n  \"existing_id\": 1,\n  \"confidence\": 0.92,\n  \"confidence_level\": \"high\"\n}"
+              "body": "{\n  \"job_id\": \"1f52d5f2-3cdc-4c1b-8726-762ebf49ea4b\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for existing movie slug\",\n  \"slug\": \"the-matrix-1999\",\n  \"existing_id\": 1,\n  \"description_id\": 1,\n  \"confidence\": 0.92,\n  \"confidence_level\": \"high\"\n}"
             }
           ]
         },
@@ -417,7 +555,9 @@
                   "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
                   "const json = pm.response.json();",
                   "pm.test(\"Generation is queued\", function () { pm.expect(json.status).to.eql('PENDING'); });",
-                  "pm.test(\"Existing ID present\", function () { pm.expect(json).to.have.property('existing_id'); });"
+                  "pm.test(\"Existing ID present\", function () { pm.expect(json).to.have.property('existing_id'); });",
+                  "pm.test(\"Baseline bio ID present\", function () { pm.expect(json).to.have.property('bio_id'); });",
+                  "if (json.bio_id) { pm.collectionVariables.set('personBioId', json.bio_id); }"
                 ]
               }
             }
@@ -461,7 +601,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"job_id\": \"5f52d5f2-3cdc-4c1b-8726-762ebf49ea4c\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for existing person slug\",\n  \"slug\": \"the-wachowskis\",\n  \"existing_id\": 2,\n  \"confidence\": 0.88,\n  \"confidence_level\": \"high\"\n}"
+              "body": "{\n  \"job_id\": \"5f52d5f2-3cdc-4c1b-8726-762ebf49ea4c\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for existing person slug\",\n  \"slug\": \"the-wachowskis\",\n  \"existing_id\": 2,\n  \"bio_id\": 10,\n  \"confidence\": 0.88,\n  \"confidence_level\": \"high\"\n}"
             }
           ]
         },
@@ -541,6 +681,7 @@
                   "const json = pm.response.json();",
                   "if (pm.response.code === 200) {",
                   "  pm.test(\"Response has status field\", function () { pm.expect(json).to.have.property('status'); });",
+                  "  if (json.status !== 'UNKNOWN') { pm.test(\"Response exposes entity_id\", function () { pm.expect(json).to.have.property('entity_id'); }); }",
                   "} else {",
                   "  pm.test(\"Unknown job response\", function () { pm.expect(json.status).to.eql('UNKNOWN'); });",
                   "}"
@@ -580,7 +721,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"job_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"PENDING\",\n  \"entity\": \"MOVIE\",\n  \"slug\": \"annihilation-2018\",\n  \"confidence\": 0.78\n}"
+              "body": "{\n  \"job_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"PENDING\",\n  \"entity\": \"MOVIE\",\n  \"entity_id\": 1,\n  \"slug\": \"annihilation-2018\",\n  \"confidence\": 0.78\n}"
             },
             {
               "name": "404 Unknown job",
@@ -893,6 +1034,26 @@
     {
       "key": "jobId",
       "value": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    },
+    {
+      "key": "movieDefaultDescriptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "movieDescriptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "personDefaultBioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "personBioId",
+      "value": "",
       "type": "string"
     }
   ]

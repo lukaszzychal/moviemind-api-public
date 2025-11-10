@@ -23,7 +23,6 @@ Every entry follows this structure:
 
 ### ⏳ PENDING
 
-#### `TASK-006` – Improve Postman collection
 #### `TASK-007` – Feature flag hardening
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -189,7 +188,27 @@ Every entry follows this structure:
 
 ---
 
+### 🔄 IN_PROGRESS
+
+_No active tasks._
+
+---
+
 ## ✅ Completed tasks
+
+### `TASK-006` – Improve Postman collection
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟢 Low
+- **Estimated time:** 1–2 h
+- **Start time:** 2025-11-10 09:37  
+- **End time:** 2025-11-10 09:51  
+- **Duration:** 00h14m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Add sample responses, per-request tests, and environment templates for local/staging usage.
+- **Scope completed:**
+  - Extended collection tests to assert `description_id`/`bio_id`, added collection variables, and shipped dedicated `selected` requests.
+  - Refreshed example payloads and the job status response while bumping the collection version to `1.2.0`.
+  - Updated documentation (`docs/postman/README.md`, `docs/postman/README.en.md`) to explain variant flows and the new variables.
 
 ### `TASK-014` – Fix movie HATEOAS links
 - **Status:** ✅ COMPLETED
@@ -302,23 +321,6 @@ Every entry follows this structure:
 - **Execution:** 🤖 AI Agent
 - **Description:** Brought `docs/openapi.yaml` up to date and linked it from `api/README.md`.
 - **Details:** Added realistic response examples, expanded schemas (jobs, feature flags, generation flows), and clarified status codes.
-
----
-
-### `TASK-006` – Improve Postman collection
-- **Status:** ✅ COMPLETED
-- **Priority:** 🟢 Low
-- **Finished:** 2025-11-08
-- **Start time:** 2025-11-08 16:30  
-- **End time:** 2025-11-08 18:45  
-- **Duration:** 00h00m + [2025-11-08 16:30–16:45] + [2025-11-08 17:30–18:45]
-- **Execution:** 🤖 AI Agent
-- **Description:** Add sample responses, tests, and env templates
-- **Scope completed:**
-  - Updated `docs/postman/moviemind-api.postman_collection.json` with request tests, response examples, and shared variables
-  - Added environment templates (`docs/postman/environments/local.postman_environment.json`, `docs/postman/environments/staging.postman_environment.json`)
-  - Documented usage in `docs/postman/README.md`
-- **Notes:** Collection matches `docs/openapi.yaml` and can be executed with Newman (`newman run ...`).
 
 ---
 

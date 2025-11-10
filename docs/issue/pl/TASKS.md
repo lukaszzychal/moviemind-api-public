@@ -150,6 +150,13 @@ Każde zadanie ma następującą strukturę:
   - Zaktualizować dokumentację wdrożeniową (Railway, README, playbooki operacyjne) do nowego obrazu.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+---
+
+### 🔄 IN_PROGRESS
+
+_Brak aktywnych zadań._
+
+---
 
 ### `TASK-002` - Weryfikacja Queue Workers i Horizon
 - **Status:** ✅ COMPLETED
@@ -207,6 +214,20 @@ Każde zadanie ma następującą strukturę:
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-006` - Ulepszenie Postman Collection
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** 2025-11-10 09:37
+- **Czas zakończenia:** 2025-11-10 09:51
+- **Czas realizacji:** 00h14m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Dodanie przykładów odpowiedzi i testów per request oraz environment templates dla local/staging.
+- **Zakres wykonanych prac:**
+  - Rozszerzono testy kolekcji o weryfikację `description_id`/`bio_id`, dodano zmienne kolekcji i żądania typu `selected`.
+  - Zaktualizowano przykładowe odpowiedzi oraz sekcję jobów, podbijając wersję kolekcji do `1.2.0`.
+  - Uzupełniono dokumentację (`docs/postman/README.md`, `docs/postman/README.en.md`) o obsługę wariantów opisów i nowych zmiennych.
 
 ### `TASK-014` - Usprawnienie linków HATEOAS dla filmów
 - **Status:** ✅ COMPLETED
@@ -303,23 +324,6 @@ Każde zadanie ma następującą strukturę:
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Urealnienie specyfikacji `docs/openapi.yaml` i dodanie linków w `api/README.md`.
 - **Szczegóły:** Dodane przykłady odpowiedzi, rozszerzone schematy (joby, flagi, generation), dopasowane statusy 200/202/400/404. Link w `api/README.md` do OpenAPI i Swagger UI.
-
----
-
-### `TASK-006` - Ulepszenie Postman Collection
-- **Status:** ✅ COMPLETED
-- **Priorytet:** 🟢 Niski
-- **Zakończone:** 2025-11-08
-- **Czas rozpoczęcia:** 2025-11-08 16:30
-- **Czas zakończenia:** 2025-11-08 18:45
-- **Czas realizacji:** 00h00m + [2025-11-08 16:30–16:45] + [2025-11-08 17:30–18:45]
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Dodanie przykładów odpowiedzi i testów per request oraz environment templates dla local/staging
-- **Zakres wykonanych prac:**
-  - Zaktualizowano `docs/postman/moviemind-api.postman_collection.json` (nowe testy, przykłady, zmienne)
-  - Dodano szablony środowisk (`docs/postman/environments/local.postman_environment.json`, `docs/postman/environments/staging.postman_environment.json`)
-  - Przygotowano przewodnik użytkowania `docs/postman/README.md`
-- **Uwagi:** Kolekcja jest zgodna z `docs/openapi.yaml` i gotowa do uruchamiania poprzez Newman (`newman run ...`).
 
 ---
 
