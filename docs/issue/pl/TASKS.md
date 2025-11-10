@@ -244,13 +244,13 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 2 godziny
-- **Czas rozpoczęcia:** --
+- **Czas rozpoczęcia:** 2025-11-10 18:03
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
 - **Szczegóły:**
   - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
@@ -314,6 +314,24 @@ Każde zadanie ma następującą strukturę:
   - Zaproponować konwencje nazewnicze metod (`given*`, `when*`, `then*`) oraz wskazówki integracji z PHPUnit.
   - Powiązać dokument z zadaniem `TASK-029` i podlinkować w guideline testów po akceptacji.
 - **Zależności:** `TASK-029`
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Uporządkowanie wniosku, czy utrzymujemy aktualne podejście (pojedynczy opis na kombinację `locale + context_tag`) czy planujemy pełne wersjonowanie wszystkich generacji.
+- **Szczegóły:**
+  - Zsyntetyzować ustalenia z rozmowy (2025-11-10) i kodu (`RealGenerate*Job::persistDescription` – upsert po `(movie_id, locale, context_tag)`).
+  - Opisać konsekwencje obecnej rekomendacji (najnowszy wpis per wariant) oraz potencjalny plan migracji do wersjonowania historii (np. kolumna `version`/`generated_at`, cleanup, zmiany w API i cache).
+  - Przygotować notatkę lub szkic ADR dokumentując aktualną decyzję i warunki ewentualnej przyszłej zmiany.
+- **Zależności:** Powiązane z `TASK-012`, `TASK-024`
 - **Utworzone:** 2025-11-10
 
 ---
