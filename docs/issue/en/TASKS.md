@@ -115,26 +115,6 @@ Every entry follows this structure:
 
 ---
 
-#### `TASK-012` – Lock + multi-description handling for generation
-- **Status:** ⏳ PENDING
-- **Priority:** 🔴 High
-- **Estimated time:** 4–5 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Prevent race conditions during concurrent generation and support multiple descriptions per entity.
-- **Details:**
-  - Add a Redis lock in generation jobs (`Movie`, `Person`) so the first completed job becomes default while others store alternative descriptions.
-  - Update `POST /api/v1/generate` to return `description_id` when available or include tracking details for queued jobs.
-  - Allow `GET /api/v1/movies/{slug}` and `GET /api/v1/people/{slug}` to accept `description_id` for fetching a specific version.
-  - Ensure caching respects `description_id` and invalidates correctly after new descriptions are saved.
-  - Add tests covering parallel generation and new API flows.
-- **Dependencies:** Requires functioning queues and description storage.
-- **Created:** 2025-11-08
-
----
-
 #### `TASK-013` – Horizon access configuration
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -206,6 +186,22 @@ Every entry follows this structure:
   - Updated Postman collection and server status docs to reflect the array of person links.
   - Expanded `HateoasTest` feature coverage to assert `_links.people` structure.
 - **Dependencies:** none
+- **Created:** 2025-11-08
+
+### `TASK-012` – Lock + multi-description handling for generation
+- **Status:** ✅ COMPLETED
+- **Priority:** 🔴 High
+- **Estimated time:** 4–5 h
+- **Start time:** 2025-11-10 08:37
+- **End time:** 2025-11-10 09:06
+- **Duration:** 00h29m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Prevent race conditions during concurrent generation and support multiple descriptions per entity.
+- **Details:**
+  - Added Redis-backed locks and baseline guards to movie/person generation jobs so only the first finisher updates the default description while others persist as alternates.
+  - Extended `POST /api/v1/generate` responses with `existing_id` plus `description_id`/`bio_id` hints for regeneration tracking and updated unit + feature coverage.
+  - Enabled `GET /api/v1/movies/{slug}` and `/api/v1/people/{slug}` to accept `description_id`/`bio_id` query params with cache isolation per variant and documented the new behaviour.
+- **Dependencies:** Requires functioning queues and description storage.
 - **Created:** 2025-11-08
 
 ### `TASK-002` – Verify queue workers & Horizon

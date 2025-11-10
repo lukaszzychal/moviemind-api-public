@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContextTag;
 use App\Models\Movie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -61,13 +62,13 @@ class MoviesApiTest extends TestCase
         $index = $this->getJson('/api/v1/movies');
         $slug = $index->json('data.0.slug');
 
-        $this->assertFalse(Cache::has('movie:'.$slug));
+        $this->assertFalse(Cache::has('movie:'.$slug.':desc:default'));
 
         $first = $this->getJson('/api/v1/movies/'.$slug);
         $first->assertOk();
 
-        $this->assertTrue(Cache::has('movie:'.$slug));
-        $this->assertSame($first->json(), Cache::get('movie:'.$slug));
+        $this->assertTrue(Cache::has('movie:'.$slug.':desc:default'));
+        $this->assertSame($first->json(), Cache::get('movie:'.$slug.':desc:default'));
 
         $movieId = $first->json('id');
         Movie::where('id', $movieId)->update(['title' => 'Changed Title']);
@@ -75,5 +76,33 @@ class MoviesApiTest extends TestCase
         $second = $this->getJson('/api/v1/movies/'.$slug);
         $second->assertOk();
         $this->assertSame($first->json(), $second->json());
+    }
+
+    public function test_show_movie_can_select_specific_description(): void
+    {
+        $movie = Movie::with('descriptions')->firstOrFail();
+        $baselineDescriptionId = $movie->default_description_id;
+
+        $altDescription = $movie->descriptions()->create([
+            'locale' => 'en-US',
+            'text' => 'Alternate historical description generated for testing.',
+            'context_tag' => ContextTag::CRITICAL->value,
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+
+        $response = $this->getJson(sprintf(
+            '/api/v1/movies/%s?description_id=%d',
+            $movie->slug,
+            $altDescription->id
+        ));
+
+        $response->assertOk()
+            ->assertJsonPath('selected_description.id', $altDescription->id)
+            ->assertJsonPath('default_description.id', $baselineDescriptionId);
+
+        $cacheKey = $movie->slug.':desc:'.$altDescription->id;
+        $this->assertTrue(Cache::has('movie:'.$cacheKey));
+        $this->assertSame($response->json(), Cache::get('movie:'.$cacheKey));
     }
 }

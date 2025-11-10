@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\QueuePersonGenerationAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PersonResource;
+use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
 use App\Services\HateoasService;
 use Illuminate\Http\JsonResponse;
@@ -24,16 +25,43 @@ class PersonController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        if ($cached = Cache::get($this->cacheKey($slug))) {
+        $bioId = $this->normalizeBioId($request->query('bio_id'));
+        if ($bioId === false) {
+            return response()->json([
+                'error' => 'Invalid bio_id parameter',
+            ], 422);
+        }
+
+        $cacheKey = $this->cacheKey($slug, $bioId);
+
+        if ($cached = Cache::get($cacheKey)) {
             return response()->json($cached);
         }
 
         $person = $this->personRepository->findBySlugWithRelations($slug);
         if ($person) {
-            $payload = PersonResource::make($person)
-                ->additional(['_links' => $this->hateoas->personLinks($person)])
-                ->resolve($request);
-            Cache::put($this->cacheKey($slug), $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));
+            $selectedBio = null;
+            if ($bioId !== null) {
+                $candidate = $person->bios->firstWhere('id', $bioId);
+                if ($candidate instanceof PersonBio) {
+                    $selectedBio = $candidate;
+                }
+
+                if ($selectedBio === null) {
+                    return response()->json(['error' => 'Bio not found for person'], 404);
+                }
+            }
+
+            $resource = PersonResource::make($person)
+                ->additional(['_links' => $this->hateoas->personLinks($person)]);
+
+            $payload = $resource->resolve($request);
+
+            if ($selectedBio) {
+                $payload['selected_bio'] = $selectedBio->toArray();
+            }
+
+            Cache::put($cacheKey, $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));
 
             return response()->json($payload);
         }
@@ -47,8 +75,23 @@ class PersonController extends Controller
         return response()->json($result, 202);
     }
 
-    private function cacheKey(string $slug): string
+    private function cacheKey(string $slug, ?int $bioId = null): string
     {
-        return 'person:'.$slug;
+        $suffix = $bioId !== null ? 'bio:'.$bioId : 'bio:default';
+
+        return 'person:'.$slug.':'.$suffix;
+    }
+
+    private function normalizeBioId(mixed $bioId): null|int|false
+    {
+        if ($bioId === null || $bioId === '') {
+            return null;
+        }
+
+        if (filter_var($bioId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+            return false;
+        }
+
+        return (int) $bioId;
     }
 }

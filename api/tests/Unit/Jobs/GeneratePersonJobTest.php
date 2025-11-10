@@ -80,7 +80,7 @@ class GeneratePersonJobTest extends TestCase
         $person->save();
         $jobId = 'test-job-123';
 
-        $job = new MockGeneratePersonJob('keanu-reeves', $jobId);
+        $job = new MockGeneratePersonJob('keanu-reeves', $jobId, baselineBioId: $originalBio->id);
         $job->handle();
 
         $person->refresh();
@@ -115,5 +115,56 @@ class GeneratePersonJobTest extends TestCase
         $job = new RealGeneratePersonJob('test', 'job-123');
 
         $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $job);
+    }
+
+    public function test_subsequent_job_does_not_override_default_bio_if_baseline_has_changed(): void
+    {
+        $person = Person::create([
+            'name' => 'Keanu Reeves',
+            'slug' => 'keanu-reeves',
+            'birth_date' => '1964-09-02',
+            'birthplace' => 'Beirut, Lebanon',
+        ]);
+        $baseline = PersonBio::create([
+            'person_id' => $person->id,
+            'locale' => 'en-US',
+            'text' => 'Baseline bio',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $person->default_bio_id = $baseline->id;
+        $person->save();
+
+        $firstJob = new MockGeneratePersonJob(
+            'keanu-reeves',
+            'job-first',
+            baselineBioId: $baseline->id
+        );
+        $firstJob->handle();
+
+        $person->refresh();
+        $firstDefault = $person->default_bio_id;
+
+        $secondJob = new MockGeneratePersonJob(
+            'keanu-reeves',
+            'job-second',
+            baselineBioId: $baseline->id
+        );
+        $secondJob->handle();
+
+        $person->refresh();
+
+        $this->assertEquals(3, $person->bios()->count());
+        $this->assertEquals($firstDefault, $person->default_bio_id);
+
+        $secondPayload = Cache::get('ai_job:job-second');
+        $this->assertNotNull($secondPayload);
+        $this->assertSame('DONE', $secondPayload['status']);
+        $this->assertNotEquals(
+            $firstDefault,
+            $secondPayload['bio_id'],
+            'Second job should record alternative bio'
+        );
     }
 }

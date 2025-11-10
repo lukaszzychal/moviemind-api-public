@@ -11,6 +11,8 @@ class PersonGenerationRequested
 
     public function __construct(
         public string $slug,
-        public string $jobId
+        public string $jobId,
+        public ?int $existingPersonId = null,
+        public ?int $baselineBioId = null
     ) {}
 }

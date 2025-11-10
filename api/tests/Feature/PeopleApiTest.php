@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContextTag;
 use App\Models\Person;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -62,13 +63,13 @@ class PeopleApiTest extends TestCase
         }
 
         $this->assertNotNull($personSlug, 'Expected at least one person linked to movies');
-        $this->assertFalse(Cache::has('person:'.$personSlug));
+        $this->assertFalse(Cache::has('person:'.$personSlug.':bio:default'));
 
         $first = $this->getJson('/api/v1/people/'.$personSlug);
         $first->assertOk();
 
-        $this->assertTrue(Cache::has('person:'.$personSlug));
-        $this->assertSame($first->json(), Cache::get('person:'.$personSlug));
+        $this->assertTrue(Cache::has('person:'.$personSlug.':bio:default'));
+        $this->assertSame($first->json(), Cache::get('person:'.$personSlug.':bio:default'));
 
         $personId = $first->json('id');
         Person::where('id', $personId)->update(['name' => 'Changed Name']);
@@ -76,5 +77,46 @@ class PeopleApiTest extends TestCase
         $second = $this->getJson('/api/v1/people/'.$personSlug);
         $second->assertOk();
         $this->assertSame($first->json(), $second->json());
+    }
+
+    public function test_show_person_can_select_specific_bio(): void
+    {
+        $movies = $this->getJson('/api/v1/movies');
+        $movies->assertOk();
+
+        $personSlug = null;
+        foreach ($movies->json('data') as $m) {
+            if (! empty($m['people'][0]['slug'])) {
+                $personSlug = $m['people'][0]['slug'];
+                break;
+            }
+        }
+
+        $this->assertNotNull($personSlug);
+
+        $person = Person::with('bios')->where('slug', $personSlug)->firstOrFail();
+        $baselineBioId = $person->default_bio_id;
+
+        $alternateBio = $person->bios()->create([
+            'locale' => 'en-US',
+            'text' => 'Alternate biography generated for testing.',
+            'context_tag' => ContextTag::CRITICAL->value,
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+
+        $response = $this->getJson(sprintf(
+            '/api/v1/people/%s?bio_id=%d',
+            $personSlug,
+            $alternateBio->id
+        ));
+
+        $response->assertOk()
+            ->assertJsonPath('selected_bio.id', $alternateBio->id)
+            ->assertJsonPath('default_bio.id', $baselineBioId);
+
+        $cacheKey = $personSlug.':bio:'.$alternateBio->id;
+        $this->assertTrue(Cache::has('person:'.$cacheKey));
+        $this->assertSame($response->json(), Cache::get('person:'.$cacheKey));
     }
 }

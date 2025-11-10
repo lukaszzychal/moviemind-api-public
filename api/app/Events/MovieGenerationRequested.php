@@ -11,6 +11,8 @@ class MovieGenerationRequested
 
     public function __construct(
         public string $slug,
-        public string $jobId
+        public string $jobId,
+        public ?int $existingMovieId = null,
+        public ?int $baselineDescriptionId = null
     ) {}
 }

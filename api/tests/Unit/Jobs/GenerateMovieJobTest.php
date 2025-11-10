@@ -81,7 +81,7 @@ class GenerateMovieJobTest extends TestCase
         $movie->save();
         $jobId = 'test-job-123';
 
-        $job = new MockGenerateMovieJob('the-matrix', $jobId);
+        $job = new MockGenerateMovieJob('the-matrix', $jobId, baselineDescriptionId: $originalDescription->id);
         $job->handle();
 
         $movie->refresh();
@@ -142,5 +142,56 @@ class GenerateMovieJobTest extends TestCase
         $job = new RealGenerateMovieJob('test', 'job-123');
 
         $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $job);
+    }
+
+    public function test_subsequent_job_does_not_override_default_if_baseline_has_changed(): void
+    {
+        $movie = Movie::create([
+            'title' => 'The Matrix',
+            'slug' => 'the-matrix',
+            'release_year' => 1999,
+            'director' => 'The Wachowskis',
+        ]);
+        $baseline = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Baseline description',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $movie->default_description_id = $baseline->id;
+        $movie->save();
+
+        $firstJob = new MockGenerateMovieJob(
+            'the-matrix',
+            'job-first',
+            baselineDescriptionId: $baseline->id
+        );
+        $firstJob->handle();
+
+        $movie->refresh();
+        $firstDefault = $movie->default_description_id;
+
+        $secondJob = new MockGenerateMovieJob(
+            'the-matrix',
+            'job-second',
+            baselineDescriptionId: $baseline->id
+        );
+        $secondJob->handle();
+
+        $movie->refresh();
+
+        $this->assertEquals(3, $movie->descriptions()->count());
+        $this->assertEquals($firstDefault, $movie->default_description_id);
+
+        $secondPayload = Cache::get('ai_job:job-second');
+        $this->assertNotNull($secondPayload);
+        $this->assertSame('DONE', $secondPayload['status']);
+        $this->assertNotEquals(
+            $firstDefault,
+            $secondPayload['description_id'],
+            'Second job should record alternative description'
+        );
     }
 }

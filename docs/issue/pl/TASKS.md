@@ -116,26 +116,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-012` - Lock + Multi-Description Handling przy generowaniu
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 4-5 godzin
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
-- **Opis:** Wprowadzenie locka zapobiegającego race condition przy równoległej generacji opisów oraz obsługa wielu opisów per film/osobę.
-- **Szczegóły:**
-  - Dodać blokadę (cache/Redis lock) w jobach generujących (`Movie`, `Person`), aby pierwszy zakończony opis stawał się domyślny, a równoległe joby zapisywały swoje wyniki jako dodatkowe opisy bez nadpisywania domyślnego.
-  - Zmodyfikować endpoint `POST /api/v1/generate`, aby oprócz `job_id` zwracał `description_id` (gdy generacja już istnieje) lub informację o kolejce ze śledzeniem docelowego `description_id`.
-  - Dodać do endpointów `GET /api/v1/movies/{slug}` i `GET /api/v1/people/{slug}` możliwość podania parametru `description_id` w celu zwrócenia konkretnej wersji opisu.
-  - Upewnić się, że cache (show endpoints) respektuje parametr `description_id` i prawidłowo unieważnia się po zapisie nowego opisu.
-  - Dodać testy pokrywające równoległą generację oraz nowe ścieżki API.
-- **Zależności:** Wymaga działających kolejek i storage opisów.
-- **Utworzone:** 2025-11-08
-
----
-
 #### `TASK-013` - Konfiguracja dostępu do Horizon
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -223,6 +203,22 @@ Każde zadanie ma następującą strukturę:
   - Zaktualizowano przykłady HATEOAS w kolekcji Postman oraz dokumentacji serwerowej (PL/EN).
   - Rozszerzono testy feature `HateoasTest` o weryfikację struktury `_links.people`.
 - **Zależności:** Brak
+- **Utworzone:** 2025-11-08
+
+### `TASK-012` - Lock + Multi-Description Handling przy generowaniu
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 4-5 godzin
+- **Czas rozpoczęcia:** 2025-11-10 08:37
+- **Czas zakończenia:** 2025-11-10 09:06
+- **Czas realizacji:** 00h29m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Wprowadzenie blokady zapobiegającej wyścigom podczas równoległej generacji oraz pełna obsługa wielu opisów/bio na entity.
+- **Szczegóły:**
+  - Dodano blokady Redis oraz kontrolę baseline (`description_id` / `bio_id`) w jobach, aby tylko pierwszy zakończony job aktualizował domyślny opis, a kolejne zapisywały alternatywy.
+  - Rozszerzono odpowiedzi `POST /api/v1/generate` o pola `existing_id`, `description_id`/`bio_id` oraz pokryto zmianę testami jednostkowymi i feature.
+  - Endpointy `GET /api/v1/movies/{slug}` i `/api/v1/people/{slug}` otrzymały parametry `description_id`/`bio_id`, izolację cache per wariant oraz zaktualizowaną dokumentację.
+- **Zależności:** Wymaga działających kolejek i storage opisów.
 - **Utworzone:** 2025-11-08
 
 ### `TASK-000` - People - List Endpoint z Filtrowaniem po Role

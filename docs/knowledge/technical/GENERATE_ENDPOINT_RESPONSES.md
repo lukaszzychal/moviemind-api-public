@@ -20,74 +20,83 @@
 
 ## 📤 Odpowiedzi
 
-### **1. ✅ 202 Accepted - Generowanie w kolejce**
+### **1. ✅ 202 Accepted – zadanie w kolejce (nowy entity)**
 
-**Gdy:** Film/Person nie istnieje i flaga jest włączona
+**Gdy:** Film lub osoba nie istnieje, a odpowiednia flaga jest aktywna.
 
 **Status Code:** `202 Accepted`
 
-**Response:**
+**Przykład (MOVIE):**
 ```json
 {
   "job_id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
   "status": "PENDING",
   "message": "Generation queued for movie by slug",
-  "slug": "the-matrix-1999"
+  "slug": "new-movie-slug",
+  "confidence": 0.82,
+  "confidence_level": "medium"
 }
 ```
 
-**Dla PERSON/ACTOR:**
+**Przykład (PERSON/ACTOR):**
 ```json
 {
   "job_id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
   "status": "PENDING",
   "message": "Generation queued for person by slug",
-  "slug": "keanu-reeves"
+  "slug": "new-person-slug",
+  "confidence": 0.76,
+  "confidence_level": "medium"
 }
 ```
 
 **Co się dzieje:**
-- ✅ Sprawdzono czy entity istnieje → nie istnieje
-- ✅ Sprawdzono flagę feature → włączona
-- ✅ Utworzono `job_id` (UUID)
-- ✅ Zapisano status `PENDING` w cache
-- ✅ Wyemitowano Event (`MovieGenerationRequested` / `PersonGenerationRequested`)
-- ✅ Job dodany do kolejki (asynchronicznie)
+- ✅ Walidujemy flagę feature i slug
+- ✅ Tworzymy `job_id` (UUID) oraz zapisujemy status `PENDING` w cache (`ai_job:{job_id}`)
+- ✅ Emitujemy event (`MovieGenerationRequested` / `PersonGenerationRequested`)
+- ✅ Listener wybiera typ joba (Mock/Real) i umieszcza go w kolejce (Redis/Horizon)
 
 ---
 
-### **2. ✅ 200 OK - Entity już istnieje**
+### **2. ✅ 202 Accepted – zadanie w kolejce (entity istnieje)**
 
-**Gdy:** Film/Person już istnieje w bazie
+**Gdy:** Film / osoba już istnieje – zawsze kolejkujemy nową generację, ale od razu zwracamy szczegóły.
 
-**Status Code:** `200 OK`
+**Status Code:** `202 Accepted`
 
 **Response (MOVIE):**
 ```json
 {
-  "job_id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
-  "status": "DONE",
-  "message": "Movie already exists",
+  "job_id": "a40d1cd3-92ad-4a61-86fa-8e8fcfca0b4a",
+  "status": "PENDING",
+  "message": "Generation queued for existing movie slug",
   "slug": "the-matrix-1999",
-  "id": 123
+  "existing_id": 42,
+  "description_id": 314,
+  "confidence": 0.91,
+  "confidence_level": "high"
 }
 ```
 
 **Response (PERSON/ACTOR):**
 ```json
 {
-  "job_id": "7f9d5a7c-6e6c-4f3a-9c5b-3a7f9b8b1e2d",
-  "status": "DONE",
-  "message": "Person already exists",
+  "job_id": "d51fb6a8-4bfe-4f69-aacd-4bc19f420c92",
+  "status": "PENDING",
+  "message": "Generation queued for existing person slug",
   "slug": "keanu-reeves",
-  "id": 456
+  "existing_id": 17,
+  "bio_id": 281,
+  "confidence": 0.88,
+  "confidence_level": "high"
 }
 ```
 
 **Co się dzieje:**
-- ✅ Sprawdzono czy entity istnieje → **istnieje**
-- ✅ Zwrócono od razu (nie dodawaj do kolejki)
-- ✅ Status `DONE` bo nie trzeba generować
+- ✅ Baseline (aktualny `description_id` / `bio_id`) trafia do joba
+- ✅ Job zapisuje nową wersję i używa blokady Redis, aby tylko pierwsza ukończona generacja stała się domyślna
+- ✅ Pozostałe joby zapisują alternatywne wersje (np. inne `context_tag`)
+- ✅ Status w cache po zakończeniu zawiera ID świeżo wygenerowanej wersji
 
 ---
 
@@ -185,7 +194,7 @@ POST /api/v1/generate
 
 ---
 
-### **Scenariusz 2: Film już istnieje**
+### **Scenariusz 2: Film już istnieje (wymuszenie regeneracji)**
 
 ```bash
 POST /api/v1/generate
@@ -195,19 +204,22 @@ POST /api/v1/generate
 }
 ```
 
-**Response (200):**
+**Response (202):**
 ```json
 {
   "job_id": "uuid-here",
-  "status": "DONE",
-  "message": "Movie already exists",
+  "status": "PENDING",
+  "message": "Generation queued for existing movie slug",
   "slug": "existing-movie-slug",
-  "id": 123
+  "existing_id": 123,
+  "description_id": 456
 }
 ```
 
 **Następnie:**
-- Możesz od razu użyć: `GET /api/v1/movies/existing-movie-slug`
+- Job w tle tworzy nową wersję opisu (pozostałe joby zachowają swoje wersje, ale nie nadpiszą domyślnej)
+- Sprawdź status joba → po `DONE` odczytasz finalny `description_id` z cache
+- Użyj `GET /api/v1/movies/existing-movie-slug?description_id={nowy_id}` aby pobrać alternatywną wersję
 
 ---
 
@@ -289,8 +301,8 @@ curl -X POST http://localhost:8000/api/v1/generate \
 
 | Scenariusz | Status Code | Response |
 |------------|-------------|----------|
-| **Nowy film/osoba** | `202 Accepted` | `job_id`, `status: PENDING`, `slug` |
-| **Już istnieje** | `200 OK` | `job_id`, `status: DONE`, `slug`, `id` |
+| **Nowy film/osoba** | `202 Accepted` | `job_id`, `status: PENDING`, `slug`, `confidence`, `confidence_level` |
+| **Entity istnieje (regeneracja)** | `202 Accepted` | `job_id`, `status: PENDING`, `slug`, `existing_id`, `description_id`/`bio_id`, `confidence_level` |
 | **Feature OFF** | `403 Forbidden` | `error: "Feature not available"` |
 | **Błędne dane** | `400 Bad Request` | `error` lub `errors` (walidacja) |
 
@@ -311,5 +323,5 @@ GET /api/v1/jobs/{job_id}
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-01
+**Ostatnia aktualizacja:** 2025-11-10
 

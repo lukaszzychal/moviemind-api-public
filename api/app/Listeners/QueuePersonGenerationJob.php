@@ -19,8 +19,18 @@ class QueuePersonGenerationJob
         AiServiceSelector::validate();
 
         match ($aiService) {
-            'real' => RealGeneratePersonJob::dispatch($event->slug, $event->jobId),
-            'mock' => MockGeneratePersonJob::dispatch($event->slug, $event->jobId),
+            'real' => RealGeneratePersonJob::dispatch(
+                $event->slug,
+                $event->jobId,
+                existingPersonId: $event->existingPersonId,
+                baselineBioId: $event->baselineBioId
+            ),
+            'mock' => MockGeneratePersonJob::dispatch(
+                $event->slug,
+                $event->jobId,
+                existingPersonId: $event->existingPersonId,
+                baselineBioId: $event->baselineBioId
+            ),
             default => throw new \InvalidArgumentException("Invalid AI service: {$aiService}. Must be 'mock' or 'real'."),
         };
     }

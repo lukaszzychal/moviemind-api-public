@@ -50,13 +50,14 @@ class GenerateController extends Controller
 
         $existing = Movie::where('slug', $slug)->first();
 
-        $result = $this->queueMovieGenerationAction->handle($slug, $validation['confidence']);
+        $result = $this->queueMovieGenerationAction->handle($slug, $validation['confidence'], $existing);
 
         if ($existing) {
             $result['message'] = 'Generation queued for existing movie slug';
-            $result['existing_id'] = $existing->id;
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
+        } else {
+            unset($result['existing_id'], $result['description_id']);
         }
 
         return response()->json($result, 202);
@@ -80,13 +81,14 @@ class GenerateController extends Controller
 
         $existing = Person::where('slug', $slug)->first();
 
-        $result = $this->queuePersonGenerationAction->handle($slug, $validation['confidence']);
+        $result = $this->queuePersonGenerationAction->handle($slug, $validation['confidence'], $existing);
 
         if ($existing) {
             $result['message'] = 'Generation queued for existing person slug';
-            $result['existing_id'] = $existing->id;
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
+        } else {
+            unset($result['existing_id'], $result['bio_id']);
         }
 
         return response()->json($result, 202);
