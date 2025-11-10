@@ -1,5 +1,7 @@
 # Postman – MovieMind API
 
+*English version: [README.en.md](./README.en.md)*
+
 ## 📦 Zawartość
 - `moviemind-api.postman_collection.json` – główna kolekcja zapytań
 - `environments/local.postman_environment.json` – szablon środowiska lokalnego
@@ -14,8 +16,14 @@
 
 ## ✅ Testy i zmienne
 - Każde żądanie ma wbudowane testy walidujące kod HTTP i podstawową strukturę JSON.
-- Kluczowe wartości (np. `movieSlug`, `jobId`) są odkładane do zmiennych kolekcji, dzięki czemu kolejne żądania mogą je wykorzystywać.
+- Kluczowe wartości (np. `movieSlug`, `jobId`, `movieDescriptionId`, `personBioId`) są automatycznie zapisywane jako zmienne kolekcji.
+- `movieDescriptionId` / `personBioId` przechowują identyfikatory bazowych opisów/bio i pozwalają odpytać wariant poprzez `description_id` / `bio_id`.
 - Aby zresetować stan, wyczyść zmienne kolekcji w panelu Postmana (**Collections → Variables**).
+
+## 🎯 Warianty opisów i bio
+- Nowe requesty **Get movie by slug (selected description)** oraz **Get person by slug (selected bio)** demonstrują parametry `description_id` / `bio_id`.
+- Najpierw uruchom jedno z żądań generujących (`Generate movie/person (existing slug -> 202)`), aby zapisać baseline ID do zmiennych kolekcji.
+- Następnie wywołaj wariant `GET` z parametrem – odpowiedź zawiera pole `selected_description` lub `selected_bio` z danymi wskazanego wariantu.
 
 ## 🧪 Uruchamianie Newmanem
 ```bash
