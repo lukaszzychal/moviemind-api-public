@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-11-08  
+**Ostatnia aktualizacja:** 2025-11-10  
 **Status:** 🔄 Aktywny
 
 ---
@@ -151,6 +151,25 @@ Każde zadanie ma następującą strukturę:
   - Aktualizacja dokumentacji operacyjnej.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-08
+
+---
+
+#### `TASK-019` - Migracja produkcyjnego obrazu Docker na Distroless
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 3-4 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Zastąpienie alpine’owego obrazu produkcyjnego wersją Distroless od Google w celu zmniejszenia powierzchni ataku.
+- **Szczegóły:**
+  - Wybrać odpowiednią bazę Distroless, która pozwoli uruchomić PHP-FPM, Nginx oraz Supervisora (build wieloetapowy).
+  - Zmodyfikować etapy w `docker/php/Dockerfile`, aby kopiowały artefakty runtime do obrazu Distroless.
+  - Zapewnić działanie Supervisora, Horizona oraz skryptów entrypoint bez powłoki (wektorowa forma `CMD`/`ENTRYPOINT`).
+  - Zaktualizować dokumentację wdrożeniową (Railway, README, playbooki operacyjne) do nowego obrazu.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
 
 ### `TASK-002` - Weryfikacja Queue Workers i Horizon
 - **Status:** ✅ COMPLETED
@@ -384,12 +403,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 10
+- **Aktywne:** 11
 - **Zakończone:** 6
 - **Anulowane:** 0
 - **W trakcie:** 0
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-08
+**Ostatnia aktualizacja:** 2025-11-10
 

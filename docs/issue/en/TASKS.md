@@ -1,6 +1,6 @@
 # 📋 Task Backlog – MovieMind API
 
-**Last updated:** 2025-11-08  
+**Last updated:** 2025-11-10  
 **Status:** 🔄 Active
 
 ---
@@ -150,6 +150,25 @@ Every entry follows this structure:
   - Update operational documentation.
 - **Dependencies:** none
 - **Created:** 2025-11-08
+
+---
+
+#### `TASK-019` – Migrate Docker production image to Distroless
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 3–4 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Replace the Alpine-based production container with a Google Distroless image to shrink the attack surface.
+- **Details:**
+  - Select the appropriate Distroless base capable of running PHP-FPM, Nginx and Supervisor (multi-stage build).
+  - Adjust `docker/php/Dockerfile` stages to copy runtime artifacts into the Distroless image.
+  - Ensure Supervisor, Horizon and entrypoint scripts run without relying on a shell (vector-form `CMD`/`ENTRYPOINT`).
+  - Update deployment docs (Railway, README, ops playbooks) to reflect the new image.
+- **Dependencies:** none
+- **Created:** 2025-11-10
 
 ---
 
@@ -358,11 +377,11 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 10  
+- **Active:** 11  
 - **Completed:** 6  
 - **Cancelled:** 0  
 - **In progress:** 0
 
 ---
 
-**Last updated:** 2025-11-08
+**Last updated:** 2025-11-10
