@@ -255,6 +255,20 @@ _Brak aktywnych zadań._
 
 ## ✅ **Zakończone Zadania**
 
+### `TASK-021` - Refaktoryzacja FlagController
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1 godzina
+- **Czas rozpoczęcia:** 2025-11-10 13:09
+- **Czas zakończenia:** 2025-11-10 13:13
+- **Czas realizacji:** 00h04m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Refaktoryzacja `FlagController` w celu uproszczenia logiki i poprawy czytelności.
+- **Zakres wykonanych prac:**
+  - Dodano serwisy `FeatureFlagManager` oraz `FeatureFlagUsageScanner` i wykorzystano je w kontrolerze.
+  - Wyodrębniono walidację do `SetFlagRequest`.
+  - Uzupełniono dokumentację o opis nowych komponentów.
+
 ### `TASK-006` - Ulepszenie Postman Collection
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🟢 Niski
@@ -444,7 +458,7 @@ _Brak aktywnych zadań._
 ## 📊 **Statystyki**
 
 - **Aktywne:** 11
-- **Zakończone:** 6
+- **Zakończone:** 7
 - **Anulowane:** 0
 - **W trakcie:** 0
 

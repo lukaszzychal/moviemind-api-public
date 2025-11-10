@@ -23,11 +23,11 @@ Udokumentowanie nowego podejścia do zarządzania feature flagami w MovieMind AP
 
 ### Rozszerzone API admina
 
-- `GET /api/v1/admin/flags` zwraca dodatkowe pola `category`, `default`, `togglable`.
-- `POST /api/v1/admin/flags/{name}`:
+- `GET /api/v1/admin/flags` zwraca dodatkowe pola `category`, `default`, `togglable`. Dane pochodzą z nowego serwisu `App\Services\FeatureFlag\FeatureFlagManager`.
+- `POST /api/v1/admin/flags/{name}` (walidacja w `App\Http\Requests\Admin\SetFlagRequest`):
   - `404` dla nieznanych flag,
   - `403` gdy `togglable === false`.
-- `GET /api/v1/admin/flags/usage` filtruje wyniki tylko do flag zdefiniowanych w konfiguracji.
+- `GET /api/v1/admin/flags/usage` filtruje wyniki tylko do flag zdefiniowanych w konfiguracji dzięki `App\Services\FeatureFlag\FeatureFlagUsageScanner`.
 
 ### Integracja z klasami Feature
 
