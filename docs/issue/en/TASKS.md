@@ -21,6 +21,25 @@ Every entry follows this structure:
 
 ## 🎯 Active tasks
 
+### 🤖 Prioritisation function
+
+> **Goal:** keep a consistent playbook for analysing task importance and recommending execution order.
+
+1. **Collect inputs:** status, priority, dependencies, risk of blocking, resource requirements.
+2. **Assess importance:**
+   - 🔴 critical for stability/security → execute first.
+   - 🟡 medium with downstream impact → next in queue.
+   - 🟢 roadmap / optional → schedule after blocking items.
+3. **Check dependencies:** bump tasks that unlock other work.
+4. **Leverage synergy:** group related tasks (CI, security, docs) to reduce overhead.
+5. **Output:** produce an ordered list with short *why* notes (e.g. “unblocks X”, “strengthens tests”, “roadmap item”).
+
+> **Sample report:**  
+> 1. `TASK-007` – centralises feature flags, prerequisite for Horizon protection and AI controls.  
+> 2. `TASK-013` – secures Horizon once flags are in place.  
+> 3. `TASK-020` – AI audit relies on stable flags and Horizon visibility.  
+> …
+
 ### ⏳ PENDING
 
 #### `TASK-007` – Feature flag hardening

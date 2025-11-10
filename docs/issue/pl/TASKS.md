@@ -23,6 +23,25 @@ Każde zadanie ma następującą strukturę:
 
 ## 🎯 **Aktywne Zadania**
 
+### 🤖 Funkcja priorytetyzacji
+
+> **Cel:** zapewnić spójną analizę ważności i kolejności wykonania zadań.
+
+1. **Zbierz dane wejściowe:** status, priorytet, zależności, ryzyko blokady, wymagane zasoby.
+2. **Oceń ważność:**
+   - 🔴 krytyczne dla stabilności/bezpieczeństwa → najwyższy priorytet.
+   - 🟡 średni, ale z wpływem na inne zadania → kolejny w kolejce.
+   - 🟢 roadmapa lub prace opcjonalne → realizuj po zadaniach blokujących.
+3. **Sprawdź zależności:** jeśli zadanie odblokowuje inne, awansuj je wyżej.
+4. **Uwzględnij synergię:** grupuj zadania o podobnym kontekście (np. CI, bezpieczeństwo).
+5. **Wynik:** ułóż listę rekomendowanego porządku + krótka notatka *dlaczego* (np. „odblokowuje X”, „wspiera testy”, „roadmapa”).
+
+> **Przykład raportu:**  
+> 1. `TASK-007` – centralizuje flagi; fundament dla ochrony Horizon i kontroli AI.  
+> 2. `TASK-013` – zabezpiecza panel Horizon po zmianach flag.  
+> 3. `TASK-020` – audyt AI korzysta z ustabilizowanych flag oraz monitoringu Horizon.  
+> …
+
 ### ⏳ PENDING
 
 #### `TASK-007` - Feature Flags Hardening
