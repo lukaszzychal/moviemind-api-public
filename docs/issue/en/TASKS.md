@@ -42,22 +42,6 @@ Every entry follows this structure:
 
 ### ⏳ PENDING
 
-#### `TASK-007` – Feature flag hardening
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 2–3 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
-- **Description:** Centralise flag configuration and document admin endpoints
-- **Details:**
-  - Consolidate config in `config/pennant.php`
-  - Produce feature-flag docs
-  - Extend admin endpoints for toggling (guarded)
-- **Dependencies:** none
-- **Created:** 2025-01-27
-
 ---
 
 #### `TASK-008` – Webhooks system (roadmap)
@@ -232,6 +216,28 @@ _No active tasks._
 ---
 
 ## ✅ Completed tasks
+
+### `TASK-007` – Feature flag hardening
+- **Status:** ✅ COMPLETED
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2–3 h
+- **Start time:** 2025-11-10 10:36
+- **End time:** 2025-11-10 11:08
+- **Duration:** 00h32m (auto)
+- **Execution:** 🤖 AI Agent
+- **Description:** Centralise flag configuration and document admin endpoints
+- **Details:**
+  - Consolidate config in `config/pennant.php`
+  - Produce feature-flag docs
+  - Extend admin endpoints for toggling (guarded)
+- **Scope completed:**
+  - Introduced `BaseFeature` and updated all `app/Features/*` classes to source defaults from configuration.
+  - Added `config/pennant.php` with metadata (categories, defaults, `togglable`) and hardened admin toggles in `FlagController`.
+  - Expanded tests (`AdminFlagsTest`), refreshed API docs (OpenAPI, Postman) and published reference entry `docs/knowledge/reference/FEATURE_FLAGS*.md`.
+- **Dependencies:** none
+- **Created:** 2025-01-27
+
+---
 
 ### `TASK-006` – Improve Postman collection
 - **Status:** ✅ COMPLETED

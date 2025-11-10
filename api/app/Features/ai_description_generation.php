@@ -1,14 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features;
 
-class ai_description_generation
-{
-    /**
-     * Resolve the feature's initial value.
-     */
-    public function resolve(mixed $scope): mixed
-    {
-        return true;
-    }
-}
+class ai_description_generation extends BaseFeature {}

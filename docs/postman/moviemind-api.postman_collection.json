@@ -789,7 +789,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": [\n    {\n      \"name\": \"ai_description_generation\",\n      \"active\": true,\n      \"description\": \"Enables AI-generated movie descriptions\"\n    },\n    {\n      \"name\": \"ai_bio_generation\",\n      \"active\": false,\n      \"description\": \"Enables AI-generated person biographies\"\n    }\n  ]\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"name\": \"ai_description_generation\",\n      \"active\": true,\n      \"description\": \"Enables AI-generated movie descriptions\",\n      \"category\": \"core_ai\",\n      \"default\": true,\n      \"togglable\": true\n    },\n    {\n      \"name\": \"ai_bio_generation\",\n      \"active\": false,\n      \"description\": \"Enables AI-generated person biographies\",\n      \"category\": \"core_ai\",\n      \"default\": true,\n      \"togglable\": true\n    }\n  ]\n}"
             }
           ]
         },

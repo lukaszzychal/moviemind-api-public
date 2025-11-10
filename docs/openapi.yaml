@@ -434,9 +434,15 @@ paths:
                       - name: ai_description_generation
                         active: true
                         description: Enables AI-generated movie/series descriptions.
+                        category: core_ai
+                        default: true
+                        togglable: true
                       - name: ai_bio_generation
                         active: false
                         description: Enables AI-generated person biographies.
+                        category: core_ai
+                        default: true
+                        togglable: true
   /v1/admin/flags/{name}:
     post:
       tags: [Admin]
@@ -651,6 +657,13 @@ components:
         description:
           type: string
           nullable: true
+        category:
+          type: string
+          nullable: true
+        default:
+          type: boolean
+        togglable:
+          type: boolean
     FeatureFlagToggle:
       type: object
       properties:
