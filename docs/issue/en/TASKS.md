@@ -284,13 +284,13 @@ Every entry follows this structure:
 ---
 
 #### `TASK-027` – Diagnose duplicated generation events (movies/people)
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priority:** 🔴 High
 - **Estimated time:** 2 h
-- **Start time:** --
+- **Start time:** 2025-11-10 18:03
 - **End time:** --
 - **Duration:** --
-- **Execution:** TBD
+- **Execution:** 🤖 AI Agent
 - **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
 - **Details:**
   - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
@@ -354,6 +354,24 @@ Every entry follows this structure:
   - Suggest naming conventions for helper methods (`given*`, `when*`, `then*`) and guidance for PHPUnit integration.
   - Link the document with `TASK-029` and update testing guidelines once the approach is adopted.
 - **Dependencies:** `TASK-029`
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-031` – Decide on AI description versioning strategy
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 1–2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Consolidate the decision on whether to keep the current “single record per `locale + context_tag`” model or move towards full versioning of generated descriptions/bios.
+- **Details:**
+  - Summarise the 2025-11-10 discussion and current code behaviour (`RealGenerate*Job::persistDescription` upsert on `(movie_id, locale, context_tag)`).
+  - Outline the implications of sticking with the recommendation (latest record per variant) and sketch a possible migration path to historical versioning (e.g. `version`/`generated_at` column, API/cache updates, data cleanup).
+  - Produce a note or ADR draft that documents the present decision and the conditions for a future change.
+- **Dependencies:** Related to `TASK-012`, `TASK-024`
 - **Created:** 2025-11-10
 
 ---
