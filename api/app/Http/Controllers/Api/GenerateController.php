@@ -26,13 +26,13 @@ class GenerateController extends Controller
         $slug = (string) ($validated['slug'] ?? $validated['entity_id'] ?? '');
 
         return match ($entityType) {
-            'MOVIE' => $this->handleMovieGeneration($slug),
-            'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug),
+            'MOVIE' => $this->handleMovieGeneration($slug, $validated['locale'] ?? null, $validated['context_tag'] ?? null),
+            'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug, $validated['locale'] ?? null, $validated['context_tag'] ?? null),
             default => response()->json(['error' => 'Invalid entity type'], 400),
         };
     }
 
-    private function handleMovieGeneration(string $slug): JsonResponse
+    private function handleMovieGeneration(string $slug, ?string $locale = null, ?string $contextTag = null): JsonResponse
     {
         if (! Feature::active('ai_description_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
@@ -50,10 +50,18 @@ class GenerateController extends Controller
 
         $existing = Movie::where('slug', $slug)->first();
 
-        $result = $this->queueMovieGenerationAction->handle($slug, $validation['confidence'], $existing);
+        $result = $this->queueMovieGenerationAction->handle(
+            $slug,
+            $validation['confidence'],
+            $existing,
+            $locale,
+            $contextTag
+        );
 
         if ($existing) {
-            $result['message'] = 'Generation queued for existing movie slug';
+            if (($result['message'] ?? '') !== 'Generation already queued for movie slug') {
+                $result['message'] = 'Generation queued for existing movie slug';
+            }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
         } else {
@@ -63,7 +71,7 @@ class GenerateController extends Controller
         return response()->json($result, 202);
     }
 
-    private function handlePersonGeneration(string $slug): JsonResponse
+    private function handlePersonGeneration(string $slug, ?string $locale = null, ?string $contextTag = null): JsonResponse
     {
         if (! Feature::active('ai_bio_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
@@ -81,10 +89,18 @@ class GenerateController extends Controller
 
         $existing = Person::where('slug', $slug)->first();
 
-        $result = $this->queuePersonGenerationAction->handle($slug, $validation['confidence'], $existing);
+        $result = $this->queuePersonGenerationAction->handle(
+            $slug,
+            $validation['confidence'],
+            $existing,
+            $locale,
+            $contextTag
+        );
 
         if ($existing) {
-            $result['message'] = 'Generation queued for existing person slug';
+            if (($result['message'] ?? '') !== 'Generation already queued for person slug') {
+                $result['message'] = 'Generation queued for existing person slug';
+            }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
         } else {

@@ -9,6 +9,7 @@ use App\Models\PersonBio;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
 class GeneratePersonJobTest extends TestCase
@@ -103,6 +104,48 @@ class GeneratePersonJobTest extends TestCase
         $this->assertEquals($person->default_bio_id, $cached['bio_id']);
     }
 
+    public function test_job_creates_person_when_not_exists(): void
+    {
+        $jobId = 'person-job-123';
+
+        $job = new MockGeneratePersonJob('fresh-person', $jobId);
+        $job->handle();
+
+        $person = Person::where('slug', 'fresh-person')->first();
+        $this->assertNotNull($person);
+        $this->assertEquals(1, $person->bios()->count());
+        $bio = $person->bios()->first();
+        $this->assertSame('en-US', $bio->locale->value);
+
+        $cached = Cache::get('ai_job:'.$jobId);
+        $this->assertNotNull($cached);
+        $this->assertEquals('DONE', $cached['status']);
+        $this->assertEquals($person->id, $cached['id']);
+        $this->assertEquals($bio->id, $cached['bio_id']);
+        $this->assertEquals('en-US', $cached['locale']);
+        $this->assertEquals('DEFAULT', $cached['context_tag']);
+        $this->assertEquals('fresh-person', $cached['requested_slug']);
+    }
+
+    public function test_job_respects_person_locale_and_context(): void
+    {
+        $jobId = 'person-job-456';
+
+        $job = new MockGeneratePersonJob('localized-person', $jobId, locale: 'pl-PL', contextTag: 'humorous');
+        $job->handle();
+
+        $person = Person::where('slug', 'localized-person')->firstOrFail();
+        $bio = $person->bios()->first();
+        $this->assertSame('pl-PL', $bio->locale->value);
+        $contextValue = $bio->context_tag instanceof \BackedEnum ? $bio->context_tag->value : (string) $bio->context_tag;
+        $this->assertSame('humorous', $contextValue);
+
+        $cached = Cache::get('ai_job:'.$jobId);
+        $this->assertNotNull($cached);
+        $this->assertEquals('pl-PL', $cached['locale']);
+        $this->assertEquals('humorous', $cached['context_tag']);
+    }
+
     public function test_mock_job_implements_should_queue(): void
     {
         $job = new MockGeneratePersonJob('test', 'job-123');
@@ -166,5 +209,85 @@ class GeneratePersonJobTest extends TestCase
             $secondPayload['bio_id'],
             'Second job should record alternative bio'
         );
+    }
+
+    public function test_subsequent_job_updates_same_bio_when_locking_enabled(): void
+    {
+        Feature::activate('ai_generation_baseline_locking');
+
+        $person = Person::create([
+            'name' => 'Keanu Reeves',
+            'slug' => 'keanu-reeves',
+            'birth_date' => '1964-09-02',
+            'birthplace' => 'Beirut, Lebanon',
+        ]);
+        $baseline = PersonBio::create([
+            'person_id' => $person->id,
+            'locale' => 'en-US',
+            'text' => 'Baseline bio',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $person->default_bio_id = $baseline->id;
+        $person->save();
+
+        (new MockGeneratePersonJob(
+            'keanu-reeves',
+            'job-lock-first',
+            baselineBioId: $baseline->id
+        ))->handle();
+
+        $person->refresh();
+        $initialText = $person->bios()->first()->text;
+
+        sleep(1);
+
+        (new MockGeneratePersonJob(
+            'keanu-reeves',
+            'job-lock-second',
+            baselineBioId: $baseline->id
+        ))->handle();
+
+        $person->refresh();
+
+        $this->assertEquals(1, $person->bios()->count());
+        $this->assertNotSame($initialText, $person->bios()->first()->text);
+        $this->assertEquals($baseline->id, $person->default_bio_id);
+
+        Feature::deactivate('ai_generation_baseline_locking');
+    }
+
+    public function test_job_updates_bio_when_locking_enabled(): void
+    {
+        Feature::activate('ai_generation_baseline_locking');
+
+        $person = Person::create([
+            'name' => 'Keanu Reeves',
+            'slug' => 'keanu-reeves',
+            'birth_date' => '1964-09-02',
+            'birthplace' => 'Beirut, Lebanon',
+        ]);
+        $originalBio = PersonBio::create([
+            'person_id' => $person->id,
+            'locale' => 'en-US',
+            'text' => 'Original seeded biography.',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $person->default_bio_id = $originalBio->id;
+        $person->save();
+
+        (new MockGeneratePersonJob('keanu-reeves', 'job-locking', baselineBioId: $originalBio->id))->handle();
+
+        $person->refresh();
+
+        $this->assertDatabaseCount('people', 1);
+        $this->assertEquals(1, $person->bios()->count());
+        $this->assertEquals($originalBio->id, $person->default_bio_id);
+        $this->assertNotSame('Original seeded biography.', $person->bios()->first()->text);
+
+        Feature::deactivate('ai_generation_baseline_locking');
     }
 }

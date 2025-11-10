@@ -26,11 +26,14 @@ Ten katalog zawiera dokumenty **analityczne**, **techniczne** i **PO** (Product 
 - `HORIZON_DASHBOARD_VS_WORKER.md` - Porównanie Horizon Dashboard vs Worker
 - `HORIZON_ROUTES_EXPLANATION.md` - Wyjaśnienie routingu Horizon
 - `HORIZON_NOT_SHOWING_JOBS.md` - Rozwiązywanie problemów z Horizon
+- `AI_BASELINE_LOCKING_PLAN.md` - Plan dalszych prac nad lockami baseline w jobach
 
 ### 🔍 Analizy Techniczne
 - `JOBS_ENDPOINT_ANALYSIS.md` - Analiza bezpieczeństwa endpointu `/api/v1/jobs/{id}`
 - `UUID_V4_EXPLANATION.md` - Wyjaśnienie UUID v4 i nieprzewidywalności
 - `LOWER_LIKE_EXPLANATION.md` - Wyjaśnienie LOWER() LIKE dla case-insensitive search
+- `LOOSE_ARRAYS_VS_DTO.md` - Porównanie luźnych tablic i DTO dla statusów jobów
+- `OPENAI_RESPONSES_API.md` - Różnice między OpenAI Responses API a Chat Completions
 
 ### 🔧 Refaktoryzacja
 - `REFACTORING_PROPOSAL.md` - Propozycja refaktoryzacji
@@ -58,5 +61,4 @@ Dokumenty w tym katalogu służą do:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-04
-
+**Ostatnia aktualizacja:** 2025-11-10

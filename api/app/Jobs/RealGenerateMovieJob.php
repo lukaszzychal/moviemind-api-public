@@ -17,6 +17,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Laravel\Pennant\Feature;
 
 /**
  * Real Generate Movie Job - calls actual AI API for production.
@@ -34,7 +35,9 @@ class RealGenerateMovieJob implements ShouldQueue
         public string $slug,
         public string $jobId,
         public ?int $existingMovieId = null,
-        public ?int $baselineDescriptionId = null
+        public ?int $baselineDescriptionId = null,
+        public ?string $locale = null,
+        public ?string $contextTag = null
     ) {}
 
     /**
@@ -110,31 +113,48 @@ class RealGenerateMovieJob implements ShouldQueue
         $descriptionText = $aiResponse['description']
             ?? sprintf('Regenerated description for %s via RealGenerateMovieJob.', $movie->title);
 
-        $contextTag = $this->nextContextTag($movie);
-
-        $description = MovieDescription::create([
-            'movie_id' => $movie->id,
-            'locale' => Locale::EN_US,
-            'text' => (string) $descriptionText,
-            'context_tag' => $contextTag,
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
-        ]);
+        $locale = $this->resolveLocale();
+        $description = $this->shouldUpdateBaseline($movie, $locale)
+            ? $this->updateBaselineDescription($movie, $locale, [
+                'text' => (string) $descriptionText,
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+            ])
+            : $this->persistDescription(
+                $movie,
+                $locale,
+                $this->determineContextTag($movie, $locale),
+                [
+                    'text' => (string) $descriptionText,
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                ]
+            );
 
         $this->promoteDefaultIfEligible($movie, $description);
         $this->invalidateMovieCaches($movie);
-        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id);
+        $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextForCache);
     }
 
-    private function updateCache(string $status, ?int $id = null, ?string $slug = null, ?int $descriptionId = null): void
-    {
+    private function updateCache(
+        string $status,
+        ?int $id = null,
+        ?string $slug = null,
+        ?int $descriptionId = null,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): void {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'MOVIE',
             'slug' => $slug ?? $this->slug,
+            'requested_slug' => $this->slug,
             'id' => $id,
             'description_id' => $descriptionId,
+            'locale' => $locale ?? $this->locale,
+            'context_tag' => $contextTag ?? $this->contextTag,
         ], now()->addMinutes(15));
     }
 
@@ -171,6 +191,127 @@ class RealGenerateMovieJob implements ShouldQueue
         return 'ai_job:'.$this->jobId;
     }
 
+    private function resolveLocale(): Locale
+    {
+        if ($this->locale) {
+            $normalized = $this->normalizeLocale($this->locale);
+            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
+                return $enum;
+            }
+        }
+
+        return Locale::EN_US;
+    }
+
+    private function normalizeLocale(string $locale): ?string
+    {
+        $candidate = str_replace('_', '-', $locale);
+        $candidateLower = strtolower($candidate);
+
+        foreach (Locale::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function determineContextTag(Movie $movie, Locale $locale): string
+    {
+        if ($this->contextTag !== null) {
+            $normalized = $this->normalizeContextTag($this->contextTag);
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        return $this->nextContextTag($movie);
+    }
+
+    private function normalizeContextTag(string $contextTag): ?string
+    {
+        $candidateLower = strtolower($contextTag);
+
+        foreach (ContextTag::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function persistDescription(Movie $movie, Locale $locale, string $contextTag, array $attributes): MovieDescription
+    {
+        $existing = MovieDescription::where('movie_id', $movie->id)
+            ->where('locale', $locale->value)
+            ->where('context_tag', $contextTag)
+            ->first();
+
+        if ($existing) {
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing->fresh();
+        }
+
+        return MovieDescription::create(array_merge([
+            'movie_id' => $movie->id,
+            'locale' => $locale->value,
+            'context_tag' => $contextTag,
+        ], $attributes));
+    }
+
+    private function shouldUpdateBaseline(Movie $movie, Locale $locale): bool
+    {
+        if (! $this->baselineLockingEnabled() || $this->baselineDescriptionId === null || $this->contextTag !== null) {
+            return false;
+        }
+
+        $baseline = $this->getBaselineDescription($movie);
+
+        if (! $baseline instanceof MovieDescription) {
+            return false;
+        }
+
+        if ($this->locale !== null && strtolower($baseline->locale->value) !== strtolower($locale->value)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function getBaselineDescription(Movie $movie): ?MovieDescription
+    {
+        $description = $movie->descriptions->firstWhere('id', $this->baselineDescriptionId);
+
+        return $description instanceof MovieDescription
+            ? $description
+            : MovieDescription::find($this->baselineDescriptionId);
+    }
+
+    private function updateBaselineDescription(Movie $movie, Locale $locale, array $attributes): MovieDescription
+    {
+        $baseline = $this->getBaselineDescription($movie);
+
+        if (! $baseline instanceof MovieDescription) {
+            return $this->persistDescription($movie, $locale, $this->determineContextTag($movie, $locale), $attributes);
+        }
+
+        $baseline->fill(array_merge($attributes, [
+            'locale' => $locale->value,
+        ]));
+        $baseline->save();
+
+        return $baseline->fresh();
+    }
+
+    private function baselineLockingEnabled(): bool
+    {
+        return Feature::active('ai_generation_baseline_locking');
+    }
+
     public function failed(\Throwable $exception): void
     {
         Log::error('RealGenerateMovieJob permanently failed', [
@@ -184,7 +325,10 @@ class RealGenerateMovieJob implements ShouldQueue
             'status' => 'FAILED',
             'entity' => 'MOVIE',
             'slug' => $this->slug,
+            'requested_slug' => $this->slug,
             'error' => $exception->getMessage(),
+            'locale' => $this->locale,
+            'context_tag' => $this->contextTag,
         ], now()->addMinutes(15));
     }
 
@@ -201,11 +345,11 @@ class RealGenerateMovieJob implements ShouldQueue
                     return;
                 }
 
-                [$movie, $description] = $this->createMovieRecord($openAiClient);
+                [$movie, $description, $localeValue, $contextTag] = $this->createMovieRecord($openAiClient);
 
                 $this->promoteDefaultIfEligible($movie, $description);
                 $this->invalidateMovieCaches($movie);
-                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id);
+                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
             });
         } catch (LockTimeoutException $exception) {
             $existing = $this->findExistingMovie();
@@ -220,7 +364,7 @@ class RealGenerateMovieJob implements ShouldQueue
     }
 
     /**
-     * @return array{0: Movie, 1: MovieDescription}
+     * @return array{0: Movie, 1: MovieDescription, 2: string, 3: string}
      */
     private function createMovieRecord(OpenAiClientInterface $openAiClient): array
     {
@@ -238,28 +382,38 @@ class RealGenerateMovieJob implements ShouldQueue
         $descriptionText = $aiResponse['description'] ?? "Generated description for {$title}.";
         $genres = $aiResponse['genres'] ?? ['Action', 'Drama'];
 
-        $uniqueSlug = Movie::generateSlug($title, $releaseYear, $director);
-
         $movie = Movie::create([
             'title' => (string) $title,
-            'slug' => $uniqueSlug,
+            'slug' => $this->slug,
             'release_year' => $releaseYear,
             'director' => $director,
             'genres' => $genres,
         ]);
 
-        $contextTag = $this->nextContextTag($movie);
+        $locale = $this->resolveLocale();
+        $description = $this->shouldUpdateBaseline($movie, $locale)
+            ? $this->updateBaselineDescription($movie, $locale, [
+                'text' => (string) $descriptionText,
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+            ])
+            : $this->persistDescription(
+                $movie,
+                $locale,
+                $this->determineContextTag($movie, $locale),
+                [
+                    'text' => (string) $descriptionText,
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                ]
+            );
 
-        $description = MovieDescription::create([
-            'movie_id' => $movie->id,
-            'locale' => Locale::EN_US,
-            'text' => (string) $descriptionText,
-            'context_tag' => $contextTag,
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
-        ]);
+        $this->promoteDefaultIfEligible($movie, $description);
+        $this->invalidateMovieCaches($movie);
+        $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextForCache);
 
-        return [$movie->fresh(['descriptions']), $description];
+        return [$movie->fresh(['descriptions']), $description, $locale->value, $contextForCache];
     }
 
     private function promoteDefaultIfEligible(Movie $movie, MovieDescription $description): void

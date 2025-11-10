@@ -13,6 +13,8 @@ class MovieGenerationRequested
         public string $slug,
         public string $jobId,
         public ?int $existingMovieId = null,
-        public ?int $baselineDescriptionId = null
+        public ?int $baselineDescriptionId = null,
+        public ?string $locale = null,
+        public ?string $contextTag = null
     ) {}
 }

@@ -62,7 +62,7 @@ return [
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
-        'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
+        'url' => env('OPENAI_URL', 'https://api.openai.com/v1/responses'),
         'health_url' => env('OPENAI_HEALTH_URL', 'https://api.openai.com/v1/models'),
         'backoff' => [
             'enabled' => (bool) env('OPENAI_BACKOFF_ENABLED', true),

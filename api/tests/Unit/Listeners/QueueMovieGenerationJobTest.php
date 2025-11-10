@@ -56,4 +56,20 @@ class QueueMovieGenerationJobTest extends TestCase
 
         Queue::assertNotPushed(MockGenerateMovieJob::class);
     }
+
+    public function test_listener_passes_locale_and_context(): void
+    {
+        Config::set('services.ai.service', 'mock');
+
+        $slug = 'the-matrix';
+        $jobId = 'test-job-456';
+        $event = new MovieGenerationRequested($slug, $jobId, locale: 'pl-PL', contextTag: 'modern');
+
+        $listener = new QueueMovieGenerationJob;
+        $listener->handle($event);
+
+        Queue::assertPushed(MockGenerateMovieJob::class, function ($job) {
+            return $job->locale === 'pl-PL' && $job->contextTag === 'modern';
+        });
+    }
 }

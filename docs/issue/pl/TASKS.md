@@ -170,9 +170,172 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-11-10
 ---
 
+#### `TASK-022` - Endpoint listy osób (List People)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Dodanie endpointu `GET /api/v1/people` zwracającego listę osób w formacie analogicznym do listy filmów.
+- **Szczegóły:**
+  - Ujednolicić parametry filtrowania, sortowania i paginacji z endpointem `List movies`.
+  - Zaimplementować kontroler, resource oraz testy feature dla nowego endpointu.
+  - Zaktualizować dokumentację (OpenAPI, Postman, Insomnia) oraz przykłady odpowiedzi.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+---
+
+#### `TASK-024` - Wdrożenie planu baseline locking z dokumentu AI_BASELINE_LOCKING_PLAN.md
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Realizacja i dopracowanie działań opisanych w `docs/knowledge/technical/AI_BASELINE_LOCKING_PLAN.md`.
+- **Szczegóły:**
+  - Zweryfikować konfigurację flagi `ai_generation_baseline_locking` na stagingu/produkcji i przygotować procedurę rollout.
+  - Uzułnić testy (Mock/Real jobs) o warianty z aktywną flagą oraz przypadki związane z cache i slugami.
+  - Dodać metryki/logi do monitorowania trybu baseline locking w Horizon.
+  - Przygotować decyzję rolloutową oraz ewentualny rollback.
+- **Zależności:** TASK-012, TASK-023
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-025` - Standaryzacja flag produktowych i developerskich
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1 godzina
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Uzupełnienie `.cursor/rules/coding-standards.mdc` o zasady korzystania z dwóch typów feature flag (produktowe vs developerskie) oraz aktualizacja powiązanej dokumentacji.
+- **Szczegóły:**
+  - Zdefiniować w sekcji flag rozróżnienie na flagi produktowe (długoterminowe włączanie/wyłączanie funkcji) i flagi developerskie (tymczasowe, domyślnie wyłączone do czasu zakończenia prac).
+  - Opisać lifecycle flag developerskich: tworzenie wraz z rozpoczęciem funkcji, testowanie po ręcznym włączeniu, obowiązkowe usuwanie po wdrożeniu.
+  - Dodać wskazówki kiedy stosować flagi developerskie (każda nowa lub ryzykowna funkcja zaburzająca stabilność) oraz zasady nazewnictwa i dokumentacji.
+  - Zsynchronizować wiedzę w `docs/knowledge/reference/FEATURE_FLAGS*.md` (jeśli wymaga uzupełnienia) i upewnić się, że instrukcje są spójne PL/EN.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-026` - Zbadanie pól zaufania w odpowiedziach kolejkowanych generacji
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Weryfikacja pól `confidence` oraz `confidence_level` zwracanych, gdy endpointy show automatycznie uruchamiają generowanie dla brakujących encji.
+- **Szczegóły:**
+  - Odtworzyć odpowiedź dla `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` w scenariuszu braku encji i kolejki joba.
+  - Zidentyfikować przyczynę wartości `confidence = null` i `confidence_level = unknown` w payloadzie oraz określić oczekiwane wartości.
+  - Dodać testy regresyjne (feature/unit) zabezpieczające poprawione zachowanie oraz zaktualizować dokumentację API, jeśli kontrakt ulegnie zmianie.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
+- **Szczegóły:**
+  - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
+  - Przeanalizować miejsca emisji eventów i listenerów (kontrolery, serwisy, joby) pod kątem wielokrotnego dispatchu.
+  - Zweryfikować liczbę wpisów w logach/kolejce i przygotować propozycję poprawek z testami regresyjnymi.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 0.5-1 godzina
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Sprawdzić, czy mechanizm synchronizacji `docs/issue/TASKS.md` → GitHub Issues obsługuje dodawanie tagów w issue odzwierciedlających priorytet zadań.
+- **Szczegóły:**
+  - Zweryfikować aktualny workflow synchronizacji pod kątem przekazywania informacji o priorytecie.
+  - Ustalić mapowanie priorytetów (`🔴/🟡/🟢`) na tagi/etykiety w GitHub Issues.
+  - Przygotować propozycję zmian (jeśli potrzebne) wraz z dokumentacją procesu.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-029` - Uporządkowanie testów według wzorca AAA lub GWT
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Przeanalizować i ustandaryzować styl testów, wybierając pomiędzy wzorcami Arrange-Act-Assert (AAA) oraz Given-When-Then (GWT).
+- **Szczegóły:**
+  - Zebrać materiał referencyjny dotyczący AAA i GWT (zalety, wady, przykłady w kontekście PHP/Laravel).
+  - Przygotować opracowanie porównujące oba podejścia wraz z rekomendacją dla MovieMind API.
+  - Opracować plan refaktoryzacji istniejących testów (kolejność plików, zakres).
+  - Zaktualizować wytyczne dotyczące testów (PL/EN) i dodać dokumentację, jeśli będzie to zasadne.
+  - Rozważyć zastosowanie techniki „trzech linii” (Given/When/Then w formie metod pomocniczych) jako wariantu rekomendowanego wzorca.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-030` - Opracowanie dokumentu o technice testów „trzech linii”
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Zebrać informacje i przygotować dokument (tutorial/reference) opisujący technikę testów, w której główny test składa się z trzech wywołań metod pomocniczych (Given/When/Then).
+- **Szczegóły:**
+  - Zgromadzić źródła (artykuły, przykłady w PHP/Laravel) dotyczące „three-line tests” / „three-act tests”.
+  - Przygotować dokument w `docs/knowledge/tutorials/` (PL/EN), zawierający opis, przykłady kodu, korzyści i ograniczenia.
+  - Zaproponować konwencje nazewnicze metod (`given*`, `when*`, `then*`) oraz wskazówki integracji z PHPUnit.
+  - Powiązać dokument z zadaniem `TASK-029` i podlinkować w guideline testów po akceptacji.
+- **Zależności:** `TASK-029`
+- **Utworzone:** 2025-11-10
+
+---
+
 ### 🔄 IN_PROGRESS
 
-_Brak aktywnych zadań._
+#### `TASK-023` - Integracja i naprawa połączenia z OpenAI
+- **Status:** 🔄 IN_PROGRESS
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 3 godziny
+- **Czas rozpoczęcia:** 2025-11-10 14:00
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Integracja i naprawa połączenia z OpenAI.
+- **Szczegóły:**
+  - Diagnoza błędów komunikacji (timeouty, odpowiedzi HTTP, limity).
+  - Weryfikacja konfiguracji kluczy (`OPENAI_API_KEY`, endpointy, modele).
+  - Aktualizacja serwisów i fallbacków obsługujących OpenAI w API.
+  - Przygotowanie testów (unit/feature) potwierdzających poprawną integrację.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
 
 ---
 
@@ -254,6 +417,25 @@ _Brak aktywnych zadań._
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-021` - Naprawa duplikacji eventów przy generowaniu filmu
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** 2025-11-10 16:05
+- **Czas zakończenia:** 2025-11-10 18:30
+- **Czas realizacji:** 02h25m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Zidentyfikowanie i usunięcie przyczyny wielokrotnego uruchamiania jobów generujących opisy filmów oraz duplikowania opisów w bazie dla endpointu `GET /api/v1/movies/{movieSlug}`.
+- **Szczegóły:**
+  - Reprodukcja błędu i analiza źródeł eventów (kontroler, listener, job).
+  - Poprawa logiki wyzwalania eventów/jobs tak, aby każdy opis powstawał tylko raz.
+  - Dodanie testów regresyjnych (unit/feature) zabezpieczających przed ponownym duplikowaniem.
+  - Weryfikacja skutków ubocznych (np. kolejka Horizon, zapisy w bazie) i aktualizacja dokumentacji jeśli potrzebna.
+- **Zakres wykonanych prac:**
+  - Wymuszenie utrzymania żądanego sluga przy tworzeniu encji i powiązanych opisów/bio.
+  - Obsługa parametrów `locale` i `context_tag` w akcjach, eventach, JobStatusService oraz jobach generujących.
+  - Dodanie mechanizmu upsertu opisów/bio per `locale`+`context_tag` oraz rozszerzenie testów feature/unit (Generate API, MissingEntity, job listeners) potwierdzających brak duplikacji i poprawne przekazywanie parametrów.
 
 ### `TASK-021` - Refaktoryzacja FlagController
 - **Status:** ✅ COMPLETED
@@ -457,10 +639,10 @@ _Brak aktywnych zadań._
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 11
+- **Aktywne:** 13
 - **Zakończone:** 7
 - **Anulowane:** 0
-- **W trakcie:** 0
+- **W trakcie:** 2
 
 ---
 

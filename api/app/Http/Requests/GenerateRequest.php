@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ContextTag;
+use App\Enums\Locale;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class GenerateRequest extends FormRequest
 {
@@ -38,8 +41,8 @@ class GenerateRequest extends FormRequest
             'entity_type' => 'required|in:MOVIE,ACTOR,PERSON',
             'slug' => 'required_without:entity_id|string|max:255',
             'entity_id' => 'required_without:slug|string|max:255',
-            'locale' => 'nullable|string|max:10',
-            'context_tag' => 'nullable|string|max:64',
+            'locale' => ['nullable', 'string', 'max:10', Rule::in(Locale::values())],
+            'context_tag' => ['nullable', 'string', 'max:64', Rule::in(ContextTag::values())],
         ];
     }
 
@@ -73,8 +76,10 @@ class GenerateRequest extends FormRequest
             'entity_id.max' => 'The entity ID may not be greater than 255 characters.',
             'locale.string' => 'The locale must be a string.',
             'locale.max' => 'The locale may not be greater than 10 characters.',
+            'locale.in' => 'The locale must be one of the supported locales.',
             'context_tag.string' => 'The context tag must be a string.',
             'context_tag.max' => 'The context tag may not be greater than 64 characters.',
+            'context_tag.in' => 'The context tag must be one of the supported context tags.',
         ];
     }
 }

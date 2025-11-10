@@ -9,6 +9,7 @@ use App\Models\MovieDescription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
 class GenerateMovieJobTest extends TestCase
@@ -105,6 +106,39 @@ class GenerateMovieJobTest extends TestCase
         $this->assertEquals($movie->default_description_id, $cached['description_id']);
     }
 
+    public function test_job_updates_baseline_when_locking_enabled(): void
+    {
+        Feature::activate('ai_generation_baseline_locking');
+
+        $movie = Movie::create([
+            'title' => 'The Matrix',
+            'slug' => 'the-matrix',
+            'release_year' => 1999,
+            'director' => 'The Wachowskis',
+        ]);
+        $originalDescription = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Original seeded description.',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $movie->default_description_id = $originalDescription->id;
+        $movie->save();
+
+        (new MockGenerateMovieJob('the-matrix', 'job-locking', baselineDescriptionId: $originalDescription->id))->handle();
+
+        $movie->refresh();
+
+        $this->assertDatabaseCount('movies', 1);
+        $this->assertEquals(1, $movie->descriptions()->count());
+        $this->assertEquals($originalDescription->id, $movie->default_description_id);
+        $this->assertNotSame('Original seeded description.', $movie->descriptions()->first()->text);
+
+        Feature::deactivate('ai_generation_baseline_locking');
+    }
+
     public function test_job_creates_movie_when_not_exists(): void
     {
         $jobId = 'test-job-123';
@@ -113,7 +147,7 @@ class GenerateMovieJobTest extends TestCase
         $job->handle();
 
         // Verify movie was created
-        $movie = Movie::where('slug', 'like', 'new-movie-test%')->first();
+        $movie = Movie::where('slug', 'new-movie-test')->first();
         $this->assertNotNull($movie);
         $this->assertDatabaseCount('movies', 1);
         $this->assertEquals(1, $movie->descriptions()->count());
@@ -121,6 +155,7 @@ class GenerateMovieJobTest extends TestCase
             $movie->default_description_id,
             $movie->descriptions()->first()->id
         );
+        $this->assertSame('en-US', $movie->descriptions()->first()->locale->value);
 
         // Verify cache was updated
         $cached = Cache::get('ai_job:'.$jobId);
@@ -128,6 +163,28 @@ class GenerateMovieJobTest extends TestCase
         $this->assertEquals('DONE', $cached['status']);
         $this->assertEquals($movie->id, $cached['id']);
         $this->assertEquals($movie->default_description_id, $cached['description_id']);
+        $this->assertEquals('en-US', $cached['locale']);
+        $this->assertEquals('DEFAULT', $cached['context_tag']);
+        $this->assertEquals('new-movie-test', $cached['requested_slug']);
+    }
+
+    public function test_job_respects_provided_locale_and_context(): void
+    {
+        $jobId = 'test-job-456';
+
+        $job = new MockGenerateMovieJob('localized-movie', $jobId, locale: 'pl-PL', contextTag: 'critical');
+        $job->handle();
+
+        $movie = Movie::where('slug', 'localized-movie')->firstOrFail();
+        $description = $movie->descriptions()->first();
+        $this->assertSame('pl-PL', $description->locale->value);
+        $contextValue = $description->context_tag instanceof \BackedEnum ? $description->context_tag->value : (string) $description->context_tag;
+        $this->assertSame('critical', $contextValue);
+
+        $cached = Cache::get('ai_job:'.$jobId);
+        $this->assertNotNull($cached);
+        $this->assertEquals('pl-PL', $cached['locale']);
+        $this->assertEquals('critical', $cached['context_tag']);
     }
 
     public function test_mock_job_implements_should_queue(): void
@@ -171,6 +228,7 @@ class GenerateMovieJobTest extends TestCase
         $firstJob->handle();
 
         $movie->refresh();
+        $movie->load('defaultDescription');
         $firstDefault = $movie->default_description_id;
 
         $secondJob = new MockGenerateMovieJob(
@@ -181,10 +239,8 @@ class GenerateMovieJobTest extends TestCase
         $secondJob->handle();
 
         $movie->refresh();
-
         $this->assertEquals(3, $movie->descriptions()->count());
         $this->assertEquals($firstDefault, $movie->default_description_id);
-
         $secondPayload = Cache::get('ai_job:job-second');
         $this->assertNotNull($secondPayload);
         $this->assertSame('DONE', $secondPayload['status']);
@@ -193,5 +249,52 @@ class GenerateMovieJobTest extends TestCase
             $secondPayload['description_id'],
             'Second job should record alternative description'
         );
+    }
+
+    public function test_subsequent_job_updates_same_baseline_when_locking_enabled(): void
+    {
+        Feature::activate('ai_generation_baseline_locking');
+
+        $movie = Movie::create([
+            'title' => 'The Matrix',
+            'slug' => 'the-matrix',
+            'release_year' => 1999,
+            'director' => 'The Wachowskis',
+        ]);
+        $baseline = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Baseline description',
+            'context_tag' => 'DEFAULT',
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+        $movie->default_description_id = $baseline->id;
+        $movie->save();
+
+        (new MockGenerateMovieJob(
+            'the-matrix',
+            'job-lock-first',
+            baselineDescriptionId: $baseline->id
+        ))->handle();
+
+        $movie->refresh();
+        $initialText = $movie->descriptions()->first()->text;
+
+        sleep(1);
+
+        (new MockGenerateMovieJob(
+            'the-matrix',
+            'job-lock-second',
+            baselineDescriptionId: $baseline->id
+        ))->handle();
+
+        $movie->refresh();
+
+        $this->assertEquals(1, $movie->descriptions()->count());
+        $this->assertNotSame($initialText, $movie->descriptions()->first()->text);
+        $this->assertEquals($baseline->id, $movie->default_description_id);
+
+        Feature::deactivate('ai_generation_baseline_locking');
     }
 }

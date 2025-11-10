@@ -56,4 +56,18 @@ class QueuePersonGenerationJobTest extends TestCase
 
         Queue::assertNotPushed(MockGeneratePersonJob::class);
     }
+
+    public function test_listener_passes_person_locale_and_context(): void
+    {
+        Config::set('services.ai.service', 'mock');
+
+        $event = new PersonGenerationRequested('custom-person', 'job-789', locale: 'pl-PL', contextTag: 'modern');
+
+        $listener = new QueuePersonGenerationJob;
+        $listener->handle($event);
+
+        Queue::assertPushed(MockGeneratePersonJob::class, function ($job) {
+            return $job->locale === 'pl-PL' && $job->contextTag === 'modern';
+        });
+    }
 }

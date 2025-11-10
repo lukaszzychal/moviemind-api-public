@@ -24,6 +24,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-moviemind}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
+      OPENAI_URL: "${OPENAI_URL:-https://api.openai.com/v1/chat/completions}"
+      OPENAI_HEALTH_URL: "${OPENAI_HEALTH_URL:-https://api.openai.com/v1/models}"
+      OPENAI_BACKOFF_ENABLED: "${OPENAI_BACKOFF_ENABLED:-true}"
+      OPENAI_BACKOFF_INTERVALS: "${OPENAI_BACKOFF_INTERVALS:-20,60,180}"
     depends_on:
       - db
       - redis
@@ -61,6 +67,12 @@ services:
       DB_DATABASE: ${DB_DATABASE:-moviemind}
       DB_USERNAME: ${DB_USERNAME:-moviemind}
       DB_PASSWORD: ${DB_PASSWORD:-moviemind}
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
+      OPENAI_URL: "${OPENAI_URL:-https://api.openai.com/v1/chat/completions}"
+      OPENAI_HEALTH_URL: "${OPENAI_HEALTH_URL:-https://api.openai.com/v1/models}"
+      OPENAI_BACKOFF_ENABLED: "${OPENAI_BACKOFF_ENABLED:-true}"
+      OPENAI_BACKOFF_INTERVALS: "${OPENAI_BACKOFF_INTERVALS:-20,60,180}"
     depends_on:
       - php
       - db

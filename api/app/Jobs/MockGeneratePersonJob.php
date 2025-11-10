@@ -16,6 +16,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Laravel\Pennant\Feature;
 
 /**
  * Mock Generate Person Job - simulates AI generation for development/testing.
@@ -33,7 +34,9 @@ class MockGeneratePersonJob implements ShouldQueue
         public string $slug,
         public string $jobId,
         public ?int $existingPersonId = null,
-        public ?int $baselineBioId = null
+        public ?int $baselineBioId = null,
+        public ?string $locale = null,
+        public ?string $contextTag = null
     ) {}
 
     public function handle(): void
@@ -65,36 +68,176 @@ class MockGeneratePersonJob implements ShouldQueue
     private function refreshExistingPerson(Person $person): void
     {
         $person->loadMissing('bios');
-        $contextTag = $this->nextContextTag($person);
-
-        $bio = PersonBio::create([
-            'person_id' => $person->id,
-            'locale' => Locale::EN_US,
-            'text' => sprintf(
-                'Regenerated biography for %s on %s (MockGeneratePersonJob).',
-                $person->name,
-                now()->toIso8601String()
-            ),
-            'context_tag' => $contextTag,
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => 'mock-ai-1',
-        ]);
+        $locale = $this->resolveLocale();
+        $bio = $this->shouldUpdateBaseline($person, $locale)
+            ? $this->updateBaselineBio($person, $locale, [
+                'text' => sprintf(
+                    'Regenerated biography for %s on %s (MockGeneratePersonJob).',
+                    $person->name,
+                    now()->toIso8601String()
+                ),
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => 'mock-ai-1',
+            ])
+            : $this->persistBio(
+                $person,
+                $locale,
+                $this->determineContextTag($person, $locale),
+                [
+                    'text' => sprintf(
+                        'Regenerated biography for %s on %s (MockGeneratePersonJob).',
+                        $person->name,
+                        now()->toIso8601String()
+                    ),
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => 'mock-ai-1',
+                ]
+            );
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
-        $this->updateCache('DONE', $person->id, $bio->id, $person->slug);
+        $contextForCache = $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag;
+        $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextForCache);
     }
 
-    private function updateCache(string $status, ?int $id = null, ?int $bioId = null, ?string $slug = null): void
-    {
+    private function updateCache(
+        string $status,
+        ?int $id = null,
+        ?int $bioId = null,
+        ?string $slug = null,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): void {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'PERSON',
             'slug' => $slug ?? $this->slug,
+            'requested_slug' => $this->slug,
             'id' => $id,
             'bio_id' => $bioId,
+            'locale' => $locale ?? $this->locale,
+            'context_tag' => $contextTag ?? $this->contextTag,
         ], now()->addMinutes(15));
+    }
+
+    private function resolveLocale(): Locale
+    {
+        if ($this->locale) {
+            $normalized = $this->normalizeLocale($this->locale);
+            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
+                return $enum;
+            }
+        }
+
+        return Locale::EN_US;
+    }
+
+    private function normalizeLocale(string $locale): ?string
+    {
+        $candidate = str_replace('_', '-', $locale);
+        $candidateLower = strtolower($candidate);
+
+        foreach (Locale::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function determineContextTag(Person $person, Locale $locale): string
+    {
+        if ($this->contextTag !== null) {
+            $normalized = $this->normalizeContextTag($this->contextTag);
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        return $this->nextContextTag($person);
+    }
+
+    private function normalizeContextTag(string $contextTag): ?string
+    {
+        $candidateLower = strtolower($contextTag);
+
+        foreach (ContextTag::cases() as $case) {
+            if (strtolower($case->value) === $candidateLower) {
+                return $case->value;
+            }
+        }
+
+        return null;
+    }
+
+    private function persistBio(Person $person, Locale $locale, string $contextTag, array $attributes): PersonBio
+    {
+        $existing = PersonBio::where('person_id', $person->id)
+            ->where('locale', $locale->value)
+            ->where('context_tag', $contextTag)
+            ->first();
+
+        if ($existing) {
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing->fresh();
+        }
+
+        return PersonBio::create(array_merge([
+            'person_id' => $person->id,
+            'locale' => $locale->value,
+            'context_tag' => $contextTag,
+        ], $attributes));
+    }
+
+    private function shouldUpdateBaseline(Person $person, Locale $locale): bool
+    {
+        if (! $this->baselineLockingEnabled() || $this->baselineBioId === null || $this->contextTag !== null) {
+            return false;
+        }
+
+        $baseline = $this->getBaselineBio($person);
+
+        if (! $baseline instanceof PersonBio) {
+            return false;
+        }
+
+        if ($this->locale !== null && strtolower($baseline->locale->value) !== strtolower($locale->value)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function baselineLockingEnabled(): bool
+    {
+        return Feature::active('ai_generation_baseline_locking');
+    }
+
+    private function getBaselineBio(Person $person): ?PersonBio
+    {
+        $bio = $person->bios->firstWhere('id', $this->baselineBioId);
+
+        return $bio instanceof PersonBio ? $bio : PersonBio::find($this->baselineBioId);
+    }
+
+    private function updateBaselineBio(Person $person, Locale $locale, array $attributes): PersonBio
+    {
+        $baseline = $this->getBaselineBio($person);
+
+        if (! $baseline instanceof PersonBio) {
+            return $this->persistBio($person, $locale, $this->determineContextTag($person, $locale), $attributes);
+        }
+
+        $baseline->fill(array_merge($attributes, [
+            'locale' => $locale->value,
+        ]));
+        $baseline->save();
+
+        return $baseline->fresh();
     }
 
     private function nextContextTag(Person $person): string
@@ -143,7 +286,10 @@ class MockGeneratePersonJob implements ShouldQueue
             'status' => 'FAILED',
             'entity' => 'PERSON',
             'slug' => $this->slug,
+            'requested_slug' => $this->slug,
             'error' => $exception->getMessage(),
+            'locale' => $this->locale,
+            'context_tag' => $this->contextTag,
         ], now()->addMinutes(15));
     }
 
@@ -172,11 +318,11 @@ class MockGeneratePersonJob implements ShouldQueue
                     return;
                 }
 
-                [$person, $bio] = $this->createPersonRecord();
+                [$person, $bio, $localeValue, $contextTag] = $this->createPersonRecord();
 
                 $this->promoteDefaultIfEligible($person, $bio);
                 $this->invalidatePersonCaches($person);
-                $this->updateCache('DONE', $person->id, $bio->id, $person->slug);
+                $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $localeValue, $contextTag);
             });
         } catch (LockTimeoutException $exception) {
             $existing = $this->findExistingPerson();
@@ -191,7 +337,7 @@ class MockGeneratePersonJob implements ShouldQueue
     }
 
     /**
-     * @return array{0: Person, 1: PersonBio}
+     * @return array{0: Person, 1: PersonBio, 2: string, 3: string}
      */
     private function createPersonRecord(): array
     {
@@ -205,18 +351,35 @@ class MockGeneratePersonJob implements ShouldQueue
             'birthplace' => 'Mock City',
         ]);
 
-        $contextTag = $this->nextContextTag($person);
+        $locale = $this->resolveLocale();
+        $bio = $this->shouldUpdateBaseline($person, $locale)
+            ? $this->updateBaselineBio($person, $locale, [
+                'text' => sprintf(
+                    'Generated biography for %s (%s locale). This text was produced by MockGeneratePersonJob (AI_SERVICE=mock).',
+                    $name,
+                    $locale->value
+                ),
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => 'mock-ai-1',
+            ])
+            : $this->persistBio(
+                $person,
+                $locale,
+                $this->determineContextTag($person, $locale),
+                [
+                    'text' => sprintf(
+                        'Generated biography for %s (%s locale). This text was produced by MockGeneratePersonJob (AI_SERVICE=mock).',
+                        $name,
+                        $locale->value
+                    ),
+                    'origin' => DescriptionOrigin::GENERATED,
+                    'ai_model' => 'mock-ai-1',
+                ]
+            );
 
-        $bio = PersonBio::create([
-            'person_id' => $person->id,
-            'locale' => Locale::EN_US,
-            'text' => "Generated biography for {$name}. This text was produced by MockGeneratePersonJob (AI_SERVICE=mock).",
-            'context_tag' => $contextTag,
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => 'mock-ai-1',
-        ]);
+        $contextForCache = $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag;
 
-        return [$person->fresh(['bios']), $bio];
+        return [$person->fresh(['bios']), $bio, $locale->value, $contextForCache];
     }
 
     private function promoteDefaultIfEligible(Person $person, PersonBio $bio): void

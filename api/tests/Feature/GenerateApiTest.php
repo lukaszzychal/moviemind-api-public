@@ -57,15 +57,43 @@ class GenerateApiTest extends TestCase
             ->assertJson([
                 'status' => 'PENDING',
                 'slug' => 'the-matrix',
+                'locale' => 'en-US',
             ]);
 
         // Verify Event was dispatched
         Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'the-matrix';
+            return $event->slug === 'the-matrix'
+                && $event->locale === 'en-US';
         });
 
         // Note: Queue::fake() prevents Listener from executing, so we only check Event
         // If Event is dispatched and Listener is registered, Job will be queued
+    }
+
+    public function test_generate_movie_respects_locale_and_context(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => 'the-matrix',
+            'locale' => 'pl-PL',
+            'context_tag' => 'modern',
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'the-matrix',
+                'locale' => 'pl-PL',
+                'context_tag' => 'modern',
+            ]);
+
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
+            return $event->slug === 'the-matrix'
+                && $event->locale === 'pl-PL'
+                && $event->contextTag === 'modern';
+        });
     }
 
     public function test_generate_movie_existing_slug_triggers_regeneration_flow(): void
@@ -84,10 +112,12 @@ class GenerateApiTest extends TestCase
                 'slug' => $movie->slug,
                 'existing_id' => $movie->id,
                 'description_id' => $movie->default_description_id,
+                'locale' => 'en-US',
             ]);
 
         Event::assertDispatched(MovieGenerationRequested::class, function ($event) use ($movie) {
-            return $event->slug === $movie->slug;
+            return $event->slug === $movie->slug
+                && $event->locale === 'en-US';
         });
     }
 
@@ -124,15 +154,43 @@ class GenerateApiTest extends TestCase
             ->assertJson([
                 'status' => 'PENDING',
                 'slug' => 'new-person-slug',
+                'locale' => 'en-US',
             ]);
 
         // Verify Event was dispatched
         Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'new-person-slug';
+            return $event->slug === 'new-person-slug'
+                && $event->locale === 'en-US';
         });
 
         // Note: Queue::fake() prevents Listener from executing, so we only check Event
         // If Event is dispatched and Listener is registered, Job will be queued
+    }
+
+    public function test_generate_person_respects_locale_and_context(): void
+    {
+        Feature::activate('ai_bio_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'PERSON',
+            'entity_id' => 'new-person-slug',
+            'locale' => 'pl-PL',
+            'context_tag' => 'critical',
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'new-person-slug',
+                'locale' => 'pl-PL',
+                'context_tag' => 'critical',
+            ]);
+
+        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
+            return $event->slug === 'new-person-slug'
+                && $event->locale === 'pl-PL'
+                && $event->contextTag === 'critical';
+        });
     }
 
     public function test_generate_person_existing_slug_triggers_regeneration_flow(): void
@@ -151,10 +209,12 @@ class GenerateApiTest extends TestCase
                 'slug' => $person->slug,
                 'existing_id' => $person->id,
                 'bio_id' => $person->default_bio_id,
+                'locale' => 'en-US',
             ]);
 
         Event::assertDispatched(PersonGenerationRequested::class, function ($event) use ($person) {
-            return $event->slug === $person->slug;
+            return $event->slug === $person->slug
+                && $event->locale === 'en-US';
         });
     }
 
@@ -178,11 +238,13 @@ class GenerateApiTest extends TestCase
             ->assertJson([
                 'status' => 'PENDING',
                 'slug' => 'new-actor-slug',
+                'locale' => 'en-US',
             ]);
 
         // Verify Event was dispatched (ACTOR treated same as PERSON)
         Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'new-actor-slug';
+            return $event->slug === 'new-actor-slug'
+                && $event->locale === 'en-US';
         });
 
         // Note: Queue::fake() prevents Listener from executing, so we only check Event
