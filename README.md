@@ -5,6 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3-blue.svg)](https://php.net)
 [![Laravel](https://img.shields.io/badge/Laravel-12.x-ff2d20.svg)](https://laravel.com)
+[![CI](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/codeql.yml)
+[![Code Security Scan](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/code-security-scan.yml/badge.svg?branch=main)](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/code-security-scan.yml)
+[![Docker Security Scan](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/docker-security-scan.yml/badge.svg?branch=main)](https://github.com/lukaszzychal/moviemind-api-public/actions/workflows/docker-security-scan.yml)
 
 > 🇵🇱 **Wersja polska:** [`README.pl.md`](README.pl.md)
 

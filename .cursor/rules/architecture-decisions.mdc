@@ -1,3 +1,6 @@
+---
+alwaysApply: true
+---
 # Architecture Decision Records (ADR)
 
 ## 📋 Kiedy tworzyć nowy ADR?
