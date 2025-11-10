@@ -17,7 +17,7 @@ AI_SERVICE=mock            # lub 'real'
 # Wymagane tylko przy AI_SERVICE=real
 OPENAI_API_KEY=sk-********
 OPENAI_MODEL=gpt-4o-mini   # opcjonalna zmiana modelu
-OPENAI_URL=https://api.openai.com/v1/chat/completions
+OPENAI_URL=https://api.openai.com/v1/responses
 ```
 
 2. **Wyciąg z `config/services.php`**
@@ -30,11 +30,12 @@ OPENAI_URL=https://api.openai.com/v1/chat/completions
 'openai' => [
     'api_key' => env('OPENAI_API_KEY'),
     'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
-    'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
+'url' => env('OPENAI_URL', 'https://api.openai.com/v1/responses'),
 ],
 ```
 
-Nie trzeba ręcznie rejestrować serwisów — listener `QueueMovieGenerationJob` korzysta z `AiServiceSelector`, a joby pobierają `OpenAiClientInterface` poprzez wstrzykiwanie zależności.
+Nie trzeba ręcznie rejestrować serwisów — listener `QueueMovieGenerationJob` korzysta z `AiServiceSelector`, a joby pobierają `OpenAiClientInterface` poprzez wstrzykiwanie zależności.  
+Pozostawienie `OPENAI_URL` pustego powoduje użycie zunifikowanego **Responses API** (`/v1/responses`). Jeśli potrzebujesz legacy `chat/completions`, ustaw `OPENAI_URL=https://api.openai.com/v1/chat/completions`; klient automatycznie przełączy się na starszy format.
 
 ## 🔁 Jak działa selector
 

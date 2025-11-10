@@ -19,7 +19,7 @@ class OpenAiClient implements OpenAiClientInterface
 
     private const DEFAULT_MODEL = 'gpt-4o-mini';
 
-    private const DEFAULT_API_URL = 'https://api.openai.com/v1/chat/completions';
+    private const DEFAULT_API_URL = 'https://api.openai.com/v1/responses';
 
     private string $apiKey;
 
@@ -59,7 +59,7 @@ class OpenAiClient implements OpenAiClientInterface
                 'genres' => $content['genres'] ?? [],
                 'model' => $this->model,
             ];
-        });
+        }, $this->movieResponseSchema());
     }
 
     /**
@@ -83,7 +83,7 @@ class OpenAiClient implements OpenAiClientInterface
                 'biography' => $content['biography'] ?? null,
                 'model' => $this->model,
             ];
-        });
+        }, $this->personResponseSchema());
     }
 
     /**
@@ -135,10 +135,16 @@ class OpenAiClient implements OpenAiClientInterface
      * @param  string  $userPrompt  User prompt for AI
      * @param  callable  $successMapper  Callback to map successful response to array
      */
-    private function makeApiCall(string $entityType, string $slug, string $systemPrompt, string $userPrompt, callable $successMapper): array
-    {
+    private function makeApiCall(
+        string $entityType,
+        string $slug,
+        string $systemPrompt,
+        string $userPrompt,
+        callable $successMapper,
+        array $jsonSchema
+    ): array {
         try {
-            $response = $this->sendRequest($systemPrompt, $userPrompt);
+            $response = $this->sendRequest($systemPrompt, $userPrompt, $jsonSchema);
 
             if (! $response->successful()) {
                 $this->logApiError($entityType, $slug, $response);
@@ -159,14 +165,45 @@ class OpenAiClient implements OpenAiClientInterface
     /**
      * Send HTTP request to OpenAI API.
      */
-    private function sendRequest(string $systemPrompt, string $userPrompt)
+    private function sendRequest(string $systemPrompt, string $userPrompt, array $jsonSchema)
     {
-        return Http::timeout(self::DEFAULT_TIMEOUT)
+        $request = Http::timeout(self::DEFAULT_TIMEOUT)
             ->withHeaders([
                 'Authorization' => "Bearer {$this->apiKey}",
                 'Content-Type' => 'application/json',
-            ])
-            ->post($this->apiUrl, [
+            ]);
+
+        if ($this->usesResponsesApi()) {
+            $payload = [
+                'model' => $this->model,
+                'input' => [
+                    [
+                        'role' => 'system',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => $systemPrompt,
+                            ],
+                        ],
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => $userPrompt,
+                            ],
+                        ],
+                    ],
+                ],
+                'response_format' => [
+                    'type' => 'json_schema',
+                    'json_schema' => $jsonSchema,
+                ],
+                'temperature' => self::DEFAULT_TEMPERATURE,
+            ];
+        } else {
+            $payload = [
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemPrompt],
@@ -174,7 +211,10 @@ class OpenAiClient implements OpenAiClientInterface
                 ],
                 'response_format' => ['type' => 'json_object'],
                 'temperature' => self::DEFAULT_TEMPERATURE,
-            ]);
+            ];
+        }
+
+        return $request->post($this->apiUrl, $payload);
     }
 
     /**
@@ -183,6 +223,12 @@ class OpenAiClient implements OpenAiClientInterface
     private function extractContent($response): array
     {
         $responseData = $response->json();
+
+        $content = $this->extractFromResponsesPayload($responseData);
+        if ($content !== null) {
+            return $content;
+        }
+
         $rawContent = $responseData['choices'][0]['message']['content'] ?? '{}';
 
         return json_decode($rawContent, true) ?? [];
@@ -235,5 +281,84 @@ class OpenAiClient implements OpenAiClientInterface
         ];
 
         return array_filter($headers, static fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function usesResponsesApi(): bool
+    {
+        return str_contains($this->apiUrl, '/responses');
+    }
+
+    private function extractFromResponsesPayload(array $responseData): ?array
+    {
+        $outputBlocks = $responseData['output'] ?? [];
+
+        foreach ($outputBlocks as $block) {
+            $contents = $block['content'] ?? [];
+            foreach ($contents as $content) {
+                $type = $content['type'] ?? null;
+
+                if ($type === 'json_schema') {
+                    $json = $content['json'] ?? null;
+
+                    if (is_array($json)) {
+                        return $json;
+                    }
+
+                    if (is_string($json)) {
+                        $decoded = json_decode($json, true);
+                        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                            return $decoded;
+                        }
+                    }
+                }
+
+                if (isset($content['text']) && in_array($type, ['output_text', 'text', 'tool_result'], true)) {
+                    $decoded = json_decode((string) $content['text'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        return $decoded;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function movieResponseSchema(): array
+    {
+        return [
+            'name' => 'movie_generation_response',
+            'schema' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => [
+                    'title' => ['type' => ['string', 'null']],
+                    'release_year' => ['type' => ['integer', 'null']],
+                    'director' => ['type' => ['string', 'null']],
+                    'description' => ['type' => ['string', 'null']],
+                    'genres' => [
+                        'type' => ['array', 'null'],
+                        'items' => ['type' => 'string'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private function personResponseSchema(): array
+    {
+        return [
+            'name' => 'person_generation_response',
+            'schema' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => [
+                    'name' => ['type' => ['string', 'null']],
+                    'birth_date' => ['type' => ['string', 'null']],
+                    'birthplace' => ['type' => ['string', 'null']],
+                    'biography' => ['type' => ['string', 'null']],
+                ],
+            ],
+        ];
     }
 }

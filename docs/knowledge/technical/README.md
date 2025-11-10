@@ -32,6 +32,7 @@ Ten katalog zawiera dokumenty **analityczne**, **techniczne** i **PO** (Product 
 - `UUID_V4_EXPLANATION.md` - Wyjaśnienie UUID v4 i nieprzewidywalności
 - `LOWER_LIKE_EXPLANATION.md` - Wyjaśnienie LOWER() LIKE dla case-insensitive search
 - `LOOSE_ARRAYS_VS_DTO.md` - Porównanie luźnych tablic i DTO dla statusów jobów
+- `OPENAI_RESPONSES_API.md` - Różnice między OpenAI Responses API a Chat Completions
 
 ### 🔧 Refaktoryzacja
 - `REFACTORING_PROPOSAL.md` - Propozycja refaktoryzacji

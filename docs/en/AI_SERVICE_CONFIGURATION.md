@@ -17,7 +17,7 @@ AI_SERVICE=mock            # or 'real'
 # Required only for AI_SERVICE=real
 OPENAI_API_KEY=sk-********
 OPENAI_MODEL=gpt-4o-mini   # optional override
-OPENAI_URL=https://api.openai.com/v1/chat/completions
+OPENAI_URL=https://api.openai.com/v1/responses
 ```
 
 1. **`config/services.php` excerpt**
@@ -30,11 +30,12 @@ OPENAI_URL=https://api.openai.com/v1/chat/completions
 'openai' => [
     'api_key' => env('OPENAI_API_KEY'),
     'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
-    'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
+'url' => env('OPENAI_URL', 'https://api.openai.com/v1/responses'),
 ],
 ```
 
-No manual container binding is required — the listeners use `AiServiceSelector` and the jobs resolve `OpenAiClientInterface` automatically.
+No manual container binding is required — the listeners use `AiServiceSelector` and the jobs resolve `OpenAiClientInterface` automatically.  
+Leaving `OPENAI_URL` unset defaults to the unified **Responses API** (`/v1/responses`). If you need the legacy chat-completions endpoint for compatibility, set `OPENAI_URL=https://api.openai.com/v1/chat/completions`; the client falls back automatically.
 
 ## 🔁 How the Selector Works
 
