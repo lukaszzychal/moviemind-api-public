@@ -276,6 +276,7 @@ paths:
                     confidence: 0.92
                     confidence_level: high
                     existing_id: 1
+                    description_id: 314
                 new:
                   value:
                     job_id: 0d3f1976-b7d0-4d18-90d3-ef5d547d9300

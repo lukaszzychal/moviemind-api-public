@@ -19,8 +19,18 @@ class QueueMovieGenerationJob
         AiServiceSelector::validate();
 
         match ($aiService) {
-            'real' => RealGenerateMovieJob::dispatch($event->slug, $event->jobId),
-            'mock' => MockGenerateMovieJob::dispatch($event->slug, $event->jobId),
+            'real' => RealGenerateMovieJob::dispatch(
+                $event->slug,
+                $event->jobId,
+                existingMovieId: $event->existingMovieId,
+                baselineDescriptionId: $event->baselineDescriptionId
+            ),
+            'mock' => MockGenerateMovieJob::dispatch(
+                $event->slug,
+                $event->jobId,
+                existingMovieId: $event->existingMovieId,
+                baselineDescriptionId: $event->baselineDescriptionId
+            ),
             default => throw new \InvalidArgumentException("Invalid AI service: {$aiService}. Must be 'mock' or 'real'."),
         };
     }

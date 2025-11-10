@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Events\MovieGenerationRequested;
+use App\Models\Movie;
 use App\Services\JobStatusService;
 use Illuminate\Support\Str;
 
@@ -12,9 +13,11 @@ class QueueMovieGenerationAction
         private readonly JobStatusService $jobStatusService
     ) {}
 
-    public function handle(string $slug, ?float $confidence = null): array
+    public function handle(string $slug, ?float $confidence = null, ?Movie $existingMovie = null): array
     {
         $jobId = (string) Str::uuid();
+        $existingMovie ??= Movie::where('slug', $slug)->first();
+        $baselineDescriptionId = $existingMovie?->default_description_id;
 
         $this->jobStatusService->initializeStatus(
             $jobId,
@@ -23,9 +26,14 @@ class QueueMovieGenerationAction
             $confidence
         );
 
-        event(new MovieGenerationRequested($slug, $jobId));
+        event(new MovieGenerationRequested(
+            $slug,
+            $jobId,
+            existingMovieId: $existingMovie?->id,
+            baselineDescriptionId: $baselineDescriptionId
+        ));
 
-        return [
+        $response = [
             'job_id' => $jobId,
             'status' => 'PENDING',
             'message' => 'Generation queued for movie by slug',
@@ -33,6 +41,13 @@ class QueueMovieGenerationAction
             'confidence' => $confidence,
             'confidence_level' => $this->confidenceLabel($confidence),
         ];
+
+        if ($existingMovie) {
+            $response['existing_id'] = $existingMovie->id;
+            $response['description_id'] = $baselineDescriptionId;
+        }
+
+        return $response;
     }
 
     private function confidenceLabel(?float $confidence): string

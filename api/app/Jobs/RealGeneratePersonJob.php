@@ -9,6 +9,7 @@ use App\Models\Person;
 use App\Models\PersonBio;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -31,7 +32,9 @@ class RealGeneratePersonJob implements ShouldQueue
 
     public function __construct(
         public string $slug,
-        public string $jobId
+        public string $jobId,
+        public ?int $existingPersonId = null,
+        public ?int $baselineBioId = null
     ) {}
 
     /**
@@ -42,59 +45,15 @@ class RealGeneratePersonJob implements ShouldQueue
     public function handle(OpenAiClientInterface $openAiClient): void
     {
         try {
-            // Check if person already exists
-            $existing = Person::where('slug', $this->slug)->first();
+            $existing = $this->findExistingPerson();
+
             if ($existing) {
                 $this->refreshExistingPerson($existing, $openAiClient);
 
                 return;
             }
 
-            // Double-check (race condition protection)
-            $existing = Person::where('slug', $this->slug)->first();
-            if ($existing) {
-                $this->refreshExistingPerson($existing, $openAiClient);
-
-                return;
-            }
-
-            // Call real AI API using OpenAiClient (injected via method injection)
-            $aiResponse = $openAiClient->generatePerson($this->slug);
-
-            if ($aiResponse['success'] === false) {
-                $error = $aiResponse['error'] ?? 'Unknown error';
-
-                throw new \RuntimeException('AI API returned error: '.$error);
-            }
-
-            $name = $aiResponse['name'] ?? Str::of($this->slug)->replace('-', ' ')->title();
-            $birthDate = $aiResponse['birth_date'] ?? '1970-01-01';
-            $birthplace = $aiResponse['birthplace'] ?? 'Unknown';
-            $biography = $aiResponse['biography'] ?? "Biography for {$name}.";
-
-            $person = Person::create([
-                'name' => (string) $name,
-                'slug' => $this->slug,
-                'birth_date' => $birthDate,
-                'birthplace' => $birthplace,
-            ]);
-
-            $contextTag = $this->nextContextTag($person);
-
-            $bio = PersonBio::create([
-                'person_id' => $person->id,
-                'locale' => Locale::EN_US,
-                'text' => (string) $biography,
-                'context_tag' => $contextTag,
-                'origin' => DescriptionOrigin::GENERATED,
-                'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
-            ]);
-
-            $person->default_bio_id = $bio->id;
-            $person->save();
-
-            $this->invalidateCache($this->slug);
-            $this->updateCache('DONE', $person->id, $bio->id);
+            $this->createPersonWithLock($openAiClient);
         } catch (\Throwable $e) {
             Log::error('RealGeneratePersonJob failed', [
                 'slug' => $this->slug,
@@ -127,6 +86,7 @@ class RealGeneratePersonJob implements ShouldQueue
 
     private function refreshExistingPerson(Person $person, OpenAiClientInterface $openAiClient): void
     {
+        $person->loadMissing('bios');
         $aiResponse = $openAiClient->generatePerson($this->slug);
 
         if ($aiResponse['success'] === false) {
@@ -149,20 +109,18 @@ class RealGeneratePersonJob implements ShouldQueue
             'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
         ]);
 
-        $person->default_bio_id = $bio->id;
-        $person->save();
-
-        $this->invalidateCache($person->slug);
-        $this->updateCache('DONE', $person->id, $bio->id);
+        $this->promoteDefaultIfEligible($person, $bio);
+        $this->invalidatePersonCaches($person);
+        $this->updateCache('DONE', $person->id, $bio->id, $person->slug);
     }
 
-    private function updateCache(string $status, ?int $id = null, ?int $bioId = null): void
+    private function updateCache(string $status, ?int $id = null, ?int $bioId = null, ?string $slug = null): void
     {
         Cache::put($this->cacheKey(), [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'PERSON',
-            'slug' => $this->slug,
+            'slug' => $slug ?? $this->slug,
             'id' => $id,
             'bio_id' => $bioId,
         ], now()->addMinutes(15));
@@ -201,13 +159,6 @@ class RealGeneratePersonJob implements ShouldQueue
         return 'ai_job:'.$this->jobId;
     }
 
-    private function invalidateCache(string ...$slugs): void
-    {
-        foreach (array_filter($slugs) as $slug) {
-            Cache::forget('person:'.$slug);
-        }
-    }
-
     public function failed(\Throwable $exception): void
     {
         Log::error('RealGeneratePersonJob permanently failed', [
@@ -223,5 +174,144 @@ class RealGeneratePersonJob implements ShouldQueue
             'slug' => $this->slug,
             'error' => $exception->getMessage(),
         ], now()->addMinutes(15));
+    }
+
+    private function findExistingPerson(): ?Person
+    {
+        if ($this->existingPersonId !== null) {
+            $person = Person::with('bios')->find($this->existingPersonId);
+            if ($person) {
+                return $person;
+            }
+        }
+
+        return Person::with('bios')->where('slug', $this->slug)->first();
+    }
+
+    private function createPersonWithLock(OpenAiClientInterface $openAiClient): void
+    {
+        $lock = Cache::lock($this->creationLockKey(), 30);
+
+        try {
+            $lock->block(5, function () use ($openAiClient): void {
+                $existing = $this->findExistingPerson();
+                if ($existing) {
+                    $this->refreshExistingPerson($existing, $openAiClient);
+
+                    return;
+                }
+
+                [$person, $bio] = $this->createPersonRecord($openAiClient);
+
+                $this->promoteDefaultIfEligible($person, $bio);
+                $this->invalidatePersonCaches($person);
+                $this->updateCache('DONE', $person->id, $bio->id, $person->slug);
+            });
+        } catch (LockTimeoutException $exception) {
+            $existing = $this->findExistingPerson();
+            if ($existing) {
+                $this->refreshExistingPerson($existing, $openAiClient);
+
+                return;
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * @return array{0: Person, 1: PersonBio}
+     */
+    private function createPersonRecord(OpenAiClientInterface $openAiClient): array
+    {
+        $aiResponse = $openAiClient->generatePerson($this->slug);
+
+        if ($aiResponse['success'] === false) {
+            $error = $aiResponse['error'] ?? 'Unknown error';
+
+            throw new \RuntimeException('AI API returned error: '.$error);
+        }
+
+        $name = $aiResponse['name'] ?? Str::of($this->slug)->replace('-', ' ')->title();
+        $birthDate = $aiResponse['birth_date'] ?? '1970-01-01';
+        $birthplace = $aiResponse['birthplace'] ?? 'Unknown';
+        $biography = $aiResponse['biography'] ?? "Biography for {$name}.";
+
+        $person = Person::create([
+            'name' => (string) $name,
+            'slug' => $this->slug,
+            'birth_date' => $birthDate,
+            'birthplace' => $birthplace,
+        ]);
+
+        $contextTag = $this->nextContextTag($person);
+
+        $bio = PersonBio::create([
+            'person_id' => $person->id,
+            'locale' => Locale::EN_US,
+            'text' => (string) $biography,
+            'context_tag' => $contextTag,
+            'origin' => DescriptionOrigin::GENERATED,
+            'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+        ]);
+
+        return [$person->fresh(['bios']), $bio];
+    }
+
+    private function promoteDefaultIfEligible(Person $person, PersonBio $bio): void
+    {
+        $lock = Cache::lock($this->defaultLockKey($person), 15);
+
+        try {
+            $lock->block(5, function () use ($person, $bio): void {
+                $person->refresh();
+                $currentDefault = $person->default_bio_id;
+
+                if ($this->baselineBioId !== null) {
+                    if ((int) $currentDefault !== $this->baselineBioId) {
+                        return;
+                    }
+                } elseif ($currentDefault !== null) {
+                    return;
+                }
+
+                $person->default_bio_id = $bio->id;
+                $person->save();
+            });
+        } catch (LockTimeoutException $exception) {
+            Log::warning('RealGeneratePersonJob default promotion lock timeout', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'person_id' => $person->id,
+            ]);
+        }
+    }
+
+    private function creationLockKey(): string
+    {
+        return 'lock:person:create:'.$this->slug;
+    }
+
+    private function defaultLockKey(Person $person): string
+    {
+        return 'lock:person:default:'.$person->id;
+    }
+
+    private function invalidatePersonCaches(Person $person): void
+    {
+        $slugs = array_unique(array_filter([
+            $this->slug,
+            $person->slug,
+        ]));
+
+        $bioIds = $person->bios()->pluck('id')->all();
+
+        foreach ($slugs as $slug) {
+            Cache::forget('person:'.$slug.':bio:default');
+
+            foreach ($bioIds as $bioId) {
+                Cache::forget('person:'.$slug.':bio:'.$bioId);
+            }
+        }
     }
 }

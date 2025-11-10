@@ -83,6 +83,7 @@ class GenerateApiTest extends TestCase
                 'status' => 'PENDING',
                 'slug' => $movie->slug,
                 'existing_id' => $movie->id,
+                'description_id' => $movie->default_description_id,
             ]);
 
         Event::assertDispatched(MovieGenerationRequested::class, function ($event) use ($movie) {
@@ -149,6 +150,7 @@ class GenerateApiTest extends TestCase
                 'status' => 'PENDING',
                 'slug' => $person->slug,
                 'existing_id' => $person->id,
+                'bio_id' => $person->default_bio_id,
             ]);
 
         Event::assertDispatched(PersonGenerationRequested::class, function ($event) use ($person) {
