@@ -152,6 +152,23 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-11-10
 ---
 
+#### `TASK-020` - Sprawdzić zachowanie AI dla nieistniejących filmów/osób
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Zweryfikować, co dzieje się podczas generowania opisów dla slugów, które nie reprezentują realnych filmów lub osób.
+- **Szczegóły:**
+  - Przeanalizować obecne joby generujące (`RealGenerateMovieJob`, `RealGeneratePersonJob`) pod kątem tworzenia fikcyjnych encji.
+  - Zaproponować/zaimplementować scenariusz zabezpieczający (np. flaga konfiguracyjna, walidacja źródłowa, dodatkowe logowanie).
+  - Przygotować testy regresyjne i aktualizację dokumentacji (OpenAPI, README) opisującą zachowanie.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+---
+
 ### 🔄 IN_PROGRESS
 
 _Brak aktywnych zadań._
