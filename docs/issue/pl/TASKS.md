@@ -319,10 +319,10 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** --
+- **Czas rozpoczęcia:** 2025-11-10 18:35
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
 - **Realizacja:** Do ustalenia
@@ -332,6 +332,42 @@ Każde zadanie ma następującą strukturę:
   - Opisać konsekwencje obecnej rekomendacji (najnowszy wpis per wariant) oraz potencjalny plan migracji do wersjonowania historii (np. kolumna `version`/`generated_at`, cleanup, zmiany w API i cache).
   - Przygotować notatkę lub szkic ADR dokumentując aktualną decyzję i warunki ewentualnej przyszłej zmiany.
 - **Zależności:** Powiązane z `TASK-012`, `TASK-024`
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-032` - Automatyczne tworzenie obsady przy generowaniu filmu
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Zapewnić, że endpoint `GET /api/v1/movies/{slug}` zwraca podstawową obsadę (imię/nazwisko/rola) także dla świeżo wygenerowanych filmów poprzez automatyczne tworzenie rekordów `Person` i powiązań `movie_person`.
+- **Szczegóły:**
+  - Rozszerzyć job generujący (`RealGenerateMovieJob` / `MockGenerateMovieJob`) o logikę zapisu osób zwróconych przez AI (reżyserzy, główna obsada).
+  - Zadbać o de-duplikację (np. gdy osoba już istnieje), update relacji oraz utrzymanie minimalnego zestawu danych (imię, nazwisko, rola).
+  - Uzupełnić testy feature (`MoviesApiTest`) i dokumentację (OpenAPI, Postman/Insomnia) o scenariusz z automatycznie utworzoną obsadą.
+- **Zależności:** Rozważyć synchronizację z `TASK-022` (lista osób)
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-033` - Usunięcie modelu Actor i konsolidacja na Person
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Wyeliminowanie legacy modelu `Actor` na rzecz ujednoliconego `Person`, tak aby cała obsada korzystała z jednej tabeli i relacji `movie_person`.
+- **Szczegóły:**
+  - Zastąpić odwołania do `Actor`/`ActorBio` w seederach, jobach i relacjach odpowiednikami `Person`/`PersonBio`.
+  - Zaktualizować migracje/seedery lub dodać migrację porządkującą dane po migracji aktorów do tabeli `people`.
+  - Usunąć nieużywane pliki (`app/Models/Actor*`, seeder `ActorSeeder`, etc.) oraz zaktualizować testy i dokumentację (OpenAPI, Postman, README) aby używały `Person`.
+- **Zależności:** Powiązane z `TASK-032`, `TASK-022`
 - **Utworzone:** 2025-11-10
 
 ---
