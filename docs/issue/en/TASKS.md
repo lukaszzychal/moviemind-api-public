@@ -359,10 +359,10 @@ Every entry follows this structure:
 ---
 
 #### `TASK-031` – Decide on AI description versioning strategy
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priority:** 🔴 High
 - **Estimated time:** 1–2 h
-- **Start time:** --
+- **Start time:** 2025-11-10 18:35
 - **End time:** --
 - **Duration:** -- (AI agent will auto-calc when applicable)
 - **Execution:** TBD
@@ -372,6 +372,42 @@ Every entry follows this structure:
   - Outline the implications of sticking with the recommendation (latest record per variant) and sketch a possible migration path to historical versioning (e.g. `version`/`generated_at` column, API/cache updates, data cleanup).
   - Produce a note or ADR draft that documents the present decision and the conditions for a future change.
 - **Dependencies:** Related to `TASK-012`, `TASK-024`
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-032` – Auto-create cast when generating a movie
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 3 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Ensure `GET /api/v1/movies/{slug}` returns a basic cast list (name + role) even for freshly generated movies by automatically creating `Person` records and `movie_person` links from AI payloads.
+- **Details:**
+  - Extend generation jobs (`RealGenerateMovieJob` / `MockGenerateMovieJob`) to persist people returned by the AI response (directors, main cast).
+  - Handle de-duplication (existing people), relation updates, and keep the minimal data set (first name, last name, role).
+  - Update feature tests (`MoviesApiTest`) and documentation (OpenAPI, Postman/Insomnia) with scenarios covering auto-created cast entries.
+- **Dependencies:** Consider alignment with `TASK-022` (people listing endpoint)
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-033` – Remove legacy Actor model in favour of Person
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2–3 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Retire the legacy `Actor` model and consolidate all cast handling around `Person` + `movie_person` pivot.
+- **Details:**
+  - Replace usages of `Actor`/`ActorBio` in seeders, jobs, and relationships with their `Person`/`PersonBio` counterparts.
+  - Update migrations/seeders or add a clean-up migration to ensure data consistency after consolidating actors into `people`.
+  - Remove unused files (`app/Models/Actor*`, `ActorSeeder`, etc.) and refresh tests/documentation (OpenAPI, Postman, README) to reference `Person`.
+- **Dependencies:** Relates to `TASK-032`, `TASK-022`
 - **Created:** 2025-11-10
 
 ---
