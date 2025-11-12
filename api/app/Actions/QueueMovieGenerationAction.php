@@ -7,6 +7,7 @@ use App\Enums\Locale;
 use App\Events\MovieGenerationRequested;
 use App\Models\Movie;
 use App\Services\JobStatusService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class QueueMovieGenerationAction
@@ -22,16 +23,87 @@ class QueueMovieGenerationAction
         ?string $locale = null,
         ?string $contextTag = null
     ): array {
+        Log::info(__METHOD__, [
+            'slug' => $slug,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+            'existing_movie' => $existingMovie,
+        ]);
+        // dump(__METHOD__, $slug, $locale, $contextTag, $existingMovie);
+        // return [
+        //     'slug' => $slug,
+        //     'locale' => $locale,
+        //     'context_tag' => $contextTag,
+
+        //     'existing_id' => $existingMovie?->id,
+        //     'description_id' => $existingMovie?->default_description_id,
+        // ];
         $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
         $normalizedContextTag = $this->normalizeContextTag($contextTag);
 
         $existingMovie ??= Movie::where('slug', $slug)->first();
 
-        if ($existingJob = $this->jobStatusService->findActiveJobForSlug('MOVIE', $slug, $normalizedLocale, $normalizedContextTag)) {
+        $existingJob = $this->jobStatusService->findActiveJobForSlug('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
+        Log::info('QueueMovieGenerationAction: lookup result', [
+            'slug' => $slug,
+            'locale' => $normalizedLocale,
+            'context_tag' => $normalizedContextTag,
+            'existing_job_found' => $existingJob !== null,
+        ]);
+        if ($existingJob) {
+            Log::info('QueueMovieGenerationAction: reusing existing job', [
+                'slug' => $slug,
+                'locale' => $normalizedLocale,
+                'context_tag' => $normalizedContextTag,
+                'existing_job' => $existingJob,
+            ]);
+
             return $this->buildExistingJobResponse($slug, $existingJob, $existingMovie, $normalizedLocale, $normalizedContextTag);
         }
 
         $jobId = (string) Str::uuid();
+
+        if (! $this->jobStatusService->acquireGenerationSlot(
+            'MOVIE',
+            $slug,
+            $jobId,
+            $normalizedLocale,
+            $normalizedContextTag
+        )) {
+            $existingJob = $this->jobStatusService->findActiveJobForSlug('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
+            if ($existingJob) {
+                return $this->buildExistingJobResponse($slug, $existingJob, $existingMovie, $normalizedLocale, $normalizedContextTag);
+            }
+
+            $slotJobId = $this->jobStatusService->currentGenerationSlotJobId('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
+            if ($slotJobId !== null) {
+                return [
+                    'job_id' => $slotJobId,
+                    'status' => 'PENDING',
+                    'message' => 'Generation already queued for movie slug',
+                    'slug' => $slug,
+                    'confidence' => $confidence,
+                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'locale' => $normalizedLocale,
+                    'context_tag' => $normalizedContextTag,
+                ];
+            }
+
+            // Slot was stale, try to acquire again.
+            $this->jobStatusService->releaseGenerationSlot('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
+            if (! $this->jobStatusService->acquireGenerationSlot('MOVIE', $slug, $jobId, $normalizedLocale, $normalizedContextTag)) {
+                return [
+                    'status' => 'PENDING',
+                    'message' => 'Generation already queued for movie slug',
+                    'slug' => $slug,
+                    'confidence' => $confidence,
+                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'locale' => $normalizedLocale,
+                    'context_tag' => $normalizedContextTag,
+                ];
+            }
+        }
+
         $baselineDescriptionId = $existingMovie?->default_description_id;
 
         $this->jobStatusService->initializeStatus(
@@ -51,6 +123,12 @@ class QueueMovieGenerationAction
             locale: $normalizedLocale,
             contextTag: $normalizedContextTag
         ));
+        Log::info('QueueMovieGenerationAction: dispatched new job', [
+            'job_id' => $jobId,
+            'slug' => $slug,
+            'locale' => $normalizedLocale,
+            'context_tag' => $normalizedContextTag,
+        ]);
 
         $response = [
             'job_id' => $jobId,
@@ -77,7 +155,7 @@ class QueueMovieGenerationAction
     /**
      * @param  array{job_id: string, status: string, confidence?: mixed, locale?: string|null, context_tag?: string|null}  $existingJob
      */
-    private function buildExistingJobResponse(
+    protected function buildExistingJobResponse(
         string $slug,
         array $existingJob,
         ?Movie $existingMovie = null,

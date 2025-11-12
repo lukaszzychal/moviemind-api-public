@@ -101,6 +101,11 @@ cd api && \
 - **Commit messages** pisz wyłącznie po angielsku, w stylu `type: short description` (np. `feat: add movie resource`). Niedozwolone są komunikaty w innych językach.
 - Agent może wykonywać `git commit`, ale `git push` uruchamia wyłącznie na wyraźne polecenie użytkownika.
 
+## Natychmiastowe commity
+
+- Po każdej zmianie w plikach zasad Cursor (`.cursor/rules/*.mdc`) wykonaj natychmiastowy commit obejmujący te pliki.
+- Po dodaniu nowego zadania lub aktualizacji treści istniejącego zadania w `docs/issue/**/*.md`, niezwłocznie zatwierdź te zmiany w osobnym commicie.
+
 ## Zarządzanie zadaniami (TASKS.md)
 
 - Po rozpoczęciu zadania **zmień status na `🔄 IN_PROGRESS`**, wpisz `Czas rozpoczęcia` (z dokładnością do minuty) oraz oznacz wykonawcę (`🤖/👨‍💻/⚙️`).

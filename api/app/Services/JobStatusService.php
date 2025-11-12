@@ -4,12 +4,15 @@ namespace App\Services;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class JobStatusService
 {
     private const CACHE_TTL_MINUTES = 15;
 
     private const STATUS_PENDING = 'PENDING';
+
+    private const GENERATION_SLOT_TTL_MINUTES = 15;
 
     private const STATUS_IN_PROGRESS = 'IN_PROGRESS';
 
@@ -44,6 +47,84 @@ class JobStatusService
         );
 
         $this->storeSlugMapping($entityType, $slug, $jobId, self::STATUS_PENDING, $locale, $contextTag);
+        Log::info('JobStatusService: initialized status', [
+            'job_id' => $jobId,
+            'entity' => $entityType,
+            'slug' => $slug,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+        ]);
+    }
+
+    /**
+     * Try to acquire an in-flight generation slot. Returns true when the slot was acquired.
+     */
+    public function acquireGenerationSlot(
+        string $entityType,
+        string $slug,
+        string $jobId,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): bool {
+        $key = $this->generationSlotKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+
+        $acquired = Cache::add(
+            $key,
+            $jobId,
+            Carbon::now()->addMinutes(self::GENERATION_SLOT_TTL_MINUTES)
+        );
+
+        if ($acquired) {
+            Log::info('JobStatusService: acquired generation slot', [
+                'slot_key' => $key,
+                'job_id' => $jobId,
+            ]);
+        } else {
+            Log::info('JobStatusService: generation slot busy', [
+                'slot_key' => $key,
+            ]);
+        }
+
+        return $acquired;
+    }
+
+    /**
+     * Retrieve the job id currently occupying the generation slot.
+     */
+    public function currentGenerationSlotJobId(
+        string $entityType,
+        string $slug,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): ?string {
+        $key = $this->generationSlotKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+        /** @var string|null $jobId */
+        $jobId = Cache::get($key);
+
+        if ($jobId !== null) {
+            Log::info('JobStatusService: generation slot holder', [
+                'slot_key' => $key,
+                'job_id' => $jobId,
+            ]);
+        }
+
+        return $jobId;
+    }
+
+    /**
+     * Release the slot after job completion or failure.
+     */
+    public function releaseGenerationSlot(
+        string $entityType,
+        string $slug,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): void {
+        $key = $this->generationSlotKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+        Cache::forget($key);
+        Log::info('JobStatusService: released generation slot', [
+            'slot_key' => $key,
+        ]);
     }
 
     /**
@@ -82,6 +163,12 @@ class JobStatusService
         if ($entityType !== '' && $requestedSlug !== '') {
             $this->storeSlugMapping($entityType, $requestedSlug, $jobId, $status, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
         }
+        Log::info('JobStatusService: updated status', [
+            'job_id' => $jobId,
+            'status' => $status,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+        ]);
     }
 
     /**
@@ -140,6 +227,8 @@ class JobStatusService
             $jobId = Cache::get($slugKey);
 
             if (! $jobId) {
+                Log::info('JobStatusService: slug mapping empty', ['slug_key' => $slugKey]);
+
                 continue;
             }
 
@@ -147,6 +236,7 @@ class JobStatusService
 
             if ($status === null) {
                 Cache::forget($slugKey);
+                Log::info('JobStatusService: cleared stale mapping', ['slug_key' => $slugKey, 'job_id' => $jobId]);
 
                 continue;
             }
@@ -155,6 +245,11 @@ class JobStatusService
 
             if (! $this->isActiveStatus($currentStatus)) {
                 Cache::forget($slugKey);
+                Log::info('JobStatusService: removed inactive mapping', [
+                    'slug_key' => $slugKey,
+                    'job_id' => $jobId,
+                    'status' => $currentStatus,
+                ]);
 
                 continue;
             }
@@ -183,6 +278,24 @@ class JobStatusService
         return 'ai_job_slug:'.implode(':', $parts);
     }
 
+    private function generationSlotKey(string $entityType, string $slug, ?string $locale = null, ?string $contextTag = null): string
+    {
+        $parts = [
+            $this->sanitizeKeyPart($entityType),
+            $this->sanitizeKeyPart($slug),
+        ];
+
+        if ($locale !== null && $locale !== '') {
+            $parts[] = 'loc-'.$this->sanitizeKeyPart($locale);
+        }
+
+        if ($contextTag !== null && $contextTag !== '') {
+            $parts[] = 'ctx-'.$this->sanitizeKeyPart($contextTag);
+        }
+
+        return 'ai_job_inflight:'.implode(':', $parts);
+    }
+
     private function storeSlugMapping(string $entityType, string $slug, string $jobId, string $status, ?string $locale = null, ?string $contextTag = null): void
     {
         $keys = array_unique(array_filter([
@@ -193,6 +306,11 @@ class JobStatusService
         foreach ($keys as $key) {
             if (! $this->isActiveStatus($status)) {
                 Cache::forget($key);
+                Log::info('JobStatusService: forget slug mapping (inactive status)', [
+                    'slug_key' => $key,
+                    'job_id' => $jobId,
+                    'status' => $status,
+                ]);
 
                 continue;
             }
@@ -202,6 +320,11 @@ class JobStatusService
                 $jobId,
                 Carbon::now()->addMinutes(self::CACHE_TTL_MINUTES)
             );
+            Log::info('JobStatusService: stored slug mapping', [
+                'slug_key' => $key,
+                'job_id' => $jobId,
+                'status' => $status,
+            ]);
         }
     }
 
