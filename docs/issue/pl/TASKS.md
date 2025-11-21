@@ -372,6 +372,53 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-034` - Implementacja Retrieval Augmented Generation (RAG)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 8-12 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Wdrożenie systemu RAG (Retrieval Augmented Generation) w celu poprawy jakości i kontekstowości generowanych opisów filmów i biografii osób poprzez wykorzystanie istniejących danych z bazy.
+- **Szczegóły:**
+  - **Embedding Generation:** Implementacja generowania embeddingów dla istniejących opisów filmów/osób oraz zapis w bazie (nowa tabela `embeddings` lub kolumna w istniejących tabelach).
+  - **Vector Search:** Integracja z bazą wektorową (np. PostgreSQL pgvector, Redis Vector Search, lub zewnętrzny serwis jak Pinecone/Weaviate) do wyszukiwania podobnych opisów.
+  - **Context Retrieval:** Rozszerzenie jobów generujących (`RealGenerateMovieJob`, `RealGeneratePersonJob`) o fazę pobierania podobnych opisów z bazy przed wywołaniem OpenAI API.
+  - **Prompt Engineering:** Modyfikacja promptów dla OpenAI, aby uwzględniały pobrane konteksty jako referencje stylu, struktury i treści.
+  - **Feature Flag:** Dodanie flagi `ai_rag_enabled` do kontroli włączania/wyłączania RAG (domyślnie wyłączone dla bezpiecznego rollout).
+  - **Testy i Dokumentacja:** Przygotowanie testów jednostkowych i feature dla RAG pipeline, aktualizacja dokumentacji technicznej oraz OpenAPI (jeśli API ulegnie zmianie).
+- **Zależności:** Rozważyć synchronizację z `TASK-031` (strategia wersjonowania opisów) oraz `TASK-032` (automatyczne tworzenie obsady)
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-035` - Analiza alternatywnych runtime'ów PHP (RoadRunner, Swoole, KPHP, FrankenPHP)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4-6 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Przeprowadzenie analizy możliwości wykorzystania alternatywnych runtime'ów PHP (RoadRunner, Swoole, KPHP, FrankenPHP) w projekcie MovieMind API oraz ocena sensowności ich wdrożenia w kontekście obecnej architektury.
+- **Szczegóły:**
+  - **RoadRunner:** Analiza integracji z Laravel, korzyści (wydajność, długotrwałe połączenia), wymagania (Go runtime), kompatybilność z obecnym stackiem (Redis, Horizon, Queue).
+  - **Swoole:** Ocena możliwości wykorzystania Swoole dla asynchronicznych operacji, długotrwałych połączeń WebSocket, kompatybilność z Laravel Octane, wymagania (rozszerzenie PHP).
+  - **KPHP:** Analiza kompilacji PHP do natywnego kodu, korzyści wydajnościowe, ograniczenia (nie wszystkie funkcje PHP), przydatność dla API.
+  - **FrankenPHP:** Ocena integracji z Laravel, korzyści (Caddy server, early hints), wymagania, kompatybilność z obecną infrastrukturą.
+  - **Porównanie z obecnym stackiem:** PHP-FPM + Nginx - analiza trade-offów (wydajność vs złożoność, kompatybilność vs nowe możliwości).
+  - **Rekomendacje:** Przygotowanie dokumentu porównawczego z rekomendacjami dla MovieMind API, uwzględniając:
+    - Która technologia najlepiej pasuje do obecnej architektury
+    - Jakie korzyści można osiągnąć (wydajność, skalowalność, koszty)
+    - Jakie są ryzyka i ograniczenia
+    - Czy wdrożenie ma sens w obecnym momencie rozwoju projektu
+  - **Dokumentacja:** Utworzenie dokumentu w `docs/knowledge/technical/` (PL/EN) z wynikami analizy, porównaniem technologii oraz rekomendacjami.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+
+---
+
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` - Integracja i naprawa połączenia z OpenAI
@@ -693,7 +740,7 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 13
+- **Aktywne:** 15
 - **Zakończone:** 7
 - **Anulowane:** 0
 - **W trakcie:** 2
