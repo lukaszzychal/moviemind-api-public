@@ -136,6 +136,9 @@ cd api && \
 - **ZAWSZE** informuj użytkownika z jakiego modelu AI korzystasz na początku odpowiedzi lub gdy jest to istotne dla kontekstu.
 - Format: `**Model AI używany:** [nazwa modelu]` (np. `Claude Sonnet 4.5 (Auto)`, `OpenAI gpt-4o-mini`).
 - Jeśli dostępne są informacje o tokenach (zużyte/pozostałe) i **ich podanie nie zużywa dodatkowych tokenów**, możesz je dołączyć:
-  - Format: `**Tokeny:** zużyte: X, pozostałe: Y` (lub podobny, w zależności od dostępnych danych).
+  - Format podstawowy: `**Tokeny:** zużyte: X, pozostałe: Y` (lub podobny, w zależności od dostępnych danych).
+  - Jeśli dostępne są szczegółowe informacje o tokenach dla prompt/response lub input/output, możesz je podać:
+    - Format: `**Tokeny:** input: X, output: Y, total: Z` lub `**Tokeny:** prompt: X, response: Y, total: Z`
+    - Uwzględnij tylko te informacje, które są dostępne i których podanie nie zużywa dodatkowych tokenów.
 - Jeśli informacja o tokenach nie jest dostępna lub jej podanie zużywałoby dodatkowe tokeny, pomiń tę informację.
 - W kontekście aplikacji MovieMind API, jeśli wspominasz o modelu używanym przez aplikację (np. OpenAI), zawsze podaj pełną nazwę modelu (np. `gpt-4o-mini`).
