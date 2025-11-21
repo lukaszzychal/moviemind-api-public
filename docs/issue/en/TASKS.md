@@ -412,6 +412,26 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-034` – Translate Cursor rules (.mdc) and CLAUDE.md to English
+- **Status:** 🔄 IN_PROGRESS
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2–3 h
+- **Start time:** 2025-11-12
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** 🤖 AI Agent
+- **Description:** Translate all `.cursor/rules/*.mdc` files and `CLAUDE.md` to English. Polish versions will be moved to documentation (`docs/`) and kept synchronized with English versions (purpose: learning English). Cursor/Claude will use only English versions.
+- **Details:**
+  - Translate all `.cursor/rules/*.mdc` files to English
+  - Translate `CLAUDE.md` to English
+  - Move Polish versions to `docs/cursor-rules/pl/` and `docs/CLAUDE.pl.md`
+  - Update structure so Cursor uses only English versions
+  - Add synchronization instructions in documentation
+- **Dependencies:** None
+- **Created:** 2025-11-12
+
+---
+
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` – OpenAI integration repair

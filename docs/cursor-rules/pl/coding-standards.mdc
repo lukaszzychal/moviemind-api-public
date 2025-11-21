@@ -1,0 +1,151 @@
+---
+alwaysApply: true
+---
+
+# Zasady Pisania Kodu
+
+## Filozofia: Pragmatyczne podejście
+
+- Zasady są narzędziami, nie celem samym w sobie
+- Czytelność > Zwięzłość
+- Prosty kod jest lepszy niż "idealny" kod zgodny ze wszystkimi zasadami
+- Nie stosuj zasad na siłę
+
+## KISS (Keep It Simple, Stupid)
+
+- **Prostota przed złożonością** - wybieraj prostsze rozwiązanie
+- **Nie przesadzaj z abstrakcją** - czasem prosty kod jest lepszy
+- **Unikaj przedwczesnej optymalizacji** - najpierw działający kod, potem optymalizacja
+- **Czytelność > Wydajność** (w większości przypadków)
+- **Najprostsze rozwiązanie które działa** jest najlepsze
+
+## SOLID (stosuj pragmatycznie)
+
+- **SRP**: Jedna klasa = jedna odpowiedzialność
+- **OCP**: Otwórz na rozszerzenia, zamknij na modyfikacje
+- **LSP**: Podklasy muszą być zastępowalne
+- **ISP**: Interfejsy specyficzne, nie ogólne
+- **DIP**: Zależność od abstrakcji, nie konkretnych implementacji
+
+## DRY (Don't Repeat Yourself)
+
+- Refaktoryzuj duplikację gdy występuje w 3+ miejscach
+- Nie przesadzaj z abstrakcją - czasem duplikacja jest czytelniejsza
+- Refaktoryzuj tylko gdy ma to praktyczny sens
+
+## CUPID
+
+- **C**omposable - łatwy do składania
+- **U**nix philosophy - robi jedną rzecz dobrze
+- **P**redictable - przewidywalny
+- **I**diomatic - zgodny z Laravel conventions
+- **D**omain-based - oparty na domenie
+
+## Wybór Architektury
+
+### Zasada: Start Simple, Scale When Needed
+
+**Zacznij od prostego rozwiązania, dodaj złożoność tylko gdy jest to uzasadnione.**
+
+### Proste rozwiązania (Skrypty Transakcji, Transaction Script)
+
+**Używaj gdy:**
+- ✅ Mały do średniego projektu (MVP, prototypy)
+- ✅ Prosta logika biznesowa (CRUD, proste operacje)
+- ✅ Mały zespół (1-3 osoby)
+- ✅ Szybki development i delivery
+- ✅ Niskie ryzyko zmian w wymaganiach
+- ✅ Prosta domena (nie wymaga złożonej logiki biznesowej)
+
+**Przykłady:**
+- Laravel Controllers z bezpośrednim dostępem do Models
+- Proste Services z logiką biznesową
+- Repository pattern (jeśli potrzebny)
+- Minimalna abstrakcja
+
+**Zalety:**
+- Szybki development
+- Łatwe do zrozumienia
+- Niskie koszty utrzymania (na początku)
+- Szybka iteracja
+
+### Zaawansowane architektury (DDD, Hexagonal, Clean Architecture)
+
+**Używaj gdy:**
+- ✅ Duży, złożony projekt
+- ✅ Złożona logika biznesowa (wiele reguł, stanów)
+- ✅ Wiele zespołów pracujących równolegle
+- ✅ Długa żywotność projektu (5+ lat)
+- ✅ Wysokie ryzyko zmian w wymaganiach
+- ✅ Złożona domena (domain experts, rich domain model)
+- ✅ Wymagana wysoka testowalność i izolacja
+- ✅ Potrzeba wielu portów (API, CLI, Web, Events)
+
+**Przykłady:**
+- Domain-Driven Design (DDD) - Entities, Value Objects, Domain Services
+- Hexagonal Architecture - Ports & Adapters
+- Clean Architecture - warstwy z dependency rules
+- CQRS + Event Sourcing (gdy potrzebne)
+
+**Zalety:**
+- Wysoka testowalność
+- Lepsza separacja odpowiedzialności
+- Łatwiejsze dodawanie nowych feature'ów
+- Niezależność od frameworka
+- Długoterminowa łatwość utrzymania
+
+**Wady:**
+- Więcej kodu (boilerplate)
+- Wolniejszy initial development
+- Więcej abstrakcji (może być trudniejsze do zrozumienia)
+- Wyższe koszty na początku
+
+### Migracja: Proste → Zaawansowane
+
+**Kiedy refaktoryzować do bardziej zaawansowanej architektury:**
+
+1. ✅ Kod staje się trudny do utrzymania
+2. ✅ Trudno dodać nowe feature'y bez zmiany istniejących
+3. ✅ Testy są trudne do napisania
+4. ✅ Dużo duplikacji logiki biznesowej
+5. ✅ Zespół rośnie i potrzebuje lepszej organizacji
+6. ✅ Domena staje się bardziej złożona
+7. ✅ Wymagana jest niezależność od frameworka
+
+**Kiedy NIE refaktoryzować:**
+- ❌ "Dla zasady" - bez konkretnego problemu
+- ❌ Gdy kod działa dobrze i jest łatwy w utrzymaniu
+- ❌ Gdy projekt jest mały i prosty
+- ❌ Gdy nie ma czasu/resources na refaktoryzację
+
+### Rekomendacje dla MovieMind API
+
+**Obecny stan:**
+- Prosta architektura z Services, Repositories, Controllers
+- Event-Driven dla asynchronicznych operacji (Jobs)
+- Laravel conventions
+
+**Kiedy rozważyć DDD/Hexagonal:**
+- Gdy logika biznesowa stanie się bardzo złożona
+- Gdy będzie potrzeba wielu różnych portów (Web, CLI, Queue, Events)
+- Gdy zespół urośnie i będzie potrzeba lepszej separacji
+- Gdy będzie potrzeba niezależności od Laravel (np. shared kernel)
+
+**Zasada:**
+**Zacznij prosto, refaktoryzuj gdy pojawią się konkretne problemy, nie "na zapas".**
+
+## Code Smells (naprawiaj gdy utrudniają pracę)
+
+- God Class/Method - klasa/metoda robi za dużo
+- Long Parameter List - użyj DTO/Request object
+- Feature Envy - przenieś logikę do odpowiedniej klasy
+- Data Clumps - użyj Value Object
+- Primitive Obsession - użyj Value Objects
+
+## Standardy kodowania
+
+- **PSR-12** - formatowanie (enforced przez Pint)
+- **Laravel Conventions** - konwencje Laravel
+- **Type hints** - zawsze używaj typów
+- **Strict types** - `declare(strict_types=1);` w plikach PHP
+- **Return types** - zawsze określaj zwracany typ

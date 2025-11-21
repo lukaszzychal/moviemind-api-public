@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# Priorytety
+
+## 🎯 Hierarchia Priorytetów
+
+W przypadku konfliktów, priorytety są następujące:
+
+1. **Bezpieczeństwo** - sekrety, luki bezpieczeństwa (najwyższy priorytet)
+2. **Testy** - wszystkie testy muszą przechodzić, TDD
+3. **Jakość kodu** - PHPStan, Pint (wymagane przed commitem)
+4. **Czytelność** - kod musi być zrozumiały (wymagane)
+5. **Dobre praktyki** - SOLID, DRY, GRASP, CUPID (stosuj pragmatycznie)
+
+## Zasada
+
+**Bezpieczeństwo > Testy > Jakość > Czytelność > Praktyki**
