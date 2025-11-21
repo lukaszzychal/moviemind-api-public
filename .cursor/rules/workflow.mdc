@@ -131,6 +131,23 @@ cd api && \
 - Jeśli nie możesz potwierdzić linku, **wyraźnie to zaznacz**, dodając alternatywne źródło lub ostrzeżenie.
 - Odpowiedzi formatuj przejrzyście (nagłówki, listy punktowane) zgodnie z guideline Cursor.
 
+## Testowanie manualne
+
+- **ZAWSZE** przetestuj manualnie taski i funkcje, które można przetestować bez automatycznych testów.
+- Przed zakończeniem zadania zweryfikuj, że implementacja działa poprawnie w praktyce (np. przez wywołanie endpointu API, sprawdzenie odpowiedzi, weryfikację zachowania w przeglądarce).
+- Jeśli testowanie wymaga uruchomienia Dockera lub innego narzędzia (np. Redis, Horizon, PostgreSQL), **zawsze poinformuj użytkownika**:
+  - Jakie narzędzie jest potrzebne
+  - Jak je uruchomić (np. `docker compose up -d`, `php artisan horizon`)
+  - Jakie komendy należy wykonać do weryfikacji
+  - Gdzie sprawdzić wyniki (logi, dashboard, etc.)
+- Przykłady sytuacji wymagających testowania manualnego:
+  - Nowe endpointy API (sprawdzenie odpowiedzi, status codes, format JSON)
+  - Integracje z zewnętrznymi serwisami (OpenAI, etc.)
+  - Zmiany w UI/UX (jeśli dotyczy)
+  - Funkcjonalności wymagające interakcji użytkownika
+  - Scenariusze trudne do przetestowania automatycznie (np. race conditions, timing issues)
+- Jeśli testowanie manualne nie jest możliwe lub wymagałoby zbyt dużo czasu, poinformuj użytkownika o tym i zaproponuj alternatywne podejście (np. testy automatyczne, dokumentacja, etc.).
+
 ## Informowanie o modelu AI i tokenach
 
 - **ZAWSZE** informuj użytkownika z jakiego modelu AI korzystasz na początku odpowiedzi lub gdy jest to istotne dla kontekstu.
