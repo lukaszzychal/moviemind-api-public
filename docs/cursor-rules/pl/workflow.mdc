@@ -124,6 +124,33 @@ cd api && \
 - Jeśli treść jest długa, dopuszczalne są streszczenia, ale oba języki muszą zawierać komplet kluczowych informacji i linkować do siebie.
 - Pliki indeksowe (np. `docs/issue/README.md`) powinny jasno wskazywać, gdzie znajdują się wersje PL i EN.
 
+## Synchronizacja zasad Cursor (EN ↔ PL)
+
+**WAŻNE:** Pliki w `.cursor/rules/*.mdc` i `CLAUDE.md` są w wersji angielskiej (używane przez Cursor/Claude). Wersje polskie znajdują się w dokumentacji dla celów nauki języka angielskiego.
+
+### Zasady synchronizacji:
+
+- **Gdy zmieniasz plik w `.cursor/rules/*.mdc` lub `CLAUDE.md`:**
+  - **ZAWSZE** zaktualizuj odpowiednią wersję polską w `docs/cursor-rules/pl/*.mdc` lub `docs/CLAUDE.pl.md`
+  - Wersje muszą być zsynchronizowane – brak synchronizacji traktujemy jako błąd review
+  - Aktualizuj obie wersje w tym samym commicie lub w kolejnych commitach (nie zostawiaj wersji polskiej niezsynchronizowanej)
+
+- **Gdy dodajesz nowy plik w `.cursor/rules/*.mdc`:**
+  - **ZAWSZE** utwórz wersję polską w `docs/cursor-rules/pl/` o tej samej nazwie
+  - Nowy plik musi mieć obie wersje (EN w `.cursor/rules/`, PL w `docs/cursor-rules/pl/`)
+
+- **Gdy dodajesz nową sekcję lub zasadę:**
+  - Dodaj ją najpierw w wersji angielskiej (w `.cursor/rules/*.mdc` lub `CLAUDE.md`)
+  - **Natychmiast** dodaj tłumaczenie polskie w odpowiednim pliku w `docs/cursor-rules/pl/` lub `docs/CLAUDE.pl.md`
+
+- **Struktura:**
+  - `.cursor/rules/*.mdc` - wersje angielskie (używane przez Cursor/Claude)
+  - `CLAUDE.md` - wersja angielska (używana przez Cursor/Claude)
+  - `docs/cursor-rules/pl/*.mdc` - wersje polskie (dla nauki języka angielskiego)
+  - `docs/CLAUDE.pl.md` - wersja polska (dla nauki języka angielskiego)
+
+**Pamiętaj:** Wersje polskie służą do nauki języka angielskiego przez porównanie z wersjami angielskimi. Cursor/Claude używa tylko wersji angielskich z `.cursor/rules/` i `CLAUDE.md`.
+
 ## Linki zewnętrzne i nazwy własne
 
 - Przy podawaniu publicznie dostępnych nazw własnych (np. sklepy internetowe, dostawcy) **zawsze** dołącz obok wiarygodny link URL.

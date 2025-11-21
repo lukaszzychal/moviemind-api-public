@@ -1,48 +1,48 @@
-# MovieMind API - Kontekst Projektu
+# MovieMind API - Project Context
 
-> **Ten plik zawiera kontekst o projekcie MovieMind API dla AI asystenta.**
+> **This file contains context about the MovieMind API project for the AI assistant.**
 > 
-> Jest automatycznie wczytywany przez Cursor IDE gdy opcja "Include CLAUDE.md in context" jest włączona w ustawieniach.
+> It is automatically loaded by Cursor IDE when the "Include CLAUDE.md in context" option is enabled in settings.
 
 ---
 
-## 🎯 Przegląd Projektu
+## 🎯 Project Overview
 
-MovieMind API to RESTful API do generowania i przechowywania unikalnych opisów filmów, seriali i aktorów przy użyciu technologii AI. Projekt tworzy oryginalną, wygenerowaną przez AI treść zamiast kopiować zawartość z IMDb czy TMDb.
+MovieMind API is a RESTful API for generating and storing unique descriptions of movies, series, and actors using AI technology. The project creates original, AI-generated content instead of copying content from IMDb or TMDb.
 
 ---
 
-## 🏗️ Stack Technologiczny
+## 🏗️ Technology Stack
 
 ### Backend
 - **Framework:** Laravel 12
 - **PHP:** 8.2+
-- **Baza danych:** PostgreSQL (produkcja), SQLite (testy)
+- **Database:** PostgreSQL (production), SQLite (tests)
 - **Cache:** Redis
-- **Queue:** Laravel Horizon (asynchroniczne przetwarzanie)
+- **Queue:** Laravel Horizon (asynchronous processing)
 - **AI Integration:** OpenAI API (gpt-4o-mini)
 
-### Narzędzia Rozwojowe
-- **Testy:** PHPUnit (Feature Tests + Unit Tests)
-- **Formatowanie:** Laravel Pint (PSR-12)
-- **Analiza statyczna:** PHPStan (poziom 5)
-- **Bezpieczeństwo:** GitLeaks (wykrywanie sekretów)
-- **Dokumentacja:** OpenAPI/Swagger
+### Development Tools
+- **Tests:** PHPUnit (Feature Tests + Unit Tests)
+- **Formatting:** Laravel Pint (PSR-12)
+- **Static analysis:** PHPStan (level 5)
+- **Security:** GitLeaks (secret detection)
+- **Documentation:** OpenAPI/Swagger
 
 ---
 
-## 📁 Struktura Projektu
+## 📁 Project Structure
 
-### Główna Struktura
+### Main Structure
 ```
-api/                          # Aplikacja Laravel
+api/                          # Laravel application
 ├── app/
-│   ├── Enums/               # Enumeracje (Language, EntityType, etc.)
-│   ├── Events/              # Eventy Laravel
+│   ├── Enums/               # Enumerations (Language, EntityType, etc.)
+│   ├── Events/              # Laravel Events
 │   ├── Features/            # Feature-based code
 │   ├── Helpers/             # Helper functions
 │   ├── Http/
-│   │   ├── Controllers/     # Controllers API
+│   │   ├── Controllers/     # API Controllers
 │   │   ├── Requests/        # Request validators
 │   │   └── Resources/        # API Resources
 │   ├── Jobs/                # Queue Jobs (ShouldQueue)
@@ -50,10 +50,10 @@ api/                          # Aplikacja Laravel
 │   ├── Models/              # Eloquent Models
 │   ├── Repositories/        # Repository pattern
 │   └── Services/            # Business logic services
-├── config/                  # Konfiguracja Laravel
+├── config/                  # Laravel configuration
 ├── database/
-│   ├── migrations/          # Migracje bazy danych
-│   └── seeders/             # Seedery
+│   ├── migrations/          # Database migrations
+│   └── seeders/             # Seeders
 ├── routes/
 │   └── api.php              # Route definitions
 └── tests/
@@ -63,9 +63,9 @@ api/                          # Aplikacja Laravel
 
 ---
 
-## 🗄️ Model Danych
+## 🗄️ Data Model
 
-### Główne Tabele
+### Main Tables
 
 **Movies**
 - `id` (PK)
@@ -86,9 +86,9 @@ api/                          # Aplikacja Laravel
 - `created_at`
 
 **Actors & Bios**
-- Podobna struktura do Movies/Descriptions
-- `actors` - podstawowe dane aktora
-- `actor_bios` - AI-generated biografie
+- Similar structure to Movies/Descriptions
+- `actors` - basic actor data
+- `actor_bios` - AI-generated biographies
 
 **Jobs (Async Processing)**
 - `id` (PK)
@@ -101,13 +101,13 @@ api/                          # Aplikacja Laravel
 
 ---
 
-## 🔄 Architektura i Flow
+## 🔄 Architecture and Flow
 
-### Obecny Flow (Laravel Events + Jobs)
+### Current Flow (Laravel Events + Jobs)
 ```
 Controller
   ↓
-Event (np. MovieGenerationRequested)
+Event (e.g. MovieGenerationRequested)
   ↓
 Listener (QueueMovieGenerationJob)
   ↓
@@ -120,143 +120,143 @@ AI Service (OpenAI API)
 Database (save result)
 ```
 
-### Wzorce Projektowe
-- **Repository Pattern** - abstrakcja dostępu do danych
-- **Service Layer** - logika biznesowa
-- **Event-Driven** - Events + Listeners dla asynchronicznych operacji
-- **Queue Jobs** - długotrwałe operacje (AI generation)
+### Design Patterns
+- **Repository Pattern** - data access abstraction
+- **Service Layer** - business logic
+- **Event-Driven** - Events + Listeners for asynchronous operations
+- **Queue Jobs** - long-running operations (AI generation)
 
 ---
 
-## 🧪 Testy
+## 🧪 Tests
 
-### Rodzaje Testów
+### Test Types
 
 1. **Feature Tests** (`tests/Feature/`)
-   - Testują endpointy API
-   - Używają bazy testowej (SQLite `:memory:`)
-   - Przykład: `MovieControllerTest`, `GenerateApiTest`
+   - Test API endpoints
+   - Use test database (SQLite `:memory:`)
+   - Example: `MovieControllerTest`, `GenerateApiTest`
 
 2. **Unit Tests** (`tests/Unit/`)
-   - Testują pojedyncze klasy i metody
-   - Szybkie, izolowane
-   - Przykład: `MovieServiceTest`, `ValidationHelperTest`
+   - Test individual classes and methods
+   - Fast, isolated
+   - Example: `MovieServiceTest`, `ValidationHelperTest`
 
 ### TDD Workflow
-- **RED** - Napisz test, który definiuje wymaganie
-- **GREEN** - Napisz minimalny kod do przejścia testu
-- **REFACTOR** - Popraw kod, zachowując przechodzące testy
+- **RED** - Write a test that defines the requirement
+- **GREEN** - Write minimal code to pass the test
+- **REFACTOR** - Improve code while keeping tests passing
 
-**WAŻNE:** Zawsze pisz testy przed implementacją!
+**IMPORTANT:** Always write tests before implementation!
 
 ---
 
-## 📝 Konwencje Nazewnictwa
+## 📝 Naming Conventions
 
-### Klasy
-- **Controllers:** `MovieController`, `PersonController` (sufiks: Controller)
+### Classes
+- **Controllers:** `MovieController`, `PersonController` (suffix: Controller)
 - **Models:** `Movie`, `MovieDescription`, `Actor` (PascalCase, singular)
-- **Services:** `MovieService`, `AiService` (sufiks: Service)
-- **Jobs:** `GenerateMovieJob`, `GenerateActorBioJob` (sufiks: Job)
-- **Events:** `MovieGenerationRequested` (czasownik w czasie przeszłym)
-- **Listeners:** `QueueMovieGenerationJob` (akcja + obiekt)
-- **Requests:** `StoreMovieRequest`, `UpdateMovieRequest` (akcja + obiekt + Request)
-- **Resources:** `MovieResource`, `ActorResource` (obiekt + Resource)
+- **Services:** `MovieService`, `AiService` (suffix: Service)
+- **Jobs:** `GenerateMovieJob`, `GenerateActorBioJob` (suffix: Job)
+- **Events:** `MovieGenerationRequested` (verb in past tense)
+- **Listeners:** `QueueMovieGenerationJob` (action + object)
+- **Requests:** `StoreMovieRequest`, `UpdateMovieRequest` (action + object + Request)
+- **Resources:** `MovieResource`, `ActorResource` (object + Resource)
 
-### Metody
-- **Controllers:** `index()`, `show()`, `store()`, `update()`, `destroy()` (standardowe REST)
-- **Services:** `create()`, `find()`, `update()`, `delete()`, `generate()` (akcje biznesowe)
-- **Tests:** `test_can_create_movie()` (snake_case, prefiks: test_)
+### Methods
+- **Controllers:** `index()`, `show()`, `store()`, `update()`, `destroy()` (standard REST)
+- **Services:** `create()`, `find()`, `update()`, `delete()`, `generate()` (business actions)
+- **Tests:** `test_can_create_movie()` (snake_case, prefix: test_)
 
-### Pliki
+### Files
 - **Migrations:** `2024_01_01_000000_create_movies_table.php` (timestamp_description)
-- **Seeders:** `MovieSeeder`, `ActorSeeder` (obiekt + Seeder)
+- **Seeders:** `MovieSeeder`, `ActorSeeder` (object + Seeder)
 
 ---
 
-## 🔧 Workflow Przed Commitem
+## 🔧 Pre-Commit Workflow
 
-Przed każdym commitem MUSISZ uruchomić:
+Before each commit you MUST run:
 
-1. **Laravel Pint** - formatowanie
+1. **Laravel Pint** - formatting
    ```bash
    cd api && vendor/bin/pint
    ```
 
-2. **PHPStan** - analiza statyczna
+2. **PHPStan** - static analysis
    ```bash
    cd api && vendor/bin/phpstan analyse --memory-limit=2G
    ```
 
-3. **PHPUnit** - testy
+3. **PHPUnit** - tests
    ```bash
    cd api && php artisan test
    ```
 
-4. **GitLeaks** - wykrywanie sekretów
+4. **GitLeaks** - secret detection
    ```bash
    gitleaks protect --source . --verbose --no-banner
    ```
 
-5. **Composer Audit** - audyt bezpieczeństwa
+5. **Composer Audit** - security audit
    ```bash
    cd api && composer audit
    ```
 
 ---
 
-## 🎯 Zasady Kodowania
+## 🎯 Coding Principles
 
-### SOLID (stosuj pragmatycznie)
-- **SRP** - Jedna klasa = jedna odpowiedzialność
-- **DIP** - Zależność od abstrakcji (interfejsy)
+### SOLID (apply pragmatically)
+- **SRP** - One class = one responsibility
+- **DIP** - Depend on abstractions (interfaces)
 
 ### DRY
-- Refaktoryzuj duplikację gdy występuje w 3+ miejscach
-- Nie przesadzaj z abstrakcją
+- Refactor duplication when it occurs in 3+ places
+- Don't overdo abstraction
 
 ### Type Safety
-- Zawsze używaj `declare(strict_types=1);` w plikach PHP
-- Zawsze określaj type hints dla parametrów i return types
-- Używaj typów zamiast `mixed` gdzie to możliwe
+- Always use `declare(strict_types=1);` in PHP files
+- Always specify type hints for parameters and return types
+- Use types instead of `mixed` where possible
 
 ### Laravel Conventions
-- Używaj Eloquent Models zamiast Query Builder gdy możliwe
-- Używaj Form Requests dla walidacji
-- Używaj API Resources dla odpowiedzi
-- Używaj Events + Jobs dla asynchronicznych operacji
+- Use Eloquent Models instead of Query Builder when possible
+- Use Form Requests for validation
+- Use API Resources for responses
+- Use Events + Jobs for asynchronous operations
 
 ---
 
-## 📚 Kluczowe Pliki Dokumentacji
+## 📚 Key Documentation Files
 
-- **Reguły AI:** `.cursor/rules/*.mdc` (reguły w nowym formacie) + `docs/AI_AGENT_CONTEXT_RULES.md` (szczegóły)
-- **Zadania:** `docs/issue/TASKS.md` - ⭐ ZACZYNAJ OD TEGO
-- **Testy:** `docs/TESTING_STRATEGY.md`
-- **Narzędzia:** `docs/CODE_QUALITY_TOOLS.md`
-- **Architektura:** `docs/ARCHITECTURE_ANALYSIS.md`
-- **Wyjaśnienie Cursor:** `docs/CURSOR_RULES_EXPLANATION.md`
+- **AI Rules:** `.cursor/rules/*.mdc` (rules in new format) + `docs/AI_AGENT_CONTEXT_RULES.md` (details)
+- **Tasks:** `docs/issue/TASKS.md` - ⭐ START HERE
+- **Tests:** `docs/TESTING_STRATEGY.md`
+- **Tools:** `docs/CODE_QUALITY_TOOLS.md`
+- **Architecture:** `docs/ARCHITECTURE_ANALYSIS.md`
+- **Cursor explanation:** `docs/CURSOR_RULES_EXPLANATION.md`
 
 ---
 
 ## 🚀 API Endpoints
 
-### Główne Endpointy
+### Main Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/movies` | Lista filmów (z paginacją, filtrowaniem) |
-| `GET` | `/api/v1/movies/{id}` | Szczegóły filmu + opis AI |
-| `POST` | `/api/v1/generate` | Wyzwól generowanie AI |
-| `GET` | `/api/v1/jobs/{id}` | Status zadania generowania |
+| `GET` | `/api/v1/movies` | List of movies (with pagination, filtering) |
+| `GET` | `/api/v1/movies/{id}` | Movie details + AI description |
+| `POST` | `/api/v1/generate` | Trigger AI generation |
+| `GET` | `/api/v1/jobs/{id}` | Generation job status |
 
-### Przykłady
+### Examples
 
 ```bash
-# Pobierz film
+# Get movie
 GET /api/v1/movies/123
 
-# Wyzwól generowanie
+# Trigger generation
 POST /api/v1/generate
 {
   "entity_type": "MOVIE",
@@ -268,30 +268,30 @@ POST /api/v1/generate
 
 ---
 
-## 🔐 Bezpieczeństwo
+## 🔐 Security
 
-### Przed Commitem
-- ✅ Sprawdź GitLeaks (zero sekretów)
-- ✅ Sprawdź Composer Audit (krytyczne luki)
-- ✅ Używaj zmiennych środowiskowych dla kluczy API
-- ✅ Nigdy nie commituj `.env` z prawdziwymi wartościami
+### Before Commit
+- ✅ Check GitLeaks (zero secrets)
+- ✅ Check Composer Audit (critical vulnerabilities)
+- ✅ Use environment variables for API keys
+- ✅ Never commit `.env` with real values
 
-### Sekrety
-- OpenAI API keys: `OPENAI_API_KEY` (zmienna środowiskowa)
-- Database passwords: w `.env` (nie w repo)
-- Wszystkie sekrety: w `.env` lub zmiennych środowiskowych
-
----
-
-## 💡 Ważne Uwagi
-
-1. **TDD** - Test przed kodem, zawsze
-2. **Narzędzia** - Pint, PHPStan, testy przed commitem
-3. **Czytelność** - Kod ma być zrozumiały dla innych
-4. **Pragmatyzm** - Zasady są narzędziami, nie celem samym w sobie
-5. **Zadania** - Zawsze zaczynaj od `docs/issue/TASKS.md`
+### Secrets
+- OpenAI API keys: `OPENAI_API_KEY` (environment variable)
+- Database passwords: in `.env` (not in repo)
+- All secrets: in `.env` or environment variables
 
 ---
 
-**Ten plik jest aktualizowany wraz z rozwojem projektu. Sprawdzaj `docs/` dla szczegółowych informacji.**
+## 💡 Important Notes
+
+1. **TDD** - Test before code, always
+2. **Tools** - Pint, PHPStan, tests before commit
+3. **Readability** - Code must be understandable to others
+4. **Pragmatism** - Principles are tools, not goals in themselves
+5. **Tasks** - Always start from `docs/issue/TASKS.md`
+
+---
+
+**This file is updated as the project evolves. Check `docs/` for detailed information.**
 

@@ -4,31 +4,31 @@ alwaysApply: true
 
 # Test Driven Development (TDD)
 
-## Zasada podstawowa
+## Basic principle
 
-**Zawsze pisz testy przed implementacją. Cykl Red-Green-Refactor.**
+**Always write tests before implementation. Red-Green-Refactor cycle.**
 
-## Cykl TDD
+## TDD Cycle
 
-1. **RED** - Napisz test, który definiuje oczekiwane zachowanie
-2. **GREEN** - Napisz minimalny kod potrzebny do przejścia testu
-3. **REFACTOR** - Popraw kod, zachowując przechodzące testy
+1. **RED** - Write a test that defines expected behavior
+2. **GREEN** - Write minimal code needed to pass the test
+3. **REFACTOR** - Improve code while keeping tests passing
 
-## ✅ Zawsze
+## ✅ Always
 
-- Pisz testy przed kodem - najpierw test, potem implementacja
-- Uruchamiaj `php artisan test` po każdej zmianie
-- Nowy kod wymaga testów
-- Feature Tests dla endpointów API
-- Unit Tests dla logiki biznesowej
+- Write tests before code - test first, then implementation
+- Run `php artisan test` after each change
+- New code requires tests
+- Feature Tests for API endpoints
+- Unit Tests for business logic
 
-## ❌ NIGDY
+## ❌ NEVER
 
-- Nie commituj kodu bez testów
-- Nie pomijaj testów "bo to mała zmiana"
-- Nie ignoruj failujących testów
+- Don't commit code without tests
+- Don't skip tests "because it's a small change"
+- Don't ignore failing tests
 
-## Rodzaje testów
+## Test types
 
-- **Feature Tests** (`tests/Feature/`) - endpointy API i integracja
-- **Unit Tests** (`tests/Unit/`) - logika biznesowa i serwisy
+- **Feature Tests** (`tests/Feature/`) - API endpoints and integration
+- **Unit Tests** (`tests/Unit/`) - Business logic and services
