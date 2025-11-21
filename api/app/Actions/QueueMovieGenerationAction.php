@@ -92,6 +92,28 @@ class QueueMovieGenerationAction
             // Slot was stale, try to acquire again.
             $this->jobStatusService->releaseGenerationSlot('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
             if (! $this->jobStatusService->acquireGenerationSlot('MOVIE', $slug, $jobId, $normalizedLocale, $normalizedContextTag)) {
+                // After releasing stale slot, check again for existing job or slot holder
+                $existingJob = $this->jobStatusService->findActiveJobForSlug('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
+                if ($existingJob) {
+                    return $this->buildExistingJobResponse($slug, $existingJob, $existingMovie, $normalizedLocale, $normalizedContextTag);
+                }
+
+                $slotJobId = $this->jobStatusService->currentGenerationSlotJobId('MOVIE', $slug, $normalizedLocale, $normalizedContextTag);
+                if ($slotJobId !== null) {
+                    return [
+                        'job_id' => $slotJobId,
+                        'status' => 'PENDING',
+                        'message' => 'Generation already queued for movie slug',
+                        'slug' => $slug,
+                        'confidence' => $confidence,
+                        'confidence_level' => $this->confidenceLabel($confidence),
+                        'locale' => $normalizedLocale,
+                        'context_tag' => $normalizedContextTag,
+                    ];
+                }
+
+                // Fallback: return response without job_id only if no job exists at all
+                // This is a rare edge case, but we need to handle it gracefully
                 return [
                     'status' => 'PENDING',
                     'message' => 'Generation already queued for movie slug',
