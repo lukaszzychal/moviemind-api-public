@@ -124,6 +124,33 @@ cd api && \
 - Jeśli treść jest długa, dopuszczalne są streszczenia, ale oba języki muszą zawierać komplet kluczowych informacji i linkować do siebie.
 - Pliki indeksowe (np. `docs/issue/README.md`) powinny jasno wskazywać, gdzie znajdują się wersje PL i EN.
 
+## Synchronizacja zasad Cursor (PL ↔ EN)
+
+**WAŻNE:** Pliki w `.cursor/rules/*.mdc` i `CLAUDE.md` są w wersji polskiej (używane przez Cursor/Claude). Wersje angielskie znajdują się w dokumentacji dla celów nauki języka angielskiego.
+
+### Zasady synchronizacji:
+
+- **Gdy zmieniasz plik w `.cursor/rules/*.mdc` lub `CLAUDE.md`:**
+  - **ZAWSZE** zaktualizuj odpowiednią wersję angielską w `docs/cursor-rules/pl/*.mdc` lub `docs/CLAUDE.pl.md`
+  - Wersje muszą być zsynchronizowane – brak synchronizacji traktujemy jako błąd review
+  - Aktualizuj obie wersje w tym samym commicie lub w kolejnych commitach (nie zostawiaj wersji angielskiej niezsynchronizowanej)
+
+- **Gdy dodajesz nowy plik w `.cursor/rules/*.mdc`:**
+  - **ZAWSZE** utwórz wersję angielską w `docs/cursor-rules/pl/` o tej samej nazwie
+  - Nowy plik musi mieć obie wersje (PL w `.cursor/rules/`, EN w `docs/cursor-rules/pl/`)
+
+- **Gdy dodajesz nową sekcję lub zasadę:**
+  - Dodaj ją najpierw w wersji polskiej (w `.cursor/rules/*.mdc` lub `CLAUDE.md`)
+  - **Natychmiast** dodaj tłumaczenie angielskie w odpowiednim pliku w `docs/cursor-rules/pl/` lub `docs/CLAUDE.pl.md`
+
+- **Struktura:**
+  - `.cursor/rules/*.mdc` - wersje polskie (używane przez Cursor/Claude)
+  - `CLAUDE.md` - wersja polska (używana przez Cursor/Claude)
+  - `docs/cursor-rules/pl/*.mdc` - wersje angielskie (dla nauki języka angielskiego)
+  - `docs/CLAUDE.pl.md` - wersja angielska (dla nauki języka angielskiego)
+
+**Pamiętaj:** Wersje angielskie służą do nauki języka angielskiego przez porównanie z wersjami polskimi. Cursor/Claude używa tylko wersji polskich z `.cursor/rules/` i `CLAUDE.md`.
+
 ## Linki zewnętrzne i nazwy własne
 
 - Przy podawaniu publicznie dostępnych nazw własnych (np. sklepy internetowe, dostawcy) **zawsze** dołącz obok wiarygodny link URL.
