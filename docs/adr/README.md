@@ -527,31 +527,49 @@ class MovieController extends Controller
 
 ### 🎯 Decyzja
 
-Zamiast globalnej blokady `Cache::lock` polegamy na unikalnym indeksie `movies.slug` oraz obsłudze `QueryException`, aby wykrywać równoległe próby utworzenia filmu i kończyć job na istniejącym rekordzie.
+Używamy **dwupoziomowej strategii** zapobiegania duplikatom:
+
+1. **Poziom 1: "In-flight token" (`Cache::add`)** - w `QueueMovieGenerationAction` i `QueuePersonGenerationAction` używamy `JobStatusService::acquireGenerationSlot()` do zapobiegania dispatchowaniu wielu jobów dla tego samego slug.
+2. **Poziom 2: Unique index + exception handling** - w `RealGenerateMovieJob` i `RealGeneratePersonJob` polegamy na unikalnym indeksie `movies.slug` / `people.slug` oraz obsłudze `QueryException`, aby wykrywać równoległe próby utworzenia rekordu i kończyć job na istniejącym rekordzie.
 
 ### 💡 Uzasadnienie
 
-- Baza danych zapewnia spójność (brak duplikatów) niezależnie od liczby workerów.
-- Mniejsze opóźnienia – brak oczekiwania na lock.
-- Prostszy kod – brak dodatkowej logiki „po wyjściu z locka”.
-- Lepsze logowanie – SQLSTATE jasno identyfikuje konflikt.
-- Działa zarówno na PostgreSQL (prod), jak i SQLite (testy).
+#### Poziom 1 (`Cache::add`):
+- **Atomowa operacja** - `Cache::add()` gwarantuje, że tylko pierwszy request ustawi wartość.
+- **Oszczędność zasobów** - zapobiega niepotrzebnym jobom (OpenAI API calls).
+- **Prosty mechanizm** - brak oczekiwania na lock, natychmiastowa odpowiedź.
+
+#### Poziom 2 (Unique index + exception):
+- **Baza danych zapewnia spójność** (brak duplikatów) niezależnie od liczby workerów.
+- **Mniejsze opóźnienia** – brak oczekiwania na lock.
+- **Prostszy kod** – brak dodatkowej logiki „po wyjściu z locka”.
+- **Lepsze logowanie** – SQLSTATE jasno identyfikuje konflikt.
+- **Działa zarówno na PostgreSQL (prod), jak i SQLite (testy)**.
+
+#### Dlaczego dwa poziomy?
+- **Poziom 1** zapobiega niepotrzebnym jobom (oszczędność zasobów).
+- **Poziom 2** zabezpiecza na wypadek wyścigu (deterministyczne zachowanie).
 
 ### 🔄 Konsekwencje
 
 - **Pozytywne:**
   - Eliminacja dodatkowych opisów tworzonych przez drugi job.
   - Większa skalowalność przy wielu instancjach Horizon.
+  - Oszczędność zasobów (OpenAI API calls) dzięki poziomowi 1.
+  - Deterministyczne zachowanie dzięki poziomowi 2.
   - Możliwość rozszerzenia obsługi o inne konflikty (np. per locale).
 - **Negatywne:**
   - Konieczność utrzymania listy kodów błędów dla obsługiwanych baz.
   - Logika pomocnicza (np. awans opisu domyślnego) nadal wymaga wąskich lokalnych locków.
+  - Dwa mechanizmy do utrzymania (Cache::add + unique index).
 
 ### 📊 Alternatywy rozważane:
 
-1. **`Cache::lock` (Redis)** – odrzucone (powodowało duplikację opisów).
+1. **`Cache::lock` (Redis)** – odrzucone (powodowało duplikację opisów, globalny mutex spowalniał równoległe joby).
 2. **`SELECT ... FOR UPDATE` + tabela kontrolna** – odrzucone (zbyt złożone dla SQLite/testów).
-3. **Unikalny indeks + obsługa wyjątków** – wybrane ✅.
+3. **Tylko `Cache::add`** – odrzucone (nie zabezpiecza przed edge cases, gdy slot wygaśnie).
+4. **Tylko unique index + exception** – odrzucone (nie zapobiega niepotrzebnym jobom).
+5. **Dwupoziomowa strategia (`Cache::add` + unique index)** – wybrane ✅.
 
 ---
 
@@ -565,33 +583,53 @@ Zamiast globalnej blokady `Cache::lock` polegamy na unikalnym indeksie `movies.s
 
 ### 🎯 Decision
 
-Drop the global `Cache::lock` around movie creation. Rely on the `movies.slug` unique index and catch `QueryException` to detect concurrent inserts, falling back to the freshly created movie.
+We use a **two-level strategy** to prevent duplicates:
+
+1. **Level 1: "In-flight token" (`Cache::add`)** - In `QueueMovieGenerationAction` and `QueuePersonGenerationAction`, we use `JobStatusService::acquireGenerationSlot()` to prevent dispatching multiple jobs for the same slug.
+2. **Level 2: Unique index + exception handling** - In `RealGenerateMovieJob` and `RealGeneratePersonJob`, we rely on the unique index `movies.slug` / `people.slug` and catch `QueryException` to detect concurrent record creation attempts and finish the job on the existing record.
 
 ### 💡 Rationale
 
-- Database guarantees uniqueness regardless of worker count.
-- Lower latency thanks to the absence of an external mutex.
-- Simpler code – no “post-lock reconciliation”.
-- Better logging via explicit SQLSTATE codes.
-- Works in both PostgreSQL (prod) and SQLite (tests).
+#### Level 1 (`Cache::add`):
+- **Atomic operation** - `Cache::add()` guarantees that only the first request will set the value.
+- **Resource savings** - prevents unnecessary jobs (OpenAI API calls).
+- **Simple mechanism** - no lock waiting, immediate response.
+
+#### Level 2 (Unique index + exception):
+- **Database guarantees uniqueness** regardless of worker count.
+- **Lower latency** – no lock waiting.
+- **Simpler code** – no "post-lock reconciliation".
+- **Better logging** – SQLSTATE clearly identifies conflict.
+- **Works in both PostgreSQL (prod) and SQLite (tests)**.
+
+#### Why two levels?
+- **Level 1** prevents unnecessary jobs (resource savings).
+- **Level 2** protects against race conditions (deterministic behavior).
 
 ### 🔄 Consequences
 
 - **Positive:**
   - Stops secondary descriptions from being generated by a second worker.
   - Scales better with multiple Horizon workers.
+  - Resource savings (OpenAI API calls) thanks to level 1.
+  - Deterministic behavior thanks to level 2.
   - Exception branch can cover future conflicts (e.g. locale-specific).
 - **Negative:**
   - Requires maintaining SQLSTATE mappings per driver.
   - Auxiliary logic (e.g. promoting default description) still uses narrow locks.
+  - Two mechanisms to maintain (Cache::add + unique index).
 
 ### 📊 Alternatives considered:
 
-1. **`Cache::lock` (Redis)** – rejected due to duplicate description side effects.
+1. **`Cache::lock` (Redis)** – rejected (caused duplicate descriptions, global mutex slowed down parallel jobs).
 2. **`SELECT ... FOR UPDATE` + control table** – rejected as overly complex for SQLite/tests.
-3. **Unique index + exception handling** – chosen ✅.
+3. **Only `Cache::add`** – rejected (doesn't protect against edge cases when slot expires).
+4. **Only unique index + exception** – rejected (doesn't prevent unnecessary jobs).
+5. **Two-level strategy (`Cache::add` + unique index)** – chosen ✅.
 
 ---
 
 *Dokument zaktualizowany: 2025-11-12*  
-*Document updated: 2025-11-12*
+*Document updated: 2025-11-12*  
+*Ostatnia aktualizacja: 2025-11-12 - Dodano opis dwupoziomowej strategii (Cache::add + unique index)*  
+*Last update: 2025-11-12 - Added description of two-level strategy (Cache::add + unique index)*
