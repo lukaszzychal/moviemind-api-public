@@ -7,6 +7,7 @@ use App\Enums\Locale;
 use App\Events\PersonGenerationRequested;
 use App\Models\Person;
 use App\Services\JobStatusService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class QueuePersonGenerationAction
@@ -22,16 +23,100 @@ class QueuePersonGenerationAction
         ?string $locale = null,
         ?string $contextTag = null
     ): array {
+        Log::info(__METHOD__, [
+            'slug' => $slug,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+            'existing_person' => $existingPerson,
+        ]);
         $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
         $normalizedContextTag = $this->normalizeContextTag($contextTag);
 
         $existingPerson ??= Person::where('slug', $slug)->first();
 
-        if ($existingJob = $this->jobStatusService->findActiveJobForSlug('PERSON', $slug, $normalizedLocale, $normalizedContextTag)) {
+        $existingJob = $this->jobStatusService->findActiveJobForSlug('PERSON', $slug, $normalizedLocale, $normalizedContextTag);
+        Log::info('QueuePersonGenerationAction: lookup result', [
+            'slug' => $slug,
+            'locale' => $normalizedLocale,
+            'context_tag' => $normalizedContextTag,
+            'existing_job_found' => $existingJob !== null,
+        ]);
+        if ($existingJob) {
+            Log::info('QueuePersonGenerationAction: reusing existing job', [
+                'slug' => $slug,
+                'locale' => $normalizedLocale,
+                'context_tag' => $normalizedContextTag,
+                'existing_job' => $existingJob,
+            ]);
+
             return $this->buildExistingJobResponse($slug, $existingJob, $existingPerson, $normalizedLocale, $normalizedContextTag);
         }
 
         $jobId = (string) Str::uuid();
+
+        if (! $this->jobStatusService->acquireGenerationSlot(
+            'PERSON',
+            $slug,
+            $jobId,
+            $normalizedLocale,
+            $normalizedContextTag
+        )) {
+            $existingJob = $this->jobStatusService->findActiveJobForSlug('PERSON', $slug, $normalizedLocale, $normalizedContextTag);
+            if ($existingJob) {
+                return $this->buildExistingJobResponse($slug, $existingJob, $existingPerson, $normalizedLocale, $normalizedContextTag);
+            }
+
+            $slotJobId = $this->jobStatusService->currentGenerationSlotJobId('PERSON', $slug, $normalizedLocale, $normalizedContextTag);
+            if ($slotJobId !== null) {
+                return [
+                    'job_id' => $slotJobId,
+                    'status' => 'PENDING',
+                    'message' => 'Generation already queued for person slug',
+                    'slug' => $slug,
+                    'confidence' => $confidence,
+                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'locale' => $normalizedLocale,
+                    'context_tag' => $normalizedContextTag,
+                ];
+            }
+
+            // Slot was stale, try to acquire again.
+            $this->jobStatusService->releaseGenerationSlot('PERSON', $slug, $normalizedLocale, $normalizedContextTag);
+            if (! $this->jobStatusService->acquireGenerationSlot('PERSON', $slug, $jobId, $normalizedLocale, $normalizedContextTag)) {
+                // After releasing stale slot, check again for existing job or slot holder
+                $existingJob = $this->jobStatusService->findActiveJobForSlug('PERSON', $slug, $normalizedLocale, $normalizedContextTag);
+                if ($existingJob) {
+                    return $this->buildExistingJobResponse($slug, $existingJob, $existingPerson, $normalizedLocale, $normalizedContextTag);
+                }
+
+                $slotJobId = $this->jobStatusService->currentGenerationSlotJobId('PERSON', $slug, $normalizedLocale, $normalizedContextTag);
+                if ($slotJobId !== null) {
+                    return [
+                        'job_id' => $slotJobId,
+                        'status' => 'PENDING',
+                        'message' => 'Generation already queued for person slug',
+                        'slug' => $slug,
+                        'confidence' => $confidence,
+                        'confidence_level' => $this->confidenceLabel($confidence),
+                        'locale' => $normalizedLocale,
+                        'context_tag' => $normalizedContextTag,
+                    ];
+                }
+
+                // Fallback: return response without job_id only if no job exists at all
+                // This is a rare edge case, but we need to handle it gracefully
+                return [
+                    'status' => 'PENDING',
+                    'message' => 'Generation already queued for person slug',
+                    'slug' => $slug,
+                    'confidence' => $confidence,
+                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'locale' => $normalizedLocale,
+                    'context_tag' => $normalizedContextTag,
+                ];
+            }
+        }
+
         $baselineBioId = $existingPerson?->default_bio_id;
 
         $this->jobStatusService->initializeStatus(
@@ -51,6 +136,12 @@ class QueuePersonGenerationAction
             locale: $normalizedLocale,
             contextTag: $normalizedContextTag
         ));
+        Log::info('QueuePersonGenerationAction: dispatched new job', [
+            'job_id' => $jobId,
+            'slug' => $slug,
+            'locale' => $normalizedLocale,
+            'context_tag' => $normalizedContextTag,
+        ]);
 
         $response = [
             'job_id' => $jobId,

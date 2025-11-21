@@ -79,6 +79,32 @@ Napraw krytyczne luki przed commitem.
 - Postman: JSON format zgodny z Postman Collection v2.1
 - Insomnia: JSON format zgodny z Insomnia Export
 
+### 7. Aktualizacja Instrukcji Manualnego Testowania (jeśli zmieniono mechanizmy testowania)
+**WAŻNE:** Jeśli zmieniono mechanizmy testowania, endpointy, feature flagi, format odpowiedzi lub strukturę logów, **ZAWSZE** zaktualizuj:
+
+#### Manual Testing Guide
+```bash
+# Zaktualizuj docs/knowledge/reference/MANUAL_TESTING_GUIDE.md (PL)
+# Zaktualizuj docs/knowledge/reference/MANUAL_TESTING_GUIDE.en.md (EN)
+```
+
+**Kiedy aktualizować:**
+- ✅ Zmieniono endpointy API (dodano/zmieniono/usunięto)
+- ✅ Zmieniono mechanizmy zapobiegania duplikatom (np. slot management, locking)
+- ✅ Zmieniono feature flagi (dodano/zmieniono/usunięto)
+- ✅ Zmieniono format odpowiedzi API
+- ✅ Zmieniono wymagania dotyczące slug formatów
+- ✅ Zmieniono strukturę logów (np. nowe logi, zmiana formatu)
+- ✅ Zmieniono sposób aktywacji feature flagów
+- ✅ Dodano nowe scenariusze testowe
+
+**Format aktualizacji:**
+- Zaktualizuj odpowiednie sekcje testów
+- Zaktualizuj przykłady komend
+- Zaktualizuj troubleshooting
+- Zaktualizuj checklist końcowy
+- Zaktualizuj datę "Ostatnia aktualizacja"
+
 ## Kompletny check (wszystko na raz)
 
 ```bash
@@ -90,7 +116,7 @@ cd api && \
   composer audit
 ```
 
-**Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację!
+**Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację (OpenAPI, Postman, Insomnia) oraz instrukcje manualnego testowania!
 
 ## Branch Workflow (domyślna zasada)
 
