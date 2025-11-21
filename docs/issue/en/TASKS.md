@@ -413,12 +413,12 @@ Every entry follows this structure:
 ---
 
 #### `TASK-034` – Translate Cursor rules (.mdc) and CLAUDE.md to English
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priority:** 🟡 Medium
 - **Estimated time:** 2–3 h
 - **Start time:** 2025-11-12 17:30
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
+- **End time:** 2025-11-12 18:30
+- **Duration:** 01h00m
 - **Execution:** 🤖 AI Agent
 - **Description:** Translate all `.cursor/rules/*.mdc` files and `CLAUDE.md` to English. Polish versions will be moved to documentation (`docs/`) and kept synchronized with English versions (purpose: learning English). Cursor/Claude will use only English versions.
 - **Details:**

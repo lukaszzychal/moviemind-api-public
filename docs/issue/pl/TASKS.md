@@ -262,12 +262,12 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-034` - Tłumaczenie zasad Cursor (.mdc) i CLAUDE.md na angielski
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
 - **Czas rozpoczęcia:** 2025-11-12 17:30
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
+- **Czas zakończenia:** 2025-11-12 18:30
+- **Czas realizacji:** 01h00m
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Przetłumaczenie wszystkich plików `.cursor/rules/*.mdc` i `CLAUDE.md` na angielski. Polskie wersje zostaną przeniesione do dokumentacji (`docs/`) i będą synchronizowane z wersjami angielskimi (cel: nauka języka angielskiego). Cursor/Claude będzie korzystać tylko z wersji angielskich.
 - **Szczegóły:**
