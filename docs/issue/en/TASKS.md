@@ -416,7 +416,7 @@ Every entry follows this structure:
 - **Status:** 🔄 IN_PROGRESS
 - **Priority:** 🟡 Medium
 - **Estimated time:** 2–3 h
-- **Start time:** 2025-11-12
+- **Start time:** 2025-11-12 17:30
 - **End time:** --
 - **Duration:** -- (AI agent will auto-calc when applicable)
 - **Execution:** 🤖 AI Agent

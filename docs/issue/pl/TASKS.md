@@ -265,7 +265,7 @@ Każde zadanie ma następującą strukturę:
 - **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** 2025-11-12
+- **Czas rozpoczęcia:** 2025-11-12 17:30
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
 - **Realizacja:** 🤖 AI Agent
