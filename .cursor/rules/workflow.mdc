@@ -134,6 +134,11 @@ cd api && \
 ## Testowanie manualne
 
 - **ZAWSZE** przetestuj manualnie taski i funkcje, które można przetestować bez automatycznych testów.
+- **Informuj na bieżąco** o krokach i wynikach testowania:
+  - Opisz każdy krok testowania (np. "Testuję endpoint GET /api/v1/movies/{slug}")
+  - Podawaj wyniki każdego testu (sukces/błąd, status code, czas odpowiedzi, etc.)
+  - Informuj o napotkanych problemach lub nieoczekiwanych zachowaniach
+  - Zgłaszaj postęp w testowaniu (np. "Przetestowano 3/5 scenariuszy")
 - Przed zakończeniem zadania zweryfikuj, że implementacja działa poprawnie w praktyce (np. przez wywołanie endpointu API, sprawdzenie odpowiedzi, weryfikację zachowania w przeglądarce).
 - Jeśli testowanie wymaga uruchomienia Dockera lub innego narzędzia (np. Redis, Horizon, PostgreSQL), **zawsze poinformuj użytkownika**:
   - Jakie narzędzie jest potrzebne
