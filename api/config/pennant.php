@@ -12,6 +12,7 @@ use App\Features\ai_plagiarism_detection;
 use App\Features\ai_quality_scoring;
 use App\Features\ai_translation_pipeline;
 use App\Features\api_v1_deprecation_notice;
+use App\Features\debug_endpoints;
 use App\Features\description_style_packs;
 use App\Features\generate_v2_pipeline;
 use App\Features\glossary_enforcement;
@@ -236,6 +237,13 @@ $flags = [
         'category' => 'operations',
         'default' => false,
         'togglable' => false,
+    ],
+    'debug_endpoints' => [
+        'class' => debug_endpoints::class,
+        'description' => 'Debug endpoints for service configuration inspection (e.g., /v1/admin/debug/config).',
+        'category' => 'operations',
+        'default' => false,
+        'togglable' => true,
     ],
 ];
 

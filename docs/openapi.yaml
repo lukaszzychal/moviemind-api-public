@@ -17,6 +17,8 @@ tags:
   - name: Generation
   - name: Jobs
   - name: Admin
+  - name: Health
+  - name: Debug
 paths:
   /v1/movies:
     get:
@@ -397,6 +399,74 @@ paths:
                     model: gpt-4o-mini
                     rate_limit:
                       requests_remaining: "2"
+  /v1/admin/debug/config:
+    get:
+      tags: [Admin]
+      summary: Debug service configuration
+      description: |
+        Debug endpoint to inspect service configuration, including AI_SERVICE, OpenAI settings, and other service parameters.
+        
+        **Security:**
+        - Protected by feature flag `debug_endpoints` (default: disabled)
+        - Enable via feature flag API: `POST /api/v1/admin/flags/debug_endpoints` with body `{"state": "on"}`
+        - Disabled by default in production for security
+        
+        **Note:** This endpoint is intended for development and debugging purposes. Keep the feature flag disabled in production unless needed for troubleshooting.
+      responses:
+        '200':
+          description: Configuration data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugConfig'
+              examples:
+                default:
+                  value:
+                    environment:
+                      app_env: local
+                      app_debug: true
+                      ai_service_env: real
+                      ai_service_config: real
+                      ai_service_selector: real
+                      is_real: true
+                      is_mock: false
+                    openai:
+                      api_key_set: true
+                      api_key_preview: sk-proj-ap...
+                      model: gpt-4o-mini
+                      api_url: https://api.openai.com/v1/chat/completions
+                      health_url: https://api.openai.com/v1/models
+                      backoff_enabled: true
+                      backoff_intervals: [20, 60, 180]
+                    queue:
+                      connection: redis
+                      redis_host: redis
+                    cache:
+                      driver: database
+                    database:
+                      connection: pgsql
+                      host: db
+                    services:
+                      openai_client_class: App\Services\OpenAiClient
+                      openai_client_interface: App\Services\OpenAiClientInterface
+                    timestamp: "2025-11-29T22:43:12+00:00"
+                    note: This endpoint is protected by the "debug_endpoints" feature flag. Disabled by default in production.
+        '403':
+          description: Forbidden (feature flag disabled)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+              examples:
+                forbidden:
+                  value:
+                    error: Forbidden
+                    message: Debug endpoints are disabled. Enable feature flag "debug_endpoints" to access this endpoint.
                       tokens_remaining: "5000"
         '503':
           description: OpenAI unavailable
@@ -713,6 +783,81 @@ components:
         bio_id:
           type: integer
           nullable: true
+    DebugConfig:
+      type: object
+      description: Debug configuration response
+      properties:
+        environment:
+          type: object
+          properties:
+            app_env:
+              type: string
+            app_debug:
+              type: boolean
+            ai_service_env:
+              type: string
+              nullable: true
+            ai_service_config:
+              type: string
+            ai_service_selector:
+              type: string
+            is_real:
+              type: boolean
+            is_mock:
+              type: boolean
+        openai:
+          type: object
+          properties:
+            api_key_set:
+              type: boolean
+            api_key_preview:
+              type: string
+              nullable: true
+            model:
+              type: string
+            api_url:
+              type: string
+            health_url:
+              type: string
+            backoff_enabled:
+              type: boolean
+            backoff_intervals:
+              type: array
+              items:
+                type: integer
+        queue:
+          type: object
+          properties:
+            connection:
+              type: string
+            redis_host:
+              type: string
+              nullable: true
+        cache:
+          type: object
+          properties:
+            driver:
+              type: string
+        database:
+          type: object
+          properties:
+            connection:
+              type: string
+            host:
+              type: string
+              nullable: true
+        services:
+          type: object
+          properties:
+            openai_client_class:
+              type: string
+            openai_client_interface:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+        note:
+          type: string
     GenerationQueued:
       type: object
       required: [job_id, status, message, slug]

@@ -29,6 +29,7 @@ This document contains instructions for testing the following use cases:
 | 11 | **Edge Case - Invalid ContextTag**                  | Verify handling of invalid ContextTag (fallback or validation error)                          | `POST /api/v1/generate`       |
 | 12 | **Duplication - Different ContextTag (KEY)**        | Verify that concurrent requests with different ContextTag return different job_id and create different descriptions | `POST /api/v1/generate`       |
 | 13 | **What happens when ContextTag is not in database** | Verify behavior when retrieving a movie without description with given ContextTag              | `GET /api/v1/movies/{slug}`   |
+| 14 | **Debug Configuration**                               | Verify service configuration (AI_SERVICE, OpenAI, etc.) - requires feature flag              | `GET /api/v1/admin/debug/config`   |
 
 ### Key Mechanisms Tested
 
@@ -1053,6 +1054,98 @@ curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG?description_id=$INVALI
 
 ---
 
+## 🧪 Test 14: Debug Configuration Endpoint
+
+### Goal
+
+Verify that the debug endpoint returns correct service configuration, including AI_SERVICE, OpenAI settings, and other parameters. The endpoint is protected by the `debug_endpoints` feature flag.
+
+### Steps
+
+#### 1. Enable `debug_endpoints` feature flag
+
+```bash
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/debug_endpoints" \
+  -H "Content-Type: application/json" \
+  -d '{"state":"on"}' | jq .
+```
+
+**Expected result:**
+- Status: `200 OK`
+- Response contains: `{"name": "debug_endpoints", "active": true}`
+
+#### 2. Call debug endpoint
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq .
+```
+
+**Expected result:**
+- Status: `200 OK`
+- Response contains sections: `environment`, `openai`, `queue`, `cache`, `database`, `services`
+- `environment.ai_service_env` and `environment.ai_service_config` are consistent
+- `environment.is_real` or `environment.is_mock` is set correctly
+- `openai.api_key_set` is `true` if key is set
+- `openai.api_key_preview` shows first 10 characters (without full key)
+
+#### 3. Check AI_SERVICE configuration
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq '.environment'
+```
+
+**Expected result:**
+- `ai_service_env` - value from .env
+- `ai_service_config` - value from config('services.ai.service')
+- `ai_service_selector` - value from AiServiceSelector::getService()
+- All three values should be consistent
+
+#### 4. Check OpenAI configuration
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq '.openai'
+```
+
+**Expected result:**
+- `api_key_set: true` if OPENAI_API_KEY is set
+- `model` - model name (e.g., "gpt-4o-mini")
+- `api_url` - OpenAI endpoint URL
+- `backoff_enabled` - whether backoff is enabled
+- `backoff_intervals` - array of intervals
+
+#### 5. Test with feature flag disabled
+
+```bash
+# Disable feature flag
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/debug_endpoints" \
+  -H "Content-Type: application/json" \
+  -d '{"state":"off"}' | jq .
+
+# Try to call endpoint
+curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq .
+```
+
+**Expected result:**
+- Status: `403 Forbidden`
+- Response: `{"error": "Forbidden", "message": "Debug endpoints are disabled. Enable feature flag \"debug_endpoints\" to access this endpoint."}`
+
+#### 6. Verification in different environments
+
+```bash
+# In local/dev - enable feature flag and check
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/debug_endpoints" \
+  -H "Content-Type: application/json" \
+  -d '{"state":"on"}' | jq .
+
+curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq '.environment.app_env'
+```
+
+**Expected result:**
+- In local/dev: access after enabling feature flag
+- In production: disabled by default (requires manual feature flag activation)
+
+---
+
 ## ✅ Final Checklist
 
 - [ ] Test 1: Movie GET endpoint - concurrent requests return same job_id
@@ -1069,6 +1162,7 @@ curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG?description_id=$INVALI
 - [ ] Test 12: Invalid ContextTag - fallback or validation error
 - [ ] Test 13: Different ContextTag in concurrent requests - different job_id and descriptions (KEY)
 - [ ] Test 14: ContextTag not in database - behavior when retrieving movie
+- [ ] Test 14: Debug Configuration - verify service configuration (AI_SERVICE, OpenAI, etc.) - requires feature flag `debug_endpoints`
 
 ---
 
