@@ -71,12 +71,6 @@ class MovieController extends Controller
         }
 
         $result = $this->queueMovieGenerationAction->handle($slug, locale: Locale::EN_US->value);
-        // $result = [
-        //     'job_id' => '123',
-        //     'status' => 'PENDING',
-        //     'slug' => $slug,
-        //     'locale' => Locale::EN_US->value,
-        // ];
 
         return response()->json($result, 202);
     }

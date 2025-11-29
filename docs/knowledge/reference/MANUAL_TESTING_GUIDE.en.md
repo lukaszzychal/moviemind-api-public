@@ -10,6 +10,37 @@ This document contains detailed instructions for manual testing of MovieMind API
 
 ---
 
+## 📋 Use Cases Overview
+
+This document contains instructions for testing the following use cases:
+
+| #  | Use Case                                           | Description                                                                                    | Endpoint                      |
+|----|----------------------------------------------------|------------------------------------------------------------------------------------------------|-------------------------------|
+| 1  | **Concurrent Requests - Movie (GET)**               | Verify that parallel requests for the same movie slug return the same `job_id`                | `GET /api/v1/movies/{slug}`   |
+| 2  | **Concurrent Requests - Movie (POST)**              | Verify slot management mechanism for `/generate` endpoint for movies                          | `POST /api/v1/generate`       |
+| 3  | **Concurrent Requests - Person (GET)**              | Verify that parallel requests for the same person slug return the same `job_id`               | `GET /api/v1/people/{slug}`   |
+| 4  | **Concurrent Requests - Person (POST)**             | Verify slot management mechanism for `/generate` endpoint for persons                         | `POST /api/v1/generate`       |
+| 5  | **Log Verification - Single Dispatch**              | Confirm in logs that only one job is dispatched for concurrent requests                       | Application logs              |
+| 6  | **Edge Case - Very Fast Concurrent Requests**       | Testing mechanism for 3+ parallel requests                                                     | `GET /api/v1/movies/{slug}`   |
+| 7  | **Database Verification - No Duplicates**           | Check that there are no duplicates in the database (unique constraint)                        | PostgreSQL database           |
+| 8  | **Job Status Test**                                 | Verify that `job_id` returned by API exists and its status can be checked                      | `GET /api/v1/jobs/{id}`       |
+| 9  | **Generation with Default ContextTag**              | Verify that when `context_tag` is not provided, system uses default ContextTag                | `POST /api/v1/generate`       |
+| 10 | **Generation with Specific ContextTag**             | Verify handling of specific ContextTag (e.g., "humorous") during description generation        | `POST /api/v1/generate`       |
+| 11 | **Edge Case - Invalid ContextTag**                  | Verify handling of invalid ContextTag (fallback or validation error)                          | `POST /api/v1/generate`       |
+| 12 | **Duplication - Different ContextTag (KEY)**        | Verify that concurrent requests with different ContextTag return different job_id and create different descriptions | `POST /api/v1/generate`       |
+| 13 | **What happens when ContextTag is not in database** | Verify behavior when retrieving a movie without description with given ContextTag              | `GET /api/v1/movies/{slug}`   |
+
+### Key Mechanisms Tested
+
+- **Slot Management** - duplicate prevention mechanism through generation slots
+- **Cache Operations** - cache operations for job and slot status
+- **Event Handling** - verification that only one event is dispatched
+- **Database Integrity** - checking record uniqueness in the database
+- **Job Status Tracking** - tracking status of asynchronous jobs
+- **ContextTag Management** - handling different ContextTags (DEFAULT, MODERN, CRITICAL, HUMOROUS) and preventing duplicates for different tags
+
+---
+
 ## 🚀 Local Environment Setup (Docker)
 
 ### Step 1: Environment Preparation
@@ -712,6 +743,316 @@ curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" \
 
 ---
 
+## 🧪 Test 9: Generation with Default ContextTag
+
+### Goal
+
+Verify that when `context_tag` is not provided in the request, the system uses the default ContextTag (DEFAULT, MODERN, CRITICAL, or HUMOROUS depending on existing descriptions).
+
+### Steps
+
+#### 1. Generate description without providing context_tag
+
+```bash
+SLUG="default-context-$(date +%s)"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\"
+  }" | jq .
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Response contains: `job_id`, `status: "PENDING"`, `slug`, `locale: "en-US"`
+- `context_tag` may be null or default (DEFAULT) - depends on implementation
+
+#### 2. Check job status and wait for completion
+
+```bash
+JOB_ID=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\": \"MOVIE\", \"entity_id\": \"$SLUG\"}" | jq -r '.job_id')
+
+# Wait for job completion (or check status)
+sleep 5
+
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" | jq .
+```
+
+#### 3. Check in database which ContextTag was used
+
+```bash
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag, locale 
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY created_at DESC 
+  LIMIT 1;
+"
+```
+
+**Expected result:**
+- Should exist a description with context_tag = 'DEFAULT' (or first available from order: DEFAULT, MODERN, CRITICAL, HUMOROUS)
+
+---
+
+## 🧪 Test 10: Generation with Specific ContextTag (humorous)
+
+### Goal
+
+Verify that the system correctly handles a specific ContextTag during description generation.
+
+### Steps
+
+#### 1. Generate description with context_tag="humorous"
+
+```bash
+SLUG="humorous-context-$(date +%s)"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"humorous\"
+  }" | jq .
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Response contains: `job_id`, `status: "PENDING"`, `context_tag: "humorous"`
+
+#### 2. Check job status and wait for completion
+
+```bash
+JOB_ID=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\": \"MOVIE\", \"entity_id\": \"$SLUG\", \"context_tag\": \"humorous\"}" | jq -r '.job_id')
+
+sleep 5
+
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" | jq .
+```
+
+#### 3. Check in database if ContextTag was saved
+
+```bash
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag, locale, LEFT(text, 50) as text_preview
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY created_at DESC 
+  LIMIT 1;
+"
+```
+
+**Expected result:**
+- Should exist a description with context_tag = 'humorous'
+
+---
+
+## 🧪 Test 11: Edge Case - Invalid ContextTag
+
+### Goal
+
+Verify how the system handles invalid ContextTag (fallback to default or validation error).
+
+### Steps
+
+#### 1. Try to generate description with invalid context_tag
+
+```bash
+SLUG="invalid-context-$(date +%s)"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"invalid-tag\"
+  }" | jq .
+```
+
+**Expected result:**
+- Status: `202 Accepted` (system may accept request but ignore invalid tag)
+- OR Status: `422 Unprocessable Entity` (validation error if validation exists)
+
+#### 2. Check which ContextTag was actually used
+
+```bash
+JOB_ID=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\": \"MOVIE\", \"entity_id\": \"$SLUG\", \"context_tag\": \"invalid-tag\"}" | jq -r '.job_id')
+
+sleep 5
+
+# Check in database
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag 
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY created_at DESC 
+  LIMIT 1;
+"
+```
+
+**Expected result:**
+- ContextTag should be default (DEFAULT) or correct (if system normalizes/fixes)
+
+---
+
+## 🧪 Test 12: Duplication - Different ContextTag (KEY)
+
+### Goal
+
+Verify that concurrent requests with different ContextTag return different job_id and create different descriptions in the database. This is a key test of slot management mechanism for different ContextTag.
+
+### Steps
+
+#### 1. Generate parallel requests with different context_tag
+
+```bash
+SLUG="different-context-$(date +%s)"
+
+# Request 1: modern
+JOB_ID_1=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"modern\"
+  }" | jq -r '.job_id')
+
+# Request 2: humorous (immediately after first)
+JOB_ID_2=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"humorous\"
+  }" | jq -r '.job_id')
+
+echo "Job ID 1 (modern): $JOB_ID_1"
+echo "Job ID 2 (humorous): $JOB_ID_2"
+```
+
+**Expected result:**
+- Both requests return status `202 Accepted`
+- **Job ID 1 and Job ID 2 should be DIFFERENT** (different ContextTag = different slots)
+- Both jobs should have status `PENDING`
+
+#### 2. Check status of both jobs
+
+```bash
+echo "=== Job 1 (modern) ==="
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID_1" | jq .
+
+echo "=== Job 2 (humorous) ==="
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID_2" | jq .
+```
+
+#### 3. Wait for job completion and check in database
+
+```bash
+sleep 10
+
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag, locale, LEFT(text, 50) as text_preview
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY context_tag;
+"
+```
+
+**Expected result:**
+- Should exist **two descriptions** for the same movie:
+  - One with `context_tag = 'modern'`
+  - Second with `context_tag = 'humorous'`
+- Both descriptions should have the same `locale` (en-US)
+
+#### 4. Log verification - both jobs should be dispatched
+
+```bash
+docker logs moviemind-php 2>&1 | grep -E "generation slot|context_tag.*modern|context_tag.*humorous" | tail -10
+```
+
+**Expected result:**
+- Logs should show two different slots (different ContextTag)
+- Both jobs should be dispatched
+
+---
+
+## 🧪 Test 13: What happens when ContextTag is not in database
+
+### Goal
+
+Verify behavior when retrieving a movie that does not have a description with a given ContextTag.
+
+### Steps
+
+#### 1. Create a movie with description with one ContextTag (e.g., modern)
+
+```bash
+SLUG="single-context-$(date +%s)"
+
+# Generate description with context_tag="modern"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"modern\"
+  }" | jq .
+
+sleep 5
+```
+
+#### 2. Check what GET /api/v1/movies/{slug} returns (without parameters)
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG" \
+  -H "Accept: application/json" | jq .
+```
+
+**Expected result:**
+- Status: `200 OK`
+- Response contains movie with default description (default_description_id)
+- Description should have context_tag="modern" (because it's the only description)
+
+#### 3. Check what GET with description_id returns for non-existent ContextTag
+
+First find movie_id:
+```bash
+MOVIE_ID=$(docker exec moviemind-db psql -U moviemind -d moviemind -t -c "
+  SELECT id FROM movies WHERE slug = '$SLUG';
+" | tr -d ' ')
+
+echo "Movie ID: $MOVIE_ID"
+```
+
+Now check what happens when trying to use description_id that doesn't exist:
+```bash
+# Get existing description_id
+DESC_ID=$(docker exec moviemind-db psql -U moviemind -d moviemind -t -c "
+  SELECT id FROM movie_descriptions WHERE movie_id = $MOVIE_ID LIMIT 1;
+" | tr -d ' ')
+
+echo "Description ID: $DESC_ID"
+
+# Try to use description_id for non-existent description
+INVALID_DESC_ID=99999
+curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG?description_id=$INVALID_DESC_ID" \
+  -H "Accept: application/json" | jq .
+```
+
+**Expected result:**
+- Status: `404 Not Found` OR `200 OK` with default description (depends on implementation)
+
+---
+
 ## ✅ Final Checklist
 
 - [ ] Test 1: Movie GET endpoint - concurrent requests return same job_id
@@ -723,6 +1064,11 @@ curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" \
 - [ ] Test 7: Edge case - 3 fast requests return same job_id
 - [ ] Test 8: Database - no duplicates in movies and people tables
 - [ ] Test 9: Job status - job exists and status can be checked
+- [ ] Test 10: Generation with default ContextTag - system uses default
+- [ ] Test 11: Generation with specific ContextTag (humorous) - correctly saved in database
+- [ ] Test 12: Invalid ContextTag - fallback or validation error
+- [ ] Test 13: Different ContextTag in concurrent requests - different job_id and descriptions (KEY)
+- [ ] Test 14: ContextTag not in database - behavior when retrieving movie
 
 ---
 
@@ -879,5 +1225,5 @@ chmod +x test-duplicate-prevention.sh
 
 ---
 
-**Last updated:** 2025-01-27
+**Last updated:** 2025-11-29
 

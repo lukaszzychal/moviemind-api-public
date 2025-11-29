@@ -29,15 +29,6 @@ class QueueMovieGenerationAction
             'context_tag' => $contextTag,
             'existing_movie' => $existingMovie,
         ]);
-        // dump(__METHOD__, $slug, $locale, $contextTag, $existingMovie);
-        // return [
-        //     'slug' => $slug,
-        //     'locale' => $locale,
-        //     'context_tag' => $contextTag,
-
-        //     'existing_id' => $existingMovie?->id,
-        //     'description_id' => $existingMovie?->default_description_id,
-        // ];
         $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
         $normalizedContextTag = $this->normalizeContextTag($contextTag);
 

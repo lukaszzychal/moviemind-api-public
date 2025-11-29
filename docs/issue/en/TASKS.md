@@ -1,6 +1,6 @@
 # 📋 Task Backlog – MovieMind API
 
-**Last updated:** 2025-11-10  
+**Last updated:** 2025-11-29  
 **Status:** 🔄 Active
 
 ---
@@ -409,6 +409,29 @@ Every entry follows this structure:
   - Remove unused files (`app/Models/Actor*`, `ActorSeeder`, etc.) and refresh tests/documentation (OpenAPI, Postman, README) to reference `Person`.
 - **Dependencies:** Relates to `TASK-032`, `TASK-022`
 - **Created:** 2025-11-10
+
+---
+
+#### `TASK-034` – Support context_tag as query parameter in GET /api/v1/movies/{slug}
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2–3 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Add ability to retrieve movie description with specific ContextTag via `context_tag` query parameter in `GET /api/v1/movies/{slug}` endpoint, as an alternative to the current `description_id` selection mechanism.
+- **Details:**
+  - Extend `MovieController::show()` to handle `context_tag` query parameter (e.g., `?context_tag=humorous`).
+  - If `context_tag` is provided, return description with that ContextTag for the movie and locale.
+  - If description with given ContextTag doesn't exist, return 404 or default description (to be decided in implementation).
+  - Maintain backward compatibility - `description_id` should still work.
+  - Update validation - check if ContextTag is valid (enum validation).
+  - Add automated tests for new functionality.
+  - Update API documentation (OpenAPI/Swagger, Postman, Insomnia).
+  - Update `MANUAL_TESTING_GUIDE.md` with usage examples.
+- **Dependencies:** Related to `TASK-031` (AI description versioning strategy)
+- **Created:** 2025-11-29
 
 ---
 

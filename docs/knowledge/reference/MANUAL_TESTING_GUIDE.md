@@ -10,6 +10,37 @@ Ten dokument zawiera szczegółowe instrukcje do manualnego testowania funkcjona
 
 ---
 
+## 📋 Przegląd Przypadków Użycia
+
+Ten dokument zawiera instrukcje do testowania następujących przypadków użycia:
+
+| #  | Przypadek Użycia                                    | Opis                                                                                       | Endpoint                      |
+|----|-----------------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------------|
+| 1  | **Concurrent Requests - Movie (GET)**                | Weryfikacja, że równoległe requesty dla tego samego slug filmu zwracają ten sam `job_id` | `GET /api/v1/movies/{slug}`   |
+| 2  | **Concurrent Requests - Movie (POST)**               | Weryfikacja mechanizmu slot management dla endpointu `/generate` dla filmów              | `POST /api/v1/generate`       |
+| 3  | **Concurrent Requests - Person (GET)**               | Weryfikacja, że równoległe requesty dla tego samego slug osoby zwracają ten sam `job_id` | `GET /api/v1/people/{slug}`   |
+| 4  | **Concurrent Requests - Person (POST)**              | Weryfikacja mechanizmu slot management dla endpointu `/generate` dla osób                | `POST /api/v1/generate`       |
+| 5  | **Weryfikacja Logów - Jedno Dispatchowanie**        | Potwierdzenie w logach, że tylko jeden job jest dispatchowany dla concurrent requests    | Logi aplikacji                |
+| 6  | **Edge Case - Bardzo Szybkie Concurrent Requests**  | Testowanie mechanizmu dla 3+ równoległych requestów                                       | `GET /api/v1/movies/{slug}`   |
+| 7  | **Weryfikacja w Bazie Danych - Brak Duplikatów**    | Sprawdzenie, czy w bazie danych nie ma duplikatów (unique constraint)                     | Baza danych PostgreSQL        |
+| 8  | **Test Statusu Joba**                                | Weryfikacja, że `job_id` zwrócony przez API istnieje i można sprawdzić jego status        | `GET /api/v1/jobs/{id}`       |
+| 9  | **Generowanie z domyślnym ContextTag**               | Weryfikacja, że gdy nie podano `context_tag`, system używa domyślnego ContextTag          | `POST /api/v1/generate`       |
+| 10 | **Generowanie z konkretnym ContextTag**              | Weryfikacja obsługi konkretnego ContextTag (np. "humorous") podczas generowania opisu     | `POST /api/v1/generate`       |
+| 11 | **Edge Case - Nieprawidłowy ContextTag**             | Weryfikacja obsługi nieprawidłowego ContextTag (fallback lub błąd walidacji)              | `POST /api/v1/generate`       |
+| 12 | **Duplikacja - Różne ContextTag (KLUCZOWY)**         | Weryfikacja, że concurrent requests z różnymi ContextTag zwracają różne job_id i tworzą różne opisy | `POST /api/v1/generate`       |
+| 13 | **Co się dzieje gdy nie ma ContextTag w bazie**      | Weryfikacja zachowania, gdy pobieramy film bez opisu z danym ContextTag                   | `GET /api/v1/movies/{slug}`   |
+
+### Kluczowe Mechanizmy Testowane
+
+- **Slot Management** - mechanizm zapobiegania duplikatom poprzez sloty generowania
+- **Cache Operations** - operacje cache dla statusu jobów i slotów
+- **Event Handling** - weryfikacja, że tylko jeden event jest dispatchowany
+- **Database Integrity** - sprawdzenie unikalności rekordów w bazie danych
+- **Job Status Tracking** - śledzenie statusu asynchronicznych jobów
+- **ContextTag Management** - obsługa różnych ContextTag (DEFAULT, MODERN, CRITICAL, HUMOROUS) i zapobieganie duplikatom dla różnych tagów
+
+---
+
 ## 🚀 Uruchomienie Środowiska Lokalnego (Docker)
 
 ### Krok 1: Przygotowanie Środowiska
@@ -712,6 +743,316 @@ curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" \
 
 ---
 
+## 🧪 Test 9: Generowanie z domyślnym ContextTag
+
+### Cel
+
+Weryfikacja, że gdy nie podano `context_tag` w requestcie, system używa domyślnego ContextTag (DEFAULT, MODERN, CRITICAL lub HUMOROUS w zależności od istniejących opisów).
+
+### Kroki
+
+#### 1. Wygeneruj opis bez podania context_tag
+
+```bash
+SLUG="default-context-$(date +%s)"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\"
+  }" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Response zawiera: `job_id`, `status: "PENDING"`, `slug`, `locale: "en-US"`
+- `context_tag` może być null lub domyślny (DEFAULT) - zależy od implementacji
+
+#### 2. Sprawdź status joba i poczekaj na ukończenie
+
+```bash
+JOB_ID=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\": \"MOVIE\", \"entity_id\": \"$SLUG\"}" | jq -r '.job_id')
+
+# Poczekaj na ukończenie joba (lub sprawdź status)
+sleep 5
+
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" | jq .
+```
+
+#### 3. Sprawdź w bazie danych, jaki ContextTag został użyty
+
+```bash
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag, locale 
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY created_at DESC 
+  LIMIT 1;
+"
+```
+
+**Oczekiwany wynik:**
+- Powinien istnieć opis z context_tag = 'DEFAULT' (lub pierwszy dostępny z kolejności: DEFAULT, MODERN, CRITICAL, HUMOROUS)
+
+---
+
+## 🧪 Test 10: Generowanie z konkretnym ContextTag (humorous)
+
+### Cel
+
+Weryfikacja, że system poprawnie obsługuje konkretny ContextTag podczas generowania opisu.
+
+### Kroki
+
+#### 1. Wygeneruj opis z context_tag="humorous"
+
+```bash
+SLUG="humorous-context-$(date +%s)"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"humorous\"
+  }" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Response zawiera: `job_id`, `status: "PENDING"`, `context_tag: "humorous"`
+
+#### 2. Sprawdź status joba i poczekaj na ukończenie
+
+```bash
+JOB_ID=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\": \"MOVIE\", \"entity_id\": \"$SLUG\", \"context_tag\": \"humorous\"}" | jq -r '.job_id')
+
+sleep 5
+
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" | jq .
+```
+
+#### 3. Sprawdź w bazie danych, czy ContextTag został zapisany
+
+```bash
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag, locale, LEFT(text, 50) as text_preview
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY created_at DESC 
+  LIMIT 1;
+"
+```
+
+**Oczekiwany wynik:**
+- Powinien istnieć opis z context_tag = 'humorous'
+
+---
+
+## 🧪 Test 11: Edge Case - Nieprawidłowy ContextTag
+
+### Cel
+
+Weryfikacja, jak system obsługuje nieprawidłowy ContextTag (fallback do domyślnego lub błąd walidacji).
+
+### Kroki
+
+#### 1. Spróbuj wygenerować opis z nieprawidłowym context_tag
+
+```bash
+SLUG="invalid-context-$(date +%s)"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"invalid-tag\"
+  }" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted` (system może zaakceptować request, ale zignorować nieprawidłowy tag)
+- LUB Status: `422 Unprocessable Entity` (błąd walidacji, jeśli jest walidacja)
+
+#### 2. Sprawdź, jaki ContextTag został faktycznie użyty
+
+```bash
+JOB_ID=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\": \"MOVIE\", \"entity_id\": \"$SLUG\", \"context_tag\": \"invalid-tag\"}" | jq -r '.job_id')
+
+sleep 5
+
+# Sprawdź w bazie danych
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag 
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY created_at DESC 
+  LIMIT 1;
+"
+```
+
+**Oczekiwany wynik:**
+- ContextTag powinien być domyślny (DEFAULT) lub poprawny (jeśli system normalizuje/naprawia)
+
+---
+
+## 🧪 Test 12: Duplikacja - Różne ContextTag (KLUCZOWY)
+
+### Cel
+
+Weryfikacja, że concurrent requests z różnymi ContextTag zwracają różne job_id i tworzą różne opisy w bazie danych. To kluczowy test mechanizmu slot management dla różnych ContextTag.
+
+### Kroki
+
+#### 1. Wygeneruj równoległe requesty z różnymi context_tag
+
+```bash
+SLUG="different-context-$(date +%s)"
+
+# Request 1: modern
+JOB_ID_1=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"modern\"
+  }" | jq -r '.job_id')
+
+# Request 2: humorous (natychmiast po pierwszym)
+JOB_ID_2=$(curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"humorous\"
+  }" | jq -r '.job_id')
+
+echo "Job ID 1 (modern): $JOB_ID_1"
+echo "Job ID 2 (humorous): $JOB_ID_2"
+```
+
+**Oczekiwany wynik:**
+- Oba requesty zwracają status `202 Accepted`
+- **Job ID 1 i Job ID 2 powinny być RÓŻNE** (różne ContextTag = różne sloty)
+- Oba joby powinny mieć status `PENDING`
+
+#### 2. Sprawdź status obu jobów
+
+```bash
+echo "=== Job 1 (modern) ==="
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID_1" | jq .
+
+echo "=== Job 2 (humorous) ==="
+curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID_2" | jq .
+```
+
+#### 3. Poczekaj na ukończenie jobów i sprawdź w bazie danych
+
+```bash
+sleep 10
+
+docker exec moviemind-db psql -U moviemind -d moviemind -c "
+  SELECT id, context_tag, locale, LEFT(text, 50) as text_preview
+  FROM movie_descriptions 
+  WHERE movie_id = (SELECT id FROM movies WHERE slug = '$SLUG')
+  ORDER BY context_tag;
+"
+```
+
+**Oczekiwany wynik:**
+- Powinny istnieć **dwa opisy** dla tego samego filmu:
+  - Jeden z `context_tag = 'modern'`
+  - Drugi z `context_tag = 'humorous'`
+- Oba opisy powinny mieć ten sam `locale` (en-US)
+
+#### 4. Weryfikacja logów - oba joby powinny być dispatchowane
+
+```bash
+docker logs moviemind-php 2>&1 | grep -E "generation slot|context_tag.*modern|context_tag.*humorous" | tail -10
+```
+
+**Oczekiwany wynik:**
+- Logi powinny pokazywać dwa różne sloty (różne ContextTag)
+- Oba joby powinny być dispatchowane
+
+---
+
+## 🧪 Test 13: Co się dzieje gdy nie ma ContextTag w bazie
+
+### Cel
+
+Weryfikacja zachowania, gdy pobieramy film, który nie ma opisu z danym ContextTag.
+
+### Kroki
+
+#### 1. Utwórz film z opisem z jednym ContextTag (np. modern)
+
+```bash
+SLUG="single-context-$(date +%s)"
+
+# Wygeneruj opis z context_tag="modern"
+curl -s -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"entity_type\": \"MOVIE\",
+    \"entity_id\": \"$SLUG\",
+    \"context_tag\": \"modern\"
+  }" | jq .
+
+sleep 5
+```
+
+#### 2. Sprawdź, co zwraca GET /api/v1/movies/{slug} (bez parametrów)
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG" \
+  -H "Accept: application/json" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `200 OK`
+- Response zawiera film z domyślnym opisem (default_description_id)
+- Opis powinien mieć context_tag="modern" (bo to jedyny opis)
+
+#### 3. Sprawdź, co zwraca GET z description_id dla nieistniejącego ContextTag
+
+Najpierw znajdź movie_id:
+```bash
+MOVIE_ID=$(docker exec moviemind-db psql -U moviemind -d moviemind -t -c "
+  SELECT id FROM movies WHERE slug = '$SLUG';
+" | tr -d ' ')
+
+echo "Movie ID: $MOVIE_ID"
+```
+
+Teraz sprawdź, co się dzieje, gdy próbujemy użyć description_id, który nie istnieje:
+```bash
+# Pobierz istniejący description_id
+DESC_ID=$(docker exec moviemind-db psql -U moviemind -d moviemind -t -c "
+  SELECT id FROM movie_descriptions WHERE movie_id = $MOVIE_ID LIMIT 1;
+" | tr -d ' ')
+
+echo "Description ID: $DESC_ID"
+
+# Spróbuj użyć description_id dla nieistniejącego opisu
+INVALID_DESC_ID=99999
+curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG?description_id=$INVALID_DESC_ID" \
+  -H "Accept: application/json" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `404 Not Found` LUB `200 OK` z domyślnym opisem (zależy od implementacji)
+
+---
+
 ## ✅ Checklist Końcowy
 
 - [ ] Test 1: Movie GET endpoint - concurrent requests zwracają ten sam job_id
@@ -723,6 +1064,11 @@ curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" \
 - [ ] Test 7: Edge case - 3 szybkie requesty zwracają ten sam job_id
 - [ ] Test 8: Baza danych - brak duplikatów w tabelach movies i people
 - [ ] Test 9: Status joba - job istnieje i można sprawdzić jego status
+- [ ] Test 10: Generowanie z domyślnym ContextTag - system używa domyślnego
+- [ ] Test 11: Generowanie z konkretnym ContextTag (humorous) - poprawnie zapisany w bazie
+- [ ] Test 12: Nieprawidłowy ContextTag - fallback lub błąd walidacji
+- [ ] Test 13: Różne ContextTag w concurrent requests - różne job_id i opisy (KLUCZOWY)
+- [ ] Test 14: Brak ContextTag w bazie - zachowanie przy pobieraniu filmu
 
 ---
 
@@ -879,5 +1225,5 @@ chmod +x test-duplicate-prevention.sh
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-27
+**Ostatnia aktualizacja:** 2025-11-29
 
