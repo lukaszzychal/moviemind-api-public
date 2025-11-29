@@ -10,6 +10,274 @@ This document contains detailed instructions for manual testing of MovieMind API
 
 ---
 
+## 🚀 Local Environment Setup (Docker)
+
+### Step 1: Environment Preparation
+
+#### 1.1. Copy the `.env` configuration file
+
+```bash
+# From the project root directory
+cp env/local.env.example api/.env
+```
+
+#### 1.2. Edit the `api/.env` file (optional)
+
+```bash
+# Open the file in an editor to set environment variables (e.g., OPENAI_API_KEY)
+# Not required for testing with mock AI
+```
+
+**Default values:**
+- `AI_SERVICE=mock` - uses mock AI (no OpenAI key required)
+- `OPENAI_API_KEY=` - optional, required only for `AI_SERVICE=real`
+
+### Step 2: Starting Docker Containers
+
+#### 2.1. Start all services
+
+```bash
+# From the project root directory
+docker compose up -d --build
+```
+
+**What this does:**
+- Builds Docker images (if needed)
+- Starts all containers in the background (`-d`):
+  - `moviemind-php` - PHP/Laravel application
+  - `moviemind-nginx` - web server (port 8000)
+  - `moviemind-db` - PostgreSQL (port 5433)
+  - `moviemind-redis` - Redis (port 6379)
+  - `moviemind-horizon` - Laravel Horizon (queue worker)
+
+**Expected result:**
+```bash
+[+] Running 5/5
+ ✔ Container moviemind-redis    Started
+ ✔ Container moviemind-db        Started
+ ✔ Container moviemind-php       Started
+ ✔ Container moviemind-nginx     Started
+ ✔ Container moviemind-horizon   Started
+```
+
+#### 2.2. Check container status
+
+```bash
+docker ps
+```
+
+**Expected result:** All containers should have status `Up`:
+```
+CONTAINER ID   IMAGE                    STATUS
+xxx            moviemind-php            Up X seconds
+xxx            moviemind-nginx          Up X seconds
+xxx            moviemind-db             Up X seconds
+xxx            moviemind-redis          Up X seconds
+xxx            moviemind-horizon        Up X seconds
+```
+
+### Step 3: PHP Dependencies Installation
+
+#### 3.1. Install Composer dependencies
+
+```bash
+docker compose exec php composer install
+```
+
+**Expected result:** PHP packages installed without errors.
+
+### Step 4: Application Configuration
+
+#### 4.1. Generate Laravel application key
+
+```bash
+docker compose exec php php artisan key:generate
+```
+
+**Expected result:** `Application key set successfully.`
+
+#### 4.2. Run database migrations and seeders
+
+```bash
+docker compose exec php php artisan migrate --seed
+```
+
+**Expected result:**
+```
+Migration table created successfully.
+Migrating: 2024_01_01_000001_create_movies_table
+Migrated:  2024_01_01_000001_create_movies_table
+...
+Seeding: MovieSeeder
+Seeding: ActorSeeder
+...
+Database seeded successfully.
+```
+
+### Step 5: Startup Verification
+
+#### 5.1. Check if API is responding
+
+```bash
+curl -s http://localhost:8000/api/v1/health || echo "API not responding"
+```
+
+**Expected result:** Status `200 OK` or JSON response (if endpoint exists).
+
+Alternatively:
+```bash
+curl -s -I http://localhost:8000 | head -1
+```
+
+**Expected result:** `HTTP/1.1 200 OK` or `HTTP/1.1 404 Not Found` (depending on routing configuration).
+
+#### 5.2. Check Horizon logs (queue worker)
+
+```bash
+docker compose logs horizon | tail -20
+```
+
+**Expected result:** Horizon should be running:
+```
+Horizon started successfully.
+Processing jobs from queue: default
+```
+
+#### 5.3. Check application logs
+
+```bash
+docker compose logs php | tail -20
+```
+
+**Expected result:** No critical errors.
+
+### Step 6: Useful Commands
+
+#### Stop containers
+
+```bash
+docker compose down
+```
+
+#### Stop and remove volumes (reset database)
+
+```bash
+docker compose down -v
+```
+
+**Warning:** This will delete all database data!
+
+#### Restart containers
+
+```bash
+docker compose restart
+```
+
+#### Restart specific container
+
+```bash
+docker compose restart horizon
+```
+
+#### View live logs
+
+```bash
+# All containers
+docker compose logs -f
+
+# Specific container
+docker compose logs -f horizon
+docker compose logs -f php
+```
+
+#### Execute command in container
+
+```bash
+# Execute Artisan command
+docker compose exec php php artisan route:list
+
+# Open shell in container
+docker compose exec php bash
+
+# Check PHP version
+docker compose exec php php -v
+```
+
+### Troubleshooting: Docker Startup Issues
+
+#### Issue: Port 8000 already in use
+
+**Symptoms:**
+```
+Error: Bind for 0.0.0.0:8000 failed: port is already allocated
+```
+
+**Solution:**
+1. Find the process using port 8000:
+   ```bash
+   lsof -i :8000
+   ```
+2. Stop the process or change the port in `docker-compose.yml` (line 41: `"8000:80"` → `"8001:80"`)
+
+#### Issue: Port 5433 already in use (PostgreSQL)
+
+**Symptoms:**
+```
+Error: Bind for 0.0.0.0:5433 failed: port is already allocated
+```
+
+**Solution:**
+1. Change the port in `docker-compose.yml` (line 91: `"5433:5432"` → `"5434:5432"`)
+2. Update `DB_PORT` in `api/.env` if using external client
+
+#### Issue: Containers won't start
+
+**Symptoms:**
+- Containers restart in a loop
+- Errors in logs
+
+**Solution:**
+1. Check logs:
+   ```bash
+   docker compose logs
+   ```
+2. Check if `api/.env` file exists:
+   ```bash
+   ls -la api/.env
+   ```
+3. Check directory permissions:
+   ```bash
+   ls -la api/storage
+   ls -la api/bootstrap/cache
+   ```
+4. Clean and restart:
+   ```bash
+   docker compose down -v
+   docker compose up -d --build
+   ```
+
+#### Issue: Horizon is not running
+
+**Symptoms:**
+- No Horizon logs
+- Jobs are not being processed
+
+**Solution:**
+1. Check if Horizon container is running:
+   ```bash
+   docker ps | grep horizon
+   ```
+2. Check logs:
+   ```bash
+   docker compose logs horizon
+   ```
+3. Restart Horizon:
+   ```bash
+   docker compose restart horizon
+   ```
+
+---
+
 ## 📋 Prerequisites
 
 ### Tools
@@ -611,5 +879,5 @@ chmod +x test-duplicate-prevention.sh
 
 ---
 
-**Last updated:** 2025-11-21
+**Last updated:** 2025-01-27
 
