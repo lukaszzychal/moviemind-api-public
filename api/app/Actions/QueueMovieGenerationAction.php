@@ -103,17 +103,57 @@ class QueueMovieGenerationAction
                     ];
                 }
 
-                // Fallback: return response without job_id only if no job exists at all
-                // This is a rare edge case, but we need to handle it gracefully
-                return [
+                // Fallback: Even if slot acquisition failed, we should still initialize the job
+                // to ensure job_id is always present in the response (API contract requirement)
+                // This handles the rare edge case where slot management is in an inconsistent state
+                Log::warning('QueueMovieGenerationAction: slot acquisition failed after retry, initializing job anyway', [
+                    'slug' => $slug,
+                    'job_id' => $jobId,
+                    'locale' => $normalizedLocale,
+                    'context_tag' => $normalizedContextTag,
+                ]);
+
+                // Initialize job status and dispatch event even though slot acquisition failed
+                // This ensures the job_id is always present and the generation can proceed
+                $baselineDescriptionId = $existingMovie?->default_description_id;
+                $this->jobStatusService->initializeStatus(
+                    $jobId,
+                    'MOVIE',
+                    $slug,
+                    $confidence,
+                    $normalizedLocale,
+                    $normalizedContextTag
+                );
+
+                event(new MovieGenerationRequested(
+                    $slug,
+                    $jobId,
+                    existingMovieId: $existingMovie?->id,
+                    baselineDescriptionId: $baselineDescriptionId,
+                    locale: $normalizedLocale,
+                    contextTag: $normalizedContextTag
+                ));
+
+                $response = [
+                    'job_id' => $jobId,
                     'status' => 'PENDING',
-                    'message' => 'Generation already queued for movie slug',
+                    'message' => 'Generation queued for movie by slug',
                     'slug' => $slug,
                     'confidence' => $confidence,
                     'confidence_level' => $this->confidenceLabel($confidence),
                     'locale' => $normalizedLocale,
-                    'context_tag' => $normalizedContextTag,
                 ];
+
+                if ($existingMovie) {
+                    $response['existing_id'] = $existingMovie->id;
+                    $response['description_id'] = $baselineDescriptionId;
+                }
+
+                if ($normalizedContextTag !== null) {
+                    $response['context_tag'] = $normalizedContextTag;
+                }
+
+                return $response;
             }
         }
 

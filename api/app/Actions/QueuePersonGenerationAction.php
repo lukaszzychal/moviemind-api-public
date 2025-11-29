@@ -103,17 +103,57 @@ class QueuePersonGenerationAction
                     ];
                 }
 
-                // Fallback: return response without job_id only if no job exists at all
-                // This is a rare edge case, but we need to handle it gracefully
-                return [
+                // Fallback: Even if slot acquisition failed, we should still initialize the job
+                // to ensure job_id is always present in the response (API contract requirement)
+                // This handles the rare edge case where slot management is in an inconsistent state
+                Log::warning('QueuePersonGenerationAction: slot acquisition failed after retry, initializing job anyway', [
+                    'slug' => $slug,
+                    'job_id' => $jobId,
+                    'locale' => $normalizedLocale,
+                    'context_tag' => $normalizedContextTag,
+                ]);
+
+                // Initialize job status and dispatch event even though slot acquisition failed
+                // This ensures the job_id is always present and the generation can proceed
+                $baselineBioId = $existingPerson?->default_bio_id;
+                $this->jobStatusService->initializeStatus(
+                    $jobId,
+                    'PERSON',
+                    $slug,
+                    $confidence,
+                    $normalizedLocale,
+                    $normalizedContextTag
+                );
+
+                event(new PersonGenerationRequested(
+                    $slug,
+                    $jobId,
+                    existingPersonId: $existingPerson?->id,
+                    baselineBioId: $baselineBioId,
+                    locale: $normalizedLocale,
+                    contextTag: $normalizedContextTag
+                ));
+
+                $response = [
+                    'job_id' => $jobId,
                     'status' => 'PENDING',
-                    'message' => 'Generation already queued for person slug',
+                    'message' => 'Generation queued for person by slug',
                     'slug' => $slug,
                     'confidence' => $confidence,
                     'confidence_level' => $this->confidenceLabel($confidence),
                     'locale' => $normalizedLocale,
-                    'context_tag' => $normalizedContextTag,
                 ];
+
+                if ($existingPerson) {
+                    $response['existing_id'] = $existingPerson->id;
+                    $response['bio_id'] = $baselineBioId;
+                }
+
+                if ($normalizedContextTag !== null) {
+                    $response['context_tag'] = $normalizedContextTag;
+                }
+
+                return $response;
             }
         }
 
