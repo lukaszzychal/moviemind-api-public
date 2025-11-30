@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+
+# Checklist przed Commitem
+
+## Narzędzia
+- [ ] Kod sformatowany przez Pint
+- [ ] PHPStan bez błędów
+- [ ] Wszystkie testy przechodzą
+- [ ] GitLeaks nie wykrywa sekretów
+- [ ] Composer audit nie wykrywa krytycznych luk
+
+## Testy
+- [ ] Nowy kod ma testy (jeśli to nowa funkcjonalność)
+- [ ] Testy są czytelne
+- [ ] Stosowano TDD
+
+## Jakość
+- [ ] Kod czytelny i zgodny z konwencjami
+- [ ] Zastosowano SOLID (gdy ma sens)
+- [ ] Usunięto duplikację (gdy potrzebne)
+- [ ] Type hints i `declare(strict_types=1)`
+
+## Cleanup
+- [ ] Brak debugowego kodu
+- [ ] Brak nieużywanego kodu
+- [ ] Brak zakomentowanego kodu (chyba że wyjaśnia "dlaczego")
+
+## Git
+- [ ] Commit message jest opisowy i zgodny z konwencją
+- [ ] Commit zawiera jedną logiczną zmianę

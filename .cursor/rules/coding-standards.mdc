@@ -2,150 +2,150 @@
 alwaysApply: true
 ---
 
-# Zasady Pisania Kodu
+# Code Writing Standards
 
-## Filozofia: Pragmatyczne podejście
+## Philosophy: Pragmatic approach
 
-- Zasady są narzędziami, nie celem samym w sobie
-- Czytelność > Zwięzłość
-- Prosty kod jest lepszy niż "idealny" kod zgodny ze wszystkimi zasadami
-- Nie stosuj zasad na siłę
+- Principles are tools, not goals in themselves
+- Readability > Conciseness
+- Simple code is better than "perfect" code following all principles
+- Don't apply principles forcefully
 
 ## KISS (Keep It Simple, Stupid)
 
-- **Prostota przed złożonością** - wybieraj prostsze rozwiązanie
-- **Nie przesadzaj z abstrakcją** - czasem prosty kod jest lepszy
-- **Unikaj przedwczesnej optymalizacji** - najpierw działający kod, potem optymalizacja
-- **Czytelność > Wydajność** (w większości przypadków)
-- **Najprostsze rozwiązanie które działa** jest najlepsze
+- **Simplicity over complexity** - choose simpler solutions
+- **Don't overdo abstraction** - sometimes simple code is better
+- **Avoid premature optimization** - working code first, then optimization
+- **Readability > Performance** (in most cases)
+- **The simplest solution that works** is the best
 
-## SOLID (stosuj pragmatycznie)
+## SOLID (apply pragmatically)
 
-- **SRP**: Jedna klasa = jedna odpowiedzialność
-- **OCP**: Otwórz na rozszerzenia, zamknij na modyfikacje
-- **LSP**: Podklasy muszą być zastępowalne
-- **ISP**: Interfejsy specyficzne, nie ogólne
-- **DIP**: Zależność od abstrakcji, nie konkretnych implementacji
+- **SRP**: One class = one responsibility
+- **OCP**: Open for extension, closed for modification
+- **LSP**: Subclasses must be replaceable
+- **ISP**: Specific interfaces, not general ones
+- **DIP**: Depend on abstractions, not concrete implementations
 
 ## DRY (Don't Repeat Yourself)
 
-- Refaktoryzuj duplikację gdy występuje w 3+ miejscach
-- Nie przesadzaj z abstrakcją - czasem duplikacja jest czytelniejsza
-- Refaktoryzuj tylko gdy ma to praktyczny sens
+- Refactor duplication when it occurs in 3+ places
+- Don't overdo abstraction - sometimes duplication is more readable
+- Refactor only when it makes practical sense
 
 ## CUPID
 
-- **C**omposable - łatwy do składania
-- **U**nix philosophy - robi jedną rzecz dobrze
-- **P**redictable - przewidywalny
-- **I**diomatic - zgodny z Laravel conventions
-- **D**omain-based - oparty na domenie
+- **C**omposable - easy to compose
+- **U**nix philosophy - does one thing well
+- **P**redictable - predictable
+- **I**diomatic - follows Laravel conventions
+- **D**omain-based - domain-based
 
-## Wybór Architektury
+## Architecture Choice
 
-### Zasada: Start Simple, Scale When Needed
+### Principle: Start Simple, Scale When Needed
 
-**Zacznij od prostego rozwiązania, dodaj złożoność tylko gdy jest to uzasadnione.**
+**Start with a simple solution, add complexity only when justified.**
 
-### Proste rozwiązania (Skrypty Transakcji, Transaction Script)
+### Simple solutions (Transaction Scripts)
 
-**Używaj gdy:**
-- ✅ Mały do średniego projektu (MVP, prototypy)
-- ✅ Prosta logika biznesowa (CRUD, proste operacje)
-- ✅ Mały zespół (1-3 osoby)
-- ✅ Szybki development i delivery
-- ✅ Niskie ryzyko zmian w wymaganiach
-- ✅ Prosta domena (nie wymaga złożonej logiki biznesowej)
+**Use when:**
+- ✅ Small to medium project (MVP, prototypes)
+- ✅ Simple business logic (CRUD, simple operations)
+- ✅ Small team (1-3 people)
+- ✅ Fast development and delivery
+- ✅ Low risk of requirement changes
+- ✅ Simple domain (doesn't require complex business logic)
 
-**Przykłady:**
-- Laravel Controllers z bezpośrednim dostępem do Models
-- Proste Services z logiką biznesową
-- Repository pattern (jeśli potrzebny)
-- Minimalna abstrakcja
+**Examples:**
+- Laravel Controllers with direct access to Models
+- Simple Services with business logic
+- Repository pattern (if needed)
+- Minimal abstraction
 
-**Zalety:**
-- Szybki development
-- Łatwe do zrozumienia
-- Niskie koszty utrzymania (na początku)
-- Szybka iteracja
+**Advantages:**
+- Fast development
+- Easy to understand
+- Low maintenance costs (initially)
+- Fast iteration
 
-### Zaawansowane architektury (DDD, Hexagonal, Clean Architecture)
+### Advanced architectures (DDD, Hexagonal, Clean Architecture)
 
-**Używaj gdy:**
-- ✅ Duży, złożony projekt
-- ✅ Złożona logika biznesowa (wiele reguł, stanów)
-- ✅ Wiele zespołów pracujących równolegle
-- ✅ Długa żywotność projektu (5+ lat)
-- ✅ Wysokie ryzyko zmian w wymaganiach
-- ✅ Złożona domena (domain experts, rich domain model)
-- ✅ Wymagana wysoka testowalność i izolacja
-- ✅ Potrzeba wielu portów (API, CLI, Web, Events)
+**Use when:**
+- ✅ Large, complex project
+- ✅ Complex business logic (many rules, states)
+- ✅ Multiple teams working in parallel
+- ✅ Long project lifespan (5+ years)
+- ✅ High risk of requirement changes
+- ✅ Complex domain (domain experts, rich domain model)
+- ✅ High testability and isolation required
+- ✅ Need for multiple ports (API, CLI, Web, Events)
 
-**Przykłady:**
+**Examples:**
 - Domain-Driven Design (DDD) - Entities, Value Objects, Domain Services
 - Hexagonal Architecture - Ports & Adapters
-- Clean Architecture - warstwy z dependency rules
-- CQRS + Event Sourcing (gdy potrzebne)
+- Clean Architecture - layers with dependency rules
+- CQRS + Event Sourcing (when needed)
 
-**Zalety:**
-- Wysoka testowalność
-- Lepsza separacja odpowiedzialności
-- Łatwiejsze dodawanie nowych feature'ów
-- Niezależność od frameworka
-- Długoterminowa łatwość utrzymania
+**Advantages:**
+- High testability
+- Better separation of responsibilities
+- Easier to add new features
+- Framework independence
+- Long-term maintainability
 
-**Wady:**
-- Więcej kodu (boilerplate)
-- Wolniejszy initial development
-- Więcej abstrakcji (może być trudniejsze do zrozumienia)
-- Wyższe koszty na początku
+**Disadvantages:**
+- More code (boilerplate)
+- Slower initial development
+- More abstraction (can be harder to understand)
+- Higher initial costs
 
-### Migracja: Proste → Zaawansowane
+### Migration: Simple → Advanced
 
-**Kiedy refaktoryzować do bardziej zaawansowanej architektury:**
+**When to refactor to more advanced architecture:**
 
-1. ✅ Kod staje się trudny do utrzymania
-2. ✅ Trudno dodać nowe feature'y bez zmiany istniejących
-3. ✅ Testy są trudne do napisania
-4. ✅ Dużo duplikacji logiki biznesowej
-5. ✅ Zespół rośnie i potrzebuje lepszej organizacji
-6. ✅ Domena staje się bardziej złożona
-7. ✅ Wymagana jest niezależność od frameworka
+1. ✅ Code becomes hard to maintain
+2. ✅ Difficult to add new features without changing existing ones
+3. ✅ Tests are hard to write
+4. ✅ Lots of business logic duplication
+5. ✅ Team grows and needs better organization
+6. ✅ Domain becomes more complex
+7. ✅ Framework independence is required
 
-**Kiedy NIE refaktoryzować:**
-- ❌ "Dla zasady" - bez konkretnego problemu
-- ❌ Gdy kod działa dobrze i jest łatwy w utrzymaniu
-- ❌ Gdy projekt jest mały i prosty
-- ❌ Gdy nie ma czasu/resources na refaktoryzację
+**When NOT to refactor:**
+- ❌ "For the principle" - without a concrete problem
+- ❌ When code works well and is easy to maintain
+- ❌ When project is small and simple
+- ❌ When there's no time/resources for refactoring
 
-### Rekomendacje dla MovieMind API
+### Recommendations for MovieMind API
 
-**Obecny stan:**
-- Prosta architektura z Services, Repositories, Controllers
-- Event-Driven dla asynchronicznych operacji (Jobs)
+**Current state:**
+- Simple architecture with Services, Repositories, Controllers
+- Event-Driven for asynchronous operations (Jobs)
 - Laravel conventions
 
-**Kiedy rozważyć DDD/Hexagonal:**
-- Gdy logika biznesowa stanie się bardzo złożona
-- Gdy będzie potrzeba wielu różnych portów (Web, CLI, Queue, Events)
-- Gdy zespół urośnie i będzie potrzeba lepszej separacji
-- Gdy będzie potrzeba niezależności od Laravel (np. shared kernel)
+**When to consider DDD/Hexagonal:**
+- When business logic becomes very complex
+- When there will be a need for many different ports (Web, CLI, Queue, Events)
+- When team grows and better separation is needed
+- When independence from Laravel is needed (e.g. shared kernel)
 
-**Zasada:**
-**Zacznij prosto, refaktoryzuj gdy pojawią się konkretne problemy, nie "na zapas".**
+**Principle:**
+**Start simple, refactor when concrete problems arise, not "just in case".**
 
-## Code Smells (naprawiaj gdy utrudniają pracę)
+## Code Smells (fix when they hinder work)
 
-- God Class/Method - klasa/metoda robi za dużo
-- Long Parameter List - użyj DTO/Request object
-- Feature Envy - przenieś logikę do odpowiedniej klasy
-- Data Clumps - użyj Value Object
-- Primitive Obsession - użyj Value Objects
+- God Class/Method - class/method does too much
+- Long Parameter List - use DTO/Request object
+- Feature Envy - move logic to appropriate class
+- Data Clumps - use Value Object
+- Primitive Obsession - use Value Objects
 
-## Standardy kodowania
+## Coding standards
 
-- **PSR-12** - formatowanie (enforced przez Pint)
-- **Laravel Conventions** - konwencje Laravel
-- **Type hints** - zawsze używaj typów
-- **Strict types** - `declare(strict_types=1);` w plikach PHP
-- **Return types** - zawsze określaj zwracany typ
+- **PSR-12** - formatting (enforced by Pint)
+- **Laravel Conventions** - Laravel conventions
+- **Type hints** - always use types
+- **Strict types** - `declare(strict_types=1);` in PHP files
+- **Return types** - always specify return type

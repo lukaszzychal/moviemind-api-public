@@ -56,69 +56,20 @@ Porównać stosowane i planowane mechanizmy blokad w procesie generowania opisó
 | `SELECT ... FOR UPDATE`        | średni   | wysoka w obrębie transakcji | średni | niskie | Trzeba mieć rekord kontrolny lub dodatkową tabelę |
 | `SETNX` / Redlock              | niski    | zależy od implementacji | średni | średnie | Nadal wymaga „manualnego” wykrywania stanu po zwolnieniu locka |
 
-## ✅ Rekomendacja - Dwupoziomowa strategia
+## ✅ Rekomendacja
 
-### Poziom 1: "In-flight token" (`Cache::add`) - zapobiega dispatchowaniu duplikatów
-
-- W `QueueMovieGenerationAction` i `QueuePersonGenerationAction` używamy `JobStatusService::acquireGenerationSlot()`.
-- `Cache::add()` jest **atomowe** - tylko pierwszy request ustawi wartość.
-- Jeśli slot zajęty → zwracamy istniejący `job_id` zamiast dispatchować nowy job.
-- **Cel:** Oszczędność zasobów (OpenAI API calls) - zapobiega niepotrzebnym jobom.
-
-```php
-// W QueueMovieGenerationAction / QueuePersonGenerationAction
-if (! $this->jobStatusService->acquireGenerationSlot('MOVIE', $slug, $jobId, ...)) {
-    // Slot zajęty - zwracamy istniejący job_id
-    return $this->buildExistingJobResponse(...);
-}
-```
-
-### Poziom 2: Unique index + exception handling - zabezpieczenie na poziomie bazy
-
-- Usuwamy `Cache::lock` z `RealGenerateMovieJob` i `RealGeneratePersonJob`.
-- Opieramy się na istniejącym indeksie `movies.slug` i `people.slug` (unique constraint).
-- Łapiemy `QueryException` i sprawdzamy, czy kod błędu PDO oznacza naruszenie unikalności (`23000` w SQLite, `23505` w PostgreSQL).
-- Po złapaniu wyjątku pobieramy najnowszy rekord i aktualizujemy cache/job status, bez ponownego generowania opisu.
-- **Cel:** Zabezpieczenie na wypadek wyścigu - nawet jeśli dwa joby się dispatchują, baza zapobiegnie duplikatom.
-
-```php
-// W RealGenerateMovieJob / RealGeneratePersonJob
-try {
-    Movie::create(['slug' => $slug, ...]);  // ← Unique index gwarantuje brak duplikatów
-} catch (QueryException $exception) {
-    if ($this->isUniqueSlugViolation($exception)) {
-        $existing = Movie::where('slug', $slug)->first();
-        $this->markDoneUsingExisting($existing);
-        return;
-    }
-    throw $exception;
-}
-```
-
-### Dlaczego dwa poziomy?
-
-1. **Poziom 1 (`Cache::add`):** Zapobiega niepotrzebnym jobom - oszczędność zasobów.
-2. **Poziom 2 (Unique index):** Zabezpieczenie na wypadek wyścigu - deterministyczne zachowanie.
-
-### Uwagi dodatkowe
-
+- Usuwamy `Cache::lock` z `RealGenerateMovieJob`.
+- Opieramy się na istniejącym indeksie `movies.slug`.
+- Łapiemy `QueryException` i sprawdzamy, czy kod błędu PDO oznacza naruszenie unikalności (`23000` + `UNIQUE constraint failed: movies.slug` w SQLite, `23505` w PostgreSQL).
+- Po złapaniu wyjątku pobieramy najnowszy film i aktualizujemy cache/job status, bez ponownego generowania opisu.
 - Zachowujemy `Cache::lock` tylko w wąskich miejscach, gdzie naprawdę potrzebny (np. awans opisu domyślnego, jeśli wciąż chcemy mieć zabezpieczenie przed wyścigiem podczas zmiany `default_description_id`).
-- `releaseGenerationSlot()` jest wywoływane w `finally` - zawsze zwalnia slot po zakończeniu joba.
 
 ## 🧪 Przykład przepływu po zmianie
 
-### Scenariusz 1: Poziom 1 działa (Cache::add)
-
-1. **Request A** (`slug = matrix-1999`): `acquireGenerationSlot()` zwraca `true`, job dispatchowany ✅.
-2. **Request B** (ten sam slug, natychmiast po A): `acquireGenerationSlot()` zwraca `false` (slot zajęty).
-3. Request B zwraca istniejący `job_id` z Request A - **brak dispatchowania duplikatu** ✅.
-
-### Scenariusz 2: Poziom 2 działa (Unique index) - edge case
-
-1. **Request A** (`slug = matrix-1999`): Job 1 dispatchowany, tworzy film ✅.
-2. **Request B** (ten sam slug, slot wygasł lub edge case): Job 2 dispatchowany, próbuje `INSERT`.
-3. Job 2 dostaje `QueryException` (unique violation), łapie ją, pobiera świeży rekord, ustawia status `DONE` bez dodatkowego opisu ✅.
-4. Oba joby kończą z tym samym `description_id` - **brak duplikatu w bazie** ✅.
+1. **Request A** (`slug = matrix-1999`): Job 1 startuje, tworzy film ✅.
+2. **Request B** (ten sam slug, zanim A skończy): Job 2 startuje, nie widzi filmu, próbuje `INSERT`.
+3. Job 2 dostaje `IntegrityConstraintViolationException`, łapie ją, pobiera świeży rekord, ustawia status `DONE` bez dodatkowego opisu.
+4. Oba joby kończą z tym samym `description_id`.
 
 ## 🔗 Powiązane Dokumenty
 
@@ -130,10 +81,9 @@ try {
 
 - Po wdrożeniu warto dodać test funkcjonalny, który symuluje równoległe odpytanie endpointu (np. przy użyciu `ParallelTesting` lub ręcznego dispatchu jobów).
 - W razie opóźnień po stronie AI można rozważyć osobną tabelę logów „generacji”, ale nie ma potrzeby dodawać kolejnego mechanizmu locków.
-- Zastąpienie całego środowiska PostgreSQL-em i użycie `SELECT ... FOR UPDATE` dałoby deterministyczną blokadę, ale znacząco podniosłoby koszt utrzymania (brak wsparcia w SQLite dla testów, dodatkowe transakcje, konieczność osobnej tabeli „locków”). Dlatego preferujemy **dwupoziomową strategię**: lekką blokadę Redis (`Cache::add`) jako "in-flight token" + unikalny indeks w bazie jako ostateczne zabezpieczenie.
+- Zastąpienie całego środowiska PostgreSQL-em i użycie `SELECT ... FOR UPDATE` dałoby deterministyczną blokadę, ale znacząco podniosłoby koszt utrzymania (brak wsparcia w SQLite dla testów, dodatkowe transakcje, konieczność osobnej tabeli „locków”). Dlatego preferujemy lekką blokadę Redis (`Cache::add`) + unikalny indeks.
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-12  
-**Aktualizacja:** 2025-11-12 - Dodano opis dwupoziomowej strategii (Cache::add + unique index)
+**Ostatnia aktualizacja:** 2025-11-12
 

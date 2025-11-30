@@ -56,68 +56,18 @@ Summarise the locking mechanisms we evaluated for the movie description flow, pr
 | `SELECT ... FOR UPDATE`      | medium   | high within transaction    | medium     | low                           | Needs a control row or separate lock table |
 | `SETNX` / Redlock            | low      | depends on implementation  | medium     | medium                        | Still a manual mutex, doesn’t remove the “already exists” branch |
 
-## ✅ Recommendation - Two-level strategy
+## ✅ Recommendation
 
-### Level 1: "In-flight token" (`Cache::add`) - prevents duplicate job dispatching
-
-- In `QueueMovieGenerationAction` and `QueuePersonGenerationAction`, we use `JobStatusService::acquireGenerationSlot()`.
-- `Cache::add()` is **atomic** - only the first request will set the value.
-- If slot is busy → return existing `job_id` instead of dispatching a new job.
-- **Goal:** Resource savings (OpenAI API calls) - prevents unnecessary jobs.
-
-```php
-// In QueueMovieGenerationAction / QueuePersonGenerationAction
-if (! $this->jobStatusService->acquireGenerationSlot('MOVIE', $slug, $jobId, ...)) {
-    // Slot busy - return existing job_id
-    return $this->buildExistingJobResponse(...);
-}
-```
-
-### Level 2: Unique index + exception handling - database-level protection
-
-- Remove `Cache::lock` from `RealGenerateMovieJob` and `RealGeneratePersonJob`.
-- Rely on existing `movies.slug` and `people.slug` unique constraints.
-- Catch `QueryException`, inspect the SQLSTATE (`23000` in SQLite, `23505` in PostgreSQL), and shortcut to `markDoneUsingExisting`.
-- **Goal:** Race condition protection - even if two jobs are dispatched, database prevents duplicates.
-
-```php
-// In RealGenerateMovieJob / RealGeneratePersonJob
-try {
-    Movie::create(['slug' => $slug, ...]);  // ← Unique index guarantees no duplicates
-} catch (QueryException $exception) {
-    if ($this->isUniqueSlugViolation($exception)) {
-        $existing = Movie::where('slug', $slug)->first();
-        $this->markDoneUsingExisting($existing);
-        return;
-    }
-    throw $exception;
-}
-```
-
-### Why two levels?
-
-1. **Level 1 (`Cache::add`):** Prevents unnecessary jobs - resource savings.
-2. **Level 2 (Unique index):** Race condition protection - deterministic behavior.
-
-### Additional notes
-
+- Remove `Cache::lock` from `RealGenerateMovieJob`.
+- Rely on the existing `movies.slug` unique index.
+- Catch `QueryException`, inspect the SQLSTATE (`23000` / `23505`, etc.), and shortcut to `markDoneUsingExisting`.
 - Keep the small `Cache::lock` for promoting `default_description_id` if we still want protection against race conditions there.
-- `releaseGenerationSlot()` is called in `finally` - always releases the slot after job completion.
 
 ## 🧪 Example flow after the change
 
-### Scenario 1: Level 1 works (Cache::add)
-
-1. **Request A** (`slug = matrix-1999`): `acquireGenerationSlot()` returns `true`, job dispatched ✅.
-2. **Request B** (same slug, immediately after A): `acquireGenerationSlot()` returns `false` (slot busy).
-3. Request B returns existing `job_id` from Request A - **no duplicate dispatch** ✅.
-
-### Scenario 2: Level 2 works (Unique index) - edge case
-
-1. **Request A** (`slug = matrix-1999`): Job 1 dispatched, creates movie ✅.
-2. **Request B** (same slug, slot expired or edge case): Job 2 dispatched, tries `INSERT`.
-3. Job 2 gets `QueryException` (unique violation), catches it, loads fresh row, updates cache job status, exits without writing a second description ✅.
-4. Both jobs end with the same `description_id` - **no duplicate in database** ✅.
+1. **Request A** (`slug = matrix-1999`): Job 1 creates the movie and description.
+2. **Request B** (same slug, almost at the same time): Job 2 tries to insert, hits unique violation.
+3. Job 2 catches the exception, loads the fresh row, updates cache job status, exits without writing a second description.
 
 ## 🔗 Related documents
 
@@ -129,10 +79,9 @@ try {
 
 - Add a feature test simulating two simultaneous requests to ensure the exception branch works as expected.
 - If AI latency grows, consider a lightweight “generation log” table, but do not reintroduce a global lock unless we observe new contention issues.
-- Switching everything to PostgreSQL and relying on `SELECT ... FOR UPDATE` would provide deterministic locking, but comes with a heavy operational cost (SQLite tests no longer representative, more complex transaction handling, likely need for a dedicated "locks" table). Hence we prefer the **two-level strategy**: lightweight Redis `Cache::add` as "in-flight token" + unique index in database as final protection.
+- Switching everything to PostgreSQL and relying on `SELECT ... FOR UPDATE` would provide deterministic locking, but comes with a heavy operational cost (SQLite tests no longer representative, more complex transaction handling, likely need for a dedicated “locks” table). Hence we prefer the lightweight Redis `Cache::add` in-flight token combined with the unique index.
 
 ---
 
-**Last updated:** 2025-11-12  
-**Update:** 2025-11-12 - Added description of two-level strategy (Cache::add + unique index)
+**Last updated:** 2025-11-12
 

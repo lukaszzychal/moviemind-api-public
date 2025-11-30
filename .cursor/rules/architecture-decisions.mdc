@@ -3,53 +3,53 @@ alwaysApply: true
 ---
 # Architecture Decision Records (ADR)
 
-## 📋 Kiedy tworzyć nowy ADR?
+## 📋 When to create a new ADR?
 
-**ZAWSZE** utwórz nowy ADR w `docs/adr/` gdy:
-1. **Podejmujesz ważną decyzję architektoniczną** - wybór technologii, frameworka, biblioteki
-2. **Zmieniasz podejście** - zmiana strategii, wzorca, architektury
-3. **Rozwiązujesz konflikt** - wybór między alternatywnymi rozwiązaniami
-4. **Dokumentujesz trade-off** - kompromisy i konsekwencje decyzji
-5. **Wprowadzasz nowy standard** - konwencje, praktyki, zasady
+**ALWAYS** create a new ADR in `docs/adr/` when:
+1. **Making an important architectural decision** - technology choice, framework, library
+2. **Changing approach** - strategy change, pattern, architecture
+3. **Resolving conflict** - choosing between alternative solutions
+4. **Documenting trade-off** - compromises and consequences of decisions
+5. **Introducing new standard** - conventions, practices, principles
 
-## 📁 Lokalizacja
+## 📁 Location
 
-Wszystkie ADR-y znajdują się w: `docs/adr/README.md`
+All ADRs are located in: `docs/adr/README.md`
 
-## 📝 Format ADR
+## 📝 ADR Format
 
-Każdy ADR powinien zawierać:
+Each ADR should contain:
 
 ```markdown
-## ADR-XXX: Tytuł Decyzji
+## ADR-XXX: Decision Title
 
 ### 🇵🇱
 
-**Status:** ✅ Zaakceptowane / ⏳ Proponowane / ❌ Odrzucone  
-**Data:** YYYY-MM-DD  
-**Kontekst:** Dlaczego decyzja została podjęta
+**Status:** ✅ Accepted / ⏳ Proposed / ❌ Rejected  
+**Date:** YYYY-MM-DD  
+**Context:** Why the decision was made
 
-### 🎯 Decyzja
+### 🎯 Decision
 
-Jasne sformułowanie decyzji.
+Clear statement of the decision.
 
-### 💡 Uzasadnienie
+### 💡 Rationale
 
-Szczegółowe uzasadnienie decyzji:
-- Zalety wybranego rozwiązania
-- Wady odrzuconych alternatyw
-- Konsekwencje decyzji
+Detailed rationale:
+- Advantages of chosen solution
+- Disadvantages of rejected alternatives
+- Consequences of decision
 
-### 🔄 Konsekwencje
+### 🔄 Consequences
 
-- **Pozytywne:** Korzyści z decyzji
-- **Negatywne:** Wady i ograniczenia
+- **Positive:** Benefits of decision
+- **Negative:** Drawbacks and limitations
 
-### 📊 Alternatywy rozważane:
+### 📊 Alternatives considered:
 
-1. **Alternatywa 1** - dlaczego odrzucona
-2. **Alternatywa 2** - dlaczego odrzucona
-3. **Wybrane rozwiązanie** - wybrane ✅
+1. **Alternative 1** - why rejected
+2. **Alternative 2** - why rejected
+3. **Chosen solution** - chosen ✅
 
 ---
 
@@ -84,62 +84,62 @@ Detailed rationale:
 3. **Chosen solution** - chosen ✅
 ```
 
-## 🔢 Numeracja ADR
+## 🔢 ADR Numbering
 
-- **ADR-001, ADR-002, ...** - kolejne numery
-- Sprawdź ostatni numer w `docs/adr/README.md`
-- Użyj następnego dostępnego numeru
+- **ADR-001, ADR-002, ...** - sequential numbers
+- Check the last number in `docs/adr/README.md`
+- Use the next available number
 
-## 🔄 Workflow Tworzenia ADR
+## 🔄 ADR Creation Workflow
 
-1. **Podczas podejmowania decyzji:**
-   - Jeśli decyzja jest ważna → utwórz ADR
-   - Jeśli wybierasz między alternatywami → utwórz ADR
-   - Jeśli zmieniasz podejście → utwórz ADR
+1. **When making a decision:**
+   - If decision is important → create ADR
+   - If choosing between alternatives → create ADR
+   - If changing approach → create ADR
 
 2. **Format:**
-   - Dodaj ADR do `docs/adr/README.md`
-   - Dodaj link w spisie treści (PL i EN)
-   - Użyj formatu z przykładów powyżej
+   - Add ADR to `docs/adr/README.md`
+   - Add link in table of contents (PL and EN)
+   - Use format from examples above
 
-3. **Po utworzeniu:**
-   - Zaktualizuj spis treści w README.md
-   - Dodaj datę utworzenia
-   - Ustaw odpowiedni status
+3. **After creation:**
+   - Update table of contents in README.md
+   - Add creation date
+   - Set appropriate status
 
-## ⚠️ Ważne Zasady
+## ⚠️ Important Rules
 
-1. **Nie pomijaj ADR-ów** - ważne decyzje muszą być udokumentowane
-2. **Bądź szczery** - dokumentuj zarówno zalety jak i wady
-3. **Dokumentuj kontekst** - wyjaśnij dlaczego decyzja została podjęta
-4. **Aktualizuj status** - zmień status jeśli decyzja została zmieniona
-5. **Dwujęzyczność** - zawsze dodawaj wersję PL i EN
+1. **Don't skip ADRs** - important decisions must be documented
+2. **Be honest** - document both advantages and disadvantages
+3. **Document context** - explain why the decision was made
+4. **Update status** - change status if decision was changed
+5. **Bilingual** - always add PL and EN versions
 
-## 📌 Przykłady Kiedy Utworzyć ADR
+## 📌 Examples When to Create ADR
 
-### ✅ Utwórz ADR gdy:
-- Wybierasz framework (Laravel vs Symfony) → ADR-001 ✅
-- Wybierasz architekturę (monolit vs mikroserwisy) → ADR-002 ✅
-- Wybierasz strategię (dual-repo) → ADR-003 ✅
-- Wybierasz podejście (generation-first vs translate) → ADR-004 ✅
-- Wybierasz workflow Git (Trunk Flow vs GitFlow) → ADR-005 ✅
-- Wybierasz narzędzie (Feature Flags) → ADR-006 ✅
-- Wybierasz bazę danych (PostgreSQL vs MySQL)
-- Wybierasz cache (Redis vs Memcached)
-- Wybierasz queue system (Horizon vs RabbitMQ)
+### ✅ Create ADR when:
+- Choosing framework (Laravel vs Symfony) → ADR-001 ✅
+- Choosing architecture (monolith vs microservices) → ADR-002 ✅
+- Choosing strategy (dual-repo) → ADR-003 ✅
+- Choosing approach (generation-first vs translate) → ADR-004 ✅
+- Choosing Git workflow (Trunk Flow vs GitFlow) → ADR-005 ✅
+- Choosing tool (Feature Flags) → ADR-006 ✅
+- Choosing database (PostgreSQL vs MySQL)
+- Choosing cache (Redis vs Memcached)
+- Choosing queue system (Horizon vs RabbitMQ)
 
-### ❌ Nie tworz ADR gdy:
-- Decyzja jest oczywista i nie ma alternatyw
-- Decyzja jest tymczasowa (experiment)
-- Decyzja dotyczy tylko jednego małego zadania
-- Decyzja nie ma wpływu na architekturę
+### ❌ Don't create ADR when:
+- Decision is obvious and has no alternatives
+- Decision is temporary (experiment)
+- Decision concerns only one small task
+- Decision has no impact on architecture
 
-## 🔗 Powiązane Dokumenty
+## 🔗 Related Documents
 
-- [ADR README](../docs/adr/README.md) - Wszystkie ADR-y
-- [Knowledge Base](../docs/knowledge/) - Dokumenty techniczne
-- [Tasks](../docs/tasks/) - Dokumenty związane z zadaniami
+- [ADR README](../docs/adr/README.md) - All ADRs
+- [Knowledge Base](../docs/knowledge/) - Technical documents
+- [Tasks](../docs/tasks/) - Task-related documents
 
 ---
 
-**Pamiętaj:** ADR-y to historia decyzji projektu. Dokumentuj ważne decyzje systematycznie!
+**Remember:** ADRs are the project's decision history. Document important decisions systematically!

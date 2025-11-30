@@ -78,9 +78,6 @@ class RealGenerateMovieJob implements ShouldQueue
 
             try {
                 [$movie, $description, $localeValue, $contextTag] = $this->createMovieRecord($openAiClient);
-                $this->promoteDefaultIfEligible($movie, $description);
-                $this->invalidateMovieCaches($movie);
-                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
                 Log::info('RealGenerateMovieJob created new movie', [
                     'slug' => $this->slug,
                     'job_id' => $this->jobId,
@@ -441,7 +438,10 @@ class RealGenerateMovieJob implements ShouldQueue
                 ]
             );
 
+        $this->promoteDefaultIfEligible($movie, $description);
+        $this->invalidateMovieCaches($movie);
         $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
+        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextForCache);
 
         return [$movie->fresh(['descriptions']), $description, $locale->value, $contextForCache];
     }

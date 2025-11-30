@@ -1,0 +1,193 @@
+---
+alwaysApply: true
+---
+
+# Workflow przed Commitem (WYMAGANE)
+
+## Przed każdym commitem MUSISZ uruchomić i naprawić:
+
+### 1. Laravel Pint (formatowanie)
+```bash
+cd api && vendor/bin/pint
+```
+
+### 2. PHPStan (analiza statyczna)
+```bash
+cd api && vendor/bin/phpstan analyse --memory-limit=2G
+```
+Poziom: 5. Zero błędów przed commitem.
+
+#### Archiwizacja logów PHPStan
+- Po każdym uruchomieniu PHPStan zapisz pełny output (`stdout` + `stderr`) do pliku logów.
+- Używaj katalogu `docs/logs/phpstan/` (utwórz przy pierwszym użyciu, np. `mkdir -p docs/logs/phpstan`).
+- Nazwa pliku: `phpstan-YYYYMMDD-HHMMSS.log` (np. `phpstan-20251109-153000.log`).
+- Rekomendowane polecenie:
+```bash
+cd api && vendor/bin/phpstan analyse --memory-limit=2G 2>&1 | tee ../docs/logs/phpstan/phpstan-$(date +"%Y%m%d-%H%M%S").log
+```
+- Nie usuwaj istniejących plików logów — będą potrzebne w przyszłych projektach.
+
+### 3. PHPUnit (testy)
+```bash
+cd api && php artisan test
+```
+Wszystkie testy muszą przechodzić.
+
+### 4. GitLeaks (sekrety)
+```bash
+gitleaks protect --source . --verbose --no-banner
+```
+Zero wykrytych sekretów.
+
+### 5. Composer Audit (bezpieczeństwo)
+```bash
+cd api && composer audit
+```
+Napraw krytyczne luki przed commitem.
+
+### 6. Aktualizacja Dokumentacji API (jeśli zmieniono endpointy)
+**WAŻNE:** Jeśli dodano/zmieniono/usunięto endpointy API, **ZAWSZE** zaktualizuj:
+
+#### OpenAPI Spec
+```bash
+# Zaktualizuj docs/openapi.yaml
+# Dodaj/zmień/usuń endpointy zgodnie ze zmianami w kodzie
+```
+
+#### Postman Collection
+```bash
+# Zaktualizuj docs/postman/moviemind-api.postman_collection.json
+# Dodaj/zmień/usuń requesty zgodnie ze zmianami w API
+```
+
+#### Insomnia Collection
+```bash
+# Zaktualizuj docs/insomnia/moviemind-api-insomnia.json
+# Dodaj/zmień/usuń requesty zgodnie ze zmianami w API
+```
+
+**Kiedy aktualizować:**
+- ✅ Dodano nowy endpoint
+- ✅ Zmieniono ścieżkę endpointu
+- ✅ Zmieniono parametry requestu/response
+- ✅ Usunięto endpoint
+- ✅ Zmieniono status codes
+- ✅ Dodano/zmieniono autoryzację
+
+**Format aktualizacji:**
+- OpenAPI: Zgodnie z formatem OpenAPI 3.0
+- Postman: JSON format zgodny z Postman Collection v2.1
+- Insomnia: JSON format zgodny z Insomnia Export
+
+## Kompletny check (wszystko na raz)
+
+```bash
+cd api && \
+  vendor/bin/pint && \
+  vendor/bin/phpstan analyse --memory-limit=2G && \
+  php artisan test && \
+  gitleaks protect --source . --verbose --no-banner && \
+  composer audit
+```
+
+**Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację!
+
+## Branch Workflow (domyślna zasada)
+
+- **90% zadań** realizuj na krótkich branchach feature (`feature/…`) obejmujących jeden spójny temat.
+- Każdy branch kończ pull requestem do `main` (możesz zatwierdzić sam, ale PR i diff są obowiązkowe).
+- `main` musi pozostać zawsze deployowalny; merguj tylko po przejściu testów/pre-commitów.
+- Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
+- **Commit messages** pisz wyłącznie po angielsku, w stylu `type: short description` (np. `feat: add movie resource`). Niedozwolone są komunikaty w innych językach.
+- Agent może wykonywać `git commit`, ale `git push` uruchamia wyłącznie na wyraźne polecenie użytkownika.
+
+## Natychmiastowe commity
+
+- Po każdej zmianie w plikach zasad Cursor (`.cursor/rules/*.mdc`) wykonaj natychmiastowy commit obejmujący te pliki.
+- Po dodaniu nowego zadania lub aktualizacji treści istniejącego zadania w `docs/issue/**/*.md`, niezwłocznie zatwierdź te zmiany w osobnym commicie.
+
+## Zarządzanie zadaniami (TASKS.md)
+
+- Po rozpoczęciu zadania **zmień status na `🔄 IN_PROGRESS`**, wpisz `Czas rozpoczęcia` (z dokładnością do minuty) oraz oznacz wykonawcę (`🤖/👨‍💻/⚙️`).
+- Po zakończeniu zadania:
+  - uzupełnij `Czas zakończenia` oraz **oblicz `Czas realizacji`** (format `HHhMMm`), nawet gdy skrót mówi o AUTO,
+  - zmień status na `✅ COMPLETED`,
+  - **przenieś cały blok zadania do sekcji „✅ Zakończone Zadania”**,
+  - dopisz krótki opis wykonanych prac (np. lista kluczowych zmian).
+- Nie zostawiaj ukończonych zadań w sekcji „Aktywne”. Sekcja ta powinna zawierać wyłącznie zadania w statusie `⏳` lub `🔄`.
+- Po aktualizacji `TASKS.md` odpal workflow synchronizacji (push/merge do `main` lub ręcznie w GitHub Actions), aby Issues były spójne.
+
+## Dokumentacja (PL / EN)
+
+- Każdy dokument musi mieć wersję polską i angielską (np. w `docs/…/pl` i `docs/…/en`).
+- Przy modyfikacji jednego języka **natychmiast** zaktualizuj drugi – brak synchronizacji traktujemy jako błąd review.
+- Jeśli treść jest długa, dopuszczalne są streszczenia, ale oba języki muszą zawierać komplet kluczowych informacji i linkować do siebie.
+- Pliki indeksowe (np. `docs/issue/README.md`) powinny jasno wskazywać, gdzie znajdują się wersje PL i EN.
+
+## Synchronizacja zasad Cursor (EN ↔ PL)
+
+**WAŻNE:** Pliki w `.cursor/rules/*.mdc` i `CLAUDE.md` są w wersji angielskiej (używane przez Cursor/Claude). Wersje polskie znajdują się w dokumentacji dla celów nauki języka angielskiego.
+
+### Zasady synchronizacji:
+
+- **Gdy zmieniasz plik w `.cursor/rules/*.mdc` lub `CLAUDE.md`:**
+  - **ZAWSZE** zaktualizuj odpowiednią wersję polską w `docs/cursor-rules/pl/*.mdc` lub `docs/CLAUDE.pl.md`
+  - Wersje muszą być zsynchronizowane – brak synchronizacji traktujemy jako błąd review
+  - Aktualizuj obie wersje w tym samym commicie lub w kolejnych commitach (nie zostawiaj wersji polskiej niezsynchronizowanej)
+
+- **Gdy dodajesz nowy plik w `.cursor/rules/*.mdc`:**
+  - **ZAWSZE** utwórz wersję polską w `docs/cursor-rules/pl/` o tej samej nazwie
+  - Nowy plik musi mieć obie wersje (EN w `.cursor/rules/`, PL w `docs/cursor-rules/pl/`)
+
+- **Gdy dodajesz nową sekcję lub zasadę:**
+  - Dodaj ją najpierw w wersji angielskiej (w `.cursor/rules/*.mdc` lub `CLAUDE.md`)
+  - **Natychmiast** dodaj tłumaczenie polskie w odpowiednim pliku w `docs/cursor-rules/pl/` lub `docs/CLAUDE.pl.md`
+
+- **Struktura:**
+  - `.cursor/rules/*.mdc` - wersje angielskie (używane przez Cursor/Claude)
+  - `CLAUDE.md` - wersja angielska (używana przez Cursor/Claude)
+  - `docs/cursor-rules/pl/*.mdc` - wersje polskie (dla nauki języka angielskiego)
+  - `docs/CLAUDE.pl.md` - wersja polska (dla nauki języka angielskiego)
+
+**Pamiętaj:** Wersje polskie służą do nauki języka angielskiego przez porównanie z wersjami angielskimi. Cursor/Claude używa tylko wersji angielskich z `.cursor/rules/` i `CLAUDE.md`.
+
+## Linki zewnętrzne i nazwy własne
+
+- Przy podawaniu publicznie dostępnych nazw własnych (np. sklepy internetowe, dostawcy) **zawsze** dołącz obok wiarygodny link URL.
+- Każdy link zewnętrzny **musisz zweryfikować** (otworzyć/testowo sprawdzić), aby upewnić się, że jest aktywny i prowadzi do właściwego źródła.
+- Jeśli nie możesz potwierdzić linku, **wyraźnie to zaznacz**, dodając alternatywne źródło lub ostrzeżenie.
+- Odpowiedzi formatuj przejrzyście (nagłówki, listy punktowane) zgodnie z guideline Cursor.
+
+## Testowanie manualne
+
+- **ZAWSZE** przetestuj manualnie taski i funkcje, które można przetestować bez automatycznych testów.
+- **Informuj na bieżąco** o krokach i wynikach testowania:
+  - Opisz każdy krok testowania (np. "Testuję endpoint GET /api/v1/movies/{slug}")
+  - Podawaj wyniki każdego testu (sukces/błąd, status code, czas odpowiedzi, etc.)
+  - Informuj o napotkanych problemach lub nieoczekiwanych zachowaniach
+  - Zgłaszaj postęp w testowaniu (np. "Przetestowano 3/5 scenariuszy")
+- Przed zakończeniem zadania zweryfikuj, że implementacja działa poprawnie w praktyce (np. przez wywołanie endpointu API, sprawdzenie odpowiedzi, weryfikację zachowania w przeglądarce).
+- Jeśli testowanie wymaga uruchomienia Dockera lub innego narzędzia (np. Redis, Horizon, PostgreSQL), **zawsze poinformuj użytkownika**:
+  - Jakie narzędzie jest potrzebne
+  - Jak je uruchomić (np. `docker compose up -d`, `php artisan horizon`)
+  - Jakie komendy należy wykonać do weryfikacji
+  - Gdzie sprawdzić wyniki (logi, dashboard, etc.)
+- Przykłady sytuacji wymagających testowania manualnego:
+  - Nowe endpointy API (sprawdzenie odpowiedzi, status codes, format JSON)
+  - Integracje z zewnętrznymi serwisami (OpenAI, etc.)
+  - Zmiany w UI/UX (jeśli dotyczy)
+  - Funkcjonalności wymagające interakcji użytkownika
+  - Scenariusze trudne do przetestowania automatycznie (np. race conditions, timing issues)
+- Jeśli testowanie manualne nie jest możliwe lub wymagałoby zbyt dużo czasu, poinformuj użytkownika o tym i zaproponuj alternatywne podejście (np. testy automatyczne, dokumentacja, etc.).
+
+## Informowanie o modelu AI i tokenach
+
+- **ZAWSZE** informuj użytkownika z jakiego modelu AI korzystasz na początku odpowiedzi lub gdy jest to istotne dla kontekstu.
+- Format: `**Model AI używany:** [nazwa modelu]` (np. `Claude Sonnet 4.5 (Auto)`, `OpenAI gpt-4o-mini`).
+- Jeśli dostępne są informacje o tokenach (zużyte/pozostałe) i **ich podanie nie zużywa dodatkowych tokenów**, możesz je dołączyć:
+  - Format podstawowy: `**Tokeny:** zużyte: X, pozostałe: Y` (lub podobny, w zależności od dostępnych danych).
+  - Jeśli dostępne są szczegółowe informacje o tokenach dla prompt/response lub input/output, możesz je podać:
+    - Format: `**Tokeny:** input: X, output: Y, total: Z` lub `**Tokeny:** prompt: X, response: Y, total: Z`
+    - Uwzględnij tylko te informacje, które są dostępne i których podanie nie zużywa dodatkowych tokenów.
+- Jeśli informacja o tokenach nie jest dostępna lub jej podanie zużywałoby dodatkowe tokeny, pomiń tę informację.
+- W kontekście aplikacji MovieMind API, jeśli wspominasz o modelu używanym przez aplikację (np. OpenAI), zawsze podaj pełną nazwę modelu (np. `gpt-4o-mini`).

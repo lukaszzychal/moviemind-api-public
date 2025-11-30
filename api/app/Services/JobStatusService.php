@@ -218,21 +218,10 @@ class JobStatusService
      */
     public function findActiveJobForSlug(string $entityType, string $slug, ?string $locale = null, ?string $contextTag = null): ?array
     {
-        // Build list of keys to check
-        // Strategy: check exact match first, then fallback keys ONLY when both parameters are null
-        // This ensures symmetric behavior with storeSlugMapping and prevents conflicts between different ContextTag
-        $slugKeys = [];
-
-        // Always check exact match first
-        $slugKeys[] = $this->slugCacheKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
-
-        // Only add fallback key if both contextTag and locale are null (for backward compatibility)
-        // This ensures symmetric behavior: same condition as in storeSlugMapping
-        if ($contextTag === null && $locale === null) {
-            $slugKeys[] = $this->slugCacheKey($entityType, $slug);
-        }
-
-        $slugKeys = array_unique(array_filter($slugKeys));
+        $slugKeys = array_unique(array_filter([
+            $this->slugCacheKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag)),
+            $this->slugCacheKey($entityType, $slug),
+        ]));
 
         foreach ($slugKeys as $slugKey) {
             $jobId = Cache::get($slugKey);
@@ -260,33 +249,6 @@ class JobStatusService
                     'slug_key' => $slugKey,
                     'job_id' => $jobId,
                     'status' => $currentStatus,
-                ]);
-
-                continue;
-            }
-
-            // Verify that found job matches requested contextTag and locale
-            // This is critical to prevent returning jobs with different contextTag/locale
-            $jobContextTag = $status['context_tag'] ?? null;
-            $jobLocale = $status['locale'] ?? null;
-
-            // If contextTag was requested (not null), job's contextTag must match exactly
-            if ($contextTag !== null && $jobContextTag !== $contextTag) {
-                Log::info('JobStatusService: job contextTag mismatch', [
-                    'slug_key' => $slugKey,
-                    'requested_context_tag' => $contextTag,
-                    'job_context_tag' => $jobContextTag,
-                ]);
-
-                continue;
-            }
-
-            // If locale was requested (not null), job's locale must match exactly
-            if ($locale !== null && $jobLocale !== $locale) {
-                Log::info('JobStatusService: job locale mismatch', [
-                    'slug_key' => $slugKey,
-                    'requested_locale' => $locale,
-                    'job_locale' => $jobLocale,
                 ]);
 
                 continue;
@@ -336,21 +298,10 @@ class JobStatusService
 
     private function storeSlugMapping(string $entityType, string $slug, string $jobId, string $status, ?string $locale = null, ?string $contextTag = null): void
     {
-        // Build list of keys to store mapping under
-        // Strategy: store under exact match, and also under base key ONLY when both parameters are null
-        // This ensures symmetric behavior with findActiveJobForSlug and prevents conflicts between different ContextTag
-        $keys = [];
-
-        // Always store under exact match
-        $keys[] = $this->slugCacheKey($entityType, $slug, $locale, $contextTag);
-
-        // Only add fallback key if both contextTag and locale are null (for backward compatibility)
-        // This ensures symmetric behavior: same condition as in findActiveJobForSlug
-        if ($contextTag === null && $locale === null) {
-            $keys[] = $this->slugCacheKey($entityType, $slug);
-        }
-
-        $keys = array_unique(array_filter($keys));
+        $keys = array_unique(array_filter([
+            $this->slugCacheKey($entityType, $slug, $locale, $contextTag),
+            $this->slugCacheKey($entityType, $slug),
+        ]));
 
         foreach ($keys as $key) {
             if (! $this->isActiveStatus($status)) {
