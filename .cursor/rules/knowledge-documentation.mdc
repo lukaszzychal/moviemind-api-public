@@ -1,204 +1,252 @@
 ---
 alwaysApply: true
 ---
-# Creating Documents in Knowledge Base
+# Tworzenie Dokumentów w Ksiedze Wiedzy
 
-## 📚 Knowledge Base - Document Creation Rules
+## 📚 Ksiega Wiedzy - Zasady Tworzenia Dokumentów
 
-### 🎯 When to create documents?
+### 🎯 Kiedy tworzyć dokumenty?
 
-**ALWAYS** create documents in `docs/knowledge/` when:
-1. **Solving a problem** → `knowledge/journal/`
-2. **Creating tutorial/introduction** → `knowledge/tutorials/`
-3. **Analyzing technology/architecture** → `knowledge/technical/`
-4. **Documenting tool/configuration** → `knowledge/reference/`
-5. **Answering technical question** → `knowledge/journal/`
-6. **Explaining concept** → `knowledge/technical/`
+**ZAWSZE** tworz dokumenty w `docs/knowledge/` gdy:
+1. **Rozwiązujesz problem** → `knowledge/journal/`
+2. **Tworzysz tutorial/wprowadzenie** → `knowledge/tutorials/`
+3. **Analizujesz technologię/architekturę** → `knowledge/technical/`
+4. **Dokumentujesz narzędzie/konfigurację** → `knowledge/reference/`
+5. **Odpowiadasz na pytanie techniczne** → `knowledge/journal/`
+6. **Wyjaśniasz koncept** → `knowledge/technical/`
 
-### 📁 Directory Structure
+### 📁 Struktura Katalogów
 
 ```
 docs/knowledge/
-├── tutorials/    # Short tutorials and introductions
-├── journal/      # Knowledge journal - problems and solutions
-├── technical/    # Technical and analytical documents
-└── reference/    # Reference documents (setup, config, tools)
+├── tutorials/    # Krótkie tutoriale i wprowadzenia
+├── journal/      # Dziennik wiedzy - problemy i rozwiązania
+├── technical/    # Dokumenty techniczne i analityczne
+└── reference/    # Dokumenty referencyjne (setup, config, tools)
 ```
 
-### 📝 Document Format
+### 📝 Format Dokumentu
 
-Each document should contain:
+Każdy dokument powinien zawierać:
 
 ```markdown
-# Document Title
+# Tytuł Dokumentu
 
-> **Created:** YYYY-MM-DD  
-> **Context:** Why the document was created  
-> **Category:** tutorial/journal/technical/reference
+> **Data utworzenia:** YYYY-MM-DD  
+> **Kontekst:** Dlaczego dokument został utworzony  
+> **Kategoria:** tutorial/journal/technical/reference
 
-## 🎯 Goal
+## 🎯 Cel
 
-Short description of document purpose.
+Krótki opis celu dokumentu.
 
-## 📋 Content
+## 📋 Zawartość
 
-[Document content]
+[Treść dokumentu]
 
-## 🔗 Related Documents
+## 🔗 Powiązane Dokumenty
 
-- [Link to related document](./relative/path.md)
-- [Link to task](../tasks/TASK_XXX.md)
+- [Link do powiązanego dokumentu](./relative/path.md)
+- [Link do zadania](../tasks/TASK_XXX.md)
 
-## 📌 Notes
+## 📌 Notatki
 
-Additional notes, remarks, future considerations.
+Dodatkowe notatki, uwagi, przyszłe rozważania.
 
 ---
 
-**Last updated:** YYYY-MM-DD
+**Ostatnia aktualizacja:** YYYY-MM-DD
 ```
 
-### 🎨 Document Categories
+### 🎨 Kategorie Dokumentów
 
 #### 📘 Tutorials (`knowledge/tutorials/`)
-**When to use:**
-- Tool setup and configuration
-- Technology introductions
-- Step-by-step guides
-- Quick start guides
+**Kiedy używać:**
+- **Ogólne tutoriale** - wiedza uniwersalna, przydatna w innych projektach
+- Setup i konfiguracja narzędzi (ogólne, nie specyficzne dla MovieMind API)
+- Wprowadzenia do technologii (Laravel, Redis, Docker, etc.)
+- Przewodniki krok po kroku (ogólne)
+- Quick start guides (ogólne)
 
-**Examples:**
-- `OPENAI_SETUP_AND_TESTING.md`
-- `HORIZON_SETUP.md`
-- `INSOMNIA_SETUP.md`
+**NIE używaj dla:**
+- ❌ Dokumentów specyficznych dla MovieMind API (użyj `reference/`)
+- ❌ Instrukcji testowania konkretnej aplikacji (użyj `reference/`)
+- ❌ Dokumentów opisujących konkretne funkcjonalności projektu (użyj `reference/`)
+
+**Przykłady:**
+- `OPENAI_SETUP_AND_TESTING.md` - ogólny setup OpenAI API
+- `HORIZON_SETUP.md` - ogólny setup Laravel Horizon
+- `INSOMNIA_SETUP.md` - ogólny setup narzędzia Insomnia
 
 #### 📔 Journal (`knowledge/journal/`)
-**When to use:**
-- Encountered problems and their solutions
-- Answers to technical questions
-- Debugging notes
-- Decision journal
+**Kiedy używać:**
+- Napotkane problemy i ich rozwiązania
+- Odpowiedzi na pytania techniczne
+- Notatki z debugowania
+- Dziennik decyzji
 
-**Examples:**
+**Przykłady:**
 - `HORIZON_NOT_SHOWING_JOBS.md`
 - `CHECK_QUEUE_STATUS.md`
 - `TECHNICAL_QUESTIONS_ANSWERS.md`
 
 #### 🔧 Technical (`knowledge/technical/`)
-**When to use:**
-- Architecture analyses
-- Technology comparisons
-- Refactoring proposals
-- Technical concept explanations
-- Security analyses
+**Kiedy używać:**
+- Analizy architektury
+- Porównania technologii
+- Propozycje refaktoryzacji
+- Wyjaśnienia konceptów technicznych
+- Analizy bezpieczeństwa
 
-**Examples:**
+**Przykłady:**
 - `ARCHITECTURE_ANALYSIS.md`
 - `LARAVEL_EVENTS_JOBS_EXPLAINED.md`
 - `REFACTORING_PROPOSAL.md`
 
 #### 📚 Reference (`knowledge/reference/`)
-**When to use:**
-- Tool configuration
-- Environment setup
-- Developer tool documentation
-- Standards and conventions
+**Kiedy używać:**
+- **Dokumenty referencyjne specyficzne dla projektu MovieMind API**
+- Konfiguracja narzędzi w kontekście MovieMind API
+- Setup środowisk dla MovieMind API
+- Instrukcje testowania konkretnej aplikacji
+- Dokumenty opisujące konkretne funkcjonalności projektu
+- Standardy i konwencje projektu
+- Dokumentacja workflow specyficznego dla projektu
 
-**Examples:**
-- `CODE_QUALITY_TOOLS.md`
-- `LARASTAN_SETUP.md`
-- `DEPLOYMENT_SETUP.md`
+**Używaj dla:**
+- ✅ Instrukcji manualnego testowania MovieMind API
+- ✅ Dokumentacji feature flagów specyficznych dla projektu
+- ✅ Strategii testowania specyficznej dla projektu
+- ✅ Konfiguracji deployment specyficznej dla projektu
+- ✅ Dokumentacji narzędzi deweloperskich w kontekście projektu
 
-### 🔄 Document Creation Workflow
+**Przykłady:**
+- `MANUAL_TESTING_GUIDE.md` - instrukcje testowania MovieMind API
+- `CODE_QUALITY_TOOLS.md` - narzędzia jakości kodu w kontekście projektu
+- `TESTING_STRATEGY.md` - strategia testowania specyficzna dla projektu
+- `DEPLOYMENT_SETUP.md` - setup deployment specyficzny dla projektu
+- `FEATURE_FLAGS.md` - feature flagi specyficzne dla MovieMind API
 
-1. **When asking AI questions:**
-   - If solving a problem → automatically create document in `journal/`
-   - If creating tutorial → create document in `tutorials/`
-   - If analyzing → create document in `technical/`
+### 🔄 Workflow Tworzenia Dokumentów
 
-2. **When executing tasks:**
-   - If documenting implementation → create in `tasks/` (related to task)
-   - If documenting general knowledge → create in `knowledge/`
+1. **Podczas zadawania pytań do AI:**
+   - Jeśli rozwiązujesz problem → automatycznie utwórz dokument w `journal/`
+   - Jeśli tworzysz tutorial → utwórz dokument w `tutorials/`
+   - Jeśli analizujesz → utwórz dokument w `technical/`
 
-3. **After completion:**
-   - Update last update date
-   - Add links to related documents
-   - Check for duplicates
+2. **Podczas wykonywania zadań:**
+   - Jeśli dokumentujesz implementację → utwórz w `tasks/` (związaną z zadaniem)
+   - Jeśli dokumentujesz wiedzę ogólną → utwórz w `knowledge/`
 
-### ⚠️ Important Rules
+3. **Po zakończeniu:**
+   - Zaktualizuj datę ostatniej aktualizacji
+   - Dodaj linki do powiązanych dokumentów
+   - Sprawdź czy nie ma duplikatów
 
-1. **Don't duplicate** - check if similar document already exists
-2. **Use descriptive names** - file name should clearly describe content
-3. **Add links** - connect related documents
-4. **Update dates** - always update last modification date
-5. **Categorize correctly** - use appropriate category
-6. **Format tables** - when generating Markdown tables, always align headers and columns (add spaces where needed) so that **each field is readable and vertically aligned**.
+### ⚠️ Ważne Zasady
 
-### 🤖 Auto-generated drafts
+1. **Nie duplikuj** - sprawdź czy podobny dokument już istnieje
+2. **Używaj opisowych nazw** - nazwa pliku powinna jasno opisywać zawartość
+3. **Dodawaj linki** - łącz powiązane dokumenty
+4. **Aktualizuj daty** - zawsze aktualizuj datę ostatniej modyfikacji
+5. **Kategoryzuj poprawnie** - używaj odpowiedniej kategorii zgodnie z poniższymi zasadami:
+   - **Tutorials** = ogólne, uniwersalne, przydatne w innych projektach
+   - **Reference** = specyficzne dla MovieMind API, dokumenty referencyjne projektu
+   - **Technical** = analizy techniczne, porównania, wyjaśnienia konceptów
+   - **Journal** = problemy i rozwiązania, notatki z debugowania
+6. **Formatuj tabele** - generując tabele Markdown zawsze wyrównuj nagłówki i kolumny (dodaj spacje tam, gdzie trzeba), tak aby **każde pole było czytelne i ustawione pionowo**.
 
-1. **Working location:** All automatically created documents save in `docs/auto-generated/` (or in subdirectories of this folder). In this directory they remain marked as drafts.
-2. **Metadata:** Each automatically generated file should start with a block with source and date information, e.g.:
+### 🔍 Kluczowa Różnica: Tutorials vs Reference
+
+**Tutorials (`tutorials/`):**
+- ✅ **Ogólne, uniwersalne tutoriale** - wiedza przydatna w innych projektach
+- ✅ Przykład: "Jak skonfigurować Laravel Horizon" (ogólny tutorial)
+- ✅ Przykład: "Jak używać OpenAI API" (ogólny tutorial)
+- ❌ **NIE:** Instrukcje testowania konkretnej aplikacji MovieMind API
+- ❌ **NIE:** Dokumenty opisujące konkretne funkcjonalności projektu
+
+**Reference (`reference/`):**
+- ✅ **Dokumenty specyficzne dla projektu MovieMind API**
+- ✅ Instrukcje i dokumentacja funkcjonalności projektu
+- ✅ Przykład: "Instrukcje manualnego testowania MovieMind API" (specyficzne dla projektu)
+- ✅ Przykład: "Feature flagi MovieMind API" (specyficzne dla projektu)
+- ❌ **NIE:** Ogólne tutoriale o technologiach
+
+**Zasada decyzyjna:**
+- Jeśli dokument opisuje **konkretną funkcjonalność MovieMind API** lub **instrukcje specyficzne dla projektu** → `reference/`
+- Jeśli dokument opisuje **ogólną wiedzę o technologii/narzędziu** → `tutorials/`
+
+**Przykłady decyzji:**
+- ❌ `MANUAL_TESTING_GUIDE.md` w `tutorials/` - BŁĄD (specyficzne dla projektu)
+- ✅ `MANUAL_TESTING_GUIDE.md` w `reference/` - POPRAWNIE (specyficzne dla projektu)
+- ✅ `HORIZON_SETUP.md` w `tutorials/` - POPRAWNIE (ogólny tutorial)
+- ✅ `FEATURE_FLAGS.md` w `reference/` - POPRAWNIE (specyficzne dla projektu)
+
+### 🤖 Automatycznie generowane szkice
+
+1. **Lokalizacja robocza:** Wszystkie dokumenty tworzone automatycznie zapisuj w `docs/auto-generated/` (lub w podkatalogach tego folderu). W tym katalogu pozostają one oznaczone jako szkice.
+2. **Metadane:** Każdy plik wygenerowany automatycznie rozpoczynaj blokiem z informacją o źródle i dacie, np.:
    ```
-   > Source: auto (YYYY-MM-DD)
+   > Źródło: auto (YYYY-MM-DD)
    ```
-3. **Periodic review:** At least once per sprint/week, conduct a manual review of `docs/auto-generated/`. For each file decide:
-   - ✅ move to `docs/knowledge/...` (after full adaptation to template and adding PL/EN versions),
-   - ♻️ update and leave as draft (awaiting clarification),
-   - 🗑️ delete if content adds no value.
-4. **Promotion to knowledge base:** File moved to `docs/knowledge/` treat as new document – complete required template sections, add translations and links to related materials.
-5. **Quality control:** Auto-generated drafts **never** go directly to `docs/knowledge/` without manual review. Lack of review is treated as documentation debt to close in the nearest cycle.
+3. **Przegląd okresowy:** Najpóźniej raz na sprint/tydzień przeprowadź manualny przegląd `docs/auto-generated/`. Dla każdego pliku zdecyduj:
+   - ✅ przenieść do `docs/knowledge/...` (po pełnym dostosowaniu do szablonu i dodaniu wersji PL/EN),
+   - ♻️ zaktualizować i pozostawić jako szkic (oczekuje na doprecyzowanie),
+   - 🗑️ usunąć, jeśli treść nie wnosi wartości.
+4. **Promocja do bazy wiedzy:** Plik przenoszony do `docs/knowledge/` traktuj jak nowy dokument – uzupełnij wymagane sekcje szablonu, dodaj tłumaczenia oraz linki do powiązanych materiałów.
+5. **Kontrola jakości:** Automatyczne szkice **nigdy** nie trafiają bezpośrednio do `docs/knowledge/` bez ręcznego przeglądu. Brak przeglądu traktuj jako dług dokumentacyjny do zamknięcia w najbliższym cyklu.
 
-### 🔗 Task Relationships
+### 🔗 Powiązania z Zadaniami
 
-- Documents related to **specific task** → `docs/tasks/TASK_XXX.md`
-- Documents with **general knowledge** → `docs/knowledge/`
-- **Task backlog** → `docs/issue/TASKS.md`
+- Dokumenty związane z **konkretnym zadaniem** → `docs/tasks/TASK_XXX.md`
+- Dokumenty z **wiedzą ogólną** → `docs/knowledge/`
+- **Backlog zadań** → `docs/issue/TASKS.md`
 
-### 📌 Examples
+### 📌 Przykłady
 
-#### Example: Journal Entry
+#### Przykład: Journal Entry
 ```markdown
-# Problem with Horizon not showing jobs
+# Problem z Horizon nie pokazującym jobów
 
-> **Created:** 2025-11-06  
-> **Context:** During debugging, noticed that Horizon dashboard does not show jobs  
-> **Category:** journal
+> **Data utworzenia:** 2025-11-06  
+> **Kontekst:** Podczas debugowania zauważono, że Horizon dashboard nie pokazuje jobów  
+> **Kategoria:** journal
 
 ## 🎯 Problem
 
-Horizon dashboard does not display jobs despite them being processed.
+Horizon dashboard nie wyświetla jobów pomimo że są one przetwarzane.
 
-## 🔍 Analysis
+## 🔍 Analiza
 
-[Analysis details]
+[Szczegóły analizy]
 
-## ✅ Solution
+## ✅ Rozwiązanie
 
-[Problem solution]
+[Rozwiązanie problemu]
 
-## 📌 Notes
+## 📌 Notatki
 
-- Check Redis configuration
-- Verify permissions
+- Sprawdzić konfigurację Redis
+- Zweryfikować uprawnienia
 ```
 
-#### Example: Technical Document
+#### Przykład: Technical Document
 ```markdown
-# Analysis: Laravel Events vs Jobs
+# Analiza: Laravel Events vs Jobs
 
-> **Created:** 2025-11-06  
-> **Context:** Analysis of choice between Events and Jobs for asynchronous processing  
-> **Category:** technical
+> **Data utworzenia:** 2025-11-06  
+> **Kontekst:** Analiza wyboru między Events a Jobs dla asynchronicznego przetwarzania  
+> **Kategoria:** technical
 
-## 🎯 Goal
+## 🎯 Cel
 
-Comparison of Events vs Jobs approaches in Laravel.
+Porównanie podejść Events vs Jobs w Laravel.
 
-## 📋 Analysis
+## 📋 Analiza
 
-[Detailed analysis]
+[Szczegółowa analiza]
 
-## 🔗 Related Documents
+## 🔗 Powiązane Dokumenty
 
 - [Laravel Events Explained](./LARAVEL_EVENTS_JOBS_EXPLAINED.md)
 - [Refactoring Proposal](./REFACTORING_PROPOSAL.md)
@@ -206,4 +254,4 @@ Comparison of Events vs Jobs approaches in Laravel.
 
 ---
 
-**Remember:** Documentation is an investment in the project's future. Create documents systematically!
+**Pamiętaj:** Dokumentacja to inwestycja w przyszłość projektu. Twórz dokumenty systematycznie!
