@@ -283,6 +283,21 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-027` – Diagnose duplicated generation events (movies/people)
+- **Status:** ✅ COMPLETED
+- **Priority:** 🔴 High
+- **Estimated time:** 2 h
+- **Start time:** 2025-11-10 18:03
+- **End time:** 2025-11-10
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** 🤖 AI Agent
+- **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
+- **Details:**
+  - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
+  - Audit controllers, services, and job listeners for repeated dispatches of generation events.
+  - Inspect queue/log outputs and craft a remediation plan with regression tests.
+- **Dependencies:** none
+- **Created:** 2025-11-10
 
 ---
 
@@ -417,6 +432,53 @@ Every entry follows this structure:
   - Update `MANUAL_TESTING_GUIDE.md` with usage examples.
 - **Dependencies:** Related to `TASK-031` (AI description versioning strategy)
 - **Created:** 2025-11-29
+
+---
+
+#### `TASK-036` – Implement Retrieval Augmented Generation (RAG)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 8–12 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Implement a RAG (Retrieval Augmented Generation) system to improve the quality and contextual relevance of generated movie descriptions and person biographies by leveraging existing database content.
+- **Details:**
+  - **Embedding Generation:** Implement embedding generation for existing movie/person descriptions and persist them in the database (new `embeddings` table or column in existing tables).
+  - **Vector Search:** Integrate with a vector database (e.g., PostgreSQL pgvector, Redis Vector Search, or external service like Pinecone/Weaviate) for similarity search.
+  - **Context Retrieval:** Extend generation jobs (`RealGenerateMovieJob`, `RealGeneratePersonJob`) with a phase that retrieves similar descriptions from the database before calling the OpenAI API.
+  - **Prompt Engineering:** Modify OpenAI prompts to incorporate retrieved contexts as style, structure, and content references.
+  - **Feature Flag:** Add `ai_rag_enabled` flag to control RAG activation (default off for safe rollout).
+  - **Tests and Documentation:** Prepare unit and feature tests for the RAG pipeline, update technical documentation, and refresh OpenAPI if the API changes.
+- **Dependencies:** Consider alignment with `TASK-031` (description versioning strategy) and `TASK-032` (automatic cast creation)
+- **Created:** 2025-11-10
+
+---
+
+#### `TASK-035` – Analyse alternative PHP runtimes (RoadRunner, Swoole, KPHP, FrankenPHP)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 4–6 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Conduct an analysis of alternative PHP runtime options (RoadRunner, Swoole, KPHP, FrankenPHP) for the MovieMind API project and assess the feasibility of their adoption in the context of the current architecture.
+- **Details:**
+  - **RoadRunner:** Analyse Laravel integration, benefits (performance, long-lived connections), requirements (Go runtime), compatibility with current stack (Redis, Horizon, Queue).
+  - **Swoole:** Evaluate Swoole for asynchronous operations, long-lived WebSocket connections, Laravel Octane compatibility, requirements (PHP extension).
+  - **KPHP:** Analyse PHP-to-native compilation, performance benefits, limitations (not all PHP features), suitability for API use cases.
+  - **FrankenPHP:** Evaluate Laravel integration, benefits (Caddy server, early hints), requirements, compatibility with current infrastructure.
+  - **Comparison with current stack:** PHP-FPM + Nginx – analyse trade-offs (performance vs complexity, compatibility vs new capabilities).
+  - **Recommendations:** Prepare a comparative document with recommendations for MovieMind API, including:
+    - Which technology best fits the current architecture
+    - What benefits can be achieved (performance, scalability, costs)
+    - What are the risks and limitations
+    - Whether adoption makes sense at the current stage of project development
+  - **Documentation:** Create a document in `docs/knowledge/technical/` (PL/EN) with analysis results, technology comparison, and recommendations.
+- **Dependencies:** none
+- **Created:** 2025-11-10
 
 ---
 
@@ -686,7 +748,7 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 12  
+- **Active:** 15  
 - **Completed:** 7  
 - **Cancelled:** 0  
 - **In progress:** 1

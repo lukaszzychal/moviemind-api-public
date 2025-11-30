@@ -243,6 +243,21 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** 2025-11-10 18:03
+- **Czas zakończenia:** 2025-11-10
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
+- **Szczegóły:**
+  - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
+  - Przeanalizować miejsca emisji eventów i listenerów (kontrolery, serwisy, joby) pod kątem wielokrotnego dispatchu.
+  - Zweryfikować liczbę wpisów w logach/kolejce i przygotować propozycję poprawek z testami regresyjnymi.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
 
 ---
 
@@ -377,6 +392,53 @@ Każde zadanie ma następującą strukturę:
   - Zaktualizować `MANUAL_TESTING_GUIDE.md` z przykładami użycia.
 - **Zależności:** Powiązane z `TASK-031` (wersjonowanie opisów AI)
 - **Utworzone:** 2025-11-29
+
+---
+
+#### `TASK-036` - Implementacja Retrieval Augmented Generation (RAG)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 8-12 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Wdrożenie systemu RAG (Retrieval Augmented Generation) w celu poprawy jakości i kontekstowości generowanych opisów filmów i biografii osób poprzez wykorzystanie istniejących danych z bazy.
+- **Szczegóły:**
+  - **Embedding Generation:** Implementacja generowania embeddingów dla istniejących opisów filmów/osób oraz zapis w bazie (nowa tabela `embeddings` lub kolumna w istniejących tabelach).
+  - **Vector Search:** Integracja z bazą wektorową (np. PostgreSQL pgvector, Redis Vector Search, lub zewnętrzny serwis jak Pinecone/Weaviate) do wyszukiwania podobnych opisów.
+  - **Context Retrieval:** Rozszerzenie jobów generujących (`RealGenerateMovieJob`, `RealGeneratePersonJob`) o fazę pobierania podobnych opisów z bazy przed wywołaniem OpenAI API.
+  - **Prompt Engineering:** Modyfikacja promptów dla OpenAI, aby uwzględniały pobrane konteksty jako referencje stylu, struktury i treści.
+  - **Feature Flag:** Dodanie flagi `ai_rag_enabled` do kontroli włączania/wyłączania RAG (domyślnie wyłączone dla bezpiecznego rollout).
+  - **Testy i Dokumentacja:** Przygotowanie testów jednostkowych i feature dla RAG pipeline, aktualizacja dokumentacji technicznej oraz OpenAPI (jeśli API ulegnie zmianie).
+- **Zależności:** Rozważyć synchronizację z `TASK-031` (strategia wersjonowania opisów) oraz `TASK-032` (automatyczne tworzenie obsady)
+- **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-035` - Analiza alternatywnych runtime'ów PHP (RoadRunner, Swoole, KPHP, FrankenPHP)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4-6 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Przeprowadzenie analizy możliwości wykorzystania alternatywnych runtime'ów PHP (RoadRunner, Swoole, KPHP, FrankenPHP) w projekcie MovieMind API oraz ocena sensowności ich wdrożenia w kontekście obecnej architektury.
+- **Szczegóły:**
+  - **RoadRunner:** Analiza integracji z Laravel, korzyści (wydajność, długotrwałe połączenia), wymagania (Go runtime), kompatybilność z obecnym stackiem (Redis, Horizon, Queue).
+  - **Swoole:** Ocena możliwości wykorzystania Swoole dla asynchronicznych operacji, długotrwałych połączeń WebSocket, kompatybilność z Laravel Octane, wymagania (rozszerzenie PHP).
+  - **KPHP:** Analiza kompilacji PHP do natywnego kodu, korzyści wydajnościowe, ograniczenia (nie wszystkie funkcje PHP), przydatność dla API.
+  - **FrankenPHP:** Ocena integracji z Laravel, korzyści (Caddy server, early hints), wymagania, kompatybilność z obecną infrastrukturą.
+  - **Porównanie z obecnym stackiem:** PHP-FPM + Nginx - analiza trade-offów (wydajność vs złożoność, kompatybilność vs nowe możliwości).
+  - **Rekomendacje:** Przygotowanie dokumentu porównawczego z rekomendacjami dla MovieMind API, uwzględniając:
+    - Która technologia najlepiej pasuje do obecnej architektury
+    - Jakie korzyści można osiągnąć (wydajność, skalowalność, koszty)
+    - Jakie są ryzyka i ograniczenia
+    - Czy wdrożenie ma sens w obecnym momencie rozwoju projektu
+  - **Dokumentacja:** Utworzenie dokumentu w `docs/knowledge/technical/` (PL/EN) z wynikami analizy, porównaniem technologii oraz rekomendacjami.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
 
 ---
 
@@ -726,8 +788,13 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
+<<<<<<< HEAD
 - **Aktywne:** 12
 - **Zakończone:** 8
+=======
+- **Aktywne:** 15
+- **Zakończone:** 7
+>>>>>>> origin/feature/new-tasks-031-032-033-034-035
 - **Anulowane:** 0
 - **W trakcie:** 1
 
