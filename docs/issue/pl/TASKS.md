@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-11-29  
+**Ostatnia aktualizacja:** 2025-11-10  
 **Status:** 🔄 Aktywny
 
 ---
@@ -243,9 +243,57 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
+<<<<<<< HEAD
+- **Status:** 🔄 IN_PROGRESS
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** 2025-11-10 18:03
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** 🤖 AI Agent
+=======
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+>>>>>>> feature/TASK-023-openai-integration
+- **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
+- **Szczegóły:**
+  - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
+  - Przeanalizować miejsca emisji eventów i listenerów (kontrolery, serwisy, joby) pod kątem wielokrotnego dispatchu.
+  - Zweryfikować liczbę wpisów w logach/kolejce i przygotować propozycję poprawek z testami regresyjnymi.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
 
 ---
 
+<<<<<<< HEAD
+#### `TASK-034` - Tłumaczenie zasad Cursor (.mdc) i CLAUDE.md na angielski
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** 2025-11-12 17:30
+- **Czas zakończenia:** 2025-11-12 18:30
+- **Czas realizacji:** 01h00m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Przetłumaczenie wszystkich plików `.cursor/rules/*.mdc` i `CLAUDE.md` na angielski. Polskie wersje zostaną przeniesione do dokumentacji (`docs/`) i będą synchronizowane z wersjami angielskimi (cel: nauka języka angielskiego). Cursor/Claude będzie korzystać tylko z wersji angielskich.
+- **Szczegóły:**
+  - Przetłumaczyć wszystkie pliki `.cursor/rules/*.mdc` na angielski
+  - Przetłumaczyć `CLAUDE.md` na angielski
+  - Przenieść polskie wersje do `docs/cursor-rules/pl/` i `docs/CLAUDE.pl.md`
+  - Zaktualizować strukturę tak, aby Cursor używał tylko wersji angielskich
+  - Dodać instrukcje synchronizacji w dokumentacji
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-12
+
+---
+
+=======
+>>>>>>> feature/TASK-023-openai-integration
 #### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -303,6 +351,7 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+<<<<<<< HEAD
 #### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
 - **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
@@ -357,29 +406,8 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-034` - Obsługa context_tag jako query parameter w GET /api/v1/movies/{slug}
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (AI agent will auto-calc when applicable)
-- **Realizacja:** Do ustalenia
-- **Opis:** Dodanie możliwości pobierania opisu filmu z konkretnym ContextTag poprzez query parameter `context_tag` w endpointcie `GET /api/v1/movies/{slug}`, jako alternatywa dla obecnego mechanizmu wyboru przez `description_id`.
-- **Szczegóły:**
-  - Rozszerzyć `MovieController::show()` o obsługę query parameter `context_tag` (np. `?context_tag=humorous`).
-  - Jeśli podano `context_tag`, zwrócić opis z danym ContextTag dla danego filmu i locale.
-  - Jeśli opis z danym ContextTag nie istnieje, zwrócić 404 lub domyślny opis (do ustalenia w implementacji).
-  - Zachować backward compatibility - `description_id` nadal powinien działać.
-  - Zaktualizować walidację - sprawdzać czy ContextTag jest poprawny (enum validation).
-  - Dodać testy automatyczne dla nowej funkcjonalności.
-  - Zaktualizować dokumentację API (OpenAPI/Swagger, Postman, Insomnia).
-  - Zaktualizować `MANUAL_TESTING_GUIDE.md` z przykładami użycia.
-- **Zależności:** Powiązane z `TASK-031` (wersjonowanie opisów AI)
-- **Utworzone:** 2025-11-29
-
----
-
+=======
+>>>>>>> feature/TASK-023-openai-integration
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` - Integracja i naprawa połączenia z OpenAI
@@ -479,31 +507,6 @@ Każde zadanie ma następującą strukturę:
 ---
 
 ## ✅ **Zakończone Zadania**
-
-### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
-- **Status:** ✅ COMPLETED
-- **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 2 godziny
-- **Czas rozpoczęcia:** 2025-11-10 18:03
-- **Czas zakończenia:** 2025-11-30 19:25
-- **Czas realizacji:** 20d01h22m
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
-- **Szczegóły:**
-  - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
-  - Przeanalizować miejsca emisji eventów i listenerów (kontrolery, serwisy, joby) pod kątem wielokrotnego dispatchu.
-  - Zweryfikować liczbę wpisów w logach/kolejce i przygotować propozycję poprawek z testami regresyjnymi.
-- **Zakres wykonanych prac:**
-  - Naprawiono niespójność w `RealGenerateMovieJob` - przeniesiono metody finalizujące (`promoteDefaultIfEligible`, `invalidateMovieCaches`, `updateCache`) poza `createMovieRecord` dla spójności z `RealGeneratePersonJob`.
-  - Dodano endpoint `GET /api/v1/people` (lista osób) z wyszukiwaniem po nazwie, miejscu urodzenia i filmach.
-  - Dodano routing dla dokumentacji API (`/api/doc` i `/api/docs/openapi.yaml`).
-  - Zaktualizowano dokumentację OpenAPI dla nowych endpointów.
-  - Przeprowadzono manualne testy weryfikujące rozwiązanie problemu duplikacji dla filmów i osób.
-- **Zależności:** Brak
-- **Utworzone:** 2025-11-10
-- **Zakończone:** 2025-11-30
-
----
 
 ### `TASK-021` - Naprawa duplikacji eventów przy generowaniu filmu
 - **Status:** ✅ COMPLETED
@@ -726,12 +729,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 12
-- **Zakończone:** 8
+- **Aktywne:** 13
+- **Zakończone:** 7
 - **Anulowane:** 0
-- **W trakcie:** 1
+- **W trakcie:** 2
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-30
+**Ostatnia aktualizacja:** 2025-11-10
 

@@ -1,0 +1,36 @@
+---
+alwaysApply: true
+---
+
+# System Zarządzania Zadaniami
+
+## ⭐ ZAWSZE ZACZYNAJ OD `docs/issue/TASKS.md`
+
+Przed rozpoczęciem pracy:
+
+1. Przeczytaj `docs/issue/TASKS.md` - znajdź zadanie ze statusem `⏳ PENDING`
+2. Zmień status na `🔄 IN_PROGRESS`
+3. Przeczytaj szczegóły zadania (jeśli jest link)
+4. Wykonaj zadanie zgodnie z opisem
+5. Po zakończeniu: zmień status na `✅ COMPLETED`, przenieś do sekcji "Zakończone"
+
+## Struktura systemu zadań
+
+- **`docs/issue/TASKS.md`** - główny backlog zadań (zaczynaj zawsze od tego)
+- **`docs/issue/README.md`** - instrukcje użycia systemu
+- **`docs/issue/TASK_TEMPLATE.md`** - szablon dla nowych zadań
+- **`docs/issue/*.md`** - szczegółowe opisy zadań (jeśli dostępne)
+
+## Priorytety zadań
+
+- 🔴 **Wysoki** - krytyczne, wykonaj jak najszybciej
+- 🟡 **Średni** - ważne, ale nie krytyczne
+- 🟢 **Niski** - można wykonać później (często roadmap items)
+
+## Funkcja priorytetyzacji (dla AI)
+
+1. Zawsze przeanalizuj wszystkie zadania `⏳ PENDING`, zbierając: priorytet, zależności, ryzyka blokad i wymagane zasoby.
+2. Najpierw planuj zadania 🔴 (stabilność, bezpieczeństwo), następnie 🟡, na końcu 🟢.
+3. Awansuj zadania, które odblokowują inne lub łączą się tematem (np. CI, bezpieczeństwo) – minimalizuj przełączanie kontekstu.
+4. Raportuj wynik jako uporządkowaną listę wraz z krótkim uzasadnieniem „dlaczego tak” dla każdego punktu.
+5. Gdy użytkownik poprosi o kolejność, zastosuj powyższe kroki i przedstaw rekomendację w formie listy.

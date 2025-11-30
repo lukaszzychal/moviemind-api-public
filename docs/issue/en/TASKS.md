@@ -1,6 +1,6 @@
 # 📋 Task Backlog – MovieMind API
 
-**Last updated:** 2025-11-29  
+**Last updated:** 2025-11-10  
 **Status:** 🔄 Active
 
 ---
@@ -283,6 +283,21 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-027` – Diagnose duplicated generation events (movies/people)
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 2 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
+- **Details:**
+  - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
+  - Audit controllers, services, and job listeners for repeated dispatches of generation events.
+  - Inspect queue/log outputs and craft a remediation plan with regression tests.
+- **Dependencies:** none
+- **Created:** 2025-11-10
 
 ---
 
@@ -343,83 +358,6 @@ Every entry follows this structure:
 
 ---
 
-#### `TASK-031` – Decide on AI description versioning strategy
-- **Status:** 🔄 IN_PROGRESS
-- **Priority:** 🔴 High
-- **Estimated time:** 1–2 h
-- **Start time:** 2025-11-10 18:35
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
-- **Description:** Consolidate the decision on whether to keep the current “single record per `locale + context_tag`” model or move towards full versioning of generated descriptions/bios.
-- **Details:**
-  - Summarise the 2025-11-10 discussion and current code behaviour (`RealGenerate*Job::persistDescription` upsert on `(movie_id, locale, context_tag)`).
-  - Outline the implications of sticking with the recommendation (latest record per variant) and sketch a possible migration path to historical versioning (e.g. `version`/`generated_at` column, API/cache updates, data cleanup).
-  - Produce a note or ADR draft that documents the present decision and the conditions for a future change.
-- **Dependencies:** Related to `TASK-012`, `TASK-024`
-- **Created:** 2025-11-10
-
----
-
-#### `TASK-032` – Auto-create cast when generating a movie
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 3 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
-- **Description:** Ensure `GET /api/v1/movies/{slug}` returns a basic cast list (name + role) even for freshly generated movies by automatically creating `Person` records and `movie_person` links from AI payloads.
-- **Details:**
-  - Extend generation jobs (`RealGenerateMovieJob` / `MockGenerateMovieJob`) to persist people returned by the AI response (directors, main cast).
-  - Handle de-duplication (existing people), relation updates, and keep the minimal data set (first name, last name, role).
-  - Update feature tests (`MoviesApiTest`) and documentation (OpenAPI, Postman/Insomnia) with scenarios covering auto-created cast entries.
-- **Dependencies:** Consider alignment with `TASK-022` (people listing endpoint)
-- **Created:** 2025-11-10
-
----
-
-#### `TASK-033` – Remove legacy Actor model in favour of Person
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 2–3 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
-- **Description:** Retire the legacy `Actor` model and consolidate all cast handling around `Person` + `movie_person` pivot.
-- **Details:**
-  - Replace usages of `Actor`/`ActorBio` in seeders, jobs, and relationships with their `Person`/`PersonBio` counterparts.
-  - Update migrations/seeders or add a clean-up migration to ensure data consistency after consolidating actors into `people`.
-  - Remove unused files (`app/Models/Actor*`, `ActorSeeder`, etc.) and refresh tests/documentation (OpenAPI, Postman, README) to reference `Person`.
-- **Dependencies:** Relates to `TASK-032`, `TASK-022`
-- **Created:** 2025-11-10
-
----
-
-#### `TASK-034` – Support context_tag as query parameter in GET /api/v1/movies/{slug}
-- **Status:** ⏳ PENDING
-- **Priority:** 🟡 Medium
-- **Estimated time:** 2–3 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
-- **Description:** Add ability to retrieve movie description with specific ContextTag via `context_tag` query parameter in `GET /api/v1/movies/{slug}` endpoint, as an alternative to the current `description_id` selection mechanism.
-- **Details:**
-  - Extend `MovieController::show()` to handle `context_tag` query parameter (e.g., `?context_tag=humorous`).
-  - If `context_tag` is provided, return description with that ContextTag for the movie and locale.
-  - If description with given ContextTag doesn't exist, return 404 or default description (to be decided in implementation).
-  - Maintain backward compatibility - `description_id` should still work.
-  - Update validation - check if ContextTag is valid (enum validation).
-  - Add automated tests for new functionality.
-  - Update API documentation (OpenAPI/Swagger, Postman, Insomnia).
-  - Update `MANUAL_TESTING_GUIDE.md` with usage examples.
-- **Dependencies:** Related to `TASK-031` (AI description versioning strategy)
-- **Created:** 2025-11-29
-
----
-
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` – OpenAI integration repair
@@ -459,31 +397,6 @@ Every entry follows this structure:
 ---
 
 ## ✅ Completed tasks
-
-#### `TASK-027` – Diagnose duplicated generation events (movies/people)
-- **Status:** ✅ COMPLETED
-- **Priority:** 🔴 High
-- **Estimated time:** 2 h
-- **Start time:** 2025-11-10 18:03
-- **End time:** 2025-11-30 19:25
-- **Duration:** 20d01h22m
-- **Execution:** 🤖 AI Agent
-- **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
-- **Details:**
-  - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
-  - Audit controllers, services, and job listeners for repeated dispatches of generation events.
-  - Inspect queue/log outputs and craft a remediation plan with regression tests.
-- **Work completed:**
-  - Fixed inconsistency in `RealGenerateMovieJob` - moved finalization methods (`promoteDefaultIfEligible`, `invalidateMovieCaches`, `updateCache`) outside `createMovieRecord` for consistency with `RealGeneratePersonJob`.
-  - Added `GET /api/v1/people` endpoint (list people) with search by name, birthplace, and movies.
-  - Added routing for API documentation (`/api/doc` and `/api/docs/openapi.yaml`).
-  - Updated OpenAPI documentation for new endpoints.
-  - Conducted manual testing verifying the duplicate prevention fix for both movies and people.
-- **Dependencies:** none
-- **Created:** 2025-11-10
-- **Completed:** 2025-11-30
-
----
 
 ### `TASK-007` – Feature flag hardening
 - **Status:** ✅ COMPLETED
@@ -686,10 +599,10 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 12  
-- **Completed:** 7  
+- **Active:** 13  
+- **Completed:** 6  
 - **Cancelled:** 0  
-- **In progress:** 1
+- **In progress:** 2
 
 ---
 

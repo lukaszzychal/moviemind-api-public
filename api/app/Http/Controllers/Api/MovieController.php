@@ -46,9 +46,11 @@ class MovieController extends Controller
         }
 
         $cacheKey = $this->cacheKey($slug, $descriptionId);
+
         if ($cached = Cache::get($cacheKey)) {
             return response()->json($cached);
         }
+
         $movie = $this->movieRepository->findBySlugWithRelations($slug);
         if ($movie) {
             $selectedDescription = null;
