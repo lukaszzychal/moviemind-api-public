@@ -406,8 +406,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-=======
->>>>>>> feature/TASK-023-openai-integration
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` - Integracja i naprawa połączenia z OpenAI
