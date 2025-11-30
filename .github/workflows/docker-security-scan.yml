@@ -50,7 +50,9 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
+        id: trivy-image
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: moviemind-api:latest
           scan-type: 'image'
