@@ -1,6 +1,6 @@
 # 📋 Task Backlog – MovieMind API
 
-**Last updated:** 2025-11-10  
+**Last updated:** 2025-11-30  
 **Status:** 🔄 Active
 
 ---
@@ -599,11 +599,11 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 13  
+- **Active:** 15  
 - **Completed:** 6  
 - **Cancelled:** 0  
 - **In progress:** 2
 
 ---
 
-**Last updated:** 2025-11-10
+**Last updated:** 2025-11-30

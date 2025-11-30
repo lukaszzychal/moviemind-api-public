@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-11-10  
+**Ostatnia aktualizacja:** 2025-11-30  
 **Status:** 🔄 Aktywny
 
 ---
@@ -729,12 +729,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 13
+- **Aktywne:** 15
 - **Zakończone:** 7
 - **Anulowane:** 0
 - **W trakcie:** 2
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-10
+**Ostatnia aktualizacja:** 2025-11-30
 
