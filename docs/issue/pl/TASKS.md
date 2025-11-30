@@ -729,7 +729,7 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 16
+- **Aktywne:** 17
 - **Zakończone:** 7
 - **Anulowane:** 0
 - **W trakcie:** 2

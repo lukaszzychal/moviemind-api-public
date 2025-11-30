@@ -599,7 +599,7 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 16  
+- **Active:** 17  
 - **Completed:** 6  
 - **Cancelled:** 0  
 - **In progress:** 2
