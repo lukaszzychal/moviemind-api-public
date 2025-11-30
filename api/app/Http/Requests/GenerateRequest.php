@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ContextTag;
 use App\Enums\Locale;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -41,7 +42,7 @@ class GenerateRequest extends FormRequest
             'slug' => 'required_without:entity_id|string|max:255',
             'entity_id' => 'required_without:slug|string|max:255',
             'locale' => ['nullable', 'string', 'max:10', Rule::in(Locale::values())],
-            'context_tag' => ['nullable', 'string', 'max:64'],
+            'context_tag' => ['nullable', 'string', 'max:64', Rule::in(ContextTag::values())],
         ];
     }
 

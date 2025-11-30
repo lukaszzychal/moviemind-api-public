@@ -7,12 +7,10 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Person;
 use App\Models\PersonBio;
-use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -49,72 +47,16 @@ class RealGeneratePersonJob implements ShouldQueue
      */
     public function handle(OpenAiClientInterface $openAiClient): void
     {
-        Log::info('RealGeneratePersonJob started', [
-            'slug' => $this->slug,
-            'job_id' => $this->jobId,
-            'attempt' => $this->attempts(),
-            'existing_person_id' => $this->existingPersonId,
-            'baseline_bio_id' => $this->baselineBioId,
-            'locale' => $this->locale,
-            'context_tag' => $this->contextTag,
-            'pid' => getmypid(),
-        ]);
-        /** @var JobStatusService $jobStatusService */
-        $jobStatusService = app(JobStatusService::class);
-
         try {
             $existing = $this->findExistingPerson();
 
             if ($existing) {
                 $this->refreshExistingPerson($existing, $openAiClient);
-                Log::info('RealGeneratePersonJob refreshed existing person', [
-                    'slug' => $this->slug,
-                    'job_id' => $this->jobId,
-                    'person_id' => $existing->id,
-                ]);
 
                 return;
             }
 
-            try {
-                [$person, $bio, $localeValue, $contextTag] = $this->createPersonRecord($openAiClient);
-                $this->promoteDefaultIfEligible($person, $bio);
-                $this->invalidatePersonCaches($person);
-                $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $localeValue, $contextTag);
-                Log::info('RealGeneratePersonJob created new person', [
-                    'slug' => $this->slug,
-                    'job_id' => $this->jobId,
-                    'person_id' => $person->id,
-                    'bio_id' => $bio->id,
-                    'locale' => $localeValue,
-                    'context_tag' => $contextTag,
-                    'pid' => getmypid(),
-                ]);
-            } catch (QueryException $exception) {
-                if ($this->isUniquePersonSlugViolation($exception)) {
-                    $existingAfterViolation = $this->findExistingPerson();
-                    if ($existingAfterViolation) {
-                        Log::info('RealGeneratePersonJob detected concurrent creation - using existing person', [
-                            'slug' => $this->slug,
-                            'job_id' => $this->jobId,
-                            'person_id' => $existingAfterViolation->id,
-                            'pid' => getmypid(),
-                        ]);
-                        $this->markDoneUsingExisting($existingAfterViolation);
-
-                        return;
-                    }
-
-                    Log::warning('RealGeneratePersonJob unique slug violation without person record', [
-                        'slug' => $this->slug,
-                        'job_id' => $this->jobId,
-                        'pid' => getmypid(),
-                        'error' => $exception->getMessage(),
-                    ]);
-                }
-
-                throw $exception;
-            }
+            $this->createPersonWithLock($openAiClient);
         } catch (\Throwable $e) {
             Log::error('RealGeneratePersonJob failed', [
                 'slug' => $this->slug,
@@ -126,8 +68,6 @@ class RealGeneratePersonJob implements ShouldQueue
             $this->updateCache('FAILED');
 
             throw $e; // Re-throw for retry mechanism
-        } finally {
-            $jobStatusService->releaseGenerationSlot('PERSON', $this->slug, $this->locale, $this->contextTag);
         }
     }
 
@@ -355,10 +295,6 @@ class RealGeneratePersonJob implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
-        /** @var JobStatusService $jobStatusService */
-        $jobStatusService = app(JobStatusService::class);
-        $jobStatusService->releaseGenerationSlot('PERSON', $this->slug, $this->locale, $this->contextTag);
-
         Log::error('RealGeneratePersonJob permanently failed', [
             'slug' => $this->slug,
             'job_id' => $this->jobId,
@@ -387,6 +323,37 @@ class RealGeneratePersonJob implements ShouldQueue
         }
 
         return Person::with('bios')->where('slug', $this->slug)->first();
+    }
+
+    private function createPersonWithLock(OpenAiClientInterface $openAiClient): void
+    {
+        $lock = Cache::lock($this->creationLockKey(), 30);
+
+        try {
+            $lock->block(5, function () use ($openAiClient): void {
+                $existing = $this->findExistingPerson();
+                if ($existing) {
+                    $this->refreshExistingPerson($existing, $openAiClient);
+
+                    return;
+                }
+
+                [$person, $bio, $localeValue, $contextTag] = $this->createPersonRecord($openAiClient);
+
+                $this->promoteDefaultIfEligible($person, $bio);
+                $this->invalidatePersonCaches($person);
+                $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $localeValue, $contextTag);
+            });
+        } catch (LockTimeoutException $exception) {
+            $existing = $this->findExistingPerson();
+            if ($existing) {
+                $this->refreshExistingPerson($existing, $openAiClient);
+
+                return;
+            }
+
+            throw $exception;
+        }
     }
 
     /**
@@ -466,6 +433,11 @@ class RealGeneratePersonJob implements ShouldQueue
         }
     }
 
+    private function creationLockKey(): string
+    {
+        return 'lock:person:create:'.$this->slug;
+    }
+
     private function defaultLockKey(Person $person): string
     {
         return 'lock:person:default:'.$person->id;
@@ -492,68 +464,5 @@ class RealGeneratePersonJob implements ShouldQueue
     private function baselineLockingEnabled(): bool
     {
         return Feature::active('ai_generation_baseline_locking');
-    }
-
-    private function isUniquePersonSlugViolation(QueryException $exception): bool
-    {
-        $errorInfo = $exception->errorInfo ?? null;
-        $sqlState = is_array($errorInfo) && isset($errorInfo[0])
-            ? (string) $errorInfo[0]
-            : (string) $exception->getCode();
-
-        if (! in_array($sqlState, ['23000', '23505'], true)) {
-            return false;
-        }
-
-        $message = strtolower($exception->getMessage());
-        if (str_contains($message, 'people.slug') || str_contains($message, 'people_slug_unique')) {
-            return true;
-        }
-
-        if (is_array($errorInfo) && isset($errorInfo[2])) {
-            $details = strtolower((string) $errorInfo[2]);
-            if (str_contains($details, 'people.slug') || str_contains($details, 'people_slug_unique')) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function markDoneUsingExisting(Person $person): void
-    {
-        $person->loadMissing(['bios', 'defaultBio']);
-        /** @var PersonBio|null $bio */
-        $bio = $person->defaultBio ?? $person->bios->first();
-
-        $resolvedLocale = is_string($this->locale) ? $this->locale : null;
-        $resolvedContextTag = $this->contextTag;
-
-        if ($bio instanceof PersonBio) {
-            /** @var mixed $bioLocale */
-            $bioLocale = $bio->locale;
-            if (is_string($bioLocale)) {
-                $resolvedLocale = $bioLocale;
-            }
-
-            /** @var mixed $bioContext */
-            $bioContext = $bio->context_tag;
-            if ($bioContext instanceof ContextTag) {
-                $resolvedContextTag = $bioContext->value;
-            } else {
-                $resolvedContextTag = (string) $bioContext;
-            }
-        }
-
-        $bioId = $bio instanceof PersonBio ? $bio->id : null;
-
-        $this->updateCache(
-            'DONE',
-            $person->id,
-            $bioId,
-            $person->slug,
-            $resolvedLocale,
-            $resolvedContextTag
-        );
     }
 }

@@ -244,6 +244,7 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
+<<<<<<< HEAD
 - **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 2 godziny
@@ -251,6 +252,15 @@ Każde zadanie ma następującą strukturę:
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
 - **Realizacja:** 🤖 AI Agent
+=======
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+>>>>>>> feature/TASK-023-openai-integration
 - **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
 - **Szczegóły:**
   - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
@@ -261,6 +271,7 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+<<<<<<< HEAD
 #### `TASK-034` - Tłumaczenie zasad Cursor (.mdc) i CLAUDE.md na angielski
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
@@ -281,6 +292,8 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+=======
+>>>>>>> feature/TASK-023-openai-integration
 #### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -338,6 +351,7 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+<<<<<<< HEAD
 #### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
 - **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
@@ -392,6 +406,8 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+=======
+>>>>>>> feature/TASK-023-openai-integration
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` - Integracja i naprawa połączenia z OpenAI
