@@ -28,12 +28,71 @@ Route::get('/', function () {
 
 // API Documentation (Swagger UI)
 Route::get('/api/doc', function () {
-    return response()->file(public_path('docs/index.html'));
+    $possiblePaths = [
+        public_path('docs/index.html'),
+        base_path('public/docs/index.html'),
+    ];
+
+    foreach ($possiblePaths as $filePath) {
+        if (file_exists($filePath)) {
+            return response()->file($filePath);
+        }
+    }
+
+    // Fallback: return inline HTML if file doesn't exist
+    $html = <<<'HTML'
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>MovieMind API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <style>
+    html, body { margin:0; padding:0; height:100%; }
+    #swagger-ui { height:100%; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: '/api/docs/openapi.yaml',
+        dom_id: '#swagger-ui',
+        presets: [SwaggerUIBundle.presets.apis],
+      });
+    };
+  </script>
+</body>
+</html>
+HTML;
+
+    return response($html, 200, ['Content-Type' => 'text/html']);
 });
 
 // OpenAPI Specification
 Route::get('/api/docs/openapi.yaml', function () {
-    return response()->file(public_path('docs/openapi.yaml'), [
-        'Content-Type' => 'application/x-yaml',
-    ]);
+    $possiblePaths = [
+        public_path('docs/openapi.yaml'),
+        base_path('public/docs/openapi.yaml'),
+    ];
+
+    foreach ($possiblePaths as $filePath) {
+        if (file_exists($filePath)) {
+            return response()->file($filePath, [
+                'Content-Type' => 'application/x-yaml',
+            ]);
+        }
+    }
+
+    // Fallback: try to read from docs directory in project root
+    $fallbackPath = base_path('docs/openapi.yaml');
+    if (file_exists($fallbackPath)) {
+        return response()->file($fallbackPath, [
+            'Content-Type' => 'application/x-yaml',
+        ]);
+    }
+
+    abort(404, 'OpenAPI specification not found');
 });
