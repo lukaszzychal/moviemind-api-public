@@ -33,11 +33,25 @@ cd api && php artisan test
 ```
 Wszystkie testy muszą przechodzić.
 
-### 4. GitLeaks (sekrety)
+### 4. GitLeaks (sekrety) - **WYMAGANE PRZED COMMITEM I PUSHEM**
 ```bash
 gitleaks protect --source . --verbose --no-banner
 ```
 Zero wykrytych sekretów.
+
+**WAŻNE:** Przed każdym commitem i pushem **ZAWSZE** uruchom GitLeaks. Jeśli GitLeaks nie jest zainstalowany, zainstaluj go:
+```bash
+# macOS
+brew install gitleaks
+
+# Lub użyj skryptu instalacyjnego
+./scripts/setup-pre-commit.sh
+```
+
+**Automatyczna instalacja hooków:**
+- Jeśli hooki nie są zainstalowane, automatycznie zainstaluj je z `scripts/git-hooks/pre-commit`
+- Sprawdź czy `.git/hooks/pre-commit` istnieje, jeśli nie - skopiuj z `scripts/git-hooks/pre-commit`
+- Upewnij się, że hook ma uprawnienia wykonywania: `chmod +x .git/hooks/pre-commit`
 
 ### 5. Composer Audit (bezpieczeństwo)
 ```bash
@@ -112,11 +126,29 @@ cd api && \
   vendor/bin/pint && \
   vendor/bin/phpstan analyse --memory-limit=2G && \
   php artisan test && \
+  cd .. && \
   gitleaks protect --source . --verbose --no-banner && \
+  cd api && \
   composer audit
 ```
 
 **Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację (OpenAPI, Postman, Insomnia) oraz instrukcje manualnego testowania!
+
+## Automatyczna instalacja Git Hooków
+
+**Przed każdym commitem lub pushem:**
+1. Sprawdź czy `.git/hooks/pre-commit` istnieje
+2. Jeśli nie istnieje, automatycznie zainstaluj z `scripts/git-hooks/pre-commit`:
+   ```bash
+   cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+   ```
+3. Sprawdź czy GitLeaks jest zainstalowany (`command -v gitleaks`)
+4. Jeśli nie, poinformuj użytkownika o konieczności instalacji (nie blokuj, ale ostrzeż)
+
+**Automatyczna weryfikacja sekretów:**
+- Przed każdym commitem: uruchom `gitleaks protect --source . --verbose --no-banner --staged`
+- Przed każdym pushem: uruchom `gitleaks protect --source . --verbose --no-banner`
+- Jeśli sekrety zostaną wykryte, **BLOKUJ** commit/push i poinformuj użytkownika
 
 ## Branch Workflow (domyślna zasada)
 
