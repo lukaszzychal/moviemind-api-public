@@ -243,21 +243,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
-- **Status:** 🔄 IN_PROGRESS
-- **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 2 godziny
-- **Czas rozpoczęcia:** 2025-11-10 18:03
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
-- **Szczegóły:**
-  - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
-  - Przeanalizować miejsca emisji eventów i listenerów (kontrolery, serwisy, joby) pod kątem wielokrotnego dispatchu.
-  - Zweryfikować liczbę wpisów w logach/kolejce i przygotować propozycję poprawek z testami regresyjnymi.
-- **Zależności:** Brak
-- **Utworzone:** 2025-11-10
 
 ---
 
@@ -495,6 +480,31 @@ Każde zadanie ma następującą strukturę:
 
 ## ✅ **Zakończone Zadania**
 
+### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2 godziny
+- **Czas rozpoczęcia:** 2025-11-10 18:03
+- **Czas zakończenia:** 2025-11-30 19:25
+- **Czas realizacji:** 20d01h22m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
+- **Szczegóły:**
+  - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
+  - Przeanalizować miejsca emisji eventów i listenerów (kontrolery, serwisy, joby) pod kątem wielokrotnego dispatchu.
+  - Zweryfikować liczbę wpisów w logach/kolejce i przygotować propozycję poprawek z testami regresyjnymi.
+- **Zakres wykonanych prac:**
+  - Naprawiono niespójność w `RealGenerateMovieJob` - przeniesiono metody finalizujące (`promoteDefaultIfEligible`, `invalidateMovieCaches`, `updateCache`) poza `createMovieRecord` dla spójności z `RealGeneratePersonJob`.
+  - Dodano endpoint `GET /api/v1/people` (lista osób) z wyszukiwaniem po nazwie, miejscu urodzenia i filmach.
+  - Dodano routing dla dokumentacji API (`/api/doc` i `/api/docs/openapi.yaml`).
+  - Zaktualizowano dokumentację OpenAPI dla nowych endpointów.
+  - Przeprowadzono manualne testy weryfikujące rozwiązanie problemu duplikacji dla filmów i osób.
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-10
+- **Zakończone:** 2025-11-30
+
+---
+
 ### `TASK-021` - Naprawa duplikacji eventów przy generowaniu filmu
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
@@ -716,12 +726,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 13
-- **Zakończone:** 7
+- **Aktywne:** 12
+- **Zakończone:** 8
 - **Anulowane:** 0
-- **W trakcie:** 2
+- **W trakcie:** 1
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-10
+**Ostatnia aktualizacja:** 2025-11-30
 

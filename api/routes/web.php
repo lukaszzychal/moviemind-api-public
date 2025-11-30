@@ -25,3 +25,15 @@ Route::get('/', function () {
         'Content-Type' => 'application/json',
     ]);
 });
+
+// API Documentation (Swagger UI)
+Route::get('/api/doc', function () {
+    return response()->file(public_path('docs/index.html'));
+});
+
+// OpenAPI Specification
+Route::get('/api/docs/openapi.yaml', function () {
+    return response()->file(public_path('docs/openapi.yaml'), [
+        'Content-Type' => 'application/x-yaml',
+    ]);
+});

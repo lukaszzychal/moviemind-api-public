@@ -283,21 +283,6 @@ Every entry follows this structure:
 
 ---
 
-#### `TASK-027` – Diagnose duplicated generation events (movies/people)
-- **Status:** 🔄 IN_PROGRESS
-- **Priority:** 🔴 High
-- **Estimated time:** 2 h
-- **Start time:** 2025-11-10 18:03
-- **End time:** --
-- **Duration:** --
-- **Execution:** 🤖 AI Agent
-- **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
-- **Details:**
-  - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
-  - Audit controllers, services, and job listeners for repeated dispatches of generation events.
-  - Inspect queue/log outputs and craft a remediation plan with regression tests.
-- **Dependencies:** none
-- **Created:** 2025-11-10
 
 ---
 

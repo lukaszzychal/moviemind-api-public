@@ -166,6 +166,57 @@ paths:
                 properties:
                   error:
                     type: string
+  /v1/people:
+    get:
+      tags: [People]
+      summary: List people
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (name, birthplace, movies)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+              examples:
+                default:
+                  value:
+                    data:
+                      - id: 5
+                        slug: keanu-reeves
+                        name: Keanu Reeves
+                        birth_date: '1964-09-02'
+                        birthplace: Beirut, Lebanon
+                        default_bio:
+                          id: 20
+                          locale: en-US
+                          text: 'A versatile actor known for his roles in action and science fiction films.'
+                          context_tag: modern
+                          origin: GENERATED
+                          ai_model: gpt-4o-mini
+                        bios_count: 1
+                        movies:
+                          - id: 1
+                            slug: the-matrix-1999
+                            title: The Matrix
+                            role: ACTOR
+                            character_name: Neo
+                        _links:
+                          self:
+                            href: /api/v1/people/keanu-reeves
+                          movies:
+                            - href: /api/v1/movies/the-matrix-1999
+                              title: The Matrix
   /v1/people/{slug}:
     get:
       tags: [People]

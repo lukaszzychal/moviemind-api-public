@@ -68,6 +68,28 @@ paths:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '404':
           description: Not Found (feature flag off)
+  /v1/people:
+    get:
+      tags: [People]
+      summary: List people
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (name, birthplace, movies)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
   /v1/people/{slug}:
     get:
       tags: [People]

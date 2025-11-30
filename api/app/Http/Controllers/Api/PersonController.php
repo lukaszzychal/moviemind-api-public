@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\QueuePersonGenerationAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PersonResource;
+use App\Models\Person;
 use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
 use App\Services\HateoasService;
@@ -22,6 +23,15 @@ class PersonController extends Controller
         private readonly HateoasService $hateoas,
         private readonly QueuePersonGenerationAction $queuePersonGenerationAction
     ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $q = $request->query('q');
+        $people = $this->personRepository->searchPeople($q, 50);
+        $data = $people->map(fn ($person) => $this->transformPerson($person));
+
+        return response()->json(['data' => $data]);
+    }
 
     public function show(Request $request, string $slug): JsonResponse
     {
@@ -73,6 +83,15 @@ class PersonController extends Controller
         $result = $this->queuePersonGenerationAction->handle($slug);
 
         return response()->json($result, 202);
+    }
+
+    private function transformPerson(Person $person): array
+    {
+        $resource = PersonResource::make($person)->additional([
+            '_links' => $this->hateoas->personLinks($person),
+        ]);
+
+        return $resource->resolve();
     }
 
     private function cacheKey(string $slug, ?int $bioId = null): string
