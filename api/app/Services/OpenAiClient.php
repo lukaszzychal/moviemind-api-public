@@ -330,15 +330,24 @@ class OpenAiClient implements OpenAiClientInterface
             'name' => 'movie_generation_response',
             'schema' => [
                 'type' => 'object',
-                'additionalProperties' => false,
                 'properties' => [
-                    'title' => ['type' => ['string', 'null']],
-                    'release_year' => ['type' => ['integer', 'null']],
-                    'director' => ['type' => ['string', 'null']],
-                    'description' => ['type' => ['string', 'null']],
+                    'title' => [
+                        'type' => 'string',
+                    ],
+                    'release_year' => [
+                        'type' => 'integer',
+                    ],
+                    'director' => [
+                        'type' => 'string',
+                    ],
+                    'description' => [
+                        'type' => 'string',
+                    ],
                     'genres' => [
-                        'type' => ['array', 'null'],
-                        'items' => ['type' => 'string'],
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'string',
+                        ],
                     ],
                 ],
             ],
@@ -351,12 +360,19 @@ class OpenAiClient implements OpenAiClientInterface
             'name' => 'person_generation_response',
             'schema' => [
                 'type' => 'object',
-                'additionalProperties' => false,
                 'properties' => [
-                    'name' => ['type' => ['string', 'null']],
-                    'birth_date' => ['type' => ['string', 'null']],
-                    'birthplace' => ['type' => ['string', 'null']],
-                    'biography' => ['type' => ['string', 'null']],
+                    'name' => [
+                        'type' => 'string',
+                    ],
+                    'birth_date' => [
+                        'type' => 'string',
+                    ],
+                    'birthplace' => [
+                        'type' => 'string',
+                    ],
+                    'biography' => [
+                        'type' => 'string',
+                    ],
                 ],
             ],
         ];
