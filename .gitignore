@@ -35,6 +35,9 @@ jwt/
 .DS_Store
 Thumbs.db
 
+# MCP (Model Context Protocol)
+.mcp/
+
 # ChatGPT conversation exports
 chatgpt
 chatgpt2
