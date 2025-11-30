@@ -351,14 +351,13 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-<<<<<<< HEAD
 #### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ⏳ PENDING
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** 2025-11-10 18:35
+- **Czas rozpoczęcia:** --
 - **Czas zakończenia:** --
-- **Czas realizacji:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
 - **Realizacja:** Do ustalenia
 - **Opis:** Uporządkowanie wniosku, czy utrzymujemy aktualne podejście (pojedynczy opis na kombinację `locale + context_tag`) czy planujemy pełne wersjonowanie wszystkich generacji.
 - **Szczegóły:**
