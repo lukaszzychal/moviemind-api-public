@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ContextTag;
 use App\Models\Movie;
+use App\Models\MovieDescription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -110,6 +111,9 @@ class MoviesApiTest extends TestCase
     {
         $movie = Movie::firstOrFail();
 
+        // Delete any existing descriptions for this movie to avoid conflicts
+        MovieDescription::where('movie_id', $movie->id)->delete();
+
         // Create first description with modern context_tag
         $firstDescription = MovieDescription::create([
             'movie_id' => $movie->id,
@@ -138,6 +142,9 @@ class MoviesApiTest extends TestCase
     {
         $movie = Movie::firstOrFail();
 
+        // Delete any existing descriptions for this movie to avoid conflicts
+        MovieDescription::where('movie_id', $movie->id)->delete();
+
         // Create description with modern context_tag
         $modernDescription = MovieDescription::create([
             'movie_id' => $movie->id,
@@ -148,7 +155,7 @@ class MoviesApiTest extends TestCase
             'ai_model' => 'mock',
         ]);
 
-        // Create description with humorous context_tag for the same movie
+        // Create description with humorous context_tag for the same movie (different context_tag)
         $humorousDescription = MovieDescription::create([
             'movie_id' => $movie->id,
             'locale' => 'en-US',
