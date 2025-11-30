@@ -460,6 +460,31 @@ Every entry follows this structure:
 
 ## ✅ Completed tasks
 
+#### `TASK-027` – Diagnose duplicated generation events (movies/people)
+- **Status:** ✅ COMPLETED
+- **Priority:** 🔴 High
+- **Estimated time:** 2 h
+- **Start time:** 2025-11-10 18:03
+- **End time:** 2025-11-30 19:25
+- **Duration:** 20d01h22m
+- **Execution:** 🤖 AI Agent
+- **Description:** Determine why movie and person generation events fire multiple times, causing duplicate jobs/descriptions.
+- **Details:**
+  - Reproduce the issue across `GET /api/v1/movies/{slug}`, `GET /api/v1/people/{slug}`, and `POST /api/v1/generate` flows.
+  - Audit controllers, services, and job listeners for repeated dispatches of generation events.
+  - Inspect queue/log outputs and craft a remediation plan with regression tests.
+- **Work completed:**
+  - Fixed inconsistency in `RealGenerateMovieJob` - moved finalization methods (`promoteDefaultIfEligible`, `invalidateMovieCaches`, `updateCache`) outside `createMovieRecord` for consistency with `RealGeneratePersonJob`.
+  - Added `GET /api/v1/people` endpoint (list people) with search by name, birthplace, and movies.
+  - Added routing for API documentation (`/api/doc` and `/api/docs/openapi.yaml`).
+  - Updated OpenAPI documentation for new endpoints.
+  - Conducted manual testing verifying the duplicate prevention fix for both movies and people.
+- **Dependencies:** none
+- **Created:** 2025-11-10
+- **Completed:** 2025-11-30
+
+---
+
 ### `TASK-007` – Feature flag hardening
 - **Status:** ✅ COMPLETED
 - **Priority:** 🟡 Medium
@@ -661,10 +686,10 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 13  
-- **Completed:** 6  
+- **Active:** 12  
+- **Completed:** 7  
 - **Cancelled:** 0  
-- **In progress:** 2
+- **In progress:** 1
 
 ---
 
