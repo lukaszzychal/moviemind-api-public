@@ -4,6 +4,27 @@ alwaysApply: true
 
 # Workflow przed Commitem (WYMAGANE)
 
+## Automatyczna instalacja Git Hooków
+
+**PRZED KAŻDYM COMMITEM LUB PUSHEM - automatycznie sprawdź i zainstaluj hooki:**
+
+1. **Sprawdź czy hooki są zainstalowane:**
+   ```bash
+   if [ ! -f ".git/hooks/pre-commit" ]; then
+       if [ -f "scripts/git-hooks/pre-commit" ]; then
+           cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+           chmod +x .git/hooks/pre-commit
+           echo "✅ Git hooks installed automatically"
+       fi
+   fi
+   ```
+
+2. **Dla AI Agent:**
+   - Przed każdym `git commit` lub `git push`, automatycznie sprawdź czy `.git/hooks/pre-commit` istnieje
+   - Jeśli nie istnieje, automatycznie zainstaluj z `scripts/git-hooks/pre-commit`
+   - Upewnij się, że hook ma uprawnienia wykonywania (`chmod +x`)
+   - **NIE pytaj użytkownika - wykonaj automatycznie**
+
 ## Przed każdym commitem MUSISZ uruchomić i naprawić:
 
 ### 1. Laravel Pint (formatowanie)
@@ -33,11 +54,25 @@ cd api && php artisan test
 ```
 Wszystkie testy muszą przechodzić.
 
-### 4. GitLeaks (sekrety)
+### 4. GitLeaks (sekrety) - **WYMAGANE PRZED COMMITEM I PUSHEM**
 ```bash
 gitleaks protect --source . --verbose --no-banner
 ```
 Zero wykrytych sekretów.
+
+**WAŻNE:** Przed każdym commitem i pushem **ZAWSZE** uruchom GitLeaks. Jeśli GitLeaks nie jest zainstalowany, zainstaluj go:
+```bash
+# macOS
+brew install gitleaks
+
+# Lub użyj skryptu instalacyjnego
+./scripts/setup-pre-commit.sh
+```
+
+**Automatyczna instalacja hooków:**
+- Jeśli hooki nie są zainstalowane, automatycznie zainstaluj je z `scripts/git-hooks/pre-commit`
+- Sprawdź czy `.git/hooks/pre-commit` istnieje, jeśli nie - skopiuj z `scripts/git-hooks/pre-commit`
+- Upewnij się, że hook ma uprawnienia wykonywania: `chmod +x .git/hooks/pre-commit`
 
 ### 5. Composer Audit (bezpieczeństwo)
 ```bash
@@ -79,6 +114,32 @@ Napraw krytyczne luki przed commitem.
 - Postman: JSON format zgodny z Postman Collection v2.1
 - Insomnia: JSON format zgodny z Insomnia Export
 
+### 7. Aktualizacja Instrukcji Manualnego Testowania (jeśli zmieniono mechanizmy testowania)
+**WAŻNE:** Jeśli zmieniono mechanizmy testowania, endpointy, feature flagi, format odpowiedzi lub strukturę logów, **ZAWSZE** zaktualizuj:
+
+#### Manual Testing Guide
+```bash
+# Zaktualizuj docs/knowledge/reference/MANUAL_TESTING_GUIDE.md (PL)
+# Zaktualizuj docs/knowledge/reference/MANUAL_TESTING_GUIDE.en.md (EN)
+```
+
+**Kiedy aktualizować:**
+- ✅ Zmieniono endpointy API (dodano/zmieniono/usunięto)
+- ✅ Zmieniono mechanizmy zapobiegania duplikatom (np. slot management, locking)
+- ✅ Zmieniono feature flagi (dodano/zmieniono/usunięto)
+- ✅ Zmieniono format odpowiedzi API
+- ✅ Zmieniono wymagania dotyczące slug formatów
+- ✅ Zmieniono strukturę logów (np. nowe logi, zmiana formatu)
+- ✅ Zmieniono sposób aktywacji feature flagów
+- ✅ Dodano nowe scenariusze testowe
+
+**Format aktualizacji:**
+- Zaktualizuj odpowiednie sekcje testów
+- Zaktualizuj przykłady komend
+- Zaktualizuj troubleshooting
+- Zaktualizuj checklist końcowy
+- Zaktualizuj datę "Ostatnia aktualizacja"
+
 ## Kompletny check (wszystko na raz)
 
 ```bash
@@ -86,11 +147,29 @@ cd api && \
   vendor/bin/pint && \
   vendor/bin/phpstan analyse --memory-limit=2G && \
   php artisan test && \
+  cd .. && \
   gitleaks protect --source . --verbose --no-banner && \
+  cd api && \
   composer audit
 ```
 
-**Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację!
+**Pamiętaj:** Po zmianach w API zawsze zaktualizuj dokumentację (OpenAPI, Postman, Insomnia) oraz instrukcje manualnego testowania!
+
+## Automatyczna instalacja Git Hooków
+
+**Przed każdym commitem lub pushem:**
+1. Sprawdź czy `.git/hooks/pre-commit` istnieje
+2. Jeśli nie istnieje, automatycznie zainstaluj z `scripts/git-hooks/pre-commit`:
+   ```bash
+   cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+   ```
+3. Sprawdź czy GitLeaks jest zainstalowany (`command -v gitleaks`)
+4. Jeśli nie, poinformuj użytkownika o konieczności instalacji (nie blokuj, ale ostrzeż)
+
+**Automatyczna weryfikacja sekretów:**
+- Przed każdym commitem: uruchom `gitleaks protect --source . --verbose --no-banner --staged`
+- Przed każdym pushem: uruchom `gitleaks protect --source . --verbose --no-banner`
+- Jeśli sekrety zostaną wykryte, **BLOKUJ** commit/push i poinformuj użytkownika
 
 ## Branch Workflow (domyślna zasada)
 
@@ -100,6 +179,11 @@ cd api && \
 - Dłuższe, wielotygodniowe branche stosuj wyłącznie w wyjątkowych rekonstrukcjach — wtedy dziel pracę na mniejsze PR-y.
 - **Commit messages** pisz wyłącznie po angielsku, w stylu `type: short description` (np. `feat: add movie resource`). Niedozwolone są komunikaty w innych językach.
 - Agent może wykonywać `git commit`, ale `git push` uruchamia wyłącznie na wyraźne polecenie użytkownika.
+
+## Natychmiastowe commity
+
+- Po każdej zmianie w plikach zasad Cursor (`.cursor/rules/*.mdc`) wykonaj natychmiastowy commit obejmujący te pliki.
+- Po dodaniu nowego zadania lub aktualizacji treści istniejącego zadania w `docs/issue/**/*.md`, niezwłocznie zatwierdź te zmiany w osobnym commicie.
 
 ## Zarządzanie zadaniami (TASKS.md)
 
@@ -125,3 +209,37 @@ cd api && \
 - Każdy link zewnętrzny **musisz zweryfikować** (otworzyć/testowo sprawdzić), aby upewnić się, że jest aktywny i prowadzi do właściwego źródła.
 - Jeśli nie możesz potwierdzić linku, **wyraźnie to zaznacz**, dodając alternatywne źródło lub ostrzeżenie.
 - Odpowiedzi formatuj przejrzyście (nagłówki, listy punktowane) zgodnie z guideline Cursor.
+
+## Testowanie manualne
+
+- **ZAWSZE** przetestuj manualnie taski i funkcje, które można przetestować bez automatycznych testów.
+- **Informuj na bieżąco** o krokach i wynikach testowania:
+  - Opisz każdy krok testowania (np. "Testuję endpoint GET /api/v1/movies/{slug}")
+  - Podawaj wyniki każdego testu (sukces/błąd, status code, czas odpowiedzi, etc.)
+  - Informuj o napotkanych problemach lub nieoczekiwanych zachowaniach
+  - Zgłaszaj postęp w testowaniu (np. "Przetestowano 3/5 scenariuszy")
+- Przed zakończeniem zadania zweryfikuj, że implementacja działa poprawnie w praktyce (np. przez wywołanie endpointu API, sprawdzenie odpowiedzi, weryfikację zachowania w przeglądarce).
+- Jeśli testowanie wymaga uruchomienia Dockera lub innego narzędzia (np. Redis, Horizon, PostgreSQL), **zawsze poinformuj użytkownika**:
+  - Jakie narzędzie jest potrzebne
+  - Jak je uruchomić (np. `docker compose up -d`, `php artisan horizon`)
+  - Jakie komendy należy wykonać do weryfikacji
+  - Gdzie sprawdzić wyniki (logi, dashboard, etc.)
+- Przykłady sytuacji wymagających testowania manualnego:
+  - Nowe endpointy API (sprawdzenie odpowiedzi, status codes, format JSON)
+  - Integracje z zewnętrznymi serwisami (OpenAI, etc.)
+  - Zmiany w UI/UX (jeśli dotyczy)
+  - Funkcjonalności wymagające interakcji użytkownika
+  - Scenariusze trudne do przetestowania automatycznie (np. race conditions, timing issues)
+- Jeśli testowanie manualne nie jest możliwe lub wymagałoby zbyt dużo czasu, poinformuj użytkownika o tym i zaproponuj alternatywne podejście (np. testy automatyczne, dokumentacja, etc.).
+
+## Informowanie o modelu AI i tokenach
+
+- **ZAWSZE** informuj użytkownika z jakiego modelu AI korzystasz na początku odpowiedzi lub gdy jest to istotne dla kontekstu.
+- Format: `**Model AI używany:** [nazwa modelu]` (np. `Claude Sonnet 4.5 (Auto)`, `OpenAI gpt-4o-mini`).
+- Jeśli dostępne są informacje o tokenach (zużyte/pozostałe) i **ich podanie nie zużywa dodatkowych tokenów**, możesz je dołączyć:
+  - Format podstawowy: `**Tokeny:** zużyte: X, pozostałe: Y` (lub podobny, w zależności od dostępnych danych).
+  - Jeśli dostępne są szczegółowe informacje o tokenach dla prompt/response lub input/output, możesz je podać:
+    - Format: `**Tokeny:** input: X, output: Y, total: Z` lub `**Tokeny:** prompt: X, response: Y, total: Z`
+    - Uwzględnij tylko te informacje, które są dostępne i których podanie nie zużywa dodatkowych tokenów.
+- Jeśli informacja o tokenach nie jest dostępna lub jej podanie zużywałoby dodatkowe tokeny, pomiń tę informację.
+- W kontekście aplikacji MovieMind API, jeśli wspominasz o modelu używanym przez aplikację (np. OpenAI), zawsze podaj pełną nazwę modelu (np. `gpt-4o-mini`).

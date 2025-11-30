@@ -62,15 +62,21 @@ Dodatkowe notatki, uwagi, przyszłe rozważania.
 
 #### 📘 Tutorials (`knowledge/tutorials/`)
 **Kiedy używać:**
-- Setup i konfiguracja narzędzi
-- Wprowadzenia do technologii
-- Przewodniki krok po kroku
-- Quick start guides
+- **Ogólne tutoriale** - wiedza uniwersalna, przydatna w innych projektach
+- Setup i konfiguracja narzędzi (ogólne, nie specyficzne dla MovieMind API)
+- Wprowadzenia do technologii (Laravel, Redis, Docker, etc.)
+- Przewodniki krok po kroku (ogólne)
+- Quick start guides (ogólne)
+
+**NIE używaj dla:**
+- ❌ Dokumentów specyficznych dla MovieMind API (użyj `reference/`)
+- ❌ Instrukcji testowania konkretnej aplikacji (użyj `reference/`)
+- ❌ Dokumentów opisujących konkretne funkcjonalności projektu (użyj `reference/`)
 
 **Przykłady:**
-- `OPENAI_SETUP_AND_TESTING.md`
-- `HORIZON_SETUP.md`
-- `INSOMNIA_SETUP.md`
+- `OPENAI_SETUP_AND_TESTING.md` - ogólny setup OpenAI API
+- `HORIZON_SETUP.md` - ogólny setup Laravel Horizon
+- `INSOMNIA_SETUP.md` - ogólny setup narzędzia Insomnia
 
 #### 📔 Journal (`knowledge/journal/`)
 **Kiedy używać:**
@@ -99,15 +105,27 @@ Dodatkowe notatki, uwagi, przyszłe rozważania.
 
 #### 📚 Reference (`knowledge/reference/`)
 **Kiedy używać:**
-- Konfiguracja narzędzi
-- Setup środowisk
-- Dokumentacja narzędzi deweloperskich
-- Standardy i konwencje
+- **Dokumenty referencyjne specyficzne dla projektu MovieMind API**
+- Konfiguracja narzędzi w kontekście MovieMind API
+- Setup środowisk dla MovieMind API
+- Instrukcje testowania konkretnej aplikacji
+- Dokumenty opisujące konkretne funkcjonalności projektu
+- Standardy i konwencje projektu
+- Dokumentacja workflow specyficznego dla projektu
+
+**Używaj dla:**
+- ✅ Instrukcji manualnego testowania MovieMind API
+- ✅ Dokumentacji feature flagów specyficznych dla projektu
+- ✅ Strategii testowania specyficznej dla projektu
+- ✅ Konfiguracji deployment specyficznej dla projektu
+- ✅ Dokumentacji narzędzi deweloperskich w kontekście projektu
 
 **Przykłady:**
-- `CODE_QUALITY_TOOLS.md`
-- `LARASTAN_SETUP.md`
-- `DEPLOYMENT_SETUP.md`
+- `MANUAL_TESTING_GUIDE.md` - instrukcje testowania MovieMind API
+- `CODE_QUALITY_TOOLS.md` - narzędzia jakości kodu w kontekście projektu
+- `TESTING_STRATEGY.md` - strategia testowania specyficzna dla projektu
+- `DEPLOYMENT_SETUP.md` - setup deployment specyficzny dla projektu
+- `FEATURE_FLAGS.md` - feature flagi specyficzne dla MovieMind API
 
 ### 🔄 Workflow Tworzenia Dokumentów
 
@@ -131,8 +149,38 @@ Dodatkowe notatki, uwagi, przyszłe rozważania.
 2. **Używaj opisowych nazw** - nazwa pliku powinna jasno opisywać zawartość
 3. **Dodawaj linki** - łącz powiązane dokumenty
 4. **Aktualizuj daty** - zawsze aktualizuj datę ostatniej modyfikacji
-5. **Kategoryzuj poprawnie** - używaj odpowiedniej kategorii
+5. **Kategoryzuj poprawnie** - używaj odpowiedniej kategorii zgodnie z poniższymi zasadami:
+   - **Tutorials** = ogólne, uniwersalne, przydatne w innych projektach
+   - **Reference** = specyficzne dla MovieMind API, dokumenty referencyjne projektu
+   - **Technical** = analizy techniczne, porównania, wyjaśnienia konceptów
+   - **Journal** = problemy i rozwiązania, notatki z debugowania
 6. **Formatuj tabele** - generując tabele Markdown zawsze wyrównuj nagłówki i kolumny (dodaj spacje tam, gdzie trzeba), tak aby **każde pole było czytelne i ustawione pionowo**.
+
+### 🔍 Kluczowa Różnica: Tutorials vs Reference
+
+**Tutorials (`tutorials/`):**
+- ✅ **Ogólne, uniwersalne tutoriale** - wiedza przydatna w innych projektach
+- ✅ Przykład: "Jak skonfigurować Laravel Horizon" (ogólny tutorial)
+- ✅ Przykład: "Jak używać OpenAI API" (ogólny tutorial)
+- ❌ **NIE:** Instrukcje testowania konkretnej aplikacji MovieMind API
+- ❌ **NIE:** Dokumenty opisujące konkretne funkcjonalności projektu
+
+**Reference (`reference/`):**
+- ✅ **Dokumenty specyficzne dla projektu MovieMind API**
+- ✅ Instrukcje i dokumentacja funkcjonalności projektu
+- ✅ Przykład: "Instrukcje manualnego testowania MovieMind API" (specyficzne dla projektu)
+- ✅ Przykład: "Feature flagi MovieMind API" (specyficzne dla projektu)
+- ❌ **NIE:** Ogólne tutoriale o technologiach
+
+**Zasada decyzyjna:**
+- Jeśli dokument opisuje **konkretną funkcjonalność MovieMind API** lub **instrukcje specyficzne dla projektu** → `reference/`
+- Jeśli dokument opisuje **ogólną wiedzę o technologii/narzędziu** → `tutorials/`
+
+**Przykłady decyzji:**
+- ❌ `MANUAL_TESTING_GUIDE.md` w `tutorials/` - BŁĄD (specyficzne dla projektu)
+- ✅ `MANUAL_TESTING_GUIDE.md` w `reference/` - POPRAWNIE (specyficzne dla projektu)
+- ✅ `HORIZON_SETUP.md` w `tutorials/` - POPRAWNIE (ogólny tutorial)
+- ✅ `FEATURE_FLAGS.md` w `reference/` - POPRAWNIE (specyficzne dla projektu)
 
 ### 🤖 Automatycznie generowane szkice
 

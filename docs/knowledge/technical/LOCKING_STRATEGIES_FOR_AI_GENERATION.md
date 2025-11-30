@@ -1,0 +1,139 @@
+# Strategie blokad dla generowania AI (MovieMind)
+
+> **Data utworzenia:** 2025-11-12  
+> **Kontekst:** Analiza przyczyn duplikacji opisów filmów podczas równoległego uruchamiania jobów generujących treści AI  
+> **Kategoria:** technical
+
+## 🎯 Cel
+
+Porównać stosowane i planowane mechanizmy blokad w procesie generowania opisów filmów, pokazać przykłady implementacji oraz uzasadnić rekomendację odejścia od `Cache::lock` na rzecz obsługi wyjątków unikalnego indeksu `movies.slug`.
+
+## 📋 Warianty blokad
+
+1. **`Cache::lock` (Redis lock przez Laravel Cache)**
+   - *Jak działa?*  
+     ```php
+     Cache::lock("lock:movie:create:$slug", 30)->block(10, function () {
+         // krytyczna sekcja – utworzenie filmu i opisu
+     });
+     ```
+   - *Plusy:* prosty, dostępny „out of the box”, chroni szerszy fragment kodu (np. również promowanie opisu domyślnego).
+   - *Minusy:* globalny mutex spowalnia równoległe joby; jeśli lock zwróci się po utworzeniu rekordu przez inny proces, kod musi samodzielnie wykryć nowy stan (w naszym przypadku powodowało to regenerację dodatkowych opisów).
+
+2. **Unikalny indeks + obsługa wyjątku (rekomendowane)**
+   - *Mechanizm:* polega na unikalnym indeksie `movies.slug`, który już mamy (`migrations/2025_10_30_000200_add_slugs_to_movies_and_people.php`). Tworzenie filmu odbywa się bez locka:
+     ```php
+     try {
+         Movie::create([... 'slug' => $slug ...]);
+     } catch (QueryException $e) {
+         if ($this->isUniqueSlugViolation($e)) {
+             $existing = Movie::whereSlug($slug)->first();
+             $this->markDoneUsingExisting($existing);
+         } else {
+             throw $e;
+         }
+     }
+     ```
+   - *Plusy:* brak globalnej blokady, naturalna synchronizacja (baza gwarantuje brak duplikatów), prostszy kod, szybsze równoległe joby.
+   - *Minusy:* wymaga dokładnej identyfikacji wyjątku (np. sprawdzenia kodu błędu PDO), nie chroni logiki poza samym `INSERT`.
+
+3. **Blokada transakcyjna `SELECT ... FOR UPDATE`**
+   - *Opis:* wybranie rekordu „bazowego” i zablokowanie go na czas generowania. Działa dobrze, gdy mamy rekord kontrolny (np. `movies` istnieje). W naszym scenariuszu brak jeszcze rekordu, więc trzeba użyć dodatkowej tabeli „locków”, co komplikuje rozwiązanie.
+   - *Plusy:* gwarantowana spójność w obrębie transakcji, pełna kontrola nad zakresem blokady.
+   - *Minusy:* wymaga PostgreSQL (w produkcji tak), ale komplikuje logikę w środowiskach testowych (SQLite ma ograniczone wsparcie), trzeba pilnować czasu życia transakcji.
+
+4. **`SETNX` w Redis / Redlock**
+   - *Opis:* niskopoziomowa blokada w Redisie (np. `SET resource my_random_value NX PX 30000`). Laravel Horizon i tak korzysta z Redisa, więc możemy użyć niestandardowego klienta.
+   - *Plusy:* atomowe, szybkie, działa między procesami/hostami.
+   - *Minusy:* trzeba pisać własny kod (lub użyć biblioteki), znów utrzymujemy zewnętrzny mutex, który nie eliminuje ryzyka „self-healingu” po wykryciu, że rekord już istnieje.
+
+## 🔍 Porównanie
+
+| Wariant                         | Overhead | Spójność | Złożoność | Ryzyko duplikacji opisów | Uwagi |
+|---------------------------------|----------|----------|-----------|---------------------------|-------|
+| `Cache::lock`                  | średni   | zależy od kodu po wyjściu z locka | niski | **Wysokie** (potrzeba dodatkowej logiki) | Obecnie obserwowany efekt „drugiego opisu” |
+| Unikalny indeks + wyjątek      | niski    | gwarantowana przez DB | niski | niskie | Rekomendacja: prosty i deterministyczny |
+| `SELECT ... FOR UPDATE`        | średni   | wysoka w obrębie transakcji | średni | niskie | Trzeba mieć rekord kontrolny lub dodatkową tabelę |
+| `SETNX` / Redlock              | niski    | zależy od implementacji | średni | średnie | Nadal wymaga „manualnego” wykrywania stanu po zwolnieniu locka |
+
+## ✅ Rekomendacja - Dwupoziomowa strategia
+
+### Poziom 1: "In-flight token" (`Cache::add`) - zapobiega dispatchowaniu duplikatów
+
+- W `QueueMovieGenerationAction` i `QueuePersonGenerationAction` używamy `JobStatusService::acquireGenerationSlot()`.
+- `Cache::add()` jest **atomowe** - tylko pierwszy request ustawi wartość.
+- Jeśli slot zajęty → zwracamy istniejący `job_id` zamiast dispatchować nowy job.
+- **Cel:** Oszczędność zasobów (OpenAI API calls) - zapobiega niepotrzebnym jobom.
+
+```php
+// W QueueMovieGenerationAction / QueuePersonGenerationAction
+if (! $this->jobStatusService->acquireGenerationSlot('MOVIE', $slug, $jobId, ...)) {
+    // Slot zajęty - zwracamy istniejący job_id
+    return $this->buildExistingJobResponse(...);
+}
+```
+
+### Poziom 2: Unique index + exception handling - zabezpieczenie na poziomie bazy
+
+- Usuwamy `Cache::lock` z `RealGenerateMovieJob` i `RealGeneratePersonJob`.
+- Opieramy się na istniejącym indeksie `movies.slug` i `people.slug` (unique constraint).
+- Łapiemy `QueryException` i sprawdzamy, czy kod błędu PDO oznacza naruszenie unikalności (`23000` w SQLite, `23505` w PostgreSQL).
+- Po złapaniu wyjątku pobieramy najnowszy rekord i aktualizujemy cache/job status, bez ponownego generowania opisu.
+- **Cel:** Zabezpieczenie na wypadek wyścigu - nawet jeśli dwa joby się dispatchują, baza zapobiegnie duplikatom.
+
+```php
+// W RealGenerateMovieJob / RealGeneratePersonJob
+try {
+    Movie::create(['slug' => $slug, ...]);  // ← Unique index gwarantuje brak duplikatów
+} catch (QueryException $exception) {
+    if ($this->isUniqueSlugViolation($exception)) {
+        $existing = Movie::where('slug', $slug)->first();
+        $this->markDoneUsingExisting($existing);
+        return;
+    }
+    throw $exception;
+}
+```
+
+### Dlaczego dwa poziomy?
+
+1. **Poziom 1 (`Cache::add`):** Zapobiega niepotrzebnym jobom - oszczędność zasobów.
+2. **Poziom 2 (Unique index):** Zabezpieczenie na wypadek wyścigu - deterministyczne zachowanie.
+
+### Uwagi dodatkowe
+
+- Zachowujemy `Cache::lock` tylko w wąskich miejscach, gdzie naprawdę potrzebny (np. awans opisu domyślnego, jeśli wciąż chcemy mieć zabezpieczenie przed wyścigiem podczas zmiany `default_description_id`).
+- `releaseGenerationSlot()` jest wywoływane w `finally` - zawsze zwalnia slot po zakończeniu joba.
+
+## 🧪 Przykład przepływu po zmianie
+
+### Scenariusz 1: Poziom 1 działa (Cache::add)
+
+1. **Request A** (`slug = matrix-1999`): `acquireGenerationSlot()` zwraca `true`, job dispatchowany ✅.
+2. **Request B** (ten sam slug, natychmiast po A): `acquireGenerationSlot()` zwraca `false` (slot zajęty).
+3. Request B zwraca istniejący `job_id` z Request A - **brak dispatchowania duplikatu** ✅.
+
+### Scenariusz 2: Poziom 2 działa (Unique index) - edge case
+
+1. **Request A** (`slug = matrix-1999`): Job 1 dispatchowany, tworzy film ✅.
+2. **Request B** (ten sam slug, slot wygasł lub edge case): Job 2 dispatchowany, próbuje `INSERT`.
+3. Job 2 dostaje `QueryException` (unique violation), łapie ją, pobiera świeży rekord, ustawia status `DONE` bez dodatkowego opisu ✅.
+4. Oba joby kończą z tym samym `description_id` - **brak duplikatu w bazie** ✅.
+
+## 🔗 Powiązane Dokumenty
+
+- [Queue Async Explanation](./QUEUE_ASYNC_EXPLANATION.md)
+- [Detecting ongoing queue jobs (EN)](./DETECTING_ONGOING_QUEUE_JOBS.en.md)
+- [Locking Strategies for AI Generation (EN)](./LOCKING_STRATEGIES_FOR_AI_GENERATION.en.md)
+
+## 📌 Notatki
+
+- Po wdrożeniu warto dodać test funkcjonalny, który symuluje równoległe odpytanie endpointu (np. przy użyciu `ParallelTesting` lub ręcznego dispatchu jobów).
+- W razie opóźnień po stronie AI można rozważyć osobną tabelę logów „generacji”, ale nie ma potrzeby dodawać kolejnego mechanizmu locków.
+- Zastąpienie całego środowiska PostgreSQL-em i użycie `SELECT ... FOR UPDATE` dałoby deterministyczną blokadę, ale znacząco podniosłoby koszt utrzymania (brak wsparcia w SQLite dla testów, dodatkowe transakcje, konieczność osobnej tabeli „locków”). Dlatego preferujemy **dwupoziomową strategię**: lekką blokadę Redis (`Cache::add`) jako "in-flight token" + unikalny indeks w bazie jako ostateczne zabezpieczenie.
+
+---
+
+**Ostatnia aktualizacja:** 2025-11-12  
+**Aktualizacja:** 2025-11-12 - Dodano opis dwupoziomowej strategii (Cache::add + unique index)
+

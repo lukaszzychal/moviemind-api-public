@@ -18,6 +18,8 @@ tags:
   - name: Generation
   - name: Jobs
   - name: Admin
+  - name: Health
+  - name: Debug
 paths:
   /v1/movies:
     get:
@@ -66,6 +68,28 @@ paths:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '404':
           description: Not Found (feature flag off)
+  /v1/people:
+    get:
+      tags: [People]
+      summary: List people
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (name, birthplace, movies)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
   /v1/people/{slug}:
     get:
       tags: [People]
@@ -166,9 +190,37 @@ paths:
                   success:
                     type: boolean
                   error:
+  /v1/admin/debug/config:
+    get:
+      tags: [Admin]
+      summary: Debug service configuration
+      description: |
+        Debug endpoint to inspect service configuration, including AI_SERVICE, OpenAI settings, and other service parameters.
+        
+        **Security:**
+        - Protected by feature flag `debug_endpoints` (default: disabled)
+        - Enable via feature flag API: `POST /api/v1/admin/flags/debug_endpoints` with body `{"state": "on"}`
+        - Disabled by default in production for security
+        
+        **Note:** This endpoint is intended for development and debugging purposes. Keep the feature flag disabled in production unless needed for troubleshooting.
+      responses:
+        '200':
+          description: Configuration data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugConfig'
+        '403':
+          description: Forbidden (feature flag disabled)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
                     type: string
-                  status:
-                    type: integer
+                  message:
+                    type: string
   /v1/admin/flags:
     get:
       tags: [Admin]
@@ -318,6 +370,81 @@ components:
             _links:
               type: object
               additionalProperties: true
+    DebugConfig:
+      type: object
+      description: Debug configuration response
+      properties:
+        environment:
+          type: object
+          properties:
+            app_env:
+              type: string
+            app_debug:
+              type: boolean
+            ai_service_env:
+              type: string
+              nullable: true
+            ai_service_config:
+              type: string
+            ai_service_selector:
+              type: string
+            is_real:
+              type: boolean
+            is_mock:
+              type: boolean
+        openai:
+          type: object
+          properties:
+            api_key_set:
+              type: boolean
+            api_key_preview:
+              type: string
+              nullable: true
+            model:
+              type: string
+            api_url:
+              type: string
+            health_url:
+              type: string
+            backoff_enabled:
+              type: boolean
+            backoff_intervals:
+              type: array
+              items:
+                type: integer
+        queue:
+          type: object
+          properties:
+            connection:
+              type: string
+            redis_host:
+              type: string
+              nullable: true
+        cache:
+          type: object
+          properties:
+            driver:
+              type: string
+        database:
+          type: object
+          properties:
+            connection:
+              type: string
+            host:
+              type: string
+              nullable: true
+        services:
+          type: object
+          properties:
+            openai_client_class:
+              type: string
+            openai_client_interface:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+        note:
+          type: string
     Job:
       type: object
       properties:

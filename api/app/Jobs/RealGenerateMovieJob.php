@@ -7,10 +7,12 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -47,16 +49,72 @@ class RealGenerateMovieJob implements ShouldQueue
      */
     public function handle(OpenAiClientInterface $openAiClient): void
     {
+        Log::info('RealGenerateMovieJob started', [
+            'slug' => $this->slug,
+            'job_id' => $this->jobId,
+            'attempt' => $this->attempts(),
+            'existing_movie_id' => $this->existingMovieId,
+            'baseline_description_id' => $this->baselineDescriptionId,
+            'locale' => $this->locale,
+            'context_tag' => $this->contextTag,
+            'pid' => getmypid(),
+        ]);
+        /** @var JobStatusService $jobStatusService */
+        $jobStatusService = app(JobStatusService::class);
+
         try {
             $existing = $this->findExistingMovie();
 
             if ($existing) {
                 $this->refreshExistingMovie($existing, $openAiClient);
+                Log::info('RealGenerateMovieJob refreshed existing movie', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'movie_id' => $existing->id,
+                ]);
 
                 return;
             }
 
-            $this->createMovieWithLock($openAiClient);
+            try {
+                [$movie, $description, $localeValue, $contextTag] = $this->createMovieRecord($openAiClient);
+                $this->promoteDefaultIfEligible($movie, $description);
+                $this->invalidateMovieCaches($movie);
+                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
+                Log::info('RealGenerateMovieJob created new movie', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'movie_id' => $movie->id,
+                    'description_id' => $description->id,
+                    'locale' => $localeValue,
+                    'context_tag' => $contextTag,
+                    'pid' => getmypid(),
+                ]);
+            } catch (QueryException $exception) {
+                if ($this->isUniqueMovieSlugViolation($exception)) {
+                    $existingAfterViolation = $this->findExistingMovie();
+                    if ($existingAfterViolation) {
+                        Log::info('RealGenerateMovieJob detected concurrent creation - using existing movie', [
+                            'slug' => $this->slug,
+                            'job_id' => $this->jobId,
+                            'movie_id' => $existingAfterViolation->id,
+                            'pid' => getmypid(),
+                        ]);
+                        $this->markDoneUsingExisting($existingAfterViolation);
+
+                        return;
+                    }
+
+                    Log::warning('RealGenerateMovieJob unique slug violation without movie record', [
+                        'slug' => $this->slug,
+                        'job_id' => $this->jobId,
+                        'pid' => getmypid(),
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
+
+                throw $exception;
+            }
         } catch (\Throwable $e) {
             Log::error('RealGenerateMovieJob failed', [
                 'slug' => $this->slug,
@@ -68,6 +126,8 @@ class RealGenerateMovieJob implements ShouldQueue
             $this->updateCache('FAILED');
 
             throw $e; // Re-throw for retry mechanism
+        } finally {
+            $jobStatusService->releaseGenerationSlot('MOVIE', $this->slug, $this->locale, $this->contextTag);
         }
     }
 
@@ -314,6 +374,10 @@ class RealGenerateMovieJob implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
+        /** @var JobStatusService $jobStatusService */
+        $jobStatusService = app(JobStatusService::class);
+        $jobStatusService->releaseGenerationSlot('MOVIE', $this->slug, $this->locale, $this->contextTag);
+
         Log::error('RealGenerateMovieJob permanently failed', [
             'slug' => $this->slug,
             'job_id' => $this->jobId,
@@ -330,37 +394,6 @@ class RealGenerateMovieJob implements ShouldQueue
             'locale' => $this->locale,
             'context_tag' => $this->contextTag,
         ], now()->addMinutes(15));
-    }
-
-    private function createMovieWithLock(OpenAiClientInterface $openAiClient): void
-    {
-        $lock = Cache::lock($this->creationLockKey(), 30);
-
-        try {
-            $lock->block(5, function () use ($openAiClient): void {
-                $existing = $this->findExistingMovie();
-                if ($existing) {
-                    $this->refreshExistingMovie($existing, $openAiClient);
-
-                    return;
-                }
-
-                [$movie, $description, $localeValue, $contextTag] = $this->createMovieRecord($openAiClient);
-
-                $this->promoteDefaultIfEligible($movie, $description);
-                $this->invalidateMovieCaches($movie);
-                $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
-            });
-        } catch (LockTimeoutException $exception) {
-            $existing = $this->findExistingMovie();
-            if ($existing) {
-                $this->refreshExistingMovie($existing, $openAiClient);
-
-                return;
-            }
-
-            throw $exception;
-        }
     }
 
     /**
@@ -408,10 +441,7 @@ class RealGenerateMovieJob implements ShouldQueue
                 ]
             );
 
-        $this->promoteDefaultIfEligible($movie, $description);
-        $this->invalidateMovieCaches($movie);
         $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
-        $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $locale->value, $contextForCache);
 
         return [$movie->fresh(['descriptions']), $description, $locale->value, $contextForCache];
     }
@@ -445,11 +475,6 @@ class RealGenerateMovieJob implements ShouldQueue
         }
     }
 
-    private function creationLockKey(): string
-    {
-        return 'lock:movie:create:'.$this->slug;
-    }
-
     private function defaultLockKey(Movie $movie): string
     {
         return 'lock:movie:default:'.$movie->id;
@@ -471,5 +496,70 @@ class RealGenerateMovieJob implements ShouldQueue
                 Cache::forget('movie:'.$slug.':desc:'.$descriptionId);
             }
         }
+    }
+
+    private function isUniqueMovieSlugViolation(QueryException $exception): bool
+    {
+        $errorInfo = $exception->errorInfo ?? null;
+        $sqlState = is_array($errorInfo) && isset($errorInfo[0])
+            ? (string) $errorInfo[0]
+            : (string) $exception->getCode();
+
+        if (! in_array($sqlState, ['23000', '23505'], true)) {
+            return false;
+        }
+
+        $message = strtolower($exception->getMessage());
+        if (str_contains($message, 'movies.slug') || str_contains($message, 'movies_slug_unique')) {
+            return true;
+        }
+
+        if (is_array($errorInfo) && isset($errorInfo[2])) {
+            $details = strtolower((string) $errorInfo[2]);
+            if (str_contains($details, 'movies.slug') || str_contains($details, 'movies_slug_unique')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function markDoneUsingExisting(Movie $movie): void
+    {
+        $movie->loadMissing(['descriptions', 'defaultDescription']);
+        /** @var MovieDescription|null $description */
+        $description = $movie->defaultDescription ?? $movie->descriptions->first();
+
+        $resolvedLocale = is_string($this->locale) ? $this->locale : null;
+        $resolvedContextTag = $this->contextTag;
+
+        if ($description instanceof MovieDescription) {
+            /** @var mixed $descriptionLocale */
+            $descriptionLocale = $description->locale;
+            if ($descriptionLocale instanceof Locale) {
+                $resolvedLocale = $descriptionLocale->value;
+            } else {
+                $resolvedLocale = (string) $descriptionLocale;
+            }
+
+            /** @var mixed $descriptionContext */
+            $descriptionContext = $description->context_tag;
+            if ($descriptionContext instanceof ContextTag) {
+                $resolvedContextTag = $descriptionContext->value;
+            } else {
+                $resolvedContextTag = (string) $descriptionContext;
+            }
+        }
+
+        $descriptionId = $description instanceof MovieDescription ? $description->id : null;
+
+        $this->updateCache(
+            'DONE',
+            $movie->id,
+            $movie->slug,
+            $descriptionId,
+            $resolvedLocale,
+            $resolvedContextTag
+        );
     }
 }

@@ -4,12 +4,15 @@ namespace App\Services;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class JobStatusService
 {
     private const CACHE_TTL_MINUTES = 15;
 
     private const STATUS_PENDING = 'PENDING';
+
+    private const GENERATION_SLOT_TTL_MINUTES = 15;
 
     private const STATUS_IN_PROGRESS = 'IN_PROGRESS';
 
@@ -44,6 +47,84 @@ class JobStatusService
         );
 
         $this->storeSlugMapping($entityType, $slug, $jobId, self::STATUS_PENDING, $locale, $contextTag);
+        Log::info('JobStatusService: initialized status', [
+            'job_id' => $jobId,
+            'entity' => $entityType,
+            'slug' => $slug,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+        ]);
+    }
+
+    /**
+     * Try to acquire an in-flight generation slot. Returns true when the slot was acquired.
+     */
+    public function acquireGenerationSlot(
+        string $entityType,
+        string $slug,
+        string $jobId,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): bool {
+        $key = $this->generationSlotKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+
+        $acquired = Cache::add(
+            $key,
+            $jobId,
+            Carbon::now()->addMinutes(self::GENERATION_SLOT_TTL_MINUTES)
+        );
+
+        if ($acquired) {
+            Log::info('JobStatusService: acquired generation slot', [
+                'slot_key' => $key,
+                'job_id' => $jobId,
+            ]);
+        } else {
+            Log::info('JobStatusService: generation slot busy', [
+                'slot_key' => $key,
+            ]);
+        }
+
+        return $acquired;
+    }
+
+    /**
+     * Retrieve the job id currently occupying the generation slot.
+     */
+    public function currentGenerationSlotJobId(
+        string $entityType,
+        string $slug,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): ?string {
+        $key = $this->generationSlotKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+        /** @var string|null $jobId */
+        $jobId = Cache::get($key);
+
+        if ($jobId !== null) {
+            Log::info('JobStatusService: generation slot holder', [
+                'slot_key' => $key,
+                'job_id' => $jobId,
+            ]);
+        }
+
+        return $jobId;
+    }
+
+    /**
+     * Release the slot after job completion or failure.
+     */
+    public function releaseGenerationSlot(
+        string $entityType,
+        string $slug,
+        ?string $locale = null,
+        ?string $contextTag = null
+    ): void {
+        $key = $this->generationSlotKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+        Cache::forget($key);
+        Log::info('JobStatusService: released generation slot', [
+            'slot_key' => $key,
+        ]);
     }
 
     /**
@@ -82,6 +163,12 @@ class JobStatusService
         if ($entityType !== '' && $requestedSlug !== '') {
             $this->storeSlugMapping($entityType, $requestedSlug, $jobId, $status, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
         }
+        Log::info('JobStatusService: updated status', [
+            'job_id' => $jobId,
+            'status' => $status,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+        ]);
     }
 
     /**
@@ -131,15 +218,28 @@ class JobStatusService
      */
     public function findActiveJobForSlug(string $entityType, string $slug, ?string $locale = null, ?string $contextTag = null): ?array
     {
-        $slugKeys = array_unique(array_filter([
-            $this->slugCacheKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag)),
-            $this->slugCacheKey($entityType, $slug),
-        ]));
+        // Build list of keys to check
+        // Strategy: check exact match first, then fallback keys ONLY when both parameters are null
+        // This ensures symmetric behavior with storeSlugMapping and prevents conflicts between different ContextTag
+        $slugKeys = [];
+
+        // Always check exact match first
+        $slugKeys[] = $this->slugCacheKey($entityType, $slug, $this->stringOrNull($locale), $this->stringOrNull($contextTag));
+
+        // Only add fallback key if both contextTag and locale are null (for backward compatibility)
+        // This ensures symmetric behavior: same condition as in storeSlugMapping
+        if ($contextTag === null && $locale === null) {
+            $slugKeys[] = $this->slugCacheKey($entityType, $slug);
+        }
+
+        $slugKeys = array_unique(array_filter($slugKeys));
 
         foreach ($slugKeys as $slugKey) {
             $jobId = Cache::get($slugKey);
 
             if (! $jobId) {
+                Log::info('JobStatusService: slug mapping empty', ['slug_key' => $slugKey]);
+
                 continue;
             }
 
@@ -147,6 +247,7 @@ class JobStatusService
 
             if ($status === null) {
                 Cache::forget($slugKey);
+                Log::info('JobStatusService: cleared stale mapping', ['slug_key' => $slugKey, 'job_id' => $jobId]);
 
                 continue;
             }
@@ -155,6 +256,38 @@ class JobStatusService
 
             if (! $this->isActiveStatus($currentStatus)) {
                 Cache::forget($slugKey);
+                Log::info('JobStatusService: removed inactive mapping', [
+                    'slug_key' => $slugKey,
+                    'job_id' => $jobId,
+                    'status' => $currentStatus,
+                ]);
+
+                continue;
+            }
+
+            // Verify that found job matches requested contextTag and locale
+            // This is critical to prevent returning jobs with different contextTag/locale
+            $jobContextTag = $status['context_tag'] ?? null;
+            $jobLocale = $status['locale'] ?? null;
+
+            // If contextTag was requested (not null), job's contextTag must match exactly
+            if ($contextTag !== null && $jobContextTag !== $contextTag) {
+                Log::info('JobStatusService: job contextTag mismatch', [
+                    'slug_key' => $slugKey,
+                    'requested_context_tag' => $contextTag,
+                    'job_context_tag' => $jobContextTag,
+                ]);
+
+                continue;
+            }
+
+            // If locale was requested (not null), job's locale must match exactly
+            if ($locale !== null && $jobLocale !== $locale) {
+                Log::info('JobStatusService: job locale mismatch', [
+                    'slug_key' => $slugKey,
+                    'requested_locale' => $locale,
+                    'job_locale' => $jobLocale,
+                ]);
 
                 continue;
             }
@@ -183,16 +316,50 @@ class JobStatusService
         return 'ai_job_slug:'.implode(':', $parts);
     }
 
+    private function generationSlotKey(string $entityType, string $slug, ?string $locale = null, ?string $contextTag = null): string
+    {
+        $parts = [
+            $this->sanitizeKeyPart($entityType),
+            $this->sanitizeKeyPart($slug),
+        ];
+
+        if ($locale !== null && $locale !== '') {
+            $parts[] = 'loc-'.$this->sanitizeKeyPart($locale);
+        }
+
+        if ($contextTag !== null && $contextTag !== '') {
+            $parts[] = 'ctx-'.$this->sanitizeKeyPart($contextTag);
+        }
+
+        return 'ai_job_inflight:'.implode(':', $parts);
+    }
+
     private function storeSlugMapping(string $entityType, string $slug, string $jobId, string $status, ?string $locale = null, ?string $contextTag = null): void
     {
-        $keys = array_unique(array_filter([
-            $this->slugCacheKey($entityType, $slug, $locale, $contextTag),
-            $this->slugCacheKey($entityType, $slug),
-        ]));
+        // Build list of keys to store mapping under
+        // Strategy: store under exact match, and also under base key ONLY when both parameters are null
+        // This ensures symmetric behavior with findActiveJobForSlug and prevents conflicts between different ContextTag
+        $keys = [];
+
+        // Always store under exact match
+        $keys[] = $this->slugCacheKey($entityType, $slug, $locale, $contextTag);
+
+        // Only add fallback key if both contextTag and locale are null (for backward compatibility)
+        // This ensures symmetric behavior: same condition as in findActiveJobForSlug
+        if ($contextTag === null && $locale === null) {
+            $keys[] = $this->slugCacheKey($entityType, $slug);
+        }
+
+        $keys = array_unique(array_filter($keys));
 
         foreach ($keys as $key) {
             if (! $this->isActiveStatus($status)) {
                 Cache::forget($key);
+                Log::info('JobStatusService: forget slug mapping (inactive status)', [
+                    'slug_key' => $key,
+                    'job_id' => $jobId,
+                    'status' => $status,
+                ]);
 
                 continue;
             }
@@ -202,6 +369,11 @@ class JobStatusService
                 $jobId,
                 Carbon::now()->addMinutes(self::CACHE_TTL_MINUTES)
             );
+            Log::info('JobStatusService: stored slug mapping', [
+                'slug_key' => $key,
+                'job_id' => $jobId,
+                'status' => $status,
+            ]);
         }
     }
 

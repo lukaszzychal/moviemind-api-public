@@ -77,13 +77,23 @@ if ! command -v gitleaks &> /dev/null; then
     esac
 fi
 
-# Install pre-commit hooks
-echo -e "${YELLOW}📦 Installing pre-commit hooks...${NC}"
-pre-commit install
+# Install git hooks from templates
+if [ -f "scripts/git-hooks/pre-commit" ]; then
+    echo -e "${YELLOW}📦 Installing git hooks from templates...${NC}"
+    cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+    chmod +x .git/hooks/pre-commit
+    echo -e "${GREEN}✅ Git hooks installed${NC}"
+else
+    echo -e "${YELLOW}⚠️  Git hooks template not found at scripts/git-hooks/pre-commit${NC}"
+fi
 
-# Install pre-commit hooks for all file types
-pre-commit install --hook-type pre-commit
-pre-commit install --hook-type pre-push
+# Install pre-commit hooks (if pre-commit framework is used)
+if command -v pre-commit &> /dev/null; then
+    echo -e "${YELLOW}📦 Installing pre-commit framework hooks...${NC}"
+    pre-commit install
+    pre-commit install --hook-type pre-commit
+    pre-commit install --hook-type pre-push
+fi
 
 # Run pre-commit on all files to test
 echo -e "${YELLOW}🧪 Testing pre-commit hooks...${NC}"

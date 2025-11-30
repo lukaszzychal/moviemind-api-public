@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ContextTag;
 use App\Models\Movie;
+use App\Models\MovieDescription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -104,5 +105,82 @@ class MoviesApiTest extends TestCase
         $cacheKey = $movie->slug.':desc:'.$altDescription->id;
         $this->assertTrue(Cache::has('movie:'.$cacheKey));
         $this->assertSame($response->json(), Cache::get('movie:'.$cacheKey));
+    }
+
+    public function test_unique_constraint_prevents_duplicate_same_context_tag(): void
+    {
+        $movie = Movie::firstOrFail();
+
+        // Delete any existing descriptions for this movie to avoid conflicts
+        MovieDescription::where('movie_id', $movie->id)->delete();
+
+        // Create first description with modern context_tag
+        $firstDescription = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'First description with modern context tag.',
+            'context_tag' => ContextTag::MODERN->value,
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+
+        // Try to create duplicate with same (movie_id, locale, context_tag)
+        // This should fail with unique constraint violation
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Duplicate description with modern context tag.',
+            'context_tag' => ContextTag::MODERN->value,
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+    }
+
+    public function test_multiple_context_tags_for_same_movie_allowed(): void
+    {
+        $movie = Movie::firstOrFail();
+
+        // Delete any existing descriptions for this movie to avoid conflicts
+        MovieDescription::where('movie_id', $movie->id)->delete();
+
+        // Create description with modern context_tag
+        $modernDescription = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Modern description.',
+            'context_tag' => ContextTag::MODERN->value,
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+
+        // Create description with humorous context_tag for the same movie (different context_tag)
+        $humorousDescription = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'text' => 'Humorous description.',
+            'context_tag' => ContextTag::HUMOROUS->value,
+            'origin' => 'GENERATED',
+            'ai_model' => 'mock',
+        ]);
+
+        // Both should exist in database
+        $this->assertDatabaseHas('movie_descriptions', [
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'context_tag' => ContextTag::MODERN->value,
+        ]);
+
+        $this->assertDatabaseHas('movie_descriptions', [
+            'movie_id' => $movie->id,
+            'locale' => 'en-US',
+            'context_tag' => ContextTag::HUMOROUS->value,
+        ]);
+
+        // Verify both descriptions belong to the same movie
+        $this->assertEquals($movie->id, $modernDescription->movie_id);
+        $this->assertEquals($movie->id, $humorousDescription->movie_id);
+        $this->assertNotEquals($modernDescription->id, $humorousDescription->id);
     }
 }
