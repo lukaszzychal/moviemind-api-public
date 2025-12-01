@@ -645,10 +645,10 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 16  
-- **Completed:** 6  
+- **Active:** 15  
+- **Completed:** 7  
 - **Cancelled:** 0  
-- **In progress:** 2
+- **In progress:** 1
 
 ---
 
