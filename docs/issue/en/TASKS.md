@@ -302,44 +302,45 @@ Every entry follows this structure:
 ---
 
 #### `TASK-037` – Verify movie/person existence before AI generation
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED (Phase 1), ⏳ PENDING (Phase 2-3)
 - **Priority:** 🔴 High
-- **Estimated time:** 4–6 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
+- **Estimated time:** Phase 1: 4-6h (✅), Phase 2: 8-12h (⏳), Phase 3: 20-30h (⏳)
+- **Start time:** 2025-12-01
+- **End time:** 2025-12-01 (Phase 1)
+- **Duration:** ~5h (Phase 1)
+- **Execution:** 🤖 AI Agent
 - **Description:** Implement verification that a movie/person actually exists before calling AI, preventing AI hallucinations.
 - **Details:**
-  - **Short-term:** Enhanced prompts with existence verification instructions (AI returns `{"error": "Movie/Person not found"}` when entity doesn't exist)
-  - **Medium-term:** Validation heuristics (release year, birth date, slug similarity)
-  - **Long-term:** Optional integration with TMDb/OMDb API (feature flag)
-  - Handle error responses in application (return 404 when AI returns "not found")
-  - Activate and implement `hallucination_guard` feature flag
+  - **✅ Phase 1 (COMPLETED):** Enhanced prompts with existence verification instructions (AI returns `{"error": "Movie/Person not found"}` when entity doesn't exist), error response handling in OpenAiClient and Jobs
+  - **⏳ Phase 2 (PENDING):** Pre-generation validation heuristics (PreGenerationValidator), activate `hallucination_guard` feature flag, extended heuristics (release year, birth date, slug similarity, suspicious patterns)
+  - **⏳ Phase 3 (PENDING):** Optional integration with TMDb/OMDb API (feature flag), cache verification results, monitoring and dashboard
 - **Dependencies:** none
 - **Created:** 2025-11-30
-- **Related documents:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+- **Completed (Phase 1):** 2025-12-01
+- **Related documents:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
 
 ---
 
 #### `TASK-038` – Verify AI data consistency with slug
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED (Phase 1), ⏳ PENDING (Phase 2)
 - **Priority:** 🔴 High
-- **Estimated time:** 3–4 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
+- **Estimated time:** Phase 1: 3-4h (✅), Phase 2: 6-8h (⏳)
+- **Start time:** 2025-12-01
+- **End time:** 2025-12-01 (Phase 1)
+- **Duration:** ~4h (Phase 1)
+- **Execution:** 🤖 AI Agent
 - **Description:** Implement validation that AI-generated data actually belongs to the movie/person specified by the slug, preventing data inconsistencies.
 - **Details:**
-  - Validate if title/name matches slug (Levenshtein, fuzzy matching)
-  - Validate if release year/birth date are reasonable (1888-current year+2)
-  - Reject data if inconsistency > threshold
-  - Logging and monitoring of suspicious cases
-  - Implement `AiDataValidator` service with validation heuristics
+  - **✅ Phase 1 (COMPLETED):** Implement `AiDataValidator` service with validation heuristics, validate if title/name matches slug (Levenshtein + fuzzy matching), validate if release year/birth date are reasonable (1888-current year+2), reject data if inconsistency > threshold (0.6), integration with Jobs (RealGenerateMovieJob, RealGeneratePersonJob) with `hallucination_guard` feature flag
+  - **⏳ Phase 2 (PENDING):** Extended heuristics (check if director matches genre, geography for persons, genre consistency with year), logging and monitoring of suspicious cases (even when passed validation), dashboard/metrics for AI data quality, threshold tuning based on production data
 - **Dependencies:** none (can be implemented in parallel with TASK-037)
 - **Created:** 2025-11-30
-- **Related documents:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+- **Completed (Phase 1):** 2025-12-01
+- **Related documents:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
 
 ---
 

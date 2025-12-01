@@ -281,44 +281,45 @@ Każde zadanie ma następującą strukturę:
 
 ---
 #### `TASK-037` - Weryfikacja istnienia filmów/osób przed generowaniem AI
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED (Faza 1), ⏳ PENDING (Faza 2-3)
 - **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 4-6 godzin
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Szacowany czas:** Faza 1: 4-6h (✅), Faza 2: 8-12h (⏳), Faza 3: 20-30h (⏳)
+- **Czas rozpoczęcia:** 2025-12-01
+- **Czas zakończenia:** 2025-12-01 (Faza 1)
+- **Czas realizacji:** ~5h (Faza 1)
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Implementacja weryfikacji czy film/osoba faktycznie istnieje przed wywołaniem AI, przeciwdziałanie halucynacjom AI.
 - **Szczegóły:**
-  - **Krótkoterminowo:** Ulepszone prompty z instrukcją weryfikacji istnienia (AI zwraca `{"error": "Movie/Person not found"}` gdy nie istnieje)
-  - **Średnioterminowo:** Heurystyki walidacji (rok wydania, data urodzenia, podobieństwo slug)
-  - **Długoterminowo:** Opcjonalna integracja z TMDb/OMDb API (feature flag)
-  - Obsługa odpowiedzi z błędem w aplikacji (zwracanie 404 gdy AI zwróci "not found")
-  - Aktywacja i implementacja feature flag `hallucination_guard`
+  - **✅ Faza 1 (UKOŃCZONA):** Ulepszone prompty z instrukcją weryfikacji istnienia (AI zwraca `{"error": "Movie/Person not found"}` gdy nie istnieje), obsługa odpowiedzi z błędem w OpenAiClient i Jobach
+  - **⏳ Faza 2 (PENDING):** Heurystyki walidacji przed generowaniem (PreGenerationValidator), aktywacja feature flag `hallucination_guard`, rozszerzone heurystyki (rok wydania, data urodzenia, podobieństwo slug, podejrzane wzorce)
+  - **⏳ Faza 3 (PENDING):** Opcjonalna integracja z TMDb/OMDb API (feature flag), cache wyników weryfikacji, monitoring i dashboard
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-30
-- **Powiązane dokumenty:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+- **Ukończone (Faza 1):** 2025-12-01
+- **Powiązane dokumenty:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
 
 ---
 
 #### `TASK-038` - Weryfikacja zgodności danych AI z slugiem
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED (Faza 1), ⏳ PENDING (Faza 2)
 - **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 3-4 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Szacowany czas:** Faza 1: 3-4h (✅), Faza 2: 6-8h (⏳)
+- **Czas rozpoczęcia:** 2025-12-01
+- **Czas zakończenia:** 2025-12-01 (Faza 1)
+- **Czas realizacji:** ~4h (Faza 1)
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Implementacja walidacji czy dane wygenerowane przez AI faktycznie należą do filmu/osoby określonej przez slug, przeciwdziałanie niezgodnościom danych.
 - **Szczegóły:**
-  - Walidacja czy tytuł/imię pasuje do slug (Levenshtein, fuzzy matching)
-  - Walidacja czy rok wydania/data urodzenia są rozsądne (1888-aktualny rok+2)
-  - Odrzucanie danych jeśli niezgodność > threshold
-  - Logowanie i monitoring podejrzanych przypadków
-  - Implementacja serwisu `AiDataValidator` z heurystykami walidacji
+  - **✅ Faza 1 (UKOŃCZONA):** Implementacja serwisu `AiDataValidator` z heurystykami walidacji, walidacja czy tytuł/imię pasuje do slug (Levenshtein + fuzzy matching), walidacja czy rok wydania/data urodzenia są rozsądne (1888-aktualny rok+2), odrzucanie danych jeśli niezgodność > threshold (0.6), integracja z Jobami (RealGenerateMovieJob, RealGeneratePersonJob) z feature flag `hallucination_guard`
+  - **⏳ Faza 2 (PENDING):** Rozszerzone heurystyki (sprawdzanie czy reżyser pasuje do gatunku, geografia dla osób, spójność gatunków z rokiem), logowanie i monitoring podejrzanych przypadków (nawet gdy przeszły walidację), dashboard/metrics dla jakości danych AI, dostosowanie threshold na podstawie danych produkcyjnych
 - **Zależności:** Brak (może być realizowane równolegle z TASK-037)
 - **Utworzone:** 2025-11-30
-- **Powiązane dokumenty:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+- **Ukończone (Faza 1):** 2025-12-01
+- **Powiązane dokumenty:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
 
 ---
 
