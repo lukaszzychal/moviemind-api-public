@@ -1,4 +1,4 @@
-git c# Analiza formatu TOON vs JSON dla komunikacji z AI
+# Analiza formatu TOON vs JSON dla komunikacji z AI
 
 > **Data utworzenia:** 2025-11-30  
 > **Kontekst:** Analiza formatu TOON (Token-Oriented Object Notation) jako alternatywy dla JSON w komunikacji z AI  
