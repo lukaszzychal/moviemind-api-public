@@ -438,21 +438,24 @@ Każde zadanie ma następującą strukturę:
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` - Integracja i naprawa połączenia z OpenAI
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 3 godziny
 - **Czas rozpoczęcia:** 2025-11-10 14:00
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
+- **Czas zakończenia:** 2025-12-01
+- **Czas realizacji:** ~20d (włączając TASK-037, TASK-038, TASK-039)
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Integracja i naprawa połączenia z OpenAI.
 - **Szczegóły:**
-  - Diagnoza błędów komunikacji (timeouty, odpowiedzi HTTP, limity).
-  - Weryfikacja konfiguracji kluczy (`OPENAI_API_KEY`, endpointy, modele).
-  - Aktualizacja serwisów i fallbacków obsługujących OpenAI w API.
-  - Przygotowanie testów (unit/feature) potwierdzających poprawną integrację.
+  - ✅ Diagnoza błędów komunikacji (timeouty, odpowiedzi HTTP, limity) - naprawione
+  - ✅ Weryfikacja konfiguracji kluczy (`OPENAI_API_KEY`, endpointy, modele) - zweryfikowane i działające
+  - ✅ Aktualizacja serwisów i fallbacków obsługujących OpenAI w API - zaktualizowane (OpenAiClient)
+  - ✅ Przygotowanie testów (unit/feature) potwierdzających poprawną integrację - wszystkie testy przechodzą (15 passed)
+  - ✅ Naprawa błędów JSON Schema (usunięcie oneOf, poprawa schematów)
+  - ✅ Przetestowanie manualnie z AI_SERVICE=real - działa poprawnie
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Ukończone:** 2025-12-01
 
 ---
 

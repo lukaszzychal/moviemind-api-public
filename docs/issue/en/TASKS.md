@@ -404,21 +404,24 @@ Every entry follows this structure:
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` – OpenAI integration repair
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priority:** 🔴 High
 - **Estimated time:** 3 h
 - **Start time:** 2025-11-10 14:00
-- **End time:** --
-- **Duration:** --
+- **End time:** 2025-12-01
+- **Duration:** ~20d (including TASK-037, TASK-038, TASK-039)
 - **Execution:** 🤖 AI Agent
 - **Description:** Restore and harden the OpenAI integration.
 - **Details:**
-  - Diagnose communication issues (timeouts, HTTP responses, rate limits).
-  - Verify configuration secrets (`OPENAI_API_KEY`, endpoints, models).
-  - Update the services and fallbacks that mediate OpenAI traffic within the API.
-  - Add unit/feature tests confirming the integration works end-to-end.
+  - ✅ Diagnose communication issues (timeouts, HTTP responses, rate limits) - fixed
+  - ✅ Verify configuration secrets (`OPENAI_API_KEY`, endpoints, models) - verified and working
+  - ✅ Update the services and fallbacks that mediate OpenAI traffic within the API - updated (OpenAiClient)
+  - ✅ Add unit/feature tests confirming the integration works end-to-end - all tests passing (15 passed)
+  - ✅ Fixed JSON Schema errors (removed oneOf, improved schemas)
+  - ✅ Manually tested with AI_SERVICE=real - working correctly
 - **Dependencies:** none
 - **Created:** 2025-11-10
+- **Completed:** 2025-12-01
 
 #### `TASK-021` – Fix duplicated generation events
 - **Status:** 🔄 IN_PROGRESS
