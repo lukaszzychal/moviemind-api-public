@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-11-30  
+**Ostatnia aktualizacja:** 2025-12-01  
 **Status:** 🔄 Aktywny
 
 ---
@@ -244,23 +244,13 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-027` - Diagnostyka duplikacji eventów generowania (movies/people)
-<<<<<<< HEAD
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 2 godziny
 - **Czas rozpoczęcia:** 2025-11-10 18:03
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
+- **Czas zakończenia:** 2025-11-30
+- **Czas realizacji:** 20d01h22m
 - **Realizacja:** 🤖 AI Agent
-=======
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** 2 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
->>>>>>> feature/TASK-023-openai-integration
 - **Opis:** Ustalenie, dlaczego eventy generowania filmów i osób są wyzwalane wielokrotnie, prowadząc do powielania jobów/opisów.
 - **Szczegóły:**
   - Odtworzyć problem w flow `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` oraz podczas `POST /api/v1/generate`.
@@ -271,7 +261,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-<<<<<<< HEAD
 #### `TASK-034` - Tłumaczenie zasad Cursor (.mdc) i CLAUDE.md na angielski
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
@@ -291,9 +280,49 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-11-12
 
 ---
+#### `TASK-037` - Weryfikacja istnienia filmów/osób przed generowaniem AI
+- **Status:** ✅ COMPLETED (Faza 1), ⏳ PENDING (Faza 2-3)
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** Faza 1: 4-6h (✅), Faza 2: 8-12h (⏳), Faza 3: 20-30h (⏳)
+- **Czas rozpoczęcia:** 2025-12-01
+- **Czas zakończenia:** 2025-12-01 (Faza 1)
+- **Czas realizacji:** ~5h (Faza 1)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Implementacja weryfikacji czy film/osoba faktycznie istnieje przed wywołaniem AI, przeciwdziałanie halucynacjom AI.
+- **Szczegóły:**
+  - **✅ Faza 1 (UKOŃCZONA):** Ulepszone prompty z instrukcją weryfikacji istnienia (AI zwraca `{"error": "Movie/Person not found"}` gdy nie istnieje), obsługa odpowiedzi z błędem w OpenAiClient i Jobach
+  - **⏳ Faza 2 (PENDING):** Heurystyki walidacji przed generowaniem (PreGenerationValidator), aktywacja feature flag `hallucination_guard`, rozszerzone heurystyki (rok wydania, data urodzenia, podobieństwo slug, podejrzane wzorce)
+  - **⏳ Faza 3 (PENDING):** Opcjonalna integracja z TMDb/OMDb API (feature flag), cache wyników weryfikacji, monitoring i dashboard
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-30
+- **Ukończone (Faza 1):** 2025-12-01
+- **Powiązane dokumenty:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
 
-=======
->>>>>>> feature/TASK-023-openai-integration
+---
+
+#### `TASK-038` - Weryfikacja zgodności danych AI z slugiem
+- **Status:** ✅ COMPLETED (Faza 1), ⏳ PENDING (Faza 2)
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** Faza 1: 3-4h (✅), Faza 2: 6-8h (⏳)
+- **Czas rozpoczęcia:** 2025-12-01
+- **Czas zakończenia:** 2025-12-01 (Faza 1)
+- **Czas realizacji:** ~4h (Faza 1)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Implementacja walidacji czy dane wygenerowane przez AI faktycznie należą do filmu/osoby określonej przez slug, przeciwdziałanie niezgodnościom danych.
+- **Szczegóły:**
+  - **✅ Faza 1 (UKOŃCZONA):** Implementacja serwisu `AiDataValidator` z heurystykami walidacji, walidacja czy tytuł/imię pasuje do slug (Levenshtein + fuzzy matching), walidacja czy rok wydania/data urodzenia są rozsądne (1888-aktualny rok+2), odrzucanie danych jeśli niezgodność > threshold (0.6), integracja z Jobami (RealGenerateMovieJob, RealGeneratePersonJob) z feature flag `hallucination_guard`
+  - **⏳ Faza 2 (PENDING):** Rozszerzone heurystyki (sprawdzanie czy reżyser pasuje do gatunku, geografia dla osób, spójność gatunków z rokiem), logowanie i monitoring podejrzanych przypadków (nawet gdy przeszły walidację), dashboard/metrics dla jakości danych AI, dostosowanie threshold na podstawie danych produkcyjnych
+- **Zależności:** Brak (może być realizowane równolegle z TASK-037)
+- **Utworzone:** 2025-11-30
+- **Ukończone (Faza 1):** 2025-12-01
+- **Powiązane dokumenty:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
+
+---
+
 #### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -351,13 +380,14 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+<<<<<<< HEAD
 #### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
-- **Status:** ⏳ PENDING
+- **Status:** 🔄 IN_PROGRESS
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** --
+- **Czas rozpoczęcia:** 2025-11-10 18:35
 - **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Czas realizacji:** --
 - **Realizacja:** Do ustalenia
 - **Opis:** Uporządkowanie wniosku, czy utrzymujemy aktualne podejście (pojedynczy opis na kombinację `locale + context_tag`) czy planujemy pełne wersjonowanie wszystkich generacji.
 - **Szczegóły:**
@@ -405,26 +435,27 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-=======
->>>>>>> feature/TASK-023-openai-integration
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` - Integracja i naprawa połączenia z OpenAI
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 3 godziny
 - **Czas rozpoczęcia:** 2025-11-10 14:00
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
+- **Czas zakończenia:** 2025-12-01
+- **Czas realizacji:** ~20d (włączając TASK-037, TASK-038, TASK-039)
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Integracja i naprawa połączenia z OpenAI.
 - **Szczegóły:**
-  - Diagnoza błędów komunikacji (timeouty, odpowiedzi HTTP, limity).
-  - Weryfikacja konfiguracji kluczy (`OPENAI_API_KEY`, endpointy, modele).
-  - Aktualizacja serwisów i fallbacków obsługujących OpenAI w API.
-  - Przygotowanie testów (unit/feature) potwierdzających poprawną integrację.
+  - ✅ Diagnoza błędów komunikacji (timeouty, odpowiedzi HTTP, limity) - naprawione
+  - ✅ Weryfikacja konfiguracji kluczy (`OPENAI_API_KEY`, endpointy, modele) - zweryfikowane i działające
+  - ✅ Aktualizacja serwisów i fallbacków obsługujących OpenAI w API - zaktualizowane (OpenAiClient)
+  - ✅ Przygotowanie testów (unit/feature) potwierdzających poprawną integrację - wszystkie testy przechodzą (15 passed)
+  - ✅ Naprawa błędów JSON Schema (usunięcie oneOf, poprawa schematów)
+  - ✅ Przetestowanie manualnie z AI_SERVICE=real - działa poprawnie
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Ukończone:** 2025-12-01
 
 ---
 
@@ -728,12 +759,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 17
-- **Zakończone:** 7
+- **Aktywne:** 15
+- **Zakończone:** 8
 - **Anulowane:** 0
-- **W trakcie:** 2
+- **W trakcie:** 1
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-30
+**Ostatnia aktualizacja:** 2025-12-01
 

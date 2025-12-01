@@ -301,6 +301,49 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-037` – Verify movie/person existence before AI generation
+- **Status:** ✅ COMPLETED (Phase 1), ⏳ PENDING (Phase 2-3)
+- **Priority:** 🔴 High
+- **Estimated time:** Phase 1: 4-6h (✅), Phase 2: 8-12h (⏳), Phase 3: 20-30h (⏳)
+- **Start time:** 2025-12-01
+- **End time:** 2025-12-01 (Phase 1)
+- **Duration:** ~5h (Phase 1)
+- **Execution:** 🤖 AI Agent
+- **Description:** Implement verification that a movie/person actually exists before calling AI, preventing AI hallucinations.
+- **Details:**
+  - **✅ Phase 1 (COMPLETED):** Enhanced prompts with existence verification instructions (AI returns `{"error": "Movie/Person not found"}` when entity doesn't exist), error response handling in OpenAiClient and Jobs
+  - **⏳ Phase 2 (PENDING):** Pre-generation validation heuristics (PreGenerationValidator), activate `hallucination_guard` feature flag, extended heuristics (release year, birth date, slug similarity, suspicious patterns)
+  - **⏳ Phase 3 (PENDING):** Optional integration with TMDb/OMDb API (feature flag), cache verification results, monitoring and dashboard
+- **Dependencies:** none
+- **Created:** 2025-11-30
+- **Completed (Phase 1):** 2025-12-01
+- **Related documents:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
+
+---
+
+#### `TASK-038` – Verify AI data consistency with slug
+- **Status:** ✅ COMPLETED (Phase 1), ⏳ PENDING (Phase 2)
+- **Priority:** 🔴 High
+- **Estimated time:** Phase 1: 3-4h (✅), Phase 2: 6-8h (⏳)
+- **Start time:** 2025-12-01
+- **End time:** 2025-12-01 (Phase 1)
+- **Duration:** ~4h (Phase 1)
+- **Execution:** 🤖 AI Agent
+- **Description:** Implement validation that AI-generated data actually belongs to the movie/person specified by the slug, preventing data inconsistencies.
+- **Details:**
+  - **✅ Phase 1 (COMPLETED):** Implement `AiDataValidator` service with validation heuristics, validate if title/name matches slug (Levenshtein + fuzzy matching), validate if release year/birth date are reasonable (1888-current year+2), reject data if inconsistency > threshold (0.6), integration with Jobs (RealGenerateMovieJob, RealGeneratePersonJob) with `hallucination_guard` feature flag
+  - **⏳ Phase 2 (PENDING):** Extended heuristics (check if director matches genre, geography for persons, genre consistency with year), logging and monitoring of suspicious cases (even when passed validation), dashboard/metrics for AI data quality, threshold tuning based on production data
+- **Dependencies:** none (can be implemented in parallel with TASK-037)
+- **Created:** 2025-11-30
+- **Completed (Phase 1):** 2025-12-01
+- **Related documents:** 
+  - [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+  - [`docs/knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md`](../../knowledge/technical/TASK_037_038_ANALYSIS_AND_RECOMMENDATIONS.md)
+
+---
+
 #### `TASK-028` – Verify priority label sync from TASKS to Issues
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -361,21 +404,24 @@ Every entry follows this structure:
 ### 🔄 IN_PROGRESS
 
 #### `TASK-023` – OpenAI integration repair
-- **Status:** 🔄 IN_PROGRESS
+- **Status:** ✅ COMPLETED
 - **Priority:** 🔴 High
 - **Estimated time:** 3 h
 - **Start time:** 2025-11-10 14:00
-- **End time:** --
-- **Duration:** --
+- **End time:** 2025-12-01
+- **Duration:** ~20d (including TASK-037, TASK-038, TASK-039)
 - **Execution:** 🤖 AI Agent
 - **Description:** Restore and harden the OpenAI integration.
 - **Details:**
-  - Diagnose communication issues (timeouts, HTTP responses, rate limits).
-  - Verify configuration secrets (`OPENAI_API_KEY`, endpoints, models).
-  - Update the services and fallbacks that mediate OpenAI traffic within the API.
-  - Add unit/feature tests confirming the integration works end-to-end.
+  - ✅ Diagnose communication issues (timeouts, HTTP responses, rate limits) - fixed
+  - ✅ Verify configuration secrets (`OPENAI_API_KEY`, endpoints, models) - verified and working
+  - ✅ Update the services and fallbacks that mediate OpenAI traffic within the API - updated (OpenAiClient)
+  - ✅ Add unit/feature tests confirming the integration works end-to-end - all tests passing (15 passed)
+  - ✅ Fixed JSON Schema errors (removed oneOf, improved schemas)
+  - ✅ Manually tested with AI_SERVICE=real - working correctly
 - **Dependencies:** none
 - **Created:** 2025-11-10
+- **Completed:** 2025-12-01
 
 #### `TASK-021` – Fix duplicated generation events
 - **Status:** 🔄 IN_PROGRESS
@@ -599,10 +645,10 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 17  
-- **Completed:** 6  
+- **Active:** 15  
+- **Completed:** 7  
 - **Cancelled:** 0  
-- **In progress:** 2
+- **In progress:** 1
 
 ---
 
