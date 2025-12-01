@@ -301,6 +301,48 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-037` – Verify movie/person existence before AI generation
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 4–6 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Implement verification that a movie/person actually exists before calling AI, preventing AI hallucinations.
+- **Details:**
+  - **Short-term:** Enhanced prompts with existence verification instructions (AI returns `{"error": "Movie/Person not found"}` when entity doesn't exist)
+  - **Medium-term:** Validation heuristics (release year, birth date, slug similarity)
+  - **Long-term:** Optional integration with TMDb/OMDb API (feature flag)
+  - Handle error responses in application (return 404 when AI returns "not found")
+  - Activate and implement `hallucination_guard` feature flag
+- **Dependencies:** none
+- **Created:** 2025-11-30
+- **Related documents:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+
+---
+
+#### `TASK-038` – Verify AI data consistency with slug
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 3–4 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** -- (AI agent will auto-calc when applicable)
+- **Execution:** TBD
+- **Description:** Implement validation that AI-generated data actually belongs to the movie/person specified by the slug, preventing data inconsistencies.
+- **Details:**
+  - Validate if title/name matches slug (Levenshtein, fuzzy matching)
+  - Validate if release year/birth date are reasonable (1888-current year+2)
+  - Reject data if inconsistency > threshold
+  - Logging and monitoring of suspicious cases
+  - Implement `AiDataValidator` service with validation heuristics
+- **Dependencies:** none (can be implemented in parallel with TASK-037)
+- **Created:** 2025-11-30
+- **Related documents:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.en.md)
+
+---
+
 #### `TASK-028` – Verify priority label sync from TASKS to Issues
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium

@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-11-30  
+**Ostatnia aktualizacja:** 2025-12-01  
 **Status:** 🔄 Aktywny
 
 ---
@@ -280,6 +280,48 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-11-12
 
 ---
+#### `TASK-037` - Weryfikacja istnienia filmów/osób przed generowaniem AI
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 4-6 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Implementacja weryfikacji czy film/osoba faktycznie istnieje przed wywołaniem AI, przeciwdziałanie halucynacjom AI.
+- **Szczegóły:**
+  - **Krótkoterminowo:** Ulepszone prompty z instrukcją weryfikacji istnienia (AI zwraca `{"error": "Movie/Person not found"}` gdy nie istnieje)
+  - **Średnioterminowo:** Heurystyki walidacji (rok wydania, data urodzenia, podobieństwo slug)
+  - **Długoterminowo:** Opcjonalna integracja z TMDb/OMDb API (feature flag)
+  - Obsługa odpowiedzi z błędem w aplikacji (zwracanie 404 gdy AI zwróci "not found")
+  - Aktywacja i implementacja feature flag `hallucination_guard`
+- **Zależności:** Brak
+- **Utworzone:** 2025-11-30
+- **Powiązane dokumenty:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+
+---
+
+#### `TASK-038` - Weryfikacja zgodności danych AI z slugiem
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 3-4 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Implementacja walidacji czy dane wygenerowane przez AI faktycznie należą do filmu/osoby określonej przez slug, przeciwdziałanie niezgodnościom danych.
+- **Szczegóły:**
+  - Walidacja czy tytuł/imię pasuje do slug (Levenshtein, fuzzy matching)
+  - Walidacja czy rok wydania/data urodzenia są rozsądne (1888-aktualny rok+2)
+  - Odrzucanie danych jeśli niezgodność > threshold
+  - Logowanie i monitoring podejrzanych przypadków
+  - Implementacja serwisu `AiDataValidator` z heurystykami walidacji
+- **Zależności:** Brak (może być realizowane równolegle z TASK-037)
+- **Utworzone:** 2025-11-30
+- **Powiązane dokumenty:** [`docs/knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md`](../../knowledge/technical/AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
+
+---
+
 #### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
@@ -720,5 +762,5 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-30
+**Ostatnia aktualizacja:** 2025-12-01
 
