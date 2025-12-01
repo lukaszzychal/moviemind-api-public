@@ -167,7 +167,38 @@ class RealGenerateMovieJob implements ShouldQueue
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
 
+            // Check if it's a "not found" error from AI
+            if (stripos($error, 'not found') !== false) {
+                Log::warning('Movie not found by AI during refresh', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'movie_id' => $movie->id,
+                ]);
+
+                throw new \RuntimeException("Movie not found: {$this->slug}");
+            }
+
             throw new \RuntimeException('AI API returned error: '.$error);
+        }
+
+        // Validate AI response data consistency with slug (during refresh)
+        if (Feature::active('hallucination_guard')) {
+            $validator = app(\App\Services\AiDataValidator::class);
+            $validation = $validator->validateMovieData($aiResponse, $this->slug);
+
+            if (! $validation['valid']) {
+                Log::warning('AI data validation failed for movie during refresh', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'movie_id' => $movie->id,
+                    'errors' => $validation['errors'],
+                    'similarity' => $validation['similarity'],
+                ]);
+
+                throw new \RuntimeException(
+                    'AI data validation failed: '.implode(', ', $validation['errors'])
+                );
+            }
         }
 
         $descriptionText = $aiResponse['description']
@@ -406,7 +437,37 @@ class RealGenerateMovieJob implements ShouldQueue
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
 
+            // Check if it's a "not found" error from AI
+            if (stripos($error, 'not found') !== false) {
+                Log::warning('Movie not found by AI', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                ]);
+
+                throw new \RuntimeException("Movie not found: {$this->slug}");
+            }
+
             throw new \RuntimeException('AI API returned error: '.$error);
+        }
+
+        // Validate AI response data consistency with slug
+        if (Feature::active('hallucination_guard')) {
+            $validator = app(\App\Services\AiDataValidator::class);
+            $validation = $validator->validateMovieData($aiResponse, $this->slug);
+
+            if (! $validation['valid']) {
+                Log::warning('AI data validation failed for movie', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'errors' => $validation['errors'],
+                    'similarity' => $validation['similarity'],
+                    'ai_response' => $aiResponse,
+                ]);
+
+                throw new \RuntimeException(
+                    'AI data validation failed: '.implode(', ', $validation['errors'])
+                );
+            }
         }
 
         $title = $aiResponse['title'] ?? Str::of($this->slug)->replace('-', ' ')->title();
