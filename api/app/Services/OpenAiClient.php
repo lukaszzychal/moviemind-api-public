@@ -19,7 +19,7 @@ class OpenAiClient implements OpenAiClientInterface
 
     private const DEFAULT_MODEL = 'gpt-4o-mini';
 
-    private const DEFAULT_API_URL = 'https://api.openai.com/v1/responses';
+    private const DEFAULT_API_URL = 'https://api.openai.com/v1/chat/completions';
 
     private string $apiKey;
 
@@ -46,8 +46,8 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
         }
 
-        $systemPrompt = 'You are a movie database assistant. Generate movie information from a slug. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
-        $userPrompt = "Generate movie information for slug: {$slug}. Return JSON with: title, release_year, director, description (movie plot), genres (array).";
+        $systemPrompt = 'You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {"error": "Movie not found"}. Only if the movie exists, generate movie information from the slug. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
+        $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).";
 
         return $this->makeApiCall('movie', $slug, $systemPrompt, $userPrompt, function ($content) {
             return [
@@ -71,8 +71,8 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
         }
 
-        $systemPrompt = 'You are a biography assistant. Generate person biography from a slug. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).';
-        $userPrompt = "Generate biography for person with slug: {$slug}. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
+        $systemPrompt = 'You are a biography assistant. IMPORTANT: First verify if the person exists. If the person does not exist, return {"error": "Person not found"}. Only if the person exists, generate biography from the slug. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).';
+        $userPrompt = "Generate biography for person with slug: {$slug}. IMPORTANT: First verify if this person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
 
         return $this->makeApiCall('person', $slug, $systemPrompt, $userPrompt, function ($content) {
             return [
@@ -154,6 +154,17 @@ class OpenAiClient implements OpenAiClientInterface
 
             $content = $this->extractContent($response);
 
+            // Check for error response from AI (e.g., "Movie not found", "Person not found")
+            if (isset($content['error'])) {
+                $errorMessage = $content['error'];
+                Log::info("AI returned error response for {$entityType}", [
+                    'slug' => $slug,
+                    'error' => $errorMessage,
+                ]);
+
+                return $this->errorResponse($errorMessage);
+            }
+
             return $successMapper($content);
         } catch (\Throwable $e) {
             $this->logException($entityType, $slug, $e);
@@ -174,6 +185,9 @@ class OpenAiClient implements OpenAiClientInterface
             ]);
 
         if ($this->usesResponsesApi()) {
+            // Responses API: Currently doesn't support json_schema format properly
+            // Using simple text format without schema validation
+            // TODO: Revisit when Responses API adds proper json_schema support
             $payload = [
                 'model' => $this->model,
                 'input' => [
@@ -191,25 +205,25 @@ class OpenAiClient implements OpenAiClientInterface
                         'content' => [
                             [
                                 'type' => 'input_text',
-                                'text' => $userPrompt,
+                                'text' => $userPrompt.' Return valid JSON only.',
                             ],
                         ],
                     ],
                 ],
-                'response_format' => [
-                    'type' => 'json_schema',
-                    'json_schema' => $jsonSchema,
-                ],
                 'temperature' => self::DEFAULT_TEMPERATURE,
             ];
         } else {
+            // Chat Completions API: Supports json_schema properly
             $payload = [
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemPrompt],
                     ['role' => 'user', 'content' => $userPrompt],
                 ],
-                'response_format' => ['type' => 'json_object'],
+                'response_format' => [
+                    'type' => 'json_schema',
+                    'json_schema' => $jsonSchema,
+                ],
                 'temperature' => self::DEFAULT_TEMPERATURE,
             ];
         }
@@ -331,25 +345,35 @@ class OpenAiClient implements OpenAiClientInterface
             'schema' => [
                 'type' => 'object',
                 'properties' => [
+                    'error' => [
+                        'type' => 'string',
+                        'description' => 'Error message when movie does not exist (e.g., "Movie not found")',
+                    ],
                     'title' => [
                         'type' => 'string',
+                        'description' => 'Movie title',
                     ],
                     'release_year' => [
                         'type' => 'integer',
+                        'description' => 'Year the movie was released',
                     ],
                     'director' => [
                         'type' => 'string',
+                        'description' => 'Director name',
                     ],
                     'description' => [
                         'type' => 'string',
+                        'description' => 'Movie plot description',
                     ],
                     'genres' => [
                         'type' => 'array',
                         'items' => [
                             'type' => 'string',
                         ],
+                        'description' => 'Array of genre names',
                     ],
                 ],
+                'required' => [],
             ],
         ];
     }
@@ -361,19 +385,28 @@ class OpenAiClient implements OpenAiClientInterface
             'schema' => [
                 'type' => 'object',
                 'properties' => [
+                    'error' => [
+                        'type' => 'string',
+                        'description' => 'Error message when person does not exist (e.g., "Person not found")',
+                    ],
                     'name' => [
                         'type' => 'string',
+                        'description' => 'Person full name',
                     ],
                     'birth_date' => [
                         'type' => 'string',
+                        'description' => 'Birth date in YYYY-MM-DD format',
                     ],
                     'birthplace' => [
                         'type' => 'string',
+                        'description' => 'Place of birth',
                     ],
                     'biography' => [
                         'type' => 'string',
+                        'description' => 'Full biography text',
                     ],
                 ],
+                'required' => [],
             ],
         ];
     }
