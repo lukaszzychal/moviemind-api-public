@@ -344,6 +344,28 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-040` – Analysis of TOON vs JSON format for AI communication
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2-3 h
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Analysis of TOON (Token-Oriented Object Notation) format as an alternative to JSON for AI communication. TOON can save 30-60% tokens compared to JSON.
+- **Details:**
+  - Analyze TOON format and its application in AI communication
+  - Compare TOON vs JSON in terms of token savings
+  - Assess TOON usefulness for MovieMind API
+  - Prepare recommendations for TOON usage in the project
+- **Dependencies:** none
+- **Created:** 2025-11-30
+- **Related documents:**
+  - [`docs/knowledge/technical/TOON_VS_JSON_ANALYSIS.md`](../../knowledge/technical/TOON_VS_JSON_ANALYSIS.md)
+  - [`docs/knowledge/technical/TOON_VS_JSON_ANALYSIS.en.md`](../../knowledge/technical/TOON_VS_JSON_ANALYSIS.en.md)
+
+---
+
 #### `TASK-028` – Verify priority label sync from TASKS to Issues
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
@@ -645,7 +667,7 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ## 📊 Stats
 
-- **Active:** 15  
+- **Active:** 16  
 - **Completed:** 7  
 - **Cancelled:** 0  
 - **In progress:** 1
