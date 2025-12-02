@@ -9,8 +9,6 @@ info:
 servers:
   - url: http://localhost:8000/api
     description: Local
-  - url: https://api.example.com/api
-    description: Production (example)
 tags:
   - name: Movies
   - name: People
