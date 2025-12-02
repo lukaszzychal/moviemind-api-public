@@ -9,6 +9,8 @@ info:
 servers:
   - url: http://localhost:8000/api
     description: Local
+  - url: https://moviemind-api-staging.up.railway.app/api
+    description: Staging (Railway)
   - url: https://api.example.com/api
     description: Production (example)
 tags:
