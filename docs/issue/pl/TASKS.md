@@ -34,13 +34,173 @@ Każde zadanie ma następującą strukturę:
    - 🟢 roadmapa lub prace opcjonalne → realizuj po zadaniach blokujących.
 3. **Sprawdź zależności:** jeśli zadanie odblokowuje inne, awansuj je wyżej.
 4. **Uwzględnij synergię:** grupuj zadania o podobnym kontekście (np. CI, bezpieczeństwo).
-5. **Wynik:** ułóż listę rekomendowanego porządku + krótka notatka *dlaczego* (np. „odblokowuje X”, „wspiera testy”, „roadmapa”).
+5. **Wynik:** ułóż listę rekomendowanego porządku + krótka notatka *dlaczego* (np. „odblokowuje X", „wspiera testy", „roadmapa").
 
 > **Przykład raportu:**  
 > 1. `TASK-007` – centralizuje flagi; fundament dla ochrony Horizon i kontroli AI.  
 > 2. `TASK-013` – zabezpiecza panel Horizon po zmianach flag.  
 > 3. `TASK-020` – audyt AI korzysta z ustabilizowanych flag oraz monitoringu Horizon.  
 > …
+
+---
+
+## 📊 Rekomendowana Kolejność Wykonania
+
+### 🎯 Dla MVP (Minimum Viable Product)
+
+**Cel MVP:** Działająca wersja API gotowa do deploymentu na RapidAPI z podstawowymi funkcjami.
+
+#### Faza 1: Krytyczne dla stabilności i bezpieczeństwa (🔴 Wysoki Priorytet)
+
+1. **`TASK-037` (Faza 2-3)** - Weryfikacja istnienia filmów/osób przed generowaniem AI
+   - **Dlaczego:** Zapobiega halucynacjom AI, kluczowe dla jakości danych
+   - **Czas:** 8-12h (Faza 2) + 20-30h (Faza 3)
+   - **Status:** ⏳ PENDING (Faza 1 ✅ COMPLETED)
+
+2. **`TASK-038` (Faza 2)** - Weryfikacja zgodności danych AI z slugiem
+   - **Dlaczego:** Zapewnia spójność danych, zapobiega błędnym generacjom
+   - **Czas:** 6-8h
+   - **Status:** ⏳ PENDING (Faza 1 ✅ COMPLETED)
+
+3. **`TASK-013`** - Konfiguracja dostępu do Horizon
+   - **Dlaczego:** Bezpieczeństwo - zabezpiecza panel Horizon w produkcji
+   - **Czas:** 1-2h
+   - **Status:** ⏳ PENDING
+
+#### Faza 2: Usprawnienia funkcjonalne (🟡 Średni Priorytet)
+
+4. **`TASK-022`** - Endpoint listy osób (List People)
+   - **Dlaczego:** Parzystość API - uzupełnia podstawowe endpointy
+   - **Czas:** 2-3h
+   - **Status:** ⏳ PENDING
+
+5. **`TASK-024`** - Wdrożenie planu baseline locking
+   - **Dlaczego:** Stabilizuje mechanizm generowania, zapobiega race conditions
+   - **Czas:** 4h
+   - **Status:** ⏳ PENDING
+   - **Zależności:** TASK-012 ✅, TASK-023 ✅
+
+6. **`TASK-025`** - Standaryzacja flag produktowych i developerskich
+   - **Dlaczego:** Uporządkowanie zarządzania flagami, wspiera rozwój
+   - **Czas:** 1h
+   - **Status:** ⏳ PENDING
+
+7. **`TASK-026`** - Zbadanie pól zaufania w odpowiedziach kolejkowanych generacji
+   - **Dlaczego:** Poprawa UX - użytkownik widzi poziom pewności generacji
+   - **Czas:** 1-2h
+   - **Status:** ⏳ PENDING
+
+#### Faza 3: Infrastruktura i CI/CD (🟡 Średni Priorytet)
+
+8. **`TASK-011`** - Stworzenie CI dla staging (GHCR)
+   - **Dlaczego:** Automatyzacja deploymentu, szybsze iteracje
+   - **Czas:** 3h
+   - **Status:** ⏳ PENDING
+
+9. **`TASK-015`** - Automatyczne testy Newman w CI
+   - **Dlaczego:** Automatyczna weryfikacja API, wyższa jakość
+   - **Czas:** 2h
+   - **Status:** ⏳ PENDING
+
+10. **`TASK-019`** - Migracja produkcyjnego obrazu Docker na Distroless
+    - **Dlaczego:** Bezpieczeństwo - zmniejszenie powierzchni ataku
+    - **Czas:** 3-4h
+    - **Status:** ⏳ PENDING
+
+#### Faza 4: Refaktoryzacja i czyszczenie (🟡 Średni Priorytet)
+
+11. **`TASK-033`** - Usunięcie modelu Actor i konsolidacja na Person
+    - **Dlaczego:** Uporządkowanie kodu, eliminacja legacy
+    - **Czas:** 2-3h
+    - **Status:** ⏳ PENDING
+    - **Zależności:** TASK-032, TASK-022
+
+12. **`TASK-032`** - Automatyczne tworzenie obsady przy generowaniu filmu
+    - **Dlaczego:** Uzupełnia dane filmów, lepsze UX
+    - **Czas:** 3h
+    - **Status:** ⏳ PENDING
+    - **Zależności:** TASK-022
+
+13. **`TASK-028`** - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
+    - **Dlaczego:** Usprawnienie workflow, lepsze zarządzanie zadaniami
+    - **Czas:** 0.5-1h
+    - **Status:** ⏳ PENDING
+
+14. **`TASK-029`** - Uporządkowanie testów według wzorca AAA lub GWT
+    - **Dlaczego:** Standaryzacja testów, lepsza czytelność
+    - **Czas:** 2-3h
+    - **Status:** ⏳ PENDING
+
+15. **`TASK-018`** - Wydzielenie PhpstanFixer jako paczki Composer
+    - **Dlaczego:** Reużywalność, możliwość użycia w innych projektach
+    - **Czas:** 3-4h
+    - **Status:** ⏳ PENDING
+    - **Zależności:** TASK-017 ✅
+
+#### Faza 5: Dokumentacja i analiza (🟡/🟢 Priorytet)
+
+16. **`TASK-031`** - Kierunek rozwoju wersjonowania opisów AI
+    - **Dlaczego:** Dokumentacja decyzji architektonicznej
+    - **Czas:** 1-2h
+    - **Status:** ⏳ PENDING
+
+17. **`TASK-040`** - Analiza formatu TOON vs JSON dla komunikacji z AI
+    - **Dlaczego:** Optymalizacja kosztów (oszczędność tokenów)
+    - **Czas:** 2-3h
+    - **Status:** ⏳ PENDING
+
+18. **`TASK-030`** - Opracowanie dokumentu o technice testów „trzech linii"
+    - **Dlaczego:** Dokumentacja techniczna, wspiera TASK-029
+    - **Czas:** 1-2h
+    - **Status:** ⏳ PENDING
+    - **Zależności:** TASK-029
+
+---
+
+### 🧪 Dla POC (Proof of Concept)
+
+**Cel POC:** Minimalna wersja demonstracyjna pokazująca działanie AI generacji.
+
+#### Minimalny zakres POC:
+
+1. **`TASK-013`** - Konfiguracja dostępu do Horizon (bezpieczeństwo)
+2. **`TASK-022`** - Endpoint listy osób (podstawowa funkcjonalność)
+3. **`TASK-025`** - Standaryzacja flag (uproszczenie zarządzania)
+
+**Uwaga:** Większość zadań POC jest już zrealizowana (TASK-001, TASK-002, TASK-003, TASK-012, TASK-023 ✅). POC jest praktycznie gotowy.
+
+---
+
+### 📋 Podsumowanie według Priorytetów
+
+#### 🔴 Wysoki Priorytet (Krytyczne)
+- `TASK-037` (Faza 2-3) - Weryfikacja istnienia przed AI
+- `TASK-038` (Faza 2) - Weryfikacja zgodności danych
+
+#### 🟡 Średni Priorytet (Ważne)
+- `TASK-013` - Konfiguracja Horizon
+- `TASK-022` - Lista osób
+- `TASK-024` - Baseline locking
+- `TASK-025` - Standaryzacja flag
+- `TASK-026` - Pola zaufania
+- `TASK-011` - CI dla staging
+- `TASK-015` - Testy Newman
+- `TASK-019` - Docker Distroless
+- `TASK-032` - Automatyczna obsada
+- `TASK-033` - Usunięcie Actor
+- `TASK-028` - Synchronizacja Issues
+- `TASK-029` - Standaryzacja testów
+- `TASK-018` - PhpstanFixer package
+- `TASK-031` - Wersjonowanie opisów
+- `TASK-040` - Analiza TOON vs JSON
+
+#### 🟢 Niski Priorytet (Roadmap)
+- `TASK-008` - Webhooks System
+- `TASK-009` - Admin UI
+- `TASK-010` - Analytics/Monitoring Dashboards
+- `TASK-030` - Dokumentacja testów "trzech linii"
+
+---
 
 ### ⏳ PENDING
 
@@ -402,12 +562,11 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-<<<<<<< HEAD
 #### `TASK-031` - Kierunek rozwoju wersjonowania opisów AI
-- **Status:** 🔄 IN_PROGRESS
-- **Priorytet:** 🔴 Wysoki
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** 2025-11-10 18:35
+- **Czas rozpoczęcia:** --
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
 - **Realizacja:** Do ustalenia
@@ -788,5 +947,5 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-01
+**Ostatnia aktualizacja:** 2025-01-09
 

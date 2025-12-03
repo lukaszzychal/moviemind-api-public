@@ -32,13 +32,173 @@ Every entry follows this structure:
    - 🟢 roadmap / optional → schedule after blocking items.
 3. **Check dependencies:** bump tasks that unlock other work.
 4. **Leverage synergy:** group related tasks (CI, security, docs) to reduce overhead.
-5. **Output:** produce an ordered list with short *why* notes (e.g. “unblocks X”, “strengthens tests”, “roadmap item”).
+5. **Output:** produce an ordered list with short *why* notes (e.g. "unblocks X", "strengthens tests", "roadmap item").
 
 > **Sample report:**  
 > 1. `TASK-007` – centralises feature flags, prerequisite for Horizon protection and AI controls.  
 > 2. `TASK-013` – secures Horizon once flags are in place.  
 > 3. `TASK-020` – AI audit relies on stable flags and Horizon visibility.  
 > …
+
+---
+
+## 📊 Recommended Execution Order
+
+### 🎯 For MVP (Minimum Viable Product)
+
+**MVP Goal:** Working API version ready for deployment on RapidAPI with core features.
+
+#### Phase 1: Critical for stability and security (🔴 High Priority)
+
+1. **`TASK-037` (Phase 2-3)** - Verify movie/person existence before AI generation
+   - **Why:** Prevents AI hallucinations, critical for data quality
+   - **Time:** 8-12h (Phase 2) + 20-30h (Phase 3)
+   - **Status:** ⏳ PENDING (Phase 1 ✅ COMPLETED)
+
+2. **`TASK-038` (Phase 2)** - Verify AI data consistency with slug
+   - **Why:** Ensures data consistency, prevents incorrect generations
+   - **Time:** 6-8h
+   - **Status:** ⏳ PENDING (Phase 1 ✅ COMPLETED)
+
+3. **`TASK-013`** - Horizon access configuration
+   - **Why:** Security - secures Horizon dashboard in production
+   - **Time:** 1-2h
+   - **Status:** ⏳ PENDING
+
+#### Phase 2: Functional improvements (🟡 Medium Priority)
+
+4. **`TASK-022`** - People list endpoint parity
+   - **Why:** API parity - completes basic endpoints
+   - **Time:** 2-3h
+   - **Status:** ⏳ PENDING
+
+5. **`TASK-024`** - Execute baseline-locking improvement plan
+   - **Why:** Stabilizes generation mechanism, prevents race conditions
+   - **Time:** 4h
+   - **Status:** ⏳ PENDING
+   - **Dependencies:** TASK-012 ✅, TASK-023 ✅
+
+6. **`TASK-025`** - Standardise product vs developer feature flags
+   - **Why:** Organizes flag management, supports development
+   - **Time:** 1h
+   - **Status:** ⏳ PENDING
+
+7. **`TASK-026`** - Investigate confidence fields for queued generation responses
+   - **Why:** Improves UX - user sees generation confidence level
+   - **Time:** 1-2h
+   - **Status:** ⏳ PENDING
+
+#### Phase 3: Infrastructure and CI/CD (🟡 Medium Priority)
+
+8. **`TASK-011`** - CI for staging (GHCR)
+   - **Why:** Deployment automation, faster iterations
+   - **Time:** 3h
+   - **Status:** ⏳ PENDING
+
+9. **`TASK-015`** - Run Postman Newman tests in CI
+   - **Why:** Automated API verification, higher quality
+   - **Time:** 2h
+   - **Status:** ⏳ PENDING
+
+10. **`TASK-019`** - Migrate Docker production image to Distroless
+    - **Why:** Security - reduces attack surface
+    - **Time:** 3-4h
+    - **Status:** ⏳ PENDING
+
+#### Phase 4: Refactoring and cleanup (🟡 Medium Priority)
+
+11. **`TASK-033`** - Remove Actor model and consolidate on Person
+    - **Why:** Code organization, eliminates legacy
+    - **Time:** 2-3h
+    - **Status:** ⏳ PENDING
+    - **Dependencies:** TASK-032, TASK-022
+
+12. **`TASK-032`** - Auto-create cast when generating movie
+    - **Why:** Completes movie data, better UX
+    - **Time:** 3h
+    - **Status:** ⏳ PENDING
+    - **Dependencies:** TASK-022
+
+13. **`TASK-028`** - Verify priority label sync from TASKS to Issues
+    - **Why:** Improves workflow, better task management
+    - **Time:** 0.5-1h
+    - **Status:** ⏳ PENDING
+
+14. **`TASK-029`** - Standardise tests around AAA or GWT
+    - **Why:** Test standardization, better readability
+    - **Time:** 2-3h
+    - **Status:** ⏳ PENDING
+
+15. **`TASK-018`** - Extract PhpstanFixer as a Composer package
+    - **Why:** Reusability, can be used in other projects
+    - **Time:** 3-4h
+    - **Status:** ⏳ PENDING
+    - **Dependencies:** TASK-017 ✅
+
+#### Phase 5: Documentation and analysis (🟡/🟢 Priority)
+
+16. **`TASK-031`** - Versioning direction for AI descriptions
+    - **Why:** Documents architectural decision
+    - **Time:** 1-2h
+    - **Status:** ⏳ PENDING
+
+17. **`TASK-040`** - Analysis of TOON vs JSON format for AI communication
+    - **Why:** Cost optimization (token savings)
+    - **Time:** 2-3h
+    - **Status:** ⏳ PENDING
+
+18. **`TASK-030`** - Document the "three-line test" technique
+    - **Why:** Technical documentation, supports TASK-029
+    - **Time:** 1-2h
+    - **Status:** ⏳ PENDING
+    - **Dependencies:** TASK-029
+
+---
+
+### 🧪 For POC (Proof of Concept)
+
+**POC Goal:** Minimal demo version showing AI generation functionality.
+
+#### Minimal POC scope:
+
+1. **`TASK-013`** - Horizon access configuration (security)
+2. **`TASK-022`** - People list endpoint (basic functionality)
+3. **`TASK-025`** - Standardise flags (simplifies management)
+
+**Note:** Most POC tasks are already completed (TASK-001, TASK-002, TASK-003, TASK-012, TASK-023 ✅). POC is practically ready.
+
+---
+
+### 📋 Summary by Priority
+
+#### 🔴 High Priority (Critical)
+- `TASK-037` (Phase 2-3) - Verify existence before AI
+- `TASK-038` (Phase 2) - Verify data consistency
+
+#### 🟡 Medium Priority (Important)
+- `TASK-013` - Horizon configuration
+- `TASK-022` - People list
+- `TASK-024` - Baseline locking
+- `TASK-025` - Flag standardization
+- `TASK-026` - Confidence fields
+- `TASK-011` - CI for staging
+- `TASK-015` - Newman tests
+- `TASK-019` - Docker Distroless
+- `TASK-032` - Auto cast
+- `TASK-033` - Remove Actor
+- `TASK-028` - Issues sync
+- `TASK-029` - Test standardization
+- `TASK-018` - PhpstanFixer package
+- `TASK-031` - Description versioning
+- `TASK-040` - TOON vs JSON analysis
+
+#### 🟢 Low Priority (Roadmap)
+- `TASK-008` - Webhooks System
+- `TASK-009` - Admin UI
+- `TASK-010` - Analytics/Monitoring Dashboards
+- `TASK-030` - Three-line test documentation
+
+---
 
 ### ⏳ PENDING
 
@@ -674,4 +834,4 @@ See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TA
 
 ---
 
-**Last updated:** 2025-11-30
+**Last updated:** 2025-01-09
