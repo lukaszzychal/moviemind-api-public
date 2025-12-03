@@ -446,19 +446,53 @@ components:
     Job:
       type: object
       properties:
-        id:
+        job_id:
           type: string
           format: uuid
-        entity_type:
-          type: string
-          enum: [MOVIE, ACTOR, PERSON]
-        entity_id:
-          type: integer
         status:
           type: string
-          enum: [PENDING, DONE, FAILED]
-        payload_json:
+          enum: [PENDING, DONE, FAILED, UNKNOWN]
+        entity:
+          type: string
+          enum: [MOVIE, PERSON]
+        entity_id:
+          type: integer
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        confidence:
+          type: number
+          format: float
+          nullable: true
+        error:
           type: object
+          nullable: true
+          properties:
+            type:
+              type: string
+              enum: [NOT_FOUND, AI_API_ERROR, VALIDATION_ERROR, UNKNOWN_ERROR]
+            message:
+              type: string
+              description: Short technical error message
+            technical_message:
+              type: string
+              description: Full exception message for debugging
+            user_message:
+              type: string
+              description: User-friendly error message
+        description_id:
+          type: integer
+          nullable: true
+        bio_id:
+          type: integer
+          nullable: true
+        locale:
+          type: string
+          nullable: true
+        context_tag:
+          type: string
+          nullable: true
     AcceptedGeneration:
       type: object
       properties:

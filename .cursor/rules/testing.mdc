@@ -27,6 +27,7 @@ alwaysApply: true
 - Don't commit code without tests
 - Don't skip tests "because it's a small change"
 - Don't ignore failing tests
+- **Don't write implementation code before writing tests** - this violates TDD principle
 
 ## Test types
 

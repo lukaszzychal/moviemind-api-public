@@ -7,6 +7,7 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Bus\Queueable;
@@ -123,7 +124,10 @@ class RealGenerateMovieJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $this->updateCache('FAILED');
+            /** @var JobErrorFormatter $errorFormatter */
+            $errorFormatter = app(JobErrorFormatter::class);
+            $errorData = $errorFormatter->formatError($e, $this->slug, 'MOVIE');
+            $this->updateCache('FAILED', error: $errorData);
 
             throw $e; // Re-throw for retry mechanism
         } finally {
@@ -234,9 +238,10 @@ class RealGenerateMovieJob implements ShouldQueue
         ?string $slug = null,
         ?int $descriptionId = null,
         ?string $locale = null,
-        ?string $contextTag = null
+        ?string $contextTag = null,
+        ?array $error = null
     ): void {
-        Cache::put($this->cacheKey(), [
+        $payload = [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'MOVIE',
@@ -246,7 +251,13 @@ class RealGenerateMovieJob implements ShouldQueue
             'description_id' => $descriptionId,
             'locale' => $locale ?? $this->locale,
             'context_tag' => $contextTag ?? $this->contextTag,
-        ], now()->addMinutes(15));
+        ];
+
+        if ($error !== null) {
+            $payload['error'] = $error;
+        }
+
+        Cache::put($this->cacheKey(), $payload, now()->addMinutes(15));
     }
 
     private function nextContextTag(Movie $movie): string
@@ -415,16 +426,10 @@ class RealGenerateMovieJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        Cache::put($this->cacheKey(), [
-            'job_id' => $this->jobId,
-            'status' => 'FAILED',
-            'entity' => 'MOVIE',
-            'slug' => $this->slug,
-            'requested_slug' => $this->slug,
-            'error' => $exception->getMessage(),
-            'locale' => $this->locale,
-            'context_tag' => $this->contextTag,
-        ], now()->addMinutes(15));
+        /** @var JobErrorFormatter $errorFormatter */
+        $errorFormatter = app(JobErrorFormatter::class);
+        $errorData = $errorFormatter->formatError($exception, $this->slug, 'MOVIE');
+        $this->updateCache('FAILED', error: $errorData);
     }
 
     /**

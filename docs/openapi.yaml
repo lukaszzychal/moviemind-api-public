@@ -403,6 +403,19 @@ paths:
                     entity: MOVIE
                     entity_id: 1
                     slug: the-matrix-1999
+                failed:
+                  value:
+                    job_id: 559d53db-bb14-46ca-928e-d600b3cf6b3a
+                    status: FAILED
+                    entity: MOVIE
+                    slug: test-movie-123
+                    requested_slug: test-movie-123
+                    locale: en-US
+                    error:
+                      type: NOT_FOUND
+                      message: The requested movie was not found
+                      technical_message: Movie not found: test-movie-123
+                      user_message: This movie does not exist in our database
         '404':
           description: Job not found
           content:
@@ -828,8 +841,21 @@ components:
           format: float
           nullable: true
         error:
-          type: string
+          type: object
           nullable: true
+          properties:
+            type:
+              type: string
+              enum: [NOT_FOUND, AI_API_ERROR, VALIDATION_ERROR, UNKNOWN_ERROR]
+            message:
+              type: string
+              description: Short technical error message
+            technical_message:
+              type: string
+              description: Full exception message for debugging
+            user_message:
+              type: string
+              description: User-friendly error message
         description_id:
           type: integer
           nullable: true
