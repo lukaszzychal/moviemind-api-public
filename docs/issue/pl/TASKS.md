@@ -308,7 +308,7 @@ Każde zadanie ma następującą strukturę:
   - Wybrać odpowiednią bazę Distroless, która pozwoli uruchomić PHP-FPM, Nginx oraz Supervisora (build wieloetapowy).
   - Zmodyfikować etapy w `docker/php/Dockerfile`, aby kopiowały artefakty runtime do obrazu Distroless.
   - Zapewnić działanie Supervisora, Horizona oraz skryptów entrypoint bez powłoki (wektorowa forma `CMD`/`ENTRYPOINT`).
-  - Zaktualizować dokumentację wdrożeniową (Railway, README, playbooki operacyjne) do nowego obrazu.
+  - Zaktualizować dokumentację wdrożeniową (README, playbooki operacyjne) do nowego obrazu.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
 ---

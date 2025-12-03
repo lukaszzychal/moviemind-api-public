@@ -19,7 +19,7 @@
 - **Rozmiar**: 233MB ⬇️ **-8MB (-3%)**
 - **Czas budowania**: ~40s (z cache)
 - **Zawartość**: PHP-FPM + Nginx + Supervisor
-- **Użycie**: Railway, staging, production deployments
+- **Użycie**: staging, production deployments
 
 ## 🎯 Korzyści Multi-stage Build
 
@@ -34,7 +34,7 @@
 
 ### 3. **Separacja środowisk**
 - **Local/Dev**: Tylko PHP-FPM (Nginx w osobnym kontenerze)
-- **Production/Staging**: Wszystko w jednym kontenerze (dla Railway)
+- **Production/Staging**: Wszystko w jednym kontenerze (dla production deployments)
 
 ### 4. **Lepsze cache'owanie**
 - Composer dependencies są w osobnej warstwie
@@ -58,7 +58,7 @@ local (dla docker-compose)
 ├── COPY aplikacja
 └── CMD php-fpm
 
-production (dla Railway)
+production (dla production deployments)
 ├── Instalacja Nginx + Supervisor
 ├── COPY vendor z builder
 ├── COPY aplikacja
@@ -155,19 +155,13 @@ FROM php:${PHP_VERSION}-fpm-alpine AS base
 
 **Korzyść**: Łatwiejsze zarządzanie wersjami
 
-## 🔧 Konfiguracja Railway
+## 🔧 Konfiguracja Production Build
 
-Railway automatycznie używa ostatniego stage w Dockerfile, więc `production` będzie domyślnym targetem.
+Docker automatycznie używa ostatniego stage w Dockerfile, więc `production` będzie domyślnym targetem.
 
 Jeśli potrzebujesz explicite określić target:
-```json
-{
-  "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "docker/php/Dockerfile",
-    "buildCommand": "docker build --target production -t app ."
-  }
-}
+```bash
+docker build --target production -t app .
 ```
 
 ## 📝 Rekomendacje
