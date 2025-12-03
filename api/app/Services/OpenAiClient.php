@@ -39,18 +39,27 @@ class OpenAiClient implements OpenAiClientInterface
 
     /**
      * Generate movie information from a slug using AI.
+     *
+     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
      */
-    public function generateMovie(string $slug): array
+    public function generateMovie(string $slug, ?array $tmdbData = null): array
     {
         if (empty($this->apiKey)) {
             return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
         }
 
-        $systemPrompt = 'You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {"error": "Movie not found"}. Only if the movie exists, generate movie information from the slug. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
-        $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).";
+        // Build prompt with TMDb context if available
+        if ($tmdbData !== null) {
+            $tmdbContext = $this->formatTmdbContext($tmdbData);
+            $systemPrompt = 'You are a movie database assistant. Generate a unique, original description for the movie based on the provided TMDb data. Do NOT copy the overview from TMDb. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot description), genres (array).';
+            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot), genres (array).";
+        } else {
+            $systemPrompt = 'You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {"error": "Movie not found"}. Only if the movie exists, generate movie information from the slug. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
+            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).";
+        }
 
-        return $this->makeApiCall('movie', $slug, $systemPrompt, $userPrompt, function ($content) {
-            return [
+        return $this->makeApiCall('movie', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
+            $result = [
                 'success' => true,
                 'title' => $content['title'] ?? null,
                 'release_year' => isset($content['release_year']) ? (int) $content['release_year'] : null,
@@ -59,7 +68,55 @@ class OpenAiClient implements OpenAiClientInterface
                 'genres' => $content['genres'] ?? [],
                 'model' => $this->model,
             ];
+
+            // Use TMDb data as fallback if AI response is missing fields
+            if ($tmdbData !== null) {
+                if (empty($result['title']) && ! empty($tmdbData['title'])) {
+                    $result['title'] = $tmdbData['title'];
+                }
+                if (empty($result['director']) && ! empty($tmdbData['director'])) {
+                    $result['director'] = $tmdbData['director'];
+                }
+                if ($result['release_year'] === null && ! empty($tmdbData['release_date'])) {
+                    $year = (int) substr($tmdbData['release_date'], 0, 4);
+                    if ($year > 0) {
+                        $result['release_year'] = $year;
+                    }
+                }
+            }
+
+            return $result;
         }, $this->movieResponseSchema());
+    }
+
+    /**
+     * Format TMDb data as context string for AI prompt.
+     *
+     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}  $tmdbData
+     */
+    private function formatTmdbContext(array $tmdbData): string
+    {
+        $lines = [
+            "Title: {$tmdbData['title']}",
+        ];
+
+        if (! empty($tmdbData['release_date'])) {
+            $lines[] = "Release Date: {$tmdbData['release_date']}";
+        }
+
+        if (! empty($tmdbData['director'])) {
+            $lines[] = "Director: {$tmdbData['director']}";
+        }
+
+        if (! empty($tmdbData['overview'])) {
+            $lines[] = "TMDb Overview: {$tmdbData['overview']}";
+        }
+
+        if (! empty($tmdbData['id'])) {
+            $lines[] = "TMDb ID: {$tmdbData['id']}";
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

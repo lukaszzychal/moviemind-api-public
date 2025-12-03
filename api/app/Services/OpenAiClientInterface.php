@@ -8,9 +8,10 @@ interface OpenAiClientInterface
      * Generate movie information from a slug using AI.
      *
      * @param  string  $slug  Movie slug
+     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
      * @return array{success: bool, title?: string, release_year?: int, director?: string, description?: string, genres?: array, model?: string, error?: string}
      */
-    public function generateMovie(string $slug): array;
+    public function generateMovie(string $slug, ?array $tmdbData = null): array;
 
     /**
      * Generate person biography from a slug using AI.
