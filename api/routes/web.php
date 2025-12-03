@@ -1,13 +1,32 @@
 <?php
 
+use App\Services\FeatureFlag\FeatureFlagManager;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::get('/', function (FeatureFlagManager $featureFlagManager) {
+    // Get AI service configuration
+    $aiService = config('services.ai.service', 'mock');
+
+    // Get active feature flags
+    $activeFlags = collect($featureFlagManager->all())
+        ->filter(fn (array $meta, string $name) => $featureFlagManager->isActive($name))
+        ->map(fn (array $meta, string $name) => [
+            'name' => $name,
+            'description' => $meta['description'] ?? null,
+            'category' => $meta['category'] ?? null,
+        ])
+        ->values()
+        ->toArray();
+
     return response()->json([
         'name' => config('app.name', 'MovieMind API'),
         'version' => '1.0.0',
         'status' => 'ok',
         'environment' => config('app.env', 'production'),
+        'ai_service' => $aiService,
+        'feature_flags' => [
+            'active' => $activeFlags,
+        ],
         'endpoints' => [
             'api' => '/api/v1',
             'health' => '/up',
