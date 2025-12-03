@@ -526,6 +526,79 @@ Every entry follows this structure:
 
 ---
 
+#### `TASK-041` – Add TV series and programs (DDD approach)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 30-40 hours
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Implementation of separate domain entities Series and TVShow according to Domain-Driven Design. Movie and Series/TV Show are different domain concepts - Movie has no episodes, Series has.
+- **Details:**
+  - Create `Series` model with `series` table:
+    - Fields: `title`, `slug`, `start_year`, `end_year`, `network`, `seasons`, `episodes`, `director`, `genres`, `default_description_id`
+    - Relations: `descriptions()`, `people()` (series_person), `genres()`
+  - Create `TVShow` model with `tv_shows` table:
+    - Fields: `title`, `slug`, `start_year`, `end_year`, `network`, `format`, `episodes`, `runtime_per_episode`, `genres`, `default_description_id`
+    - Relations: `descriptions()`, `people()` (tv_show_person), `genres()`
+  - Create common interfaces/trait:
+    - `DescribableContent` interface (for descriptions)
+    - `Sluggable` trait (for slug generation/parsing)
+    - `HasPeople` interface (for relations with Person)
+  - Create `SeriesDescription` and `TVShowDescription` models (or polymorphic `ContentDescription`)
+  - Create `SeriesRepository` and `TVShowRepository` (shared logic through interfaces)
+  - Create `SeriesController` and `TVShowController` (shared logic through interfaces)
+  - Create jobs: `RealGenerateSeriesJob`, `MockGenerateSeriesJob`, `RealGenerateTVShowJob`, `MockGenerateTVShowJob`
+  - Update `GenerateController` (handle SERIES, TV_SHOW)
+  - Create enum `EntityType` (MOVIE, SERIES, TV_SHOW, PERSON)
+  - Update OpenAPI schema
+  - Migrations for tables `series`, `tv_shows`, `series_person`, `tv_show_person`, `series_descriptions`, `tv_show_descriptions`
+  - Tests (automated and manual)
+  - Documentation
+- **Dependencies:** none
+- **Created:** 2025-01-09
+---
+
+#### `TASK-042` – Analysis of possible extensions (types and kinds)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low
+- **Estimated time:** 4-6 hours
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Analysis and documentation of possible system extensions with new content types and kinds.
+- **Details:**
+  - Analyze current structure (Movie, Person, Series, TVShow)
+  - Identify potential extensions (e.g., Documentaries, Short Films, Web Series, Podcasts, Books, Music Albums)
+  - Analyze impact on API, database, jobs
+  - Analyze common interfaces and refactoring possibilities
+  - Document recommendations and alternatives
+  - Create document in `docs/knowledge/technical/`
+- **Dependencies:** none
+- **Created:** 2025-01-09
+---
+
+#### `TASK-043` – Implement BREAKING CHANGE detection rule
+- **Status:** ⏳ PENDING
+- **Priority:** 🔴 High
+- **Estimated time:** 2-3 hours
+- **Start time:** --
+- **End time:** --
+- **Duration:** --
+- **Execution:** TBD
+- **Description:** Add rule to cursor/rules requiring BREAKING CHANGE analysis before making changes. Rule requires treating changes as if they were in production with full data.
+- **Details:**
+  - Create `.cursor/rules/breaking-change-detection.mdc`
+  - Rule: treat changes as if they were in production with full data
+  - Require impact analysis before implementation (data impact, API impact, functionality impact)
+  - Analyze alternatives and safe change process (migrations, backward compatibility, etc.)
+  - Process: STOP → analysis → documentation → alternatives → safe process → approval
+- **Dependencies:** none
+- **Created:** 2025-01-09
+---
+
 #### `TASK-028` – Verify priority label sync from TASKS to Issues
 - **Status:** ⏳ PENDING
 - **Priority:** 🟡 Medium
