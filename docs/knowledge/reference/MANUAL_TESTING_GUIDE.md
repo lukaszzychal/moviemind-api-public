@@ -110,7 +110,7 @@ xxx            moviemind-horizon        Up X seconds
 
 ### Krok 3: Instalacja Zależności PHP
 
-#### 3.1. Zainstaluj zależności Composer
+#### 3.1. Zainstaluj zależności Composerls -l
 
 ```bash
 docker compose exec php composer install
@@ -741,6 +741,29 @@ curl -s -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" \
 **Oczekiwany wynik:**
 - Status: `200 OK`
 - Response zawiera: `job_id`, `status` (PENDING/IN_PROGRESS/DONE/FAILED), `entity`, `slug`
+- Jeśli `status: "FAILED"`, response zawiera również obiekt `error` z polami:
+  - `type` (NOT_FOUND, AI_API_ERROR, VALIDATION_ERROR, UNKNOWN_ERROR)
+  - `message` (krótki komunikat techniczny)
+  - `technical_message` (pełny exception message)
+  - `user_message` (komunikat dla użytkownika)
+
+**Przykład odpowiedzi z błędem FAILED:**
+```json
+{
+  "job_id": "559d53db-bb14-46ca-928e-d600b3cf6b3a",
+  "status": "FAILED",
+  "entity": "MOVIE",
+  "slug": "test-movie-123",
+  "requested_slug": "test-movie-123",
+  "locale": "en-US",
+  "error": {
+    "type": "NOT_FOUND",
+    "message": "The requested movie was not found",
+    "technical_message": "Movie not found: test-movie-123",
+    "user_message": "This movie does not exist in our database"
+  }
+}
+```
 
 ---
 

@@ -27,6 +27,7 @@ alwaysApply: true
 - Nie commituj kodu bez testów
 - Nie pomijaj testów "bo to mała zmiana"
 - Nie ignoruj failujących testów
+- **Nie pisz kodu implementacyjnego przed napisaniem testów** - to narusza zasadę TDD
 
 ## Rodzaje testów
 

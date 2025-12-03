@@ -7,6 +7,7 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Person;
 use App\Models\PersonBio;
+use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Bus\Queueable;
@@ -123,7 +124,10 @@ class RealGeneratePersonJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $this->updateCache('FAILED');
+            /** @var JobErrorFormatter $errorFormatter */
+            $errorFormatter = app(JobErrorFormatter::class);
+            $errorData = $errorFormatter->formatError($e, $this->slug, 'PERSON');
+            $this->updateCache('FAILED', error: $errorData);
 
             throw $e; // Re-throw for retry mechanism
         } finally {
@@ -221,9 +225,10 @@ class RealGeneratePersonJob implements ShouldQueue
         ?int $bioId = null,
         ?string $slug = null,
         ?string $locale = null,
-        ?string $contextTag = null
+        ?string $contextTag = null,
+        ?array $error = null
     ): void {
-        Cache::put($this->cacheKey(), [
+        $payload = [
             'job_id' => $this->jobId,
             'status' => $status,
             'entity' => 'PERSON',
@@ -233,7 +238,13 @@ class RealGeneratePersonJob implements ShouldQueue
             'bio_id' => $bioId,
             'locale' => $locale ?? $this->locale,
             'context_tag' => $contextTag ?? $this->contextTag,
-        ], now()->addMinutes(15));
+        ];
+
+        if ($error !== null) {
+            $payload['error'] = $error;
+        }
+
+        Cache::put($this->cacheKey(), $payload, now()->addMinutes(15));
     }
 
     private function nextContextTag(Person $person): string
@@ -395,16 +406,10 @@ class RealGeneratePersonJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        Cache::put($this->cacheKey(), [
-            'job_id' => $this->jobId,
-            'status' => 'FAILED',
-            'entity' => 'PERSON',
-            'slug' => $this->slug,
-            'requested_slug' => $this->slug,
-            'error' => $exception->getMessage(),
-            'locale' => $this->locale,
-            'context_tag' => $this->contextTag,
-        ], now()->addMinutes(15));
+        /** @var JobErrorFormatter $errorFormatter */
+        $errorFormatter = app(JobErrorFormatter::class);
+        $errorData = $errorFormatter->formatError($exception, $this->slug, 'PERSON');
+        $this->updateCache('FAILED', error: $errorData);
     }
 
     private function findExistingPerson(): ?Person
