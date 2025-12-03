@@ -147,8 +147,29 @@ class GenerateMovieJobTest extends TestCase
         $job->handle();
 
         // Verify movie was created
-        $movie = Movie::where('slug', 'new-movie-test')->first();
-        $this->assertNotNull($movie);
+        // Note: Movie::generateSlug() is now used, so slug may differ from requested slug
+        // The slug will be generated from parsed title, year (1999 default), and director
+        // We need to find the movie by checking what was actually created
+        $this->assertDatabaseCount('movies', 1);
+        $movie = Movie::first();
+        $this->assertNotNull($movie, 'Movie should be created');
+
+        // Verify the slug was generated (not just the requested slug)
+        // Note: generateSlug may add director suffix if base slug exists in database
+        $parsed = Movie::parseSlug('new-movie-test');
+        $title = $parsed['title'] ?? 'New Movie Test';
+        $year = $parsed['year'] ?? 1999;
+        $director = $parsed['director'] ?? 'Mock AI Director';
+
+        // The slug should start with the base slug format
+        $this->assertStringStartsWith('new-movie-test-1999', $movie->slug, 'Movie slug should start with base format');
+
+        // Verify it was generated using generateSlug
+        // Note: The actual slug may include director if base slug "new-movie-test-1999" already exists
+        // We verify by checking what generateSlug would produce excluding the current movie
+        // This simulates what would happen when creating a new movie (before it exists)
+        $expectedSlug = Movie::generateSlug($title, $year, $director, $movie->id);
+        $this->assertEquals($expectedSlug, $movie->slug, 'Movie slug should match generated slug (excluding current movie from check)');
         $this->assertDatabaseCount('movies', 1);
         $this->assertEquals(1, $movie->descriptions()->count());
         $this->assertEquals(
@@ -175,7 +196,28 @@ class GenerateMovieJobTest extends TestCase
         $job = new MockGenerateMovieJob('localized-movie', $jobId, locale: 'pl-PL', contextTag: 'critical');
         $job->handle();
 
-        $movie = Movie::where('slug', 'localized-movie')->firstOrFail();
+        // Note: Movie::generateSlug() is now used, so slug may differ from requested slug
+        // Find the movie that was created
+        $this->assertDatabaseCount('movies', 1);
+        $movie = Movie::first();
+        $this->assertNotNull($movie, 'Movie should be created');
+
+        // Verify the slug was generated correctly
+        // Note: generateSlug may add director suffix if base slug exists in database
+        $parsed = Movie::parseSlug('localized-movie');
+        $title = $parsed['title'] ?? 'Localized Movie';
+        $year = $parsed['year'] ?? 1999;
+        $director = $parsed['director'] ?? 'Mock AI Director';
+
+        // The slug should start with the base slug format
+        $this->assertStringStartsWith('localized-movie-1999', $movie->slug, 'Movie slug should start with base format');
+
+        // Verify it was generated using generateSlug
+        // Note: We need to check what generateSlug would produce BEFORE the movie was created
+        // Since the movie now exists, we need to exclude it from the check
+        // The actual slug should match what generateSlug would produce when creating a new movie
+        $expectedSlug = Movie::generateSlug($title, $year, $director, $movie->id);
+        $this->assertEquals($expectedSlug, $movie->slug, 'Movie slug should match generated slug (excluding current movie)');
         $description = $movie->descriptions()->first();
         $this->assertSame('pl-PL', $description->locale->value);
         $contextValue = $description->context_tag instanceof \BackedEnum ? $description->context_tag->value : (string) $description->context_tag;
