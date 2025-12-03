@@ -9,6 +9,7 @@ use App\Models\Person;
 use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
 use App\Services\HateoasService;
+use App\Services\PersonDisambiguationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -21,7 +22,8 @@ class PersonController extends Controller
     public function __construct(
         private readonly PersonRepository $personRepository,
         private readonly HateoasService $hateoas,
-        private readonly QueuePersonGenerationAction $queuePersonGenerationAction
+        private readonly QueuePersonGenerationAction $queuePersonGenerationAction,
+        private readonly PersonDisambiguationService $disambiguationService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -69,6 +71,12 @@ class PersonController extends Controller
 
             if ($selectedBio) {
                 $payload['selected_bio'] = $selectedBio->toArray();
+            }
+
+            // Add disambiguation metadata if ambiguous slug
+            $meta = $this->disambiguationService->determineMeta($person, $slug);
+            if ($meta !== null) {
+                $payload['_meta'] = $meta;
             }
 
             Cache::put($cacheKey, $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));

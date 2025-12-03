@@ -7,6 +7,7 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Repositories\MovieRepository;
 use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
@@ -62,9 +63,11 @@ class RealGenerateMovieJob implements ShouldQueue
         ]);
         /** @var JobStatusService $jobStatusService */
         $jobStatusService = app(JobStatusService::class);
+        /** @var MovieRepository $movieRepository */
+        $movieRepository = app(MovieRepository::class);
 
         try {
-            $existing = $this->findExistingMovie();
+            $existing = $movieRepository->findBySlugForJob($this->slug, $this->existingMovieId);
 
             if ($existing) {
                 $this->refreshExistingMovie($existing, $openAiClient);
@@ -93,7 +96,7 @@ class RealGenerateMovieJob implements ShouldQueue
                 ]);
             } catch (QueryException $exception) {
                 if ($this->isUniqueMovieSlugViolation($exception)) {
-                    $existingAfterViolation = $this->findExistingMovie();
+                    $existingAfterViolation = $movieRepository->findBySlugForJob($this->slug, $this->existingMovieId);
                     if ($existingAfterViolation) {
                         Log::info('RealGenerateMovieJob detected concurrent creation - using existing movie', [
                             'slug' => $this->slug,
@@ -133,18 +136,6 @@ class RealGenerateMovieJob implements ShouldQueue
         } finally {
             $jobStatusService->releaseGenerationSlot('MOVIE', $this->slug, $this->locale, $this->contextTag);
         }
-    }
-
-    private function findExistingMovie(): ?Movie
-    {
-        if ($this->existingMovieId !== null) {
-            $movie = Movie::with('descriptions')->find($this->existingMovieId);
-            if ($movie) {
-                return $movie;
-            }
-        }
-
-        return Movie::with('descriptions')->where('slug', $this->slug)->first();
     }
 
     /**
@@ -481,9 +472,14 @@ class RealGenerateMovieJob implements ShouldQueue
         $descriptionText = $aiResponse['description'] ?? "Generated description for {$title}.";
         $genres = $aiResponse['genres'] ?? ['Action', 'Drama'];
 
+        // Generate unique slug from AI data instead of using slug from request
+        // This ensures uniqueness and prevents conflicts with ambiguous slugs
+        // Following DIP: use Movie model method, not direct slug from request
+        $generatedSlug = Movie::generateSlug((string) $title, $releaseYear, $director);
+
         $movie = Movie::create([
             'title' => (string) $title,
-            'slug' => $this->slug,
+            'slug' => $generatedSlug,
             'release_year' => $releaseYear,
             'director' => $director,
             'genres' => $genres,
