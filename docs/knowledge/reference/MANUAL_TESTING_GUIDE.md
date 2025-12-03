@@ -1342,5 +1342,388 @@ chmod +x test-duplicate-prevention.sh
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-29
+---
+
+## 🧪 Test 9: Sprawdzenie Obsługi Niejednoznacznych Slugów podczas Generowania
+
+### Cel
+
+Sprawdzenie jak system obsługuje niejednoznaczne slugi (slug bez roku pasujący do kilku filmów) podczas generowania opisów przez AI.
+
+### Wymagania
+
+- Aplikacja uruchomiona lokalnie
+- Redis i Horizon działające
+- Feature flag `ai_description_generation` aktywny
+- Baza danych z filmami o tym samym tytule (różne lata)
+
+### Krok 1: Przygotowanie danych testowych
+
+Utwórz 2 filmy z tym samym tytułem (różne lata):
+
+```bash
+# Przez Tinker
+cd api && php artisan tinker
+```
+
+```php
+$movie1 = \App\Models\Movie::create([
+    'title' => 'Bad Boys',
+    'slug' => 'bad-boys-1995',
+    'release_year' => 1995,
+    'director' => 'Michael Bay',
+    'genres' => ['Action', 'Comedy']
+]);
+
+$movie2 = \App\Models\Movie::create([
+    'title' => 'Bad Boys',
+    'slug' => 'bad-boys-2020',
+    'release_year' => 2020,
+    'director' => 'Adil El Arbi',
+    'genres' => ['Action', 'Comedy']
+]);
+```
+
+### Krok 2: Test GET endpoint z niejednoznacznym slugiem
+
+```bash
+curl -X GET "http://127.0.0.1:8000/api/v1/movies/bad-boys" \
+  -H "Accept: application/json"
+```
+
+**Oczekiwany wynik:**
+- Status: `200 OK`
+- Zwraca najnowszy film (2020)
+- Zawiera `_meta.ambiguous = true`
+- Zawiera `_meta.alternatives` z listą obu filmów
+
+**Przykładowa odpowiedź:**
+```json
+{
+  "id": 2,
+  "title": "Bad Boys",
+  "slug": "bad-boys-2020",
+  "release_year": 2020,
+  "_meta": {
+    "ambiguous": true,
+    "message": "Multiple movies found with this title. Showing most recent. Use slug with year (e.g., \"bad-boys-1995\") for specific version.",
+    "alternatives": [
+      {
+        "slug": "bad-boys-2020",
+        "title": "Bad Boys",
+        "release_year": 2020,
+        "url": "http://127.0.0.1:8000/api/v1/movies/bad-boys-2020"
+      },
+      {
+        "slug": "bad-boys-1995",
+        "title": "Bad Boys",
+        "release_year": 1995,
+        "url": "http://127.0.0.1:8000/api/v1/movies/bad-boys-1995"
+      }
+    ]
+  }
+}
+```
+
+### Krok 3: Test generowania z niejednoznacznym slugiem
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "bad-boys",
+    "locale": "en-US"
+  }'
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Zwraca `job_id` i `status: PENDING`
+- Job powinien znaleźć istniejący film (najnowszy - 2020) i użyć go zamiast tworzyć nowy
+
+**Sprawdzenie statusu joba:**
+```bash
+# Zastąp {job_id} rzeczywistym ID z odpowiedzi
+curl -X GET "http://127.0.0.1:8000/api/v1/jobs/{job_id}" \
+  -H "Accept: application/json"
+```
+
+**Oczekiwany wynik po zakończeniu:**
+- Status: `DONE`
+- `id` wskazuje na istniejący film (bad-boys-2020)
+- `slug` to slug istniejącego filmu
+
+### Krok 4: Test generowania z jednoznacznym slugiem (z rokiem)
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "bad-boys-1995",
+    "locale": "en-US"
+  }'
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Job powinien znaleźć istniejący film (bad-boys-1995) i użyć go
+
+### Krok 5: Test generowania nowego filmu
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "new-movie-2024",
+    "locale": "en-US"
+  }'
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Job powinien utworzyć nowy film
+- Slug powinien być wygenerowany z danych AI używając `Movie::generateSlug()`
+- Jeśli AI zwróci tytuł "New Movie", rok 2024, reżyser "John Doe", slug powinien być "new-movie-2024" lub "new-movie-2024-john-doe" (jeśli potrzebne)
+
+### Weryfikacja w bazie danych
+
+```bash
+cd api && php artisan tinker
+```
+
+```php
+// Sprawdź czy nie powstały duplikaty
+$movies = \App\Models\Movie::where('title', 'Bad Boys')->get();
+foreach($movies as $m) {
+    echo $m->slug . ' (' . $m->release_year . ')' . PHP_EOL;
+}
+
+// Sprawdź czy nowy film ma poprawny slug
+$newMovie = \App\Models\Movie::where('slug', 'LIKE', 'new-movie%')->first();
+if ($newMovie) {
+    echo "New movie slug: " . $newMovie->slug . PHP_EOL;
+    echo "Title: " . $newMovie->title . PHP_EOL;
+    echo "Year: " . $newMovie->release_year . PHP_EOL;
+}
+```
+
+### Checklist końcowy
+
+- [ ] GET endpoint z niejednoznacznym slugiem zwraca najnowszy film z `_meta`
+- [ ] Generowanie z niejednoznacznym slugiem używa istniejącego filmu (najnowszego)
+- [ ] Generowanie z jednoznacznym slugiem używa istniejącego filmu
+- [ ] Generowanie nowego filmu tworzy film z poprawnym slugiem (wygenerowanym z danych AI)
+- [ ] Nie powstają duplikaty filmów
+- [ ] Slug jest unikalny (unique constraint działa)
+
+### Troubleshooting
+
+**Problem:** Job tworzy nowy film zamiast użyć istniejącego
+- **Rozwiązanie:** Sprawdź czy `findExistingMovie()` w jobach używa logiki podobnej do `MovieRepository::findBySlugWithRelations()`
+
+**Problem:** Slug koliduje (unique constraint violation)
+- **Rozwiązanie:** Sprawdź czy `createMovieRecord()` używa `Movie::generateSlug()` zamiast slug z requestu
+
+**Problem:** Nie zwraca `_meta` dla niejednoznacznych slugów
+- **Rozwiązanie:** Sprawdź czy `MovieDisambiguationService::determineMeta()` jest wywoływany w `MovieController::show()`
+
+---
+
+## 🧪 Test 10: Sprawdzenie Obsługi Niejednoznacznych Slugów dla Osób podczas Generowania
+
+### Cel
+
+Sprawdzenie jak system obsługuje niejednoznaczne slugi (slug bez roku urodzenia pasujący do kilku osób) podczas generowania biografii przez AI.
+
+### Wymagania
+
+- Aplikacja uruchomiona lokalnie
+- Redis i Horizon działające
+- Feature flag `ai_bio_generation` aktywny
+- Baza danych z osobami o tym samym imieniu i nazwisku (różne daty urodzenia)
+
+### Krok 1: Przygotowanie danych testowych
+
+Utwórz 2 osoby z tym samym imieniem i nazwiskiem (różne daty urodzenia):
+
+```bash
+# Przez Tinker
+cd api && php artisan tinker
+```
+
+```php
+$person1 = \App\Models\Person::create([
+    'name' => 'John Smith',
+    'slug' => 'john-smith-1960',
+    'birth_date' => '1960-01-01',
+    'birthplace' => 'New York'
+]);
+
+$person2 = \App\Models\Person::create([
+    'name' => 'John Smith',
+    'slug' => 'john-smith-1980',
+    'birth_date' => '1980-01-01',
+    'birthplace' => 'Los Angeles'
+]);
+```
+
+### Krok 2: Test GET endpoint z niejednoznacznym slugiem
+
+```bash
+curl -X GET "http://127.0.0.1:8000/api/v1/people/john-smith" \
+  -H "Accept: application/json"
+```
+
+**Oczekiwany wynik:**
+- Status: `200 OK`
+- Zwraca najnowszą osobę (najnowsza data urodzenia - 1980)
+- Zawiera `_meta.ambiguous = true`
+- Zawiera `_meta.alternatives` z listą obu osób
+
+**Przykładowa odpowiedź:**
+```json
+{
+  "id": 2,
+  "name": "John Smith",
+  "slug": "john-smith-1980",
+  "birth_date": "1980-01-01",
+  "birthplace": "Los Angeles",
+  "_meta": {
+    "ambiguous": true,
+    "message": "Multiple people found with this name. Showing most recent by birth date. Use slug with birth year (e.g., \"john-smith-1960\") for specific version.",
+    "alternatives": [
+      {
+        "slug": "john-smith-1980",
+        "name": "John Smith",
+        "birth_date": "1980-01-01",
+        "url": "http://127.0.0.1:8000/api/v1/people/john-smith-1980"
+      },
+      {
+        "slug": "john-smith-1960",
+        "name": "John Smith",
+        "birth_date": "1960-01-01",
+        "url": "http://127.0.0.1:8000/api/v1/people/john-smith-1960"
+      }
+    ]
+  }
+}
+```
+
+### Krok 3: Test generowania z niejednoznacznym slugiem
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "entity_id": "john-smith",
+    "locale": "en-US"
+  }'
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Zwraca `job_id` i `status: PENDING`
+- Job powinien znaleźć istniejącą osobę (najnowszą - 1980) i użyć jej zamiast tworzyć nową
+
+**Sprawdzenie statusu joba:**
+```bash
+# Zastąp {job_id} rzeczywistym ID z odpowiedzi
+curl -X GET "http://127.0.0.1:8000/api/v1/jobs/{job_id}" \
+  -H "Accept: application/json"
+```
+
+**Oczekiwany wynik po zakończeniu:**
+- Status: `DONE`
+- `id` wskazuje na istniejącą osobę (john-smith-1980)
+- `slug` to slug istniejącej osoby
+
+### Krok 4: Test generowania z jednoznacznym slugiem (z rokiem urodzenia)
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "entity_id": "john-smith-1960",
+    "locale": "en-US"
+  }'
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Job powinien znaleźć istniejącą osobę (john-smith-1960) i użyć jej
+
+### Krok 5: Test generowania nowej osoby
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "entity_id": "new-person-2024",
+    "locale": "en-US"
+  }'
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Job powinien utworzyć nową osobę
+- Slug powinien być wygenerowany z danych AI używając `Person::generateSlug()`
+- Jeśli AI zwróci imię "New Person", datę urodzenia "1990-01-01", miejsce urodzenia "Boston", slug powinien być "new-person-1990" lub "new-person-1990-boston" (jeśli potrzebne)
+
+### Weryfikacja w bazie danych
+
+```bash
+cd api && php artisan tinker
+```
+
+```php
+// Sprawdź czy nie powstały duplikaty
+$people = \App\Models\Person::where('name', 'John Smith')->get();
+foreach($people as $p) {
+    echo $p->slug . ' (' . $p->birth_date . ')' . PHP_EOL;
+}
+
+// Sprawdź czy nowa osoba ma poprawny slug
+$newPerson = \App\Models\Person::where('slug', 'LIKE', 'new-person%')->first();
+if ($newPerson) {
+    echo "New person slug: " . $newPerson->slug . PHP_EOL;
+    echo "Name: " . $newPerson->name . PHP_EOL;
+    echo "Birth date: " . $newPerson->birth_date . PHP_EOL;
+}
+```
+
+### Checklist końcowy
+
+- [ ] GET endpoint z niejednoznacznym slugiem zwraca najnowszą osobę z `_meta`
+- [ ] Generowanie z niejednoznacznym slugiem używa istniejącej osoby (najnowszej)
+- [ ] Generowanie z jednoznacznym slugiem używa istniejącej osoby
+- [ ] Generowanie nowej osoby tworzy osobę z poprawnym slugiem (wygenerowanym z danych AI)
+- [ ] Nie powstają duplikaty osób
+- [ ] Slug jest unikalny (unique constraint działa)
+
+### Troubleshooting
+
+**Problem:** Job tworzy nową osobę zamiast użyć istniejącej
+- **Rozwiązanie:** Sprawdź czy `findExistingPerson()` w jobach używa logiki podobnej do `PersonRepository::findBySlugWithRelations()`
+
+**Problem:** Slug koliduje (unique constraint violation)
+- **Rozwiązanie:** Sprawdź czy `createPersonRecord()` używa `Person::generateSlug()` zamiast slug z requestu
+
+**Problem:** Nie zwraca `_meta` dla niejednoznacznych slugów
+- **Rozwiązanie:** Sprawdź czy `PersonDisambiguationService::determineMeta()` jest wywoływany w `PersonController::show()` (jeśli istnieje)
+
+---
+
+**Ostatnia aktualizacja:** 2025-01-09
 

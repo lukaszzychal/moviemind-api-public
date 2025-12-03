@@ -65,4 +65,44 @@ class MovieRepository
             ->orderBy('release_year', 'desc')
             ->get();
     }
+
+    /**
+     * Find movie by slug for use in Jobs.
+     * Handles ambiguous slugs (without year) by returning the most recent movie.
+     * Uses lighter relations than findBySlugWithRelations (only 'descriptions').
+     *
+     * @param  string  $slug  The slug to search for
+     * @param  int|null  $existingId  Optional existing movie ID to check first
+     */
+    public function findBySlugForJob(string $slug, ?int $existingId = null): ?Movie
+    {
+        // If existing ID is provided, try to find by ID first
+        if ($existingId !== null) {
+            $movie = Movie::with('descriptions')->find($existingId);
+            if ($movie) {
+                return $movie;
+            }
+        }
+
+        // Try exact match first
+        $movie = Movie::with('descriptions')->where('slug', $slug)->first();
+        if ($movie) {
+            return $movie;
+        }
+
+        // If slug doesn't contain year, try to find by title only (ambiguous slug handling)
+        // This matches the behavior of findBySlugWithRelations()
+        $parsed = Movie::parseSlug($slug);
+        if ($parsed['year'] === null) {
+            $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
+
+            // Return most recent movie with matching title slug
+            return Movie::with('descriptions')
+                ->whereRaw('slug LIKE ?', ["{$titleSlug}%"])
+                ->orderBy('release_year', 'desc')
+                ->first();
+        }
+
+        return null;
+    }
 }

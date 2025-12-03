@@ -30,6 +30,8 @@ This document contains instructions for testing the following use cases:
 | 12 | **Duplication - Different ContextTag (KEY)**        | Verify that concurrent requests with different ContextTag return different job_id and create different descriptions | `POST /api/v1/generate`       |
 | 13 | **What happens when ContextTag is not in database** | Verify behavior when retrieving a movie without description with given ContextTag              | `GET /api/v1/movies/{slug}`   |
 | 14 | **Debug Configuration**                               | Verify service configuration (AI_SERVICE, OpenAI, etc.) - requires feature flag              | `GET /api/v1/admin/debug/config`   |
+| 15 | **Ambiguous Slug Handling - Movie**                   | Verify handling of ambiguous slugs (slug without year matching multiple movies)            | `GET /api/v1/movies/{slug}`, `POST /api/v1/generate` |
+| 16 | **Ambiguous Slug Handling - Person**                 | Verify handling of ambiguous slugs (slug without birth year matching multiple people)      | `GET /api/v1/people/{slug}`, `POST /api/v1/generate` |
 
 ### Key Mechanisms Tested
 
@@ -1163,6 +1165,10 @@ curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq '.environm
 - [ ] Test 13: Different ContextTag in concurrent requests - different job_id and descriptions (KEY)
 - [ ] Test 14: ContextTag not in database - behavior when retrieving movie
 - [ ] Test 14: Debug Configuration - verify service configuration (AI_SERVICE, OpenAI, etc.) - requires feature flag `debug_endpoints`
+- [ ] Test 15: Ambiguous Slug Handling for Movies - GET endpoint returns most recent movie with `_meta`
+- [ ] Test 15: Ambiguous Slug Handling for Movies - generation with ambiguous slug uses existing movie
+- [ ] Test 16: Ambiguous Slug Handling for Persons - GET endpoint returns most recent person with `_meta`
+- [ ] Test 16: Ambiguous Slug Handling for Persons - generation with ambiguous slug uses existing person
 
 ---
 
@@ -1319,5 +1325,386 @@ chmod +x test-duplicate-prevention.sh
 
 ---
 
-**Last updated:** 2025-11-29
+## 🧪 Test 15: Ambiguous Slug Handling for Movies during Generation
+
+### Goal
+
+Verify how the system handles ambiguous slugs (slug without year matching multiple movies) during AI description generation.
+
+### Prerequisites
+
+- Application running locally
+- Redis and Horizon running
+- Feature flag `ai_description_generation` active
+- Database with movies sharing the same title (different years)
+
+### Step 1: Prepare test data
+
+Create 2 movies with the same title (different years):
+
+```bash
+# Via Tinker
+cd api && php artisan tinker
+```
+
+```php
+$movie1 = \App\Models\Movie::create([
+    'title' => 'Bad Boys',
+    'slug' => 'bad-boys-1995',
+    'release_year' => 1995,
+    'director' => 'Michael Bay',
+    'genres' => ['Action', 'Comedy']
+]);
+
+$movie2 = \App\Models\Movie::create([
+    'title' => 'Bad Boys',
+    'slug' => 'bad-boys-2020',
+    'release_year' => 2020,
+    'director' => 'Adil El Arbi',
+    'genres' => ['Action', 'Comedy']
+]);
+```
+
+### Step 2: Test GET endpoint with ambiguous slug
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/bad-boys" \
+  -H "Accept: application/json"
+```
+
+**Expected result:**
+- Status: `200 OK`
+- Returns most recent movie (2020)
+- Contains `_meta.ambiguous = true`
+- Contains `_meta.alternatives` with list of both movies
+
+**Example response:**
+```json
+{
+  "id": 2,
+  "title": "Bad Boys",
+  "slug": "bad-boys-2020",
+  "release_year": 2020,
+  "_meta": {
+    "ambiguous": true,
+    "message": "Multiple movies found with this title. Showing most recent. Use slug with year (e.g., \"bad-boys-1995\") for specific version.",
+    "alternatives": [
+      {
+        "slug": "bad-boys-2020",
+        "title": "Bad Boys",
+        "release_year": 2020,
+        "url": "http://localhost:8000/api/v1/movies/bad-boys-2020"
+      },
+      {
+        "slug": "bad-boys-1995",
+        "title": "Bad Boys",
+        "release_year": 1995,
+        "url": "http://localhost:8000/api/v1/movies/bad-boys-1995"
+      }
+    ]
+  }
+}
+```
+
+### Step 3: Test generation with ambiguous slug
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "entity_id": "bad-boys",
+    "locale": "en-US"
+  }'
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Returns `job_id` and `status: PENDING`
+- Job should find existing movie (most recent - 2020) and use it instead of creating new one
+
+**Check job status:**
+```bash
+# Replace {job_id} with actual ID from response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "Accept: application/json"
+```
+
+**Expected result after completion:**
+- Status: `DONE`
+- `id` points to existing movie (bad-boys-2020)
+- `slug` is the slug of existing movie
+
+### Step 4: Test generation with exact slug (with year)
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "entity_id": "bad-boys-1995",
+    "locale": "en-US"
+  }'
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Job should find existing movie (bad-boys-1995) and use it
+
+### Step 5: Test generation of new movie
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "entity_id": "new-movie-2024",
+    "locale": "en-US"
+  }'
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Job should create new movie
+- Slug should be generated from AI data using `Movie::generateSlug()`
+- If AI returns title "New Movie", year 2024, director "John Doe", slug should be "new-movie-2024" or "new-movie-2024-john-doe" (if needed)
+
+### Database verification
+
+```bash
+cd api && php artisan tinker
+```
+
+```php
+// Check if no duplicates were created
+$movies = \App\Models\Movie::where('title', 'Bad Boys')->get();
+foreach($movies as $m) {
+    echo $m->slug . ' (' . $m->release_year . ')' . PHP_EOL;
+}
+
+// Check if new movie has correct slug
+$newMovie = \App\Models\Movie::where('slug', 'LIKE', 'new-movie%')->first();
+if ($newMovie) {
+    echo "New movie slug: " . $newMovie->slug . PHP_EOL;
+    echo "Title: " . $newMovie->title . PHP_EOL;
+    echo "Year: " . $newMovie->release_year . PHP_EOL;
+}
+```
+
+### Final Checklist
+
+- [ ] GET endpoint with ambiguous slug returns most recent movie with `_meta`
+- [ ] Generation with ambiguous slug uses existing movie (most recent)
+- [ ] Generation with exact slug uses existing movie
+- [ ] Generation of new movie creates movie with correct slug (generated from AI data)
+- [ ] No duplicate movies created
+- [ ] Slug is unique (unique constraint works)
+
+### Troubleshooting
+
+**Problem:** Job creates new movie instead of using existing one
+- **Solution:** Check if `findExistingMovie()` in jobs uses logic similar to `MovieRepository::findBySlugWithRelations()`
+
+**Problem:** Slug conflicts (unique constraint violation)
+- **Solution:** Check if `createMovieRecord()` uses `Movie::generateSlug()` instead of slug from request
+
+**Problem:** Does not return `_meta` for ambiguous slugs
+- **Solution:** Check if `MovieDisambiguationService::determineMeta()` is called in `MovieController::show()`
+
+---
+
+## 🧪 Test 16: Ambiguous Slug Handling for Persons during Generation
+
+### Goal
+
+Verify how the system handles ambiguous slugs (slug without birth year matching multiple people) during AI biography generation.
+
+### Prerequisites
+
+- Application running locally
+- Redis and Horizon running
+- Feature flag `ai_bio_generation` active
+- Database with people sharing the same name (different birth dates)
+
+### Step 1: Prepare test data
+
+Create 2 people with the same name (different birth dates):
+
+```bash
+# Via Tinker
+cd api && php artisan tinker
+```
+
+```php
+$person1 = \App\Models\Person::create([
+    'name' => 'John Smith',
+    'slug' => 'john-smith-1960',
+    'birth_date' => '1960-01-01',
+    'birthplace' => 'New York'
+]);
+
+$person2 = \App\Models\Person::create([
+    'name' => 'John Smith',
+    'slug' => 'john-smith-1980',
+    'birth_date' => '1980-01-01',
+    'birthplace' => 'Los Angeles'
+]);
+```
+
+### Step 2: Test GET endpoint with ambiguous slug
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/people/john-smith" \
+  -H "Accept: application/json"
+```
+
+**Expected result:**
+- Status: `200 OK`
+- Returns most recent person (latest birth date - 1980)
+- Contains `_meta.ambiguous = true`
+- Contains `_meta.alternatives` with list of both people
+
+**Example response:**
+```json
+{
+  "id": 2,
+  "name": "John Smith",
+  "slug": "john-smith-1980",
+  "birth_date": "1980-01-01",
+  "birthplace": "Los Angeles",
+  "_meta": {
+    "ambiguous": true,
+    "message": "Multiple people found with this name. Showing most recent by birth date. Use slug with birth year (e.g., \"john-smith-1960\") for specific version.",
+    "alternatives": [
+      {
+        "slug": "john-smith-1980",
+        "name": "John Smith",
+        "birth_date": "1980-01-01",
+        "url": "http://localhost:8000/api/v1/people/john-smith-1980"
+      },
+      {
+        "slug": "john-smith-1960",
+        "name": "John Smith",
+        "birth_date": "1960-01-01",
+        "url": "http://localhost:8000/api/v1/people/john-smith-1960"
+      }
+    ]
+  }
+}
+```
+
+### Step 3: Test generation with ambiguous slug
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "entity_id": "john-smith",
+    "locale": "en-US"
+  }'
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Returns `job_id` and `status: PENDING`
+- Job should find existing person (most recent - 1980) and use it instead of creating new one
+
+**Check job status:**
+```bash
+# Replace {job_id} with actual ID from response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "Accept: application/json"
+```
+
+**Expected result after completion:**
+- Status: `DONE`
+- `id` points to existing person (john-smith-1980)
+- `slug` is the slug of existing person
+
+### Step 4: Test generation with exact slug (with birth year)
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "entity_id": "john-smith-1960",
+    "locale": "en-US"
+  }'
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Job should find existing person (john-smith-1960) and use it
+
+### Step 5: Test generation of new person
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "entity_id": "new-person-2024",
+    "locale": "en-US"
+  }'
+```
+
+**Expected result:**
+- Status: `202 Accepted`
+- Job should create new person
+- Slug should be generated from AI data using `Person::generateSlug()`
+- If AI returns name "New Person", birth date "1990-01-01", birthplace "Boston", slug should be "new-person-1990" or "new-person-1990-boston" (if needed)
+
+### Database verification
+
+```bash
+cd api && php artisan tinker
+```
+
+```php
+// Check if no duplicates were created
+$people = \App\Models\Person::where('name', 'John Smith')->get();
+foreach($people as $p) {
+    echo $p->slug . ' (' . $p->birth_date . ')' . PHP_EOL;
+}
+
+// Check if new person has correct slug
+$newPerson = \App\Models\Person::where('slug', 'LIKE', 'new-person%')->first();
+if ($newPerson) {
+    echo "New person slug: " . $newPerson->slug . PHP_EOL;
+    echo "Name: " . $newPerson->name . PHP_EOL;
+    echo "Birth date: " . $newPerson->birth_date . PHP_EOL;
+}
+```
+
+### Final Checklist
+
+- [ ] GET endpoint with ambiguous slug returns most recent person with `_meta`
+- [ ] Generation with ambiguous slug uses existing person (most recent)
+- [ ] Generation with exact slug uses existing person
+- [ ] Generation of new person creates person with correct slug (generated from AI data)
+- [ ] No duplicate people created
+- [ ] Slug is unique (unique constraint works)
+
+### Troubleshooting
+
+**Problem:** Job creates new person instead of using existing one
+- **Solution:** Check if `findExistingPerson()` in jobs uses logic similar to `PersonRepository::findBySlugWithRelations()`
+
+**Problem:** Slug conflicts (unique constraint violation)
+- **Solution:** Check if `createPersonRecord()` uses `Person::generateSlug()` instead of slug from request
+
+**Problem:** Does not return `_meta` for ambiguous slugs
+- **Solution:** Check if `PersonDisambiguationService::determineMeta()` is called in `PersonController::show()` (if exists)
+
+---
+
+**Last updated:** 2025-12-01
 

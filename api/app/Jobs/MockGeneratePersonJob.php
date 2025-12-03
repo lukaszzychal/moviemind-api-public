@@ -7,6 +7,7 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Person;
 use App\Models\PersonBio;
+use App\Repositories\PersonRepository;
 use App\Services\JobErrorFormatter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -42,8 +43,11 @@ class MockGeneratePersonJob implements ShouldQueue
 
     public function handle(): void
     {
+        /** @var PersonRepository $personRepository */
+        $personRepository = app(PersonRepository::class);
+
         try {
-            $existing = $this->findExistingPerson();
+            $existing = $personRepository->findBySlugForJob($this->slug, $this->existingPersonId);
 
             if ($existing) {
                 $this->refreshExistingPerson($existing);
@@ -298,25 +302,16 @@ class MockGeneratePersonJob implements ShouldQueue
         $this->updateCache('FAILED', error: $errorData);
     }
 
-    private function findExistingPerson(): ?Person
-    {
-        if ($this->existingPersonId !== null) {
-            $person = Person::with('bios')->find($this->existingPersonId);
-            if ($person) {
-                return $person;
-            }
-        }
-
-        return Person::with('bios')->where('slug', $this->slug)->first();
-    }
-
     private function createPersonWithLock(): void
     {
         $lock = Cache::lock($this->creationLockKey(), 15);
 
+        /** @var PersonRepository $personRepository */
+        $personRepository = app(PersonRepository::class);
+
         try {
-            $lock->block(5, function (): void {
-                $existing = $this->findExistingPerson();
+            $lock->block(5, function () use ($personRepository): void {
+                $existing = $personRepository->findBySlugForJob($this->slug, $this->existingPersonId);
                 if ($existing) {
                     $this->refreshExistingPerson($existing);
 
@@ -330,7 +325,9 @@ class MockGeneratePersonJob implements ShouldQueue
                 $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $localeValue, $contextTag);
             });
         } catch (LockTimeoutException $exception) {
-            $existing = $this->findExistingPerson();
+            /** @var PersonRepository $personRepository */
+            $personRepository = app(PersonRepository::class);
+            $existing = $personRepository->findBySlugForJob($this->slug, $this->existingPersonId);
             if ($existing) {
                 $this->refreshExistingPerson($existing);
 
@@ -349,11 +346,19 @@ class MockGeneratePersonJob implements ShouldQueue
         sleep(3);
 
         $name = Str::of($this->slug)->replace('-', ' ')->title();
+        $birthDate = '1970-01-01';
+        $birthplace = 'Mock City';
+
+        // Generate unique slug from parsed data instead of using slug from request
+        // This ensures uniqueness and prevents conflicts with ambiguous slugs
+        // Following DIP: use Person model method, not direct slug from request
+        $generatedSlug = Person::generateSlug((string) $name, $birthDate, $birthplace);
+
         $person = Person::create([
             'name' => (string) $name,
-            'slug' => $this->slug,
-            'birth_date' => '1970-01-01',
-            'birthplace' => 'Mock City',
+            'slug' => $generatedSlug,
+            'birth_date' => $birthDate,
+            'birthplace' => $birthplace,
         ]);
 
         $locale = $this->resolveLocale();

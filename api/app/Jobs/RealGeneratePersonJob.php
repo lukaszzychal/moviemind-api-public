@@ -7,6 +7,7 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Person;
 use App\Models\PersonBio;
+use App\Repositories\PersonRepository;
 use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
@@ -62,9 +63,11 @@ class RealGeneratePersonJob implements ShouldQueue
         ]);
         /** @var JobStatusService $jobStatusService */
         $jobStatusService = app(JobStatusService::class);
+        /** @var PersonRepository $personRepository */
+        $personRepository = app(PersonRepository::class);
 
         try {
-            $existing = $this->findExistingPerson();
+            $existing = $personRepository->findBySlugForJob($this->slug, $this->existingPersonId);
 
             if ($existing) {
                 $this->refreshExistingPerson($existing, $openAiClient);
@@ -93,7 +96,7 @@ class RealGeneratePersonJob implements ShouldQueue
                 ]);
             } catch (QueryException $exception) {
                 if ($this->isUniquePersonSlugViolation($exception)) {
-                    $existingAfterViolation = $this->findExistingPerson();
+                    $existingAfterViolation = $personRepository->findBySlugForJob($this->slug, $this->existingPersonId);
                     if ($existingAfterViolation) {
                         Log::info('RealGeneratePersonJob detected concurrent creation - using existing person', [
                             'slug' => $this->slug,
@@ -412,18 +415,6 @@ class RealGeneratePersonJob implements ShouldQueue
         $this->updateCache('FAILED', error: $errorData);
     }
 
-    private function findExistingPerson(): ?Person
-    {
-        if ($this->existingPersonId !== null) {
-            $person = Person::with('bios')->find($this->existingPersonId);
-            if ($person) {
-                return $person;
-            }
-        }
-
-        return Person::with('bios')->where('slug', $this->slug)->first();
-    }
-
     /**
      * @return array{0: Person, 1: PersonBio, 2: string, 3: string}
      */
@@ -472,9 +463,14 @@ class RealGeneratePersonJob implements ShouldQueue
         $birthplace = $aiResponse['birthplace'] ?? 'Unknown';
         $biography = $aiResponse['biography'] ?? "Biography for {$name}.";
 
+        // Generate unique slug from AI data instead of using slug from request
+        // This ensures uniqueness and prevents conflicts with ambiguous slugs
+        // Following DIP: use Person model method, not direct slug from request
+        $generatedSlug = Person::generateSlug((string) $name, $birthDate, $birthplace);
+
         $person = Person::create([
             'name' => (string) $name,
-            'slug' => $this->slug,
+            'slug' => $generatedSlug,
             'birth_date' => $birthDate,
             'birthplace' => $birthplace,
         ]);

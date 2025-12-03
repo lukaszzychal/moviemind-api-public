@@ -7,6 +7,7 @@ use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Repositories\MovieRepository;
 use App\Services\JobErrorFormatter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -42,8 +43,11 @@ class MockGenerateMovieJob implements ShouldQueue
 
     public function handle(): void
     {
+        /** @var MovieRepository $movieRepository */
+        $movieRepository = app(MovieRepository::class);
+
         try {
-            $existing = $this->findExistingMovie();
+            $existing = $movieRepository->findBySlugForJob($this->slug, $this->existingMovieId);
 
             if ($existing) {
                 $this->refreshExistingMovie($existing);
@@ -69,25 +73,16 @@ class MockGenerateMovieJob implements ShouldQueue
         }
     }
 
-    private function findExistingMovie(): ?Movie
-    {
-        if ($this->existingMovieId !== null) {
-            $movie = Movie::with('descriptions')->find($this->existingMovieId);
-            if ($movie) {
-                return $movie;
-            }
-        }
-
-        return Movie::with('descriptions')->where('slug', $this->slug)->first();
-    }
-
     private function createMovieWithLock(): void
     {
         $lock = Cache::lock($this->creationLockKey(), 15);
 
+        /** @var MovieRepository $movieRepository */
+        $movieRepository = app(MovieRepository::class);
+
         try {
-            $lock->block(5, function (): void {
-                $existing = $this->findExistingMovie();
+            $lock->block(5, function () use ($movieRepository): void {
+                $existing = $movieRepository->findBySlugForJob($this->slug, $this->existingMovieId);
                 if ($existing) {
                     $this->refreshExistingMovie($existing);
 
@@ -101,7 +96,9 @@ class MockGenerateMovieJob implements ShouldQueue
                 $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
             });
         } catch (LockTimeoutException $exception) {
-            $existing = $this->findExistingMovie();
+            /** @var MovieRepository $movieRepository */
+            $movieRepository = app(MovieRepository::class);
+            $existing = $movieRepository->findBySlugForJob($this->slug, $this->existingMovieId);
             if ($existing) {
                 $this->refreshExistingMovie($existing);
 
@@ -125,9 +122,13 @@ class MockGenerateMovieJob implements ShouldQueue
         $releaseYear = $parsed['year'] ?? 1999;
         $director = $parsed['director'] ?? 'Mock AI Director';
 
+        // Generate unique slug from parsed data instead of using slug from request
+        // This ensures uniqueness and prevents conflicts with ambiguous slugs
+        $generatedSlug = Movie::generateSlug((string) $title, $releaseYear, $director);
+
         $movie = Movie::create([
             'title' => (string) $title,
-            'slug' => $this->slug,
+            'slug' => $generatedSlug,
             'release_year' => $releaseYear,
             'director' => $director,
             'genres' => ['Sci-Fi', 'Action'],
