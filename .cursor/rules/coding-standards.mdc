@@ -134,13 +134,99 @@ alwaysApply: true
 **Principle:**
 **Start simple, refactor when concrete problems arise, not "just in case".**
 
+## GRASP (General Responsibility Assignment Software Patterns)
+
+GRASP patterns help assign responsibilities in object-oriented design:
+
+- **Information Expert** - assign responsibility to the class with the information needed
+- **Creator** - assign creation responsibility to a class that uses/contains the object
+- **Controller** - assign handling responsibility to a class representing the system/facade
+- **Low Coupling** - minimize dependencies between classes
+- **High Cohesion** - keep related functionality together
+- **Polymorphism** - use polymorphism for variations in behavior
+- **Pure Fabrication** - create classes that don't represent domain concepts (e.g., Repository)
+- **Indirection** - use intermediate objects to decouple classes
+- **Protected Variations** - protect against variations by encapsulating them
+
+## YAGNI (You Aren't Gonna Need It)
+
+- **Don't add functionality until it's needed** - avoid premature abstraction
+- **Solve today's problems, not tomorrow's** - focus on current requirements
+- **Refactor when needed** - add complexity only when there's a concrete need
+
 ## Code Smells (fix when they hinder work)
 
-- God Class/Method - class/method does too much
-- Long Parameter List - use DTO/Request object
-- Feature Envy - move logic to appropriate class
-- Data Clumps - use Value Object
-- Primitive Obsession - use Value Objects
+### Structural Smells
+- **God Class/Method** - class/method does too much → split into smaller classes/methods
+- **Long Parameter List** - use DTO/Request object → create parameter object
+- **Feature Envy** - method uses more data from another class → move method to that class
+- **Data Clumps** - groups of data always together → use Value Object
+- **Primitive Obsession** - using primitives instead of objects → use Value Objects
+- **Duplicate Code** - same code in multiple places → extract to common method/class
+- **Long Method** - method is too long → extract methods
+- **Large Class** - class has too many responsibilities → split into smaller classes
+
+### Behavioral Smells
+- **Shotgun Surgery** - one change requires many small changes → consolidate related code
+- **Divergent Change** - class changes for multiple reasons → split responsibilities
+- **Parallel Inheritance Hierarchies** - similar inheritance structures → merge or use composition
+- **Lazy Class** - class doesn't do enough → inline or merge with another class
+- **Speculative Generality** - code for future use that isn't needed → remove it (YAGNI)
+
+### Dependency Smells
+- **Dependency Inversion Violation** - high-level modules depend on low-level → use interfaces/abstractions
+- **Tight Coupling** - classes depend too much on each other → introduce interfaces/abstractions
+- **Circular Dependency** - classes depend on each other → break the cycle
+
+## Design Patterns (use when appropriate)
+
+### Creational Patterns
+- **Factory** - create objects without specifying exact class
+- **Builder** - construct complex objects step by step
+- **Singleton** - ensure only one instance exists (use sparingly, prefer dependency injection)
+
+### Structural Patterns
+- **Repository** - abstract data access layer
+- **Adapter** - make incompatible interfaces work together
+- **Decorator** - add behavior to objects dynamically
+- **Facade** - provide simplified interface to complex subsystem
+
+### Behavioral Patterns
+- **Strategy** - define family of algorithms, make them interchangeable
+- **Observer** - notify multiple objects about state changes (Laravel Events)
+- **Command** - encapsulate requests as objects (Laravel Jobs)
+- **Template Method** - define algorithm skeleton, let subclasses fill details
+
+## Architectural Patterns
+
+- **Repository Pattern** - abstract data access (already used in project)
+- **Service Layer** - business logic layer (already used in project)
+- **Event-Driven** - communicate via events (Laravel Events/Listeners)
+- **CQRS** - separate read and write models (when needed)
+- **Hexagonal Architecture** - ports and adapters (when needed)
+- **Clean Architecture** - dependency rule with layers (when needed)
+
+## Refactoring and Optimization Principles
+
+### When to Refactor
+1. ✅ **Code duplication** - same logic in 3+ places
+2. ✅ **Dependency violations** - DIP, tight coupling
+3. ✅ **Code smells** - God Class, Long Method, etc.
+4. ✅ **Hard to test** - difficult to write unit tests
+5. ✅ **Hard to extend** - adding features requires many changes
+6. ✅ **Performance issues** - identified bottlenecks (measure first!)
+
+### Refactoring During Feature Development
+- **Always refactor when adding features** - improve code quality incrementally
+- **Fix code smells as you encounter them** - don't accumulate technical debt
+- **Apply SOLID/GRASP when making changes** - use principles pragmatically
+- **Extract common logic** - use Repository, Service, or Trait when appropriate
+
+### Optimization Guidelines
+- **Measure first** - profile before optimizing
+- **Optimize bottlenecks** - focus on actual performance issues
+- **Don't optimize prematurely** - working code first, optimization second
+- **Consider readability** - readable code is often fast enough
 
 ## Coding standards
 
@@ -149,3 +235,5 @@ alwaysApply: true
 - **Type hints** - always use types
 - **Strict types** - `declare(strict_types=1);` in PHP files
 - **Return types** - always specify return type
+- **Repository Pattern** - use Repository for data access, not direct Model queries in Jobs/Services
+- **Dependency Injection** - prefer constructor injection, use service container
