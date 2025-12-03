@@ -1,0 +1,19 @@
+{
+  "name": "moviemind-api-tools",
+  "version": "1.0.0",
+  "description": "Development tools for MovieMind API project",
+  "private": true,
+  "scripts": {
+    "markdownlint": "markdownlint-cli2 '**/*.md'",
+    "markdownlint:fix": "markdownlint-cli2-fix '**/*.md'",
+    "markdownlint:check": "markdownlint-cli2 '**/*.md'"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.15.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
+

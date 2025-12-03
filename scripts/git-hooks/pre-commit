@@ -42,12 +42,88 @@ else
     echo -e "${YELLOW}⚠️  Proceeding without secret check (NOT RECOMMENDED)${NC}"
 fi
 
+# Check if Markdown files are staged
+MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.md$" || true)
+
+if [ -n "$MD_FILES" ]; then
+    echo -e "${YELLOW}📄 Markdown files to check:${NC}"
+    echo "$MD_FILES"
+    
+    # Check if markdownlint-cli2 is available (via npx or globally)
+    MARKDOWNLINT_CMD=""
+    if command -v markdownlint-cli2 &> /dev/null; then
+        MARKDOWNLINT_CMD="markdownlint-cli2"
+        MARKDOWNLINT_FIX_CMD="markdownlint-cli2-fix"
+    elif [ -f "node_modules/.bin/markdownlint-cli2" ]; then
+        MARKDOWNLINT_CMD="npx markdownlint-cli2"
+        MARKDOWNLINT_FIX_CMD="npx markdownlint-cli2-fix"
+    elif command -v npx &> /dev/null && [ -f "package.json" ]; then
+        # Try to use npx (will install if needed)
+        MARKDOWNLINT_CMD="npx --yes markdownlint-cli2"
+        MARKDOWNLINT_FIX_CMD="npx --yes markdownlint-cli2-fix"
+    fi
+    
+    if [ -n "$MARKDOWNLINT_CMD" ]; then
+        echo -e "${YELLOW}📝 Running Markdownlint...${NC}"
+        
+        # Try to fix automatically
+        if $MARKDOWNLINT_FIX_CMD $MD_FILES 2>/dev/null; then
+            # Add fixed files back to staging
+            git add $MD_FILES
+            echo -e "${GREEN}✅ Markdownlint: Auto-fixed formatting issues${NC}"
+        fi
+        
+        # Check for remaining issues
+        if $MARKDOWNLINT_CMD $MD_FILES 2>/dev/null; then
+            echo -e "${GREEN}✅ Markdownlint: No issues found${NC}"
+        else
+            echo -e "${RED}❌ Markdownlint: Issues found${NC}"
+            echo -e "${YELLOW}Running markdownlint-cli2 to see issues...${NC}"
+            $MARKDOWNLINT_CMD $MD_FILES || true
+            echo -e "${YELLOW}Install dependencies: npm install${NC}"
+            # Don't block commit, just warn
+        fi
+    elif command -v markdownlint &> /dev/null; then
+        echo -e "${YELLOW}📝 Running Markdownlint (legacy)...${NC}"
+        
+        # Try to fix automatically
+        if markdownlint --fix $MD_FILES 2>/dev/null; then
+            # Add fixed files back to staging
+            git add $MD_FILES
+            echo -e "${GREEN}✅ Markdownlint: Auto-fixed formatting issues${NC}"
+        fi
+        
+        # Check for remaining issues
+        if markdownlint $MD_FILES 2>/dev/null; then
+            echo -e "${GREEN}✅ Markdownlint: No issues found${NC}"
+        else
+            echo -e "${RED}❌ Markdownlint: Issues found${NC}"
+            echo -e "${YELLOW}Running markdownlint to see issues...${NC}"
+            markdownlint $MD_FILES || true
+            # Don't block commit, just warn
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Markdownlint not available. Markdown formatting check skipped.${NC}"
+        if [ -f "package.json" ]; then
+            echo -e "${YELLOW}Install dependencies: npm install${NC}"
+        else
+            echo -e "${YELLOW}Install with: npm install -g markdownlint-cli2${NC}"
+            echo -e "${YELLOW}Or run: ./scripts/setup-markdownlint.sh${NC}"
+        fi
+    fi
+fi
+
 # Check if PHP files are staged
 PHP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.php$" || true)
 
 if [ -z "$PHP_FILES" ]; then
-    echo -e "${GREEN}✅ No PHP files to check${NC}"
-    exit 0
+    if [ -z "$MD_FILES" ]; then
+        echo -e "${GREEN}✅ No PHP or Markdown files to check${NC}"
+        exit 0
+    else
+        echo -e "${GREEN}✅ No PHP files to check${NC}"
+        exit 0
+    fi
 fi
 
 echo -e "${YELLOW}📝 PHP files to check:${NC}"

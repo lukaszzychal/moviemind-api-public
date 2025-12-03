@@ -27,6 +27,15 @@ This document explains which code quality tools are used in the CI pipeline and 
 - **Why**: Prevents accidental commit of sensitive data
 - **Status**: ✅ Active in CI
 
+### ✅ Markdownlint
+- **Purpose**: Markdown file formatting and linting
+- **Why**: Ensures consistent Markdown formatting across documentation
+- **Installation**: `npm install` (included in `package.json`)
+- **Usage**: 
+  - Auto-fix: `npm run markdownlint:fix`
+  - Check: `npm run markdownlint:check`
+- **Status**: ✅ Active in pre-commit hook
+
 ## Tools NOT Used (and why)
 
 ### ❌ php-cs-fixer
@@ -68,17 +77,19 @@ This document explains which code quality tools are used in the CI pipeline and 
 ```yaml
 security:
   - Composer audit     # Security vulnerabilities
-  - Laravel Pint       # Code formatting
+  - Laravel Pint       # Code formatting (PHP)
   - PHPStan           # Static analysis
   - GitLeaks          # Secrets detection
+  - Markdownlint      # Markdown formatting (pre-commit hook)
 ```
 
 ## Best Practices
 
 1. **Run Pint before commit**: `vendor/bin/pint`
 2. **Check PHPStan locally**: `vendor/bin/phpstan analyse`
-3. **Fix issues incrementally**: Start with level 5, gradually increase
-4. **Don't ignore all errors**: Use `@phpstan-ignore` sparingly
+3. **Fix Markdown formatting**: `npm run markdownlint:fix` (or auto-fixed by pre-commit hook)
+4. **Fix issues incrementally**: Start with level 5, gradually increase
+5. **Don't ignore all errors**: Use `@phpstan-ignore` sparingly
 
 ## Level Guide
 

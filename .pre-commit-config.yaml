@@ -90,6 +90,16 @@ repos:
         language: system
         types: [dockerfile]
 
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        name: Markdownlint
+        description: Lint and fix Markdown files
+        args: ['--fix']
+        types: [markdown]
+
 # Configuration for specific hooks
 ci:
   autofix_commit_msg: |
