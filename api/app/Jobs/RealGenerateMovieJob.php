@@ -41,7 +41,8 @@ class RealGenerateMovieJob implements ShouldQueue
         public ?int $existingMovieId = null,
         public ?int $baselineDescriptionId = null,
         public ?string $locale = null,
-        public ?string $contextTag = null
+        public ?string $contextTag = null,
+        public ?array $tmdbData = null
     ) {}
 
     /**
@@ -59,6 +60,7 @@ class RealGenerateMovieJob implements ShouldQueue
             'baseline_description_id' => $this->baselineDescriptionId,
             'locale' => $this->locale,
             'context_tag' => $this->contextTag,
+            'tmdb_data' => $this->tmdbData !== null,
             'pid' => getmypid(),
         ]);
         /** @var JobStatusService $jobStatusService */
@@ -157,7 +159,7 @@ class RealGenerateMovieJob implements ShouldQueue
     private function refreshExistingMovie(Movie $movie, OpenAiClientInterface $openAiClient): void
     {
         $movie->loadMissing('descriptions');
-        $aiResponse = $openAiClient->generateMovie($this->slug);
+        $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
@@ -428,7 +430,7 @@ class RealGenerateMovieJob implements ShouldQueue
      */
     private function createMovieRecord(OpenAiClientInterface $openAiClient): array
     {
-        $aiResponse = $openAiClient->generateMovie($this->slug);
+        $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';

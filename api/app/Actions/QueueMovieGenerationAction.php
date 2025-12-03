@@ -21,7 +21,8 @@ class QueueMovieGenerationAction
         ?float $confidence = null,
         ?Movie $existingMovie = null,
         ?string $locale = null,
-        ?string $contextTag = null
+        ?string $contextTag = null,
+        ?array $tmdbData = null
     ): array {
         Log::info(__METHOD__, [
             'slug' => $slug,
@@ -131,7 +132,8 @@ class QueueMovieGenerationAction
                     existingMovieId: $existingMovie?->id,
                     baselineDescriptionId: $baselineDescriptionId,
                     locale: $normalizedLocale,
-                    contextTag: $normalizedContextTag
+                    contextTag: $normalizedContextTag,
+                    tmdbData: $tmdbData
                 ));
 
                 $response = [
@@ -174,7 +176,8 @@ class QueueMovieGenerationAction
             existingMovieId: $existingMovie?->id,
             baselineDescriptionId: $baselineDescriptionId,
             locale: $normalizedLocale,
-            contextTag: $normalizedContextTag
+            contextTag: $normalizedContextTag,
+            tmdbData: $tmdbData
         ));
         Log::info('QueueMovieGenerationAction: dispatched new job', [
             'job_id' => $jobId,
