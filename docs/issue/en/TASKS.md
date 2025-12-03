@@ -308,7 +308,7 @@ Every entry follows this structure:
   - Select the appropriate Distroless base capable of running PHP-FPM, Nginx and Supervisor (multi-stage build).
   - Adjust `docker/php/Dockerfile` stages to copy runtime artifacts into the Distroless image.
   - Ensure Supervisor, Horizon and entrypoint scripts run without relying on a shell (vector-form `CMD`/`ENTRYPOINT`).
-  - Update deployment docs (Railway, README, ops playbooks) to reflect the new image.
+  - Update deployment docs (README, ops playbooks) to reflect the new image.
 - **Dependencies:** none
 - **Created:** 2025-11-10
 
