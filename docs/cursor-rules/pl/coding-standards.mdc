@@ -134,13 +134,99 @@ alwaysApply: true
 **Zasada:**
 **Zacznij prosto, refaktoryzuj gdy pojawią się konkretne problemy, nie "na zapas".**
 
+## GRASP (General Responsibility Assignment Software Patterns)
+
+Wzorce GRASP pomagają przypisywać odpowiedzialności w projektowaniu obiektowym:
+
+- **Information Expert** - przypisz odpowiedzialność klasie z informacją potrzebną do wykonania
+- **Creator** - przypisz odpowiedzialność tworzenia klasie która używa/zawiera obiekt
+- **Controller** - przypisz odpowiedzialność obsługi klasie reprezentującej system/fasadę
+- **Low Coupling** - minimalizuj zależności między klasami
+- **High Cohesion** - trzymaj powiązaną funkcjonalność razem
+- **Polymorphism** - używaj polimorfizmu dla wariacji w zachowaniu
+- **Pure Fabrication** - twórz klasy które nie reprezentują konceptów domenowych (np. Repository)
+- **Indirection** - używaj pośrednich obiektów do rozluźnienia zależności
+- **Protected Variations** - chroń przed wariacjami poprzez enkapsulację
+
+## YAGNI (You Aren't Gonna Need It)
+
+- **Nie dodawaj funkcjonalności dopóki nie jest potrzebna** - unikaj przedwczesnej abstrakcji
+- **Rozwiązuj dzisiejsze problemy, nie jutrzejsze** - skup się na obecnych wymaganiach
+- **Refaktoryzuj gdy potrzeba** - dodawaj złożoność tylko gdy jest konkretna potrzeba
+
 ## Code Smells (naprawiaj gdy utrudniają pracę)
 
-- God Class/Method - klasa/metoda robi za dużo
-- Long Parameter List - użyj DTO/Request object
-- Feature Envy - przenieś logikę do odpowiedniej klasy
-- Data Clumps - użyj Value Object
-- Primitive Obsession - użyj Value Objects
+### Smells strukturalne
+- **God Class/Method** - klasa/metoda robi za dużo → podziel na mniejsze klasy/metody
+- **Long Parameter List** - użyj DTO/Request object → utwórz obiekt parametrów
+- **Feature Envy** - metoda używa więcej danych z innej klasy → przenieś metodę do tej klasy
+- **Data Clumps** - grupy danych zawsze razem → użyj Value Object
+- **Primitive Obsession** - używanie prymitywów zamiast obiektów → użyj Value Objects
+- **Duplicate Code** - ten sam kod w wielu miejscach → wyciągnij do wspólnej metody/klasy
+- **Long Method** - metoda jest za długa → wyciągnij metody
+- **Large Class** - klasa ma za dużo odpowiedzialności → podziel na mniejsze klasy
+
+### Smells behawioralne
+- **Shotgun Surgery** - jedna zmiana wymaga wielu małych zmian → skonsoliduj powiązany kod
+- **Divergent Change** - klasa zmienia się z wielu powodów → podziel odpowiedzialności
+- **Parallel Inheritance Hierarchies** - podobne hierarchie dziedziczenia → połącz lub użyj kompozycji
+- **Lazy Class** - klasa nie robi wystarczająco → wbuduj lub połącz z inną klasą
+- **Speculative Generality** - kod na przyszłość który nie jest potrzebny → usuń (YAGNI)
+
+### Smells zależności
+- **Dependency Inversion Violation** - moduły wysokiego poziomu zależą od niskiego → użyj interfejsów/abstrakcji
+- **Tight Coupling** - klasy zależą za bardzo od siebie → wprowadź interfejsy/abstrakcje
+- **Circular Dependency** - klasy zależą od siebie → przerwij cykl
+
+## Wzorce Projektowe (używaj gdy odpowiednie)
+
+### Wzorce kreacyjne
+- **Factory** - tworzenie obiektów bez określania dokładnej klasy
+- **Builder** - konstruowanie złożonych obiektów krok po kroku
+- **Singleton** - zapewnij tylko jedną instancję (używaj oszczędnie, preferuj dependency injection)
+
+### Wzorce strukturalne
+- **Repository** - abstrakcja warstwy dostępu do danych
+- **Adapter** - spraw aby niekompatybilne interfejsy działały razem
+- **Decorator** - dodawanie zachowania do obiektów dynamicznie
+- **Facade** - uproszczony interfejs do złożonego podsystemu
+
+### Wzorce behawioralne
+- **Strategy** - zdefiniuj rodzinę algorytmów, uczyń je wymiennymi
+- **Observer** - powiadamiaj wiele obiektów o zmianach stanu (Laravel Events)
+- **Command** - enkapsuluj żądania jako obiekty (Laravel Jobs)
+- **Template Method** - zdefiniuj szkielet algorytmu, pozwól podklasom wypełnić szczegóły
+
+## Wzorce Architektoniczne
+
+- **Repository Pattern** - abstrakcja dostępu do danych (już używany w projekcie)
+- **Service Layer** - warstwa logiki biznesowej (już używana w projekcie)
+- **Event-Driven** - komunikacja przez eventy (Laravel Events/Listeners)
+- **CQRS** - oddzielenie modeli odczytu i zapisu (gdy potrzebne)
+- **Hexagonal Architecture** - porty i adaptery (gdy potrzebne)
+- **Clean Architecture** - reguła zależności z warstwami (gdy potrzebne)
+
+## Zasady Refaktoryzacji i Optymalizacji
+
+### Kiedy refaktoryzować
+1. ✅ **Duplikacja kodu** - ta sama logika w 3+ miejscach
+2. ✅ **Naruszenia zależności** - DIP, tight coupling
+3. ✅ **Code smells** - God Class, Long Method, etc.
+4. ✅ **Trudne do testowania** - trudno napisać testy jednostkowe
+5. ✅ **Trudne do rozszerzenia** - dodawanie feature'ów wymaga wielu zmian
+6. ✅ **Problemy z wydajnością** - zidentyfikowane wąskie gardła (najpierw zmierz!)
+
+### Refaktoryzacja podczas rozwoju feature'ów
+- **Zawsze refaktoryzuj dodając feature'y** - poprawiaj jakość kodu przyrostowo
+- **Naprawiaj code smells gdy je napotkasz** - nie kumuluj długu technicznego
+- **Stosuj SOLID/GRASP przy zmianach** - używaj zasad pragmatycznie
+- **Wyciągaj wspólną logikę** - używaj Repository, Service, lub Trait gdy odpowiednie
+
+### Wytyczne optymalizacji
+- **Najpierw zmierz** - profiluj przed optymalizacją
+- **Optymalizuj wąskie gardła** - skup się na rzeczywistych problemach wydajnościowych
+- **Nie optymalizuj przedwcześnie** - najpierw działający kod, potem optymalizacja
+- **Rozważ czytelność** - czytelny kod jest często wystarczająco szybki
 
 ## Standardy kodowania
 
@@ -149,3 +235,5 @@ alwaysApply: true
 - **Type hints** - zawsze używaj typów
 - **Strict types** - `declare(strict_types=1);` w plikach PHP
 - **Return types** - zawsze określaj zwracany typ
+- **Repository Pattern** - używaj Repository dla dostępu do danych, nie bezpośrednich zapytań Model w Jobach/Services
+- **Dependency Injection** - preferuj constructor injection, używaj service container
