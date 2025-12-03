@@ -505,6 +505,79 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-041` - Dodanie seriali i programów telewizyjnych (DDD approach)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 30-40 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Implementacja osobnych encji domenowych Series i TVShow zgodnie z Domain-Driven Design. Movie i Series/TV Show to różne koncepty domenowe - Movie nie ma odcinków, Series ma.
+- **Szczegóły:**
+  - Utworzenie modelu `Series` z tabelą `series`:
+    - Pola: `title`, `slug`, `start_year`, `end_year`, `network`, `seasons`, `episodes`, `director`, `genres`, `default_description_id`
+    - Relacje: `descriptions()`, `people()` (series_person), `genres()`
+  - Utworzenie modelu `TVShow` z tabelą `tv_shows`:
+    - Pola: `title`, `slug`, `start_year`, `end_year`, `network`, `format`, `episodes`, `runtime_per_episode`, `genres`, `default_description_id`
+    - Relacje: `descriptions()`, `people()` (tv_show_person), `genres()`
+  - Utworzenie wspólnych interfejsów/trait:
+    - `DescribableContent` interface (dla descriptions)
+    - `Sluggable` trait (dla slug generation/parsing)
+    - `HasPeople` interface (dla relacji z Person)
+  - Utworzenie `SeriesDescription` i `TVShowDescription` modeli (lub polimorficzna `ContentDescription`)
+  - Utworzenie `SeriesRepository` i `TVShowRepository` (wspólna logika przez interfejsy)
+  - Utworzenie `SeriesController` i `TVShowController` (wspólna logika przez interfejsy)
+  - Utworzenie jobów: `RealGenerateSeriesJob`, `MockGenerateSeriesJob`, `RealGenerateTVShowJob`, `MockGenerateTVShowJob`
+  - Aktualizacja `GenerateController` (obsługa SERIES, TV_SHOW)
+  - Utworzenie enum `EntityType` (MOVIE, SERIES, TV_SHOW, PERSON)
+  - Aktualizacja OpenAPI schema
+  - Migracje dla tabel `series`, `tv_shows`, `series_person`, `tv_show_person`, `series_descriptions`, `tv_show_descriptions`
+  - Testy (automatyczne i manualne)
+  - Dokumentacja
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-09
+---
+
+#### `TASK-042` - Analiza możliwych rozszerzeń typów i rodzajów
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 4-6 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Analiza i dokumentacja możliwych rozszerzeń systemu o nowe typy treści i rodzaje.
+- **Szczegóły:**
+  - Analiza obecnej struktury (Movie, Person, Series, TVShow)
+  - Identyfikacja potencjalnych rozszerzeń (np. Documentaries, Short Films, Web Series, Podcasts, Books, Music Albums)
+  - Analiza wpływu na API, bazę danych, joby
+  - Analiza wspólnych interfejsów i możliwości refaktoryzacji
+  - Dokumentacja rekomendacji i alternatyw
+  - Utworzenie dokumentu w `docs/knowledge/technical/`
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-09
+---
+
+#### `TASK-043` - Implementacja zasady wykrywania BREAKING CHANGE
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Dodanie zasady do cursor/rules wymagającej analizy BREAKING CHANGE przed wprowadzeniem zmian. Zasada wymaga traktowania zmian jakby były na produkcji z pełnymi danymi.
+- **Szczegóły:**
+  - Utworzenie `.cursor/rules/breaking-change-detection.mdc`
+  - Zasada: traktować zmiany jakby były na produkcji z pełnymi danymi
+  - Wymaganie analizy skutków zmian przed wprowadzeniem (data impact, API impact, functionality impact)
+  - Analiza alternatyw i bezpiecznego procesu zmiany (migracje, backward compatibility, etc.)
+  - Proces: STOP → analiza → dokumentacja → alternatywy → bezpieczny proces → approval
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-09
+---
+
 #### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟡 Średni
