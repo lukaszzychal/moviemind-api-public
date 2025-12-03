@@ -11,6 +11,7 @@ use App\Models\MovieDescription;
 use App\Repositories\MovieRepository;
 use App\Services\HateoasService;
 use App\Services\MovieDisambiguationService;
+use App\Services\TmdbVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -24,7 +25,8 @@ class MovieController extends Controller
         private readonly MovieRepository $movieRepository,
         private readonly HateoasService $hateoas,
         private readonly QueueMovieGenerationAction $queueMovieGenerationAction,
-        private readonly MovieDisambiguationService $movieDisambiguationService
+        private readonly MovieDisambiguationService $movieDisambiguationService,
+        private readonly TmdbVerificationService $tmdbVerificationService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -72,7 +74,17 @@ class MovieController extends Controller
             return response()->json(['error' => 'Movie not found'], 404);
         }
 
-        $result = $this->queueMovieGenerationAction->handle($slug, locale: Locale::EN_US->value);
+        // Verify movie exists in TMDb before queueing job
+        $tmdbData = $this->tmdbVerificationService->verifyMovie($slug);
+        if (! $tmdbData) {
+            return response()->json(['error' => 'Movie not found'], 404);
+        }
+
+        $result = $this->queueMovieGenerationAction->handle(
+            $slug,
+            locale: Locale::EN_US->value,
+            tmdbData: $tmdbData
+        );
 
         return response()->json($result, 202);
     }
