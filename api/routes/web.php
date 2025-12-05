@@ -5,7 +5,14 @@ use Illuminate\Support\Facades\Route;
 
 // Welcome endpoint
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+        'message' => 'Welcome to MovieMind API',
+        'status' => 'ok',
+        'version' => '1.0.0',
+        'api' => '/api/v1',
+    ], 200, [
+        'Content-Type' => 'application/json',
+    ]);
 });
 
 // Debug endpoint (moved from root)

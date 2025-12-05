@@ -38,12 +38,23 @@ class ExampleTest extends TestCase
             ]);
     }
 
-    public function test_root_endpoint_returns_welcome_view(): void
+    public function test_root_endpoint_returns_welcome_json(): void
     {
-        $response = $this->get('/');
+        $response = $this->getJson('/');
 
         $response->assertOk()
-            ->assertViewIs('welcome');
+            ->assertJsonStructure([
+                'message',
+                'status',
+                'version',
+                'api',
+            ]);
+
+        $data = $response->json();
+        $this->assertSame('Welcome to MovieMind API', $data['message']);
+        $this->assertSame('ok', $data['status']);
+        $this->assertSame('1.0.0', $data['version']);
+        $this->assertSame('/api/v1', $data['api']);
     }
 
     public function test_debug_endpoint_includes_ai_service(): void
