@@ -3,7 +3,20 @@
 use App\Services\FeatureFlag\FeatureFlagManager;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (FeatureFlagManager $featureFlagManager) {
+// Welcome endpoint
+Route::get('/', function () {
+    return response()->json([
+        'message' => 'Welcome to MovieMind API',
+        'status' => 'ok',
+        'version' => '1.0.0',
+        'api' => '/api/v1',
+    ], 200, [
+        'Content-Type' => 'application/json',
+    ]);
+});
+
+// Debug endpoint (moved from root)
+Route::get('/debug', function (FeatureFlagManager $featureFlagManager) {
     // Get AI service configuration
     $aiService = config('services.ai.service', 'mock');
 

@@ -21,7 +21,7 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
+        $response = $this->get('/debug');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -38,9 +38,28 @@ class ExampleTest extends TestCase
             ]);
     }
 
-    public function test_root_endpoint_includes_ai_service(): void
+    public function test_root_endpoint_returns_welcome_json(): void
     {
         $response = $this->getJson('/');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'message',
+                'status',
+                'version',
+                'api',
+            ]);
+
+        $data = $response->json();
+        $this->assertSame('Welcome to MovieMind API', $data['message']);
+        $this->assertSame('ok', $data['status']);
+        $this->assertSame('1.0.0', $data['version']);
+        $this->assertSame('/api/v1', $data['api']);
+    }
+
+    public function test_debug_endpoint_includes_ai_service(): void
+    {
+        $response = $this->getJson('/debug');
 
         $response->assertOk();
         $data = $response->json();
@@ -49,9 +68,9 @@ class ExampleTest extends TestCase
         $this->assertContains($data['ai_service'], ['mock', 'real']);
     }
 
-    public function test_root_endpoint_includes_active_feature_flags(): void
+    public function test_debug_endpoint_includes_active_feature_flags(): void
     {
-        $response = $this->getJson('/');
+        $response = $this->getJson('/debug');
 
         $response->assertOk();
         $data = $response->json();
