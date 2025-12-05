@@ -63,6 +63,10 @@ class MissingEntityGenerationTest extends TestCase
             $mock->shouldReceive('verifyMovie')
                 ->with('non-existent-movie-xyz')
                 ->andReturn(null);
+            // Also mock searchMovies() which is called when verifyMovie returns null
+            $mock->shouldReceive('searchMovies')
+                ->with('non-existent-movie-xyz', 5)
+                ->andReturn([]);
         });
 
         $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
@@ -229,6 +233,18 @@ class MissingEntityGenerationTest extends TestCase
     public function test_concurrent_requests_for_same_person_slug_only_dispatch_one_job(): void
     {
         Feature::activate('ai_bio_generation');
+
+        // Mock TMDb verification to return valid person data
+        $this->mock(TmdbVerificationService::class, function ($mock) {
+            $mock->shouldReceive('verifyPerson')
+                ->with('concurrent-test-person')
+                ->andReturn([
+                    'name' => 'Test Person',
+                    'birthday' => '1980-01-01',
+                    'place_of_birth' => 'Test City',
+                    'id' => 123,
+                ]);
+        });
 
         // Use real cache (array driver) to test slot management mechanism
         config(['cache.default' => 'array']);
