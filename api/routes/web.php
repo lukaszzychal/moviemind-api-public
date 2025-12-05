@@ -3,7 +3,13 @@
 use App\Services\FeatureFlag\FeatureFlagManager;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (FeatureFlagManager $featureFlagManager) {
+// Welcome endpoint
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Debug endpoint (moved from root)
+Route::get('/debug', function (FeatureFlagManager $featureFlagManager) {
     // Get AI service configuration
     $aiService = config('services.ai.service', 'mock');
 
