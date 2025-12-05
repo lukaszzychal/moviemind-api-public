@@ -121,18 +121,27 @@ class OpenAiClient implements OpenAiClientInterface
 
     /**
      * Generate person biography from a slug using AI.
+     *
+     * @param  array{name: string, birthday: string, place_of_birth: string, id: int, biography?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
      */
-    public function generatePerson(string $slug): array
+    public function generatePerson(string $slug, ?array $tmdbData = null): array
     {
         if (empty($this->apiKey)) {
             return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
         }
 
-        $systemPrompt = 'You are a biography assistant. IMPORTANT: First verify if the person exists. If the person does not exist, return {"error": "Person not found"}. Only if the person exists, generate biography from the slug. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).';
-        $userPrompt = "Generate biography for person with slug: {$slug}. IMPORTANT: First verify if this person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
+        // Build prompt with TMDb context if available
+        if ($tmdbData !== null) {
+            $tmdbContext = $this->formatTmdbPersonContext($tmdbData);
+            $systemPrompt = 'You are a biography assistant. Generate a unique, original biography for the person based on the provided TMDb data. Do NOT copy the biography from TMDb. Create your own original biography. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).';
+            $userPrompt = "Person data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original biography for this person. Do NOT copy the biography. Create your own original biography. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).";
+        } else {
+            $systemPrompt = 'You are a biography assistant. IMPORTANT: First verify if the person exists. If the person does not exist, return {"error": "Person not found"}. Only if the person exists, generate biography from the slug. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).';
+            $userPrompt = "Generate biography for person with slug: {$slug}. IMPORTANT: First verify if this person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
+        }
 
-        return $this->makeApiCall('person', $slug, $systemPrompt, $userPrompt, function ($content) {
-            return [
+        return $this->makeApiCall('person', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
+            $result = [
                 'success' => true,
                 'name' => $content['name'] ?? null,
                 'birth_date' => $content['birth_date'] ?? null,
@@ -140,7 +149,52 @@ class OpenAiClient implements OpenAiClientInterface
                 'biography' => $content['biography'] ?? null,
                 'model' => $this->model,
             ];
+
+            // Use TMDb data as fallback if AI response is missing fields
+            if ($tmdbData !== null) {
+                if (empty($result['name']) && ! empty($tmdbData['name'])) {
+                    $result['name'] = $tmdbData['name'];
+                }
+                if (empty($result['birthplace']) && ! empty($tmdbData['place_of_birth'])) {
+                    $result['birthplace'] = $tmdbData['place_of_birth'];
+                }
+                if (empty($result['birth_date']) && ! empty($tmdbData['birthday'])) {
+                    $result['birth_date'] = $tmdbData['birthday'];
+                }
+            }
+
+            return $result;
         }, $this->personResponseSchema());
+    }
+
+    /**
+     * Format TMDb person data as context string for AI prompt.
+     *
+     * @param  array{name: string, birthday: string, place_of_birth: string, id: int, biography?: string}  $tmdbData
+     */
+    private function formatTmdbPersonContext(array $tmdbData): string
+    {
+        $lines = [
+            "Name: {$tmdbData['name']}",
+        ];
+
+        if (! empty($tmdbData['birthday'])) {
+            $lines[] = "Birthday: {$tmdbData['birthday']}";
+        }
+
+        if (! empty($tmdbData['place_of_birth'])) {
+            $lines[] = "Place of Birth: {$tmdbData['place_of_birth']}";
+        }
+
+        if (! empty($tmdbData['biography'])) {
+            $lines[] = "TMDb Biography: {$tmdbData['biography']}";
+        }
+
+        if (! empty($tmdbData['id'])) {
+            $lines[] = "TMDb ID: {$tmdbData['id']}";
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

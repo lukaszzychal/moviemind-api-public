@@ -77,12 +77,42 @@ class MissingEntityGenerationTest extends TestCase
         $res->assertStatus(404);
     }
 
-    public function test_person_missing_returns_202_when_flag_on(): void
+    public function test_person_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
         Feature::activate('ai_bio_generation');
+
+        // Mock TMDb verification to return person data
+        $this->mock(TmdbVerificationService::class, function ($mock) {
+            $mock->shouldReceive('verifyPerson')
+                ->with('john-doe')
+                ->andReturn([
+                    'name' => 'John Doe',
+                    'birthday' => '1980-01-01',
+                    'place_of_birth' => 'New York, USA',
+                    'id' => 123456,
+                    'biography' => 'An actor',
+                ]);
+        });
+
         $res = $this->getJson('/api/v1/people/john-doe');
         $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug'])
             ->assertJson(['locale' => 'en-US']);
+    }
+
+    public function test_person_missing_returns_404_when_not_found_in_tmdb(): void
+    {
+        Feature::activate('ai_bio_generation');
+
+        // Mock TMDb verification to return null (not found)
+        $this->mock(TmdbVerificationService::class, function ($mock) {
+            $mock->shouldReceive('verifyPerson')
+                ->with('non-existent-person-xyz')
+                ->andReturn(null);
+        });
+
+        $res = $this->getJson('/api/v1/people/non-existent-person-xyz');
+        $res->assertStatus(404)
+            ->assertJson(['error' => 'Person not found']);
     }
 
     public function test_movie_missing_reuses_active_job(): void

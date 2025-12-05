@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Services\TmdbVerificationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use LukaszZychal\TMDB\Client\TMDBClient;
 use LukaszZychal\TMDB\Exception\NotFoundException;
@@ -17,13 +16,20 @@ use Tests\TestCase;
 
 class TmdbVerificationServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();
         config(['cache.default' => 'array']);
         Cache::flush();
+    }
+
+    protected function clearRateLimit(): void
+    {
+        // Clear rate limit window to ensure tests can make API calls
+        Cache::forget('tmdb:rate_limit:window');
+        // Also clear any cached movie results that might interfere
+        Cache::forget('tmdb:movie:test-movie');
+        Cache::forget('tmdb:movie:bad-boys');
     }
 
     protected function tearDown(): void
@@ -45,6 +51,7 @@ class TmdbVerificationServiceTest extends TestCase
 
     public function test_verify_movie_returns_null_when_not_found_in_tmdb(): void
     {
+        $this->clearRateLimit();
         $apiKey = 'test-api-key';
         config(['services.tmdb.api_key' => $apiKey]);
 
@@ -81,6 +88,7 @@ class TmdbVerificationServiceTest extends TestCase
 
     public function test_verify_movie_returns_data_when_found_in_tmdb(): void
     {
+        $this->clearRateLimit();
         $apiKey = 'test-api-key';
         config(['services.tmdb.api_key' => $apiKey]);
 
@@ -148,7 +156,11 @@ class TmdbVerificationServiceTest extends TestCase
         $reflection = new \ReflectionClass($service);
         $clientProperty = $reflection->getProperty('client');
         $clientProperty->setAccessible(true);
+        // Set client before calling verifyMovie to bypass getClient() which checks rate limit
         $clientProperty->setValue($service, $mockClient);
+
+        // Clear rate limit again after setting client to ensure checkRateLimit() passes
+        $this->clearRateLimit();
 
         $result = $service->verifyMovie('bad-boys');
 
@@ -162,6 +174,7 @@ class TmdbVerificationServiceTest extends TestCase
 
     public function test_verify_movie_handles_not_found_exception(): void
     {
+        $this->clearRateLimit();
         $apiKey = 'test-api-key';
         config(['services.tmdb.api_key' => $apiKey]);
 
@@ -190,6 +203,7 @@ class TmdbVerificationServiceTest extends TestCase
 
     public function test_verify_movie_handles_rate_limit_exception(): void
     {
+        $this->clearRateLimit();
         $apiKey = 'test-api-key';
         config(['services.tmdb.api_key' => $apiKey]);
 

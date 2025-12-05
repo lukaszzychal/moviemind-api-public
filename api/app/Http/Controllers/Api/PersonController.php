@@ -8,6 +8,7 @@ use App\Http\Resources\PersonResource;
 use App\Models\Person;
 use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
+use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
 use App\Services\PersonDisambiguationService;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,8 @@ class PersonController extends Controller
         private readonly PersonRepository $personRepository,
         private readonly HateoasService $hateoas,
         private readonly QueuePersonGenerationAction $queuePersonGenerationAction,
-        private readonly PersonDisambiguationService $disambiguationService
+        private readonly PersonDisambiguationService $disambiguationService,
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -88,7 +90,16 @@ class PersonController extends Controller
             return response()->json(['error' => 'Person not found'], 404);
         }
 
-        $result = $this->queuePersonGenerationAction->handle($slug);
+        // Verify person exists in TMDb before queueing job
+        $tmdbData = $this->tmdbVerificationService->verifyPerson($slug);
+        if (! $tmdbData) {
+            return response()->json(['error' => 'Person not found'], 404);
+        }
+
+        $result = $this->queuePersonGenerationAction->handle(
+            $slug,
+            tmdbData: $tmdbData
+        );
 
         return response()->json($result, 202);
     }
