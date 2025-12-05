@@ -40,6 +40,10 @@ Ten katalog zawiera dokumenty **analityczne**, **techniczne** i **PO** (Product 
 - `REFACTOR_PROPOSAL.md` - Alternatywna propozycja refaktoryzacji
 - `REFACTOR_COMPARISON.md` - Porównanie podejść do refaktoryzacji
 
+### 🔍 Audyty Jakości Kodu
+- `CODE_QUALITY_AUDITS_GUIDE.md` - Przewodnik audytów jakości kodu, refaktoryzacji i redesignu (PL)
+- `CODE_QUALITY_AUDITS_GUIDE.en.md` - Code Quality Audits Guide (EN)
+
 ### 📊 Raporty i Statusy
 - `STATUS_IMPLEMENTATION_REPORT.md` - Raport implementacji statusów
 - `SUMMARY_STATUS_AND_RECOMMENDATIONS.md` - Podsumowanie statusów i rekomendacje
@@ -61,4 +65,4 @@ Dokumenty w tym katalogu służą do:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-10
+**Ostatnia aktualizacja:** 2025-01-27

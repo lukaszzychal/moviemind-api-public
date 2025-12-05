@@ -228,6 +228,143 @@ GRASP patterns help assign responsibilities in object-oriented design:
 - **Don't optimize prematurely** - working code first, optimization second
 - **Consider readability** - readable code is often fast enough
 
+## Code Quality Audits
+
+### Ad-Hoc Audits (During Task Execution)
+
+**When to conduct:**
+- During task execution (when encountering code quality issues)
+- During code review
+- When noticing code smells or principle violations
+- After encountering testing or maintenance problems
+
+**Scope:**
+- Files affected by current task
+- Related files (if problem is visible)
+- Specific issues (code smells, duplication, SOLID violations)
+
+**Duration:**
+- 15-30 minutes for small audits
+- 1-2 hours for larger audits
+
+**Process:**
+1. Identify code quality problem
+2. Assess problem size (minor/medium/large)
+3. Apply appropriate fix strategy (see: Problem Fixing Strategy)
+4. Document found issues (if they require separate tasks)
+
+### Comprehensive Audits (Planned)
+
+**When to conduct:**
+- **Quarterly** (every quarter) - basic code quality audits (4-8 hours)
+- **Semi-annually** (every 6 months) - detailed audits with full analysis (1-2 days)
+- **Before major releases** - before larger releases (2-3 days)
+- **After major refactoring** - after larger refactorings (1 day)
+
+**Scope:**
+- Entire application or selected modules
+- All aspects of code quality (SOLID, DRY, code smells, testability, performance)
+- Architecture and design patterns
+- Test coverage and test quality
+
+**Process:**
+1. Audit planning (1-2 days before)
+2. Conduct audit according to checklist
+3. Document found issues
+4. Prioritize problems
+5. Create tasks for issues requiring fixes
+6. Report results
+
+### Problem Fixing Strategy
+
+**Minor problems (fix immediately):**
+- Code smells in files affected by current task
+- Minor SOLID violations in context of current task
+- Code duplication in files affected by task
+- Missing type hints in new code
+- Formatting (Pint should fix this automatically)
+- Minor method refactorings (extract method, rename)
+
+**Action:** Fix immediately, add to commit, document in commit message
+
+**Medium problems (add to current task if time permits):**
+- Code smells in related files (not directly affected)
+- Refactoring small methods/classes in context of task
+- Unifying approach in related files
+- Minor SOLID violations in related files
+
+**Action:** If time permits → fix within task, if not → create task with priority 🟡
+
+**Large problems (create new task):**
+- Refactoring entire modules
+- Architecture redesign
+- Large SOLID violations requiring larger changes
+- Code smells requiring refactoring of many files
+- Performance issues requiring analysis
+- Code duplication requiring larger refactoring
+
+**Action:** Always create new task, priority: 🟡 (medium) or 🔴 (high, if blocking)
+
+### Quick Audit Checklist (Ad-Hoc)
+
+During task execution, check:
+- [ ] Is code readable and understandable?
+- [ ] Are there no obvious code smells (God Class, Long Method)?
+- [ ] Are type hints and strict types present?
+- [ ] Is there no code duplication in files affected by task?
+- [ ] Is dependency injection used correctly?
+- [ ] Are tests written (if this is a new feature)?
+- [ ] Does PHPStan not report errors?
+
+### Comprehensive Audit Checklist
+
+**SOLID Principles:**
+- [ ] Single Responsibility Principle (SRP)
+- [ ] Open/Closed Principle (OCP)
+- [ ] Liskov Substitution Principle (LSP)
+- [ ] Interface Segregation Principle (ISP)
+- [ ] Dependency Inversion Principle (DIP)
+
+**Code Quality:**
+- [ ] DRY (Don't Repeat Yourself)
+- [ ] Code smells (God Class, Long Method, etc.)
+- [ ] Testability
+- [ ] Readability
+- [ ] Type safety
+
+**Architecture:**
+- [ ] Separation of concerns
+- [ ] Dependency management
+- [ ] Design patterns (used appropriately)
+- [ ] Performance considerations
+
+**Testing:**
+- [ ] Test coverage (minimum 80%)
+- [ ] Test quality
+- [ ] TDD compliance
+
+### Code Quality Metrics
+
+**Key Metrics:**
+- **PHPStan Level** - currently 5, goal: maintain or increase
+- **Test Coverage** - goal: minimum 80%
+- **Code Smells** - number of found code smells
+- **SOLID Violations** - number of SOLID principle violations
+- **Duplication** - percentage of duplicated code
+- **Cyclomatic Complexity** - average cyclomatic complexity of methods
+
+**Reporting:**
+- Report after each comprehensive audit
+- Tracking trends over time
+- Comparison with previous audits
+
+### Related Documentation
+
+- [Code Quality Audits Guide](../../docs/knowledge/technical/CODE_QUALITY_AUDITS_GUIDE.md) - Comprehensive guide
+- [Security Audits Guide](../../docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) - Security audits
+- [Refactoring Proposals](../../docs/knowledge/technical/REFACTORING_PROPOSAL.md) - Refactoring proposals
+- [Code Quality Tools](../../docs/knowledge/reference/CODE_QUALITY_TOOLS.md) - Code quality tools
+
 ## Coding standards
 
 - **PSR-12** - formatting (enforced by Pint)
