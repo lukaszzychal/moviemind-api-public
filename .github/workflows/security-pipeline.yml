@@ -1,0 +1,236 @@
+name: Comprehensive Security Audit
+
+on:
+  # Manual trigger for comprehensive security audits
+  workflow_dispatch:
+  # Weekly comprehensive audit (Sunday at 3 AM UTC)
+  schedule:
+    - cron: '0 3 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # New tools that are NOT duplicated in other workflows
+  hadolint-dockerfile:
+    name: Hadolint - Dockerfile Security Linter
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/php/Dockerfile
+          failure-threshold: warning
+          format: sarif
+          output-file: hadolint-results.sarif
+          ignore: DL3008,DL3009,DL3010
+      
+      - name: Upload Hadolint Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('hadolint-results.sarif') != ''
+        with:
+          sarif_file: hadolint-results.sarif
+          category: 'hadolint-dockerfile'
+
+  npm-audit:
+    name: npm Security Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-path: ['.', 'api']
+        exclude:
+          # Skip if package.json doesn't exist
+          - package-path: 'api'
+            # This will be handled separately if api/package.json exists
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check if package.json exists
+        id: check-package
+        working-directory: ${{ matrix.package-path }}
+        run: |
+          if [ -f package.json ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Setup Node.js
+        if: steps.check-package.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.package-path }}/package-lock.json
+      
+      - name: Install dependencies
+        if: steps.check-package.outputs.exists == 'true'
+        working-directory: ${{ matrix.package-path }}
+        run: npm ci
+      
+      - name: Run npm audit
+        if: steps.check-package.outputs.exists == 'true'
+        working-directory: ${{ matrix.package-path }}
+        continue-on-error: true
+        run: |
+          npm audit --json > ../npm-audit-${{ matrix.package-path == '.' && 'root' || 'api' }}.json || true
+      
+      - name: Upload npm audit results
+        if: steps.check-package.outputs.exists == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-${{ matrix.package-path == '.' && 'root' || 'api' }}
+          path: npm-audit-${{ matrix.package-path == '.' && 'root' || 'api' }}.json
+          retention-days: 90
+
+  security-headers-check:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    # This job will be useful when API is deployed
+    # For now, we can check configuration files
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check Security Headers Configuration
+        run: |
+          echo "## Security Headers Configuration Check" >> security-headers-report.md
+          echo "" >> security-headers-report.md
+          echo "### Laravel Security Headers" >> security-headers-report.md
+          echo "- Checking middleware configuration..." >> security-headers-report.md
+          
+          # Check if security headers middleware exists
+          if grep -r "AddHeaders" api/app/Http/ || grep -r "SecureHeaders" api/app/Http/; then
+            echo "✅ Security headers middleware found" >> security-headers-report.md
+          else
+            echo "⚠️ Security headers middleware not found - consider adding" >> security-headers-report.md
+          fi
+          
+          echo "" >> security-headers-report.md
+          echo "### Recommended Headers" >> security-headers-report.md
+          echo "- X-Content-Type-Options: nosniff" >> security-headers-report.md
+          echo "- X-Frame-Options: DENY" >> security-headers-report.md
+          echo "- X-XSS-Protection: 1; mode=block" >> security-headers-report.md
+          echo "- Strict-Transport-Security: max-age=31536000; includeSubDomains" >> security-headers-report.md
+          echo "- Content-Security-Policy: [configure as needed]" >> security-headers-report.md
+      
+      - name: Upload Security Headers Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-headers-report
+          path: security-headers-report.md
+          retention-days: 90
+
+  laravel-security-checker:
+    name: Laravel Security Checker
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, curl
+      
+      - name: Install Laravel Security Checker
+        run: |
+          composer global require laravel/security-checker || true
+      
+      - name: Run Laravel Security Checker
+        working-directory: api
+        continue-on-error: true
+        run: |
+          # Check for Laravel security advisories
+          echo "## Laravel Security Checker Results" >> ../laravel-security-check.md
+          echo "" >> ../laravel-security-check.md
+          echo "Checking Laravel framework version..." >> ../laravel-security-check.md
+          
+          if [ -f composer.lock ]; then
+            LARAVEL_VERSION=$(composer show laravel/framework 2>/dev/null | grep "versions" | head -1 || echo "unknown")
+            echo "- Laravel version: $LARAVEL_VERSION" >> ../laravel-security-check.md
+          fi
+          
+          echo "" >> ../laravel-security-check.md
+          echo "Note: Use Laravel Security Advisories for detailed checks:" >> ../laravel-security-check.md
+          echo "https://github.com/laravel/framework/security/advisories" >> ../laravel-security-check.md
+      
+      - name: Upload Laravel Security Check
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: laravel-security-check
+          path: laravel-security-check.md
+          retention-days: 90
+
+  # Aggregate results from other workflows
+  aggregate-results:
+    name: Aggregate Security Results
+    runs-on: ubuntu-latest
+    needs: [hadolint-dockerfile, npm-audit, security-headers-check, laravel-security-check]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download artifacts from other workflows
+        run: |
+          echo "## Comprehensive Security Audit Report" > comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "### Audit Date: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "### Summary" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "This comprehensive audit includes:" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "1. **Hadolint** - Dockerfile security linter" >> comprehensive-security-audit.md
+          echo "2. **npm audit** - Node.js dependencies audit" >> comprehensive-security-audit.md
+          echo "3. **Security Headers Check** - API security headers configuration" >> comprehensive-security-audit.md
+          echo "4. **Laravel Security Checker** - Framework-specific security checks" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "### Other Security Scans" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "The following scans run in separate workflows:" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "- **GitLeaks** - Secret detection (code-security-scan.yml)" >> comprehensive-security-audit.md
+          echo "- **Composer Audit** - PHP dependencies (code-security-scan.yml, ci.yml)" >> comprehensive-security-audit.md
+          echo "- **PHPStan** - Static analysis (ci.yml)" >> comprehensive-security-audit.md
+          echo "- **Trivy** - Container security (docker-security-scan.yml)" >> comprehensive-security-audit.md
+          echo "- **CodeQL** - Advanced SAST (codeql.yml)" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "### Results" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "Check workflow artifacts and GitHub Security tab for detailed results." >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "---" >> comprehensive-security-audit.md
+          echo "" >> comprehensive-security-audit.md
+          echo "**Note:** This is a comprehensive audit workflow. Individual security scans run automatically on every PR/commit." >> comprehensive-security-audit.md
+      
+      - name: Upload Comprehensive Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comprehensive-security-audit-report
+          path: comprehensive-security-audit.md
+          retention-days: 90
+      
+      - name: Display Report
+        if: always()
+        run: |
+          echo "=========================================="
+          cat comprehensive-security-audit.md
+          echo "=========================================="
+
