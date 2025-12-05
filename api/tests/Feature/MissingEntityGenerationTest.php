@@ -23,6 +23,7 @@ class MissingEntityGenerationTest extends TestCase
         $this->artisan('db:seed');
         config(['services.tmdb.api_key' => 'test-api-key']);
     }
+
     public function test_movie_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
         Feature::activate('ai_description_generation');
