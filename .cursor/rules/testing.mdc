@@ -33,3 +33,111 @@ alwaysApply: true
 
 - **Feature Tests** (`tests/Feature/`) - API endpoints and integration
 - **Unit Tests** (`tests/Unit/`) - Business logic and services
+
+## Testing Schools - Mock Limitation Strategy
+
+### Principle: Minimize Mocks, Maximize Real Objects
+
+**ALWAYS prefer Chicago School or Detroit School over London School (Mockist).**
+
+### ✅ Mock ONLY
+
+1. **External APIs** - TMDb, OpenAI (expensive, unstable, rate-limited)
+2. **Event/Queue systems** - Use `Event::fake()`, `Queue::fake()` for async operations
+3. **Cache** - Use `Cache::fake()` when testing cache logic specifically
+4. **File system** - When testing file operations
+5. **Time-dependent code** - Use `Carbon::setTestNow()` instead of mocking
+
+### ❌ DO NOT Mock
+
+1. **Repositories** - Use real repositories with SQLite `:memory:` database
+2. **Eloquent Models** - Use real models with test database
+3. **Business Services** - Use real services with real dependencies
+4. **Internal dependencies** - Use real objects within your application
+5. **Value Objects** - Use real value objects
+6. **Data Transformations** - Use real transformation logic
+
+### Testing School Preferences
+
+**Priority order (highest to lowest):**
+
+1. **Chicago School (Classical/Behavior-Based)** - Preferred for most tests
+   - Test behavior, not implementation
+   - Use real objects where possible
+   - Mock only external dependencies
+   - Verify side effects and interactions
+
+2. **Detroit School (State-Based)** - Preferred for data transformations
+   - Test state transformations (input → output)
+   - Use real objects for transformations
+   - Mock only external services
+   - Verify data state changes
+
+3. **London School (Mockist)** - Use ONLY when necessary
+   - Only for external APIs (TMDb, OpenAI)
+   - Only when testing is impossible without mocks
+   - Avoid for internal dependencies
+
+4. **Outside-In TDD** - For Feature Tests
+   - Start with acceptance tests
+   - Use real objects in the system
+   - Mock only external boundaries
+
+### Examples
+
+#### ✅ Good - Chicago School (Real Objects)
+
+```php
+// Feature Test - uses real database, real models
+public function test_list_movies_returns_ok(): void
+{
+    $response = $this->getJson('/api/v1/movies');
+    $response->assertOk()->assertJsonStructure([...]);
+}
+```
+
+#### ✅ Good - Detroit School (State Transformation)
+
+```php
+// Unit Test - tests data transformation with real service
+public function test_slug_generation(): void
+{
+    $service = new SlugService();
+    $slug = $service->generateSlug('The Matrix', 1999);
+    $this->assertSame('the-matrix-1999', $slug);
+}
+```
+
+#### ✅ Good - Limited Mock (External API Only)
+
+```php
+// Unit Test - mocks only external API
+$this->mock(TmdbVerificationService::class, function ($mock) {
+    $mock->shouldReceive('verifyMovie')->andReturn($movieData);
+});
+```
+
+#### ❌ Bad - London School (Too Many Mocks)
+
+```php
+// DON'T mock internal dependencies
+$repository = Mockery::mock(MovieRepository::class);
+$service = Mockery::mock(MovieService::class);
+// ... too many mocks
+```
+
+### Rules
+
+1. **Before adding a mock, ask:** "Is this an external dependency?"
+2. **If internal:** Use real object with test database
+3. **If external API:** Mock it
+4. **If unsure:** Prefer real object, refactor if needed
+5. **Test behavior, not implementation** - Chicago School
+6. **Test transformations, not interactions** - Detroit School
+
+### When to Use Each School
+
+- **Chicago School:** Feature tests, service tests with side effects, integration tests
+- **Detroit School:** Data transformation tests, calculation tests, validation tests
+- **London School:** External API tests ONLY (TMDb, OpenAI)
+- **Outside-In:** Feature tests, acceptance tests, end-to-end scenarios

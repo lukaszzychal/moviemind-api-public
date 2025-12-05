@@ -52,17 +52,24 @@ Każde zadanie ma następującą strukturę:
 
 #### Faza 1: Krytyczne dla stabilności i bezpieczeństwa (🔴 Wysoki Priorytet)
 
-1. **`TASK-037` (Faza 2-3)** - Weryfikacja istnienia filmów/osób przed generowaniem AI
+1. **`TASK-044` (Faza 1)** - Integracja TMDb API dla weryfikacji istnienia filmów przed generowaniem AI
+   - **Dlaczego:** **KRYTYCZNY PROBLEM** - System zwraca 202 z job_id, ale job kończy się FAILED z NOT_FOUND nawet dla istniejących filmów. System jest obecnie nie do użycia dla wielu filmów.
+   - **Czas:** 8-12h (Faza 1)
+   - **Status:** ✅ COMPLETED (2025-12-01)
+   - **Priorytet:** 🔴🔴🔴 Najwyższy - wymaga natychmiastowej naprawy
+   - **Następne:** Faza 2 (Optymalizacja) - rate limiting, dodatkowe testy
+
+2. **`TASK-037` (Faza 2-3)** - Weryfikacja istnienia filmów/osób przed generowaniem AI
    - **Dlaczego:** Zapobiega halucynacjom AI, kluczowe dla jakości danych
    - **Czas:** 8-12h (Faza 2) + 20-30h (Faza 3)
    - **Status:** ⏳ PENDING (Faza 1 ✅ COMPLETED)
 
-2. **`TASK-038` (Faza 2)** - Weryfikacja zgodności danych AI z slugiem
+3. **`TASK-038` (Faza 2)** - Weryfikacja zgodności danych AI z slugiem
    - **Dlaczego:** Zapewnia spójność danych, zapobiega błędnym generacjom
    - **Czas:** 6-8h
    - **Status:** ⏳ PENDING (Faza 1 ✅ COMPLETED)
 
-3. **`TASK-013`** - Konfiguracja dostępu do Horizon
+4. **`TASK-013`** - Konfiguracja dostępu do Horizon
    - **Dlaczego:** Bezpieczeństwo - zabezpiecza panel Horizon w produkcji
    - **Czas:** 1-2h
    - **Status:** ⏳ PENDING
@@ -567,6 +574,142 @@ Każde zadanie ma następującą strukturę:
 - **Czas zakończenia:** --
 - **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
 - **Realizacja:** Do ustalenia
+
+#### `TASK-044` - Integracja TMDb API dla weryfikacji istnienia filmów przed generowaniem AI
+- **Status:** ✅ COMPLETED (Wszystkie fazy ukończone)
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 8-12 godzin (Faza 1), 4-6 godzin (Faza 2), 6-8 godzin (Faza 3)
+- **Czas rozpoczęcia:** 2025-12-01
+- **Czas zakończenia:** 2025-12-03
+- **Czas realizacji:** ~18h (Faza 1: ~10h, Faza 2: ~4h, Faza 3: ~4h)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** **KRYTYCZNY PROBLEM** - System zwraca 202 z job_id, ale job kończy się FAILED z NOT_FOUND nawet dla istniejących filmów (np. "bad-boys"). AI nie ma dostępu do zewnętrznych baz danych i weryfikuje tylko w swojej wiedzy z treningu, co powoduje fałszywe negatywy.
+- **Szczegóły:**
+  - **Problem:** AI zwraca "Movie not found" dla filmów które istnieją w rzeczywistości (np. "Bad Boys" z Williem Smithem)
+  - **Przyczyna:** AI używa tylko wiedzy z treningu, nie ma dostępu do aktualnych baz danych filmowych
+  - **Rozwiązanie:** Integracja z TMDb API do weryfikacji przed generowaniem przez AI
+  - **Faza 1 (Krytyczna) - ✅ COMPLETED:**
+    - ✅ Instalacja biblioteki `lukaszzychal/tmdb-client-php` (v1.0.2, kompatybilna z psr/http-message 2.0)
+    - ✅ Utworzenie `TmdbVerificationService` z metodą `verifyMovie(string $slug): ?array`
+    - ✅ Konfiguracja `TMDB_API_KEY` w `config/services.php` i `.env.example` (local, staging, production)
+    - ✅ Integracja weryfikacji w `MovieController::show()` - sprawdź TMDb przed queue job
+    - ✅ Jeśli nie znaleziono w TMDb → zwróć 404 od razu (zamiast 202)
+    - ✅ Jeśli znaleziono → queue job z danymi z TMDb jako kontekst
+    - ✅ Aktualizacja `RealGenerateMovieJob` i `MockGenerateMovieJob` - przekazanie danych z TMDb
+    - ✅ Aktualizacja `OpenAiClient::generateMovie()` - użycie danych z TMDb w prompt (mniej halucynacji)
+    - ✅ Aktualizacja `MovieGenerationRequested` Event - przekazanie `tmdbData`
+    - ✅ Aktualizacja `QueueMovieGenerationAction` - przekazanie `tmdbData`
+    - ✅ Testy jednostkowe: `TmdbVerificationServiceTest` (6 testów)
+    - ✅ Testy feature: `MissingEntityGenerationTest` - zaktualizowane z mockowaniem TMDb
+    - ✅ Cache wyników TMDb w Redis (TTL: 24h) - zaimplementowane w `TmdbVerificationService`
+    - ✅ Obsługa błędów: NotFoundException, RateLimitException, TMDBException
+    - ✅ Fallback do AI jeśli TMDb niedostępny (zwraca null, pozwala na fallback)
+  - **Faza 2 (Optymalizacja) - ✅ COMPLETED:**
+    - ✅ Cache wyników TMDb w Redis (TTL: 24h) - zaimplementowane w Fazie 1
+    - ✅ Rate limiting dla TMDb API (40 requests per 10 seconds) - zaimplementowane w `checkRateLimit()`
+    - ✅ Fallback do AI jeśli TMDb niedostępny - zaimplementowane w Fazie 1
+    - ✅ Testy cache i rate limiting - `TmdbVerificationServiceTest` z testami rate limiting
+  - **Faza 3 (Disambiguation) - ✅ COMPLETED:**
+    - ✅ Metoda `searchMovies()` w `TmdbVerificationService` - zwraca wiele wyników
+    - ✅ Disambiguation w `MovieController::show()` - zwraca 300 Multiple Choices z listą opcji
+    - ✅ Wybór konkretnego filmu przez `tmdb_id` query parameter
+    - ✅ Testy disambiguation - `MovieDisambiguationTest` (4 testy)
+- **Zależności:** Brak
+- **Powiązane dokumenty:**
+  - [`docs/knowledge/technical/AI_MOVIE_VERIFICATION_PROBLEM.md`](../../knowledge/technical/AI_MOVIE_VERIFICATION_PROBLEM.md)
+  - [`docs/knowledge/technical/TMDB_CLIENT_LIBRARY_EVALUATION.md`](../../knowledge/technical/TMDB_CLIENT_LIBRARY_EVALUATION.md)
+  - [`docs/knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md`](../../knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md)
+  - [`docs/knowledge/technical/AI_VERIFICATION_APPROACHES_COMPARISON.md`](../../knowledge/technical/AI_VERIFICATION_APPROACHES_COMPARISON.md)
+  - [TMDb API Documentation](https://www.themoviedb.org/documentation/api)
+- **Utworzone:** 2025-12-01
+- **Ukończone:** 2025-12-03 (Wszystkie fazy)
+---
+
+#### `TASK-045` - Integracja TMDb API dla weryfikacji istnienia osób przed generowaniem AI
+- **Status:** ✅ COMPLETED (Wszystkie fazy ukończone)
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 6-8 godzin (Faza 1), 3-4 godziny (Faza 2)
+- **Czas rozpoczęcia:** 2025-12-03
+- **Czas zakończenia:** 2025-12-03
+- **Czas realizacji:** ~7h (Faza 1: ~6h, Faza 2: ~1h - cache już był zaimplementowany)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Rozszerzenie integracji TMDb o weryfikację osób (People) przed generowaniem biografii przez AI.
+- **Szczegóły:**
+  - **Faza 1 (Krytyczna) - ✅ COMPLETED:**
+    - ✅ Rozszerzenie `TmdbVerificationService` o metodę `verifyPerson(string $slug): ?array` (już istniała)
+    - ✅ Integracja weryfikacji w `PersonController::show()` - sprawdź TMDb przed queue job
+    - ✅ Jeśli nie znaleziono w TMDb → zwróć 404 od razu
+    - ✅ Jeśli znaleziono → queue job z danymi z TMDb jako kontekst
+    - ✅ Aktualizacja `PersonGenerationRequested` Event - przekazanie `tmdbData`
+    - ✅ Aktualizacja `QueuePersonGenerationAction` - przekazanie `tmdbData`
+    - ✅ Aktualizacja `RealGeneratePersonJob` i `MockGeneratePersonJob` - przekazanie danych z TMDb
+    - ✅ Aktualizacja `OpenAiClient::generatePerson()` - użycie danych z TMDb w prompt
+    - ✅ Testy feature: `MissingEntityGenerationTest` - zaktualizowane z mockowaniem TMDb dla osób
+  - **Faza 2 (Optymalizacja) - ✅ COMPLETED:**
+    - ✅ Cache wyników TMDb dla osób (TTL: 24h) - już zaimplementowane w `TmdbVerificationService`
+    - ✅ Testy cache dla osób - cache działa automatycznie dla wszystkich typów
+- **Zależności:** TASK-044 (Faza 1) - dla spójności implementacji
+- **Powiązane dokumenty:**
+  - [`docs/knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md`](../../knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md)
+  - [`docs/knowledge/technical/AI_VERIFICATION_APPROACHES_COMPARISON.md`](../../knowledge/technical/AI_VERIFICATION_APPROACHES_COMPARISON.md)
+- **Utworzone:** 2025-12-03
+- **Ukończone:** 2025-12-03
+---
+
+#### `TASK-046` - Integracja TMDb API dla weryfikacji istnienia seriali i TV Shows przed generowaniem AI
+- **Status:** ⏳ PENDING (Wymaga TASK-041)
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 8-10 godzin (Faza 1), 3-4 godziny (Faza 2)
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Rozszerzenie integracji TMDb o weryfikację seriali i TV Shows przed generowaniem przez AI.
+- **Szczegóły:**
+  - **Faza 1 (Podstawowa) - ⏳ PENDING:**
+    - Rozszerzenie `TmdbVerificationService` o metody:
+      - `verifySeries(string $slug): ?array`
+      - `verifyTVShow(string $slug): ?array`
+    - Integracja weryfikacji w `SeriesController::show()` i `TVShowController::show()`
+    - Aktualizacja jobów generacji dla seriali/TV Shows
+    - Testy dla seriali i TV Shows
+  - **Faza 2 (Optymalizacja) - ⏳ PENDING:**
+    - Rozszerzenie cache o seriale i TV Shows (wspólny cache z filmami i osobami)
+    - Testy cache
+- **Zależności:** TASK-041 (dodanie seriali/TV Shows), TASK-044 (Faza 1), TASK-045 (Faza 1)
+- **Powiązane dokumenty:**
+  - [`docs/knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md`](../../knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md)
+- **Utworzone:** 2025-12-03
+---
+
+#### `TASK-047` - Refaktoryzacja do wspólnego serwisu weryfikacji
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 4-6 godzin
+- **Czas rozpoczęcia:** 2025-12-03
+- **Czas zakończenia:** 2025-12-03
+- **Czas realizacji:** ~2h
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Refaktoryzacja `TmdbVerificationService` do wspólnego interfejsu dla wszystkich typów encji.
+- **Szczegóły:**
+  - ✅ Utworzenie interfejsu `EntityVerificationServiceInterface` z metodami dla wszystkich typów
+  - ✅ Refaktoryzacja `TmdbVerificationService` do implementacji interfejsu
+  - ✅ Aktualizacja `MovieController` i `PersonController` - użycie interfejsu zamiast konkretnej klasy
+  - ✅ Rejestracja binding w `AppServiceProvider` - `EntityVerificationServiceInterface` → `TmdbVerificationService`
+  - ✅ Testy refaktoryzacji - wszystkie testy przechodzą
+- **Zależności:** TASK-044 (Faza 1), TASK-045 (Faza 1)
+- **Utworzone:** 2025-12-03
+- **Ukończone:** 2025-12-03
+---
+
+#### `TASK-043` - Implementacja zasady wykrywania BREAKING CHANGE
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 2-3 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
 - **Opis:** Dodanie zasady do cursor/rules wymagającej analizy BREAKING CHANGE przed wprowadzeniem zmian. Zasada wymaga traktowania zmian jakby były na produkcji z pełnymi danymi.
 - **Szczegóły:**
   - Utworzenie `.cursor/rules/breaking-change-detection.mdc`
@@ -1013,12 +1156,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 16
+- **Aktywne:** 17
 - **Zakończone:** 8
 - **Anulowane:** 0
 - **W trakcie:** 1
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-09
+**Ostatnia aktualizacja:** 2025-12-01
 

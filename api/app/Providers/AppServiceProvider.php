@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Services\EntityVerificationServiceInterface;
 use App\Services\OpenAiClient;
 use App\Services\OpenAiClientInterface;
+use App\Services\TmdbVerificationService;
 use App\Support\PhpstanFixer\AutoFixService;
 use App\Support\PhpstanFixer\Fixers\CollectionGenericDocblockFixer;
 use App\Support\PhpstanFixer\Fixers\MissingParamDocblockFixer;
@@ -21,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Bind OpenAI Client
         $this->app->bind(OpenAiClientInterface::class, OpenAiClient::class);
+
+        // Bind Entity Verification Service
+        $this->app->bind(EntityVerificationServiceInterface::class, TmdbVerificationService::class);
 
         $this->app->bind(
             AutoFixService::class,

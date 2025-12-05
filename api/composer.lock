@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "21e55595249be9a75438c0ec8fd4d4df",
+    "content-hash": "58c89084bb87a8a7753f7688a5bc859d",
     "packages": [
         {
             "name": "brick/math",
@@ -2165,6 +2165,69 @@
                 }
             ],
             "time": "2024-12-08T08:18:47+00:00"
+        },
+        {
+            "name": "lukaszzychal/tmdb-client-php",
+            "version": "1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/lukaszzychal/tmdb-client-php.git",
+                "reference": "f25dc95933fe4db7a5c756b4ff1121f435de1127"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/lukaszzychal/tmdb-client-php/zipball/f25dc95933fe4db7a5c756b4ff1121f435de1127",
+                "reference": "f25dc95933fe4db7a5c756b4ff1121f435de1127",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.8",
+                "php": "^8.1",
+                "psr/http-client": "^1.0",
+                "psr/http-message": "^1.0|^2.0",
+                "psr/log": "^1.0|^2.0|^3.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.0",
+                "monolog/monolog": "^3.0",
+                "php-coveralls/php-coveralls": "^2.5",
+                "phpstan/phpstan": "^1.10",
+                "phpunit/phpunit": "^10.0",
+                "vimeo/psalm": "^6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LukaszZychal\\TMDB\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Łukasz Zychal",
+                    "email": "lukasz.zychal.dev@gmail.com",
+                    "homepage": "https://github.com/lukaszzychal",
+                    "role": "Lead Developer"
+                }
+            ],
+            "description": "A comprehensive PHP client for The Movie Database (TMDB) API",
+            "keywords": [
+                "api",
+                "client",
+                "movie",
+                "themoviedb",
+                "tmdb",
+                "tv"
+            ],
+            "support": {
+                "forum": "https://github.com/lukaszzychal/tmdb-client-php/discussions",
+                "issues": "https://github.com/lukaszzychal/tmdb-client-php/issues",
+                "source": "https://github.com/lukaszzychal/tmdb-client-php"
+            },
+            "time": "2025-12-03T20:01:54+00:00"
         },
         {
             "name": "monolog/monolog",

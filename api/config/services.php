@@ -73,4 +73,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | TMDb Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for TMDb API (used for movie/person verification)
+    |
+    */
+
+    'tmdb' => [
+        'api_key' => env('TMDB_API_KEY'),
+    ],
+
 ];

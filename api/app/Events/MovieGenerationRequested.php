@@ -15,6 +15,7 @@ class MovieGenerationRequested
         public ?int $existingMovieId = null,
         public ?int $baselineDescriptionId = null,
         public ?string $locale = null,
-        public ?string $contextTag = null
+        public ?string $contextTag = null,
+        public ?array $tmdbData = null
     ) {}
 }

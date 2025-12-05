@@ -25,7 +25,8 @@ class QueuePersonGenerationJob
                 existingPersonId: $event->existingPersonId,
                 baselineBioId: $event->baselineBioId,
                 locale: $event->locale,
-                contextTag: $event->contextTag
+                contextTag: $event->contextTag,
+                tmdbData: $event->tmdbData
             ),
             'mock' => MockGeneratePersonJob::dispatch(
                 $event->slug,
@@ -33,7 +34,8 @@ class QueuePersonGenerationJob
                 existingPersonId: $event->existingPersonId,
                 baselineBioId: $event->baselineBioId,
                 locale: $event->locale,
-                contextTag: $event->contextTag
+                contextTag: $event->contextTag,
+                tmdbData: $event->tmdbData
             ),
             default => throw new \InvalidArgumentException("Invalid AI service: {$aiService}. Must be 'mock' or 'real'."),
         };

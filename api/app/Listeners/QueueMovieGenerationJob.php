@@ -25,7 +25,8 @@ class QueueMovieGenerationJob
                 existingMovieId: $event->existingMovieId,
                 baselineDescriptionId: $event->baselineDescriptionId,
                 locale: $event->locale,
-                contextTag: $event->contextTag
+                contextTag: $event->contextTag,
+                tmdbData: $event->tmdbData
             ),
             'mock' => MockGenerateMovieJob::dispatch(
                 $event->slug,
@@ -33,7 +34,8 @@ class QueueMovieGenerationJob
                 existingMovieId: $event->existingMovieId,
                 baselineDescriptionId: $event->baselineDescriptionId,
                 locale: $event->locale,
-                contextTag: $event->contextTag
+                contextTag: $event->contextTag,
+                tmdbData: $event->tmdbData
             ),
             default => throw new \InvalidArgumentException("Invalid AI service: {$aiService}. Must be 'mock' or 'real'."),
         };

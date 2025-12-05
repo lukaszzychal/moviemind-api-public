@@ -9,6 +9,7 @@ use App\Http\Resources\MovieResource;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Repositories\MovieRepository;
+use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
 use App\Services\MovieDisambiguationService;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,8 @@ class MovieController extends Controller
         private readonly MovieRepository $movieRepository,
         private readonly HateoasService $hateoas,
         private readonly QueueMovieGenerationAction $queueMovieGenerationAction,
-        private readonly MovieDisambiguationService $movieDisambiguationService
+        private readonly MovieDisambiguationService $movieDisambiguationService,
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -72,9 +74,88 @@ class MovieController extends Controller
             return response()->json(['error' => 'Movie not found'], 404);
         }
 
-        $result = $this->queueMovieGenerationAction->handle($slug, locale: Locale::EN_US->value);
+        // Check for disambiguation request
+        $tmdbId = $request->query('tmdb_id');
+        if ($tmdbId !== null) {
+            return $this->handleDisambiguationSelection($slug, (int) $tmdbId);
+        }
+
+        // Verify movie exists in TMDb before queueing job
+        $tmdbData = $this->tmdbVerificationService->verifyMovie($slug);
+        if (! $tmdbData) {
+            // Check if there are multiple matches (disambiguation needed)
+            $searchResults = $this->tmdbVerificationService->searchMovies($slug, 5);
+            if (count($searchResults) > 1) {
+                return $this->respondWithDisambiguation($slug, $searchResults);
+            }
+
+            return response()->json(['error' => 'Movie not found'], 404);
+        }
+
+        $result = $this->queueMovieGenerationAction->handle(
+            $slug,
+            locale: Locale::EN_US->value,
+            tmdbData: $tmdbData
+        );
 
         return response()->json($result, 202);
+    }
+
+    /**
+     * Handle disambiguation selection when user chooses specific movie from TMDb results.
+     */
+    private function handleDisambiguationSelection(string $slug, int $tmdbId): JsonResponse
+    {
+        // Search for movies and find the one matching tmdb_id
+        $searchResults = $this->tmdbVerificationService->searchMovies($slug, 10);
+        $selectedMovie = null;
+
+        foreach ($searchResults as $result) {
+            if ($result['id'] === $tmdbId) {
+                $selectedMovie = $result;
+                break;
+            }
+        }
+
+        if (! $selectedMovie) {
+            return response()->json(['error' => 'Selected movie not found in search results'], 404);
+        }
+
+        $result = $this->queueMovieGenerationAction->handle(
+            $slug,
+            locale: Locale::EN_US->value,
+            tmdbData: $selectedMovie
+        );
+
+        return response()->json($result, 202);
+    }
+
+    /**
+     * Respond with disambiguation options when multiple movies match the slug.
+     */
+    private function respondWithDisambiguation(string $slug, array $searchResults): JsonResponse
+    {
+        $options = array_map(function ($result) use ($slug) {
+            $year = ! empty($result['release_date']) ? substr($result['release_date'], 0, 4) : null;
+            $director = $result['director'] ?? null;
+
+            return [
+                'tmdb_id' => $result['id'],
+                'title' => $result['title'],
+                'release_year' => $year,
+                'director' => $director,
+                'overview' => substr($result['overview'] ?? '', 0, 200).(strlen($result['overview'] ?? '') > 200 ? '...' : ''),
+                'select_url' => url("/api/v1/movies/{$slug}?tmdb_id={$result['id']}"),
+            ];
+        }, $searchResults);
+
+        return response()->json([
+            'error' => 'Multiple movies found',
+            'message' => 'Multiple movies match this slug. Please select one:',
+            'slug' => $slug,
+            'options' => $options,
+            'count' => count($options),
+        ], 300); // 300 Multiple Choices
     }
 
     private function respondWithExistingMovie(

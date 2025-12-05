@@ -41,7 +41,8 @@ class RealGeneratePersonJob implements ShouldQueue
         public ?int $existingPersonId = null,
         public ?int $baselineBioId = null,
         public ?string $locale = null,
-        public ?string $contextTag = null
+        public ?string $contextTag = null,
+        public ?array $tmdbData = null
     ) {}
 
     /**
@@ -157,7 +158,7 @@ class RealGeneratePersonJob implements ShouldQueue
     private function refreshExistingPerson(Person $person, OpenAiClientInterface $openAiClient): void
     {
         $person->loadMissing('bios');
-        $aiResponse = $openAiClient->generatePerson($this->slug);
+        $aiResponse = $openAiClient->generatePerson($this->slug, $this->tmdbData);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
@@ -420,7 +421,7 @@ class RealGeneratePersonJob implements ShouldQueue
      */
     private function createPersonRecord(OpenAiClientInterface $openAiClient): array
     {
-        $aiResponse = $openAiClient->generatePerson($this->slug);
+        $aiResponse = $openAiClient->generatePerson($this->slug, $this->tmdbData);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
