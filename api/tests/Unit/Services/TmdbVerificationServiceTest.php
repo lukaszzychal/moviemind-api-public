@@ -14,6 +14,15 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Tests\TestCase;
 
+/**
+ * Test for TmdbVerificationService.
+ *
+ * NOTE: This test uses Mockery for external library (TMDBClient) that doesn't have an interface.
+ * This is acceptable per framework-agnostic testing strategy - Mockery is used only for
+ * external dependencies without interfaces. For internal interfaces, we use our own test doubles.
+ *
+ * @see \Tests\Doubles\Services\FakeEntityVerificationService for framework-agnostic approach
+ */
 class TmdbVerificationServiceTest extends TestCase
 {
     protected function setUp(): void

@@ -4,13 +4,11 @@ namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
-use App\Services\TmdbVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Pennant\Feature;
-use Mockery;
 use Tests\TestCase;
 
 class MissingEntityGenerationTest extends TestCase
@@ -26,28 +24,19 @@ class MissingEntityGenerationTest extends TestCase
         config(['services.tmdb.api_key' => 'test-api-key']);
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     public function test_movie_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
         Feature::activate('ai_description_generation');
 
-        // Mock TMDb verification to return movie data
-        $this->mock(TmdbVerificationService::class, function ($mock) {
-            $mock->shouldReceive('verifyMovie')
-                ->with('annihilation')
-                ->andReturn([
-                    'title' => 'Annihilation',
-                    'release_date' => '2018-02-23',
-                    'overview' => 'A biologist signs up for a dangerous expedition.',
-                    'id' => 300668,
-                    'director' => 'Alex Garland',
-                ]);
-        });
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovie('annihilation', [
+            'title' => 'Annihilation',
+            'release_date' => '2018-02-23',
+            'overview' => 'A biologist signs up for a dangerous expedition.',
+            'id' => 300668,
+            'director' => 'Alex Garland',
+        ]);
 
         $res = $this->getJson('/api/v1/movies/annihilation');
         $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug'])
@@ -58,16 +47,11 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_description_generation');
 
-        // Mock TMDb verification to return null (not found)
-        $this->mock(TmdbVerificationService::class, function ($mock) {
-            $mock->shouldReceive('verifyMovie')
-                ->with('non-existent-movie-xyz')
-                ->andReturn(null);
-            // Also mock searchMovies() which is called when verifyMovie returns null
-            $mock->shouldReceive('searchMovies')
-                ->with('non-existent-movie-xyz', 5)
-                ->andReturn([]);
-        });
+        // Use fake EntityVerificationService - set movie to null (not found)
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovie('non-existent-movie-xyz', null);
+        // Also set empty search results which is called when verifyMovie returns null
+        $fake->setMovieSearchResults('non-existent-movie-xyz', []);
 
         $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
         $res->assertStatus(404)
@@ -85,18 +69,15 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_bio_generation');
 
-        // Mock TMDb verification to return person data
-        $this->mock(TmdbVerificationService::class, function ($mock) {
-            $mock->shouldReceive('verifyPerson')
-                ->with('john-doe')
-                ->andReturn([
-                    'name' => 'John Doe',
-                    'birthday' => '1980-01-01',
-                    'place_of_birth' => 'New York, USA',
-                    'id' => 123456,
-                    'biography' => 'An actor',
-                ]);
-        });
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setPerson('john-doe', [
+            'name' => 'John Doe',
+            'birthday' => '1980-01-01',
+            'place_of_birth' => 'New York, USA',
+            'id' => 123456,
+            'biography' => 'An actor',
+        ]);
 
         $res = $this->getJson('/api/v1/people/john-doe');
         $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug'])
@@ -107,12 +88,9 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_bio_generation');
 
-        // Mock TMDb verification to return null (not found)
-        $this->mock(TmdbVerificationService::class, function ($mock) {
-            $mock->shouldReceive('verifyPerson')
-                ->with('non-existent-person-xyz')
-                ->andReturn(null);
-        });
+        // Use fake EntityVerificationService - set person to null (not found)
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setPerson('non-existent-person-xyz', null);
 
         $res = $this->getJson('/api/v1/people/non-existent-person-xyz');
         $res->assertStatus(404)
@@ -123,17 +101,14 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_description_generation');
 
-        // Mock TMDb verification to return movie data
-        $this->mock(TmdbVerificationService::class, function ($mock) {
-            $mock->shouldReceive('verifyMovie')
-                ->with('brand-new-movie')
-                ->andReturn([
-                    'title' => 'Brand New Movie',
-                    'release_date' => '2024-01-01',
-                    'overview' => 'A brand new movie',
-                    'id' => 123456,
-                ]);
-        });
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovie('brand-new-movie', [
+            'title' => 'Brand New Movie',
+            'release_date' => '2024-01-01',
+            'overview' => 'A brand new movie',
+            'id' => 123456,
+        ]);
 
         $first = $this->getJson('/api/v1/movies/brand-new-movie');
         $first->assertStatus(202);
@@ -164,17 +139,14 @@ class MissingEntityGenerationTest extends TestCase
 
         $slug = 'concurrent-test-movie';
 
-        // Mock TMDb verification to return movie data
-        $this->mock(TmdbVerificationService::class, function ($mock) use ($slug) {
-            $mock->shouldReceive('verifyMovie')
-                ->with($slug)
-                ->andReturn([
-                    'title' => 'Concurrent Test Movie',
-                    'release_date' => '2024-01-01',
-                    'overview' => 'A test movie',
-                    'id' => 123456,
-                ]);
-        });
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovie($slug, [
+            'title' => 'Concurrent Test Movie',
+            'release_date' => '2024-01-01',
+            'overview' => 'A test movie',
+            'id' => 123456,
+        ]);
 
         // Simulate "parallel" requests (sequential but very close in time)
         // This tests the acquireGenerationSlot mechanism
@@ -234,17 +206,14 @@ class MissingEntityGenerationTest extends TestCase
     {
         Feature::activate('ai_bio_generation');
 
-        // Mock TMDb verification to return valid person data
-        $this->mock(TmdbVerificationService::class, function ($mock) {
-            $mock->shouldReceive('verifyPerson')
-                ->with('concurrent-test-person')
-                ->andReturn([
-                    'name' => 'Test Person',
-                    'birthday' => '1980-01-01',
-                    'place_of_birth' => 'Test City',
-                    'id' => 123,
-                ]);
-        });
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setPerson('concurrent-test-person', [
+            'name' => 'Test Person',
+            'birthday' => '1980-01-01',
+            'place_of_birth' => 'Test City',
+            'id' => 123,
+        ]);
 
         // Use real cache (array driver) to test slot management mechanism
         config(['cache.default' => 'array']);

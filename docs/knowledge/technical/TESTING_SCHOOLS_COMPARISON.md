@@ -405,16 +405,16 @@ public function test_slug_generation(): void
 
 ## 📊 Porównanie Wszystkich Szkół
 
-| Aspekt                      | London School        | Chicago School       | Detroit School       | Outside-In           |
-| --------------------------- | -------------------- | -------------------- | -------------------- | -------------------- |
-| **Mockowanie**              | Wszystkie zależności | Tylko zewnętrzne     | Tylko zewnętrzne     | Strategiczne         |
-| **Fokus**                   | Implementacja        | Zachowanie           | Stan                 | Akceptacja           |
-| **Szybkość**                | ⚡ Szybkie            | 🐢 Wolniejsze         | 🐢 Wolniejsze         | 🐢 Wolniejsze         |
-| **Izolacja**                | ✅ Wysoka             | ⚠️ Średnia            | ⚠️ Średnia            | ⚠️ Średnia            |
-| **Odporność na refaktoryzację** | ❌ Niska        | ✅ Wysoka             | ✅ Wysoka             | ✅ Wysoka             |
-| **Wykrywanie błędów**       | ⚠️ Ograniczone        | ✅ Dobre              | ✅ Dobre              | ✅ Najlepsze          |
-| **Testuje efekty uboczne**  | ❌ Nie                | ✅ Tak                | ⚠️ Częściowo          | ✅ Tak                |
-| **Testuje transformacje**  | ⚠️ Częściowo          | ⚠️ Częściowo          | ✅ Tak                | ✅ Tak                |
+| Aspekt                      | London School        | Chicago School       | Detroit School       | Outside-In            |
+| --------------------------- | -------------------- | -------------------- | -------------------- | --------------------- |
+| **Mockowanie**               | Wszystkie zależności | Tylko zewnętrzne     | Tylko zewnętrzne     | Strategiczne          |
+| **Fokus**                    | Implementacja        | Zachowanie           | Stan                 | Akceptacja            |
+| **Szybkość**                 | ⚡ Szybkie            | 🐢 Wolniejsze         | 🐢 Wolniejsze         | 🐢 Wolniejsze          |
+| **Izolacja**                 | ✅ Wysoka             | ⚠️ Średnia            | ⚠️ Średnia            | ⚠️ Średnia             |
+| **Odporność na refaktoryzację** | ❌ Niska        | ✅ Wysoka             | ✅ Wysoka             | ✅ Wysoka              |
+| **Wykrywanie błędów**        | ⚠️ Ograniczone        | ✅ Dobre              | ✅ Dobre              | ✅ Najlepsze           |
+| **Testuje efekty uboczne**   | ❌ Nie                | ✅ Tak                | ⚠️ Częściowo          | ✅ Tak                 |
+| **Testuje transformacje**   | ⚠️ Częściowo         | ⚠️ Częściowo         | ✅ Tak                | ✅ Tak                |
 
 ---
 
@@ -562,8 +562,68 @@ $slug = $service->generateSlug('The Matrix', 1999);
 
 ---
 
+## 🔧 Framework-Agnostic Testing
+
+### Własne Test Doubles zamiast Mockery
+
+Projekt używa **własnych test doubles** (implementujących interfejsy) zamiast Mockery dla większości testów.
+
+#### Przykład: Własny Fake
+
+```php
+// Użycie własnego fake zamiast Mockery
+$fake = $this->fakeEntityVerificationService();
+$fake->setMovie('annihilation', [
+    'title' => 'Annihilation',
+    'release_date' => '2018-02-23',
+    // ...
+]);
+```
+
+**Zalety:**
+
+- ✅ Framework-agnostic - zwykły kod PHP
+- ✅ Type-safe - implementuje interfejsy
+- ✅ Czytelniejsze - jasny kod zamiast `shouldReceive()`
+- ✅ Reużywalne - można używać w różnych testach
+
+#### Kiedy używać Mockery?
+
+Mockery jest używany **tylko dla zewnętrznych bibliotek bez interfejsów**:
+
+```php
+// TmdbVerificationServiceTest.php - Mockery dla zewnętrznej biblioteki
+$mockClient = Mockery::mock(TMDBClient::class); // Zewnętrzna biblioteka bez interfejsu
+```
+
+**Zasada:** Mockery tylko dla zewnętrznych zależności bez interfejsów, własne doubles dla interfejsów aplikacji.
+
+#### Struktura Test Doubles
+
+```text
+api/tests/Doubles/
+├── Services/
+│   ├── FakeEntityVerificationService.php
+│   └── FakeOpenAiClient.php
+└── Repositories/
+    └── (opcjonalnie - lepiej użyć prawdziwego z SQLite)
+```
+
+#### Helper Methods w TestCase
+
+```php
+// api/tests/TestCase.php
+$fake = $this->fakeEntityVerificationService();
+$fake->setMovie('slug', [...]);
+```
+
+**Więcej informacji:** Zobacz [Framework-Agnostic Testing](../technical/FRAMEWORK_AGNOSTIC_TESTING.md)
+
+---
+
 ## 🔗 Powiązane Dokumenty
 
+- [Framework-Agnostic Testing](../technical/FRAMEWORK_AGNOSTIC_TESTING.md) - Własne test doubles vs Mockery
 - [Testing Strategy](../reference/TESTING_STRATEGY.md) - Strategia testowania projektu
 - [Mock vs Real Jobs](../technical/MOCK_VS_REAL_JOBS.md) - Konfiguracja mock/real jobs
 - [TDD Rules](../../.cursor/rules/testing.mdc) - Zasady TDD w projekcie
