@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\QueueMovieGenerationAction;
 use App\Enums\Locale;
+use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MovieResource;
 use App\Models\Movie;
@@ -72,6 +73,17 @@ class MovieController extends Controller
 
         if (! Feature::active('ai_description_generation')) {
             return response()->json(['error' => 'Movie not found'], 404);
+        }
+
+        // Validate slug format and check for prompt injection
+        $validation = SlugValidator::validateMovieSlug($slug);
+        if (! $validation['valid']) {
+            return response()->json([
+                'error' => 'Invalid slug format',
+                'message' => $validation['reason'],
+                'confidence' => $validation['confidence'],
+                'slug' => $slug,
+            ], 400);
         }
 
         // Check for disambiguation request

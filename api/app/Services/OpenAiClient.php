@@ -29,12 +29,15 @@ class OpenAiClient implements OpenAiClientInterface
 
     private string $healthUrl;
 
-    public function __construct()
+    private PromptSanitizer $promptSanitizer;
+
+    public function __construct(PromptSanitizer $promptSanitizer)
     {
         $this->apiKey = (string) (config('services.openai.api_key') ?? '');
         $this->model = (string) (config('services.openai.model') ?? self::DEFAULT_MODEL);
         $this->apiUrl = (string) (config('services.openai.url') ?? self::DEFAULT_API_URL);
         $this->healthUrl = (string) (config('services.openai.health_url') ?? 'https://api.openai.com/v1/models');
+        $this->promptSanitizer = $promptSanitizer;
     }
 
     /**
@@ -48,8 +51,16 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
         }
 
-        // Build prompt with TMDb context if available
+        // Sanitize slug before using in prompts
+        try {
+            $slug = $this->promptSanitizer->sanitizeSlug($slug);
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+
+        // Sanitize TMDb data if available
         if ($tmdbData !== null) {
+            $tmdbData = $this->sanitizeTmdbData($tmdbData);
             $tmdbContext = $this->formatTmdbContext($tmdbData);
             $systemPrompt = 'You are a movie database assistant. Generate a unique, original description for the movie based on the provided TMDb data. Do NOT copy the overview from TMDb. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot description), genres (array).';
             $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot), genres (array).";
@@ -87,6 +98,27 @@ class OpenAiClient implements OpenAiClientInterface
 
             return $result;
         }, $this->movieResponseSchema());
+    }
+
+    /**
+     * Sanitize TMDb data before using in prompts.
+     *
+     * @param  array<string, mixed>  $tmdbData
+     * @return array<string, mixed>
+     */
+    private function sanitizeTmdbData(array $tmdbData): array
+    {
+        $sanitized = [];
+
+        foreach ($tmdbData as $key => $value) {
+            if (is_string($value)) {
+                $sanitized[$key] = $this->promptSanitizer->sanitizeText($value);
+            } else {
+                $sanitized[$key] = $value;
+            }
+        }
+
+        return $sanitized;
     }
 
     /**
@@ -130,8 +162,16 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
         }
 
-        // Build prompt with TMDb context if available
+        // Sanitize slug before using in prompts
+        try {
+            $slug = $this->promptSanitizer->sanitizeSlug($slug);
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+
+        // Sanitize TMDb data if available
         if ($tmdbData !== null) {
+            $tmdbData = $this->sanitizeTmdbData($tmdbData);
             $tmdbContext = $this->formatTmdbPersonContext($tmdbData);
             $systemPrompt = 'You are a biography assistant. Generate a unique, original biography for the person based on the provided TMDb data. Do NOT copy the biography from TMDb. Create your own original biography. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).';
             $userPrompt = "Person data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original biography for this person. Do NOT copy the biography. Create your own original biography. Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).";

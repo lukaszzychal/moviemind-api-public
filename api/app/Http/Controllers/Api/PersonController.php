@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\QueuePersonGenerationAction;
+use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PersonResource;
 use App\Models\Person;
@@ -88,6 +89,17 @@ class PersonController extends Controller
 
         if (! Feature::active('ai_bio_generation')) {
             return response()->json(['error' => 'Person not found'], 404);
+        }
+
+        // Validate slug format and check for prompt injection
+        $validation = SlugValidator::validatePersonSlug($slug);
+        if (! $validation['valid']) {
+            return response()->json([
+                'error' => 'Invalid slug format',
+                'message' => $validation['reason'],
+                'confidence' => $validation['confidence'],
+                'slug' => $slug,
+            ], 400);
         }
 
         // Verify person exists in TMDb before queueing job
