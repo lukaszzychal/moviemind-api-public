@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
+
+use App\Services\PromptSanitizer;
 
 class SlugValidator
 {
@@ -11,6 +15,16 @@ class SlugValidator
      */
     public static function validateMovieSlug(string $slug): array
     {
+        // Check for prompt injection first (highest priority security check)
+        $promptSanitizer = app(PromptSanitizer::class);
+        if ($promptSanitizer->detectInjection($slug)) {
+            return [
+                'valid' => false,
+                'confidence' => 0.0,
+                'reason' => 'Potential prompt injection detected',
+            ];
+        }
+
         if (strlen($slug) < 3) {
             return [
                 'valid' => false,
@@ -70,6 +84,16 @@ class SlugValidator
      */
     public static function validatePersonSlug(string $slug): array
     {
+        // Check for prompt injection first (highest priority security check)
+        $promptSanitizer = app(PromptSanitizer::class);
+        if ($promptSanitizer->detectInjection($slug)) {
+            return [
+                'valid' => false,
+                'confidence' => 0.0,
+                'reason' => 'Potential prompt injection detected',
+            ];
+        }
+
         if (strlen($slug) < 3) {
             return [
                 'valid' => false,

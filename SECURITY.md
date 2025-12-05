@@ -55,6 +55,7 @@ Include the following information:
 - **HTTPS Only**: All communications encrypted
 - **Input Validation**: Comprehensive input sanitization
 - **Rate Limiting**: Protection against abuse and DoS attacks
+- **Prompt Injection Prevention**: Sanitization and validation of all inputs used in AI prompts
 
 ## Security Features
 
@@ -70,6 +71,12 @@ Include the following information:
 - **Data Minimization**: Only collect necessary data
 - **Secure Storage**: Environment variables for sensitive configuration
 
+### AI Security
+- **Prompt Injection Protection**: Comprehensive sanitization of user inputs before using in AI prompts
+- **Input Validation**: Detection and blocking of malicious prompt injection attempts
+- **Security Logging**: All prompt injection attempts are logged for monitoring
+- **Defense in Depth**: Multiple layers of protection (SlugValidator, PromptSanitizer, OpenAiClient)
+
 ### Infrastructure Security
 - **Container Security**: Secure Docker container configuration
 - **Database Security**: PostgreSQL with proper access controls
@@ -84,6 +91,7 @@ Include the following information:
 - [ ] SQL injection prevention
 - [ ] XSS protection
 - [ ] CSRF protection
+- [ ] Prompt injection prevention (for AI-related features)
 - [ ] Proper error handling (no sensitive data exposure)
 - [ ] Security headers implemented
 - [ ] Dependencies up to date
@@ -110,9 +118,55 @@ Include the following information:
 - **Caching**: Secure cache configuration
 
 ### Third-Party Integrations
-- **OpenAI API**: Secure API key handling
+- **OpenAI API**: Secure API key handling and prompt injection protection
+- **TMDb API**: Input sanitization for external data sources
 - **Database Providers**: Secure connection strings
 - **Cache Providers**: Authentication and encryption
+
+### Prompt Injection Protection
+
+MovieMind API implements comprehensive protection against prompt injection attacks:
+
+#### What is Prompt Injection?
+Prompt injection is a security vulnerability where malicious input is used to manipulate AI behavior, potentially leading to:
+- Data exfiltration
+- Unauthorized actions
+- System compromise
+- Bypassing safety guidelines
+
+#### Protection Mechanisms
+
+1. **Input Sanitization** (`PromptSanitizer`):
+   - Removal of newlines, carriage returns, and tabs
+   - Detection of suspicious patterns (e.g., "ignore previous", "system:", "jailbreak")
+   - Length validation
+   - Escaping of special characters
+
+2. **Multi-Layer Validation**:
+   - `SlugValidator`: Early detection in slug validation
+   - `PromptSanitizer`: Comprehensive sanitization before prompt construction
+   - `OpenAiClient`: Final sanitization before API calls
+
+3. **Security Logging**:
+   - All prompt injection attempts are logged with context
+   - Monitoring and alerting for suspicious patterns
+   - IP address and user agent tracking
+
+4. **Defense in Depth**:
+   - Multiple validation layers
+   - Fail-safe defaults
+   - Comprehensive test coverage
+
+#### Implementation Details
+
+- **Slug Sanitization**: All user-provided slugs are sanitized before use in AI prompts
+- **TMDb Data Sanitization**: External data from TMDb API is sanitized to prevent injection through compromised sources
+- **Pattern Detection**: Advanced pattern matching detects common injection techniques
+- **Error Handling**: Malicious inputs are rejected with clear error messages
+
+For more details, see:
+- [`docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md`](docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md)
+- [`api/app/Services/PromptSanitizer.php`](api/app/Services/PromptSanitizer.php)
 
 ## Security Updates
 
@@ -158,3 +212,13 @@ We appreciate the security research community and responsible disclosure. Securi
 
 **Last Updated**: January 2025  
 **Next Review**: July 2025
+
+## Recent Security Updates
+
+### January 2025
+- **Prompt Injection Protection**: Implemented comprehensive protection against prompt injection attacks
+  - Added `PromptSanitizer` service for input sanitization
+  - Extended `SlugValidator` with injection detection
+  - Integrated sanitization in `OpenAiClient`
+  - Added security tests for prompt injection scenarios
+  - See [`docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md`](docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md) for details
