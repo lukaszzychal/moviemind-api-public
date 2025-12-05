@@ -168,6 +168,16 @@ For more details, see:
 - [`docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md`](docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md)
 - [`api/app/Services/PromptSanitizer.php`](api/app/Services/PromptSanitizer.php)
 
+## Comprehensive Security Documentation
+
+For detailed security information, procedures, and best practices, see:
+- [`docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md`](docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) - Comprehensive security guide covering:
+  - OWASP Top 10 mapping
+  - OWASP LLM Top 10 for AI security
+  - Security audit procedures (ad-hoc and comprehensive)
+  - CI/CD security pipeline
+  - Best practices and incident management
+
 ## Security Updates
 
 ### Regular Updates
@@ -213,9 +223,35 @@ We appreciate the security research community and responsible disclosure. Securi
 **Last Updated**: January 2025  
 **Next Review**: July 2025
 
+## Security Audits
+
+### Audit Schedule
+
+**Ad-hoc Security Reviews:**
+- During code review or when implementing new features
+- Quick security checklist verification
+- Best practices check
+
+**Comprehensive Security Audits:**
+- **Quarterly** (every 3 months) - basic audits
+- **Semi-annually** (every 6 months) - detailed audits
+- **Before major releases** - pre-release audits
+- **After security incidents** - post-incident audits
+
+For detailed audit procedures, see:
+- [`docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md`](docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md#security-audits)
+
 ## Recent Security Updates
 
 ### January 2025
+- **Comprehensive Security Documentation**: Created comprehensive security guide
+  - OWASP Top 10 mapping to current implementation
+  - OWASP LLM Top 10 for AI security
+  - Security audit procedures and schedules
+  - CI/CD security pipeline documentation
+  - Best practices and incident management procedures
+  - See [`docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md`](docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) for details
+
 - **Prompt Injection Protection**: Implemented comprehensive protection against prompt injection attacks
   - Added `PromptSanitizer` service for input sanitization
   - Extended `SlugValidator` with injection detection
