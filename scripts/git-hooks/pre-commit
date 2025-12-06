@@ -161,16 +161,46 @@ if [ -n "$PINT_CMD" ]; then
     fi
 fi
 
-# 3. PHPStan - Static analysis
-echo -e "${YELLOW}🔍 Running PHPStan...${NC}"
+# 3. PHPStan Fixer - Static analysis with auto-fix suggestions
+echo -e "${YELLOW}🔍 Running PHPStan Fixer (suggest mode)...${NC}"
 
-if vendor/bin/phpstan analyse --memory-limit=2G 2>/dev/null; then
-    echo -e "${GREEN}✅ PHPStan: No errors found${NC}"
+# Check if PHPStan Fixer wrapper is available (uses project's autoloader)
+if [ -f "../scripts/phpstan-fixer-wrapper" ] || [ -f "scripts/phpstan-fixer-wrapper" ]; then
+    # Determine wrapper path
+    if [ -f "../scripts/phpstan-fixer-wrapper" ]; then
+        WRAPPER_PATH="../scripts/phpstan-fixer-wrapper"
+    else
+        WRAPPER_PATH="scripts/phpstan-fixer-wrapper"
+    fi
+    
+    # Run PHPStan Fixer in suggest mode (it runs PHPStan internally)
+    # Use custom PHPStan command with memory limit
+    if $WRAPPER_PATH --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest 2>/dev/null; then
+        echo -e "${GREEN}✅ PHPStan Fixer: No fixable errors found${NC}"
+    else
+        # Check if there are actual PHPStan errors
+        if vendor/bin/phpstan analyse --memory-limit=2G 2>/dev/null; then
+            echo -e "${GREEN}✅ PHPStan: No errors found${NC}"
+        else
+            echo -e "${YELLOW}⚠️  PHPStan Fixer: Found fixable errors (suggest mode)${NC}"
+            echo -e "${YELLOW}Run '$WRAPPER_PATH --mode=apply' to auto-fix, or fix manually.${NC}"
+            # Show PHPStan errors for manual review
+            vendor/bin/phpstan analyse --memory-limit=2G 2>&1 | head -50 || true
+            exit 1
+        fi
+    fi
+elif [ -f "vendor/bin/phpstan" ]; then
+    # Fallback to regular PHPStan if fixer is not available
+    if vendor/bin/phpstan analyse --memory-limit=2G 2>/dev/null; then
+        echo -e "${GREEN}✅ PHPStan: No errors found${NC}"
+    else
+        echo -e "${RED}❌ PHPStan: Errors found${NC}"
+        echo -e "${YELLOW}Please fix PHPStan errors before committing.${NC}"
+        vendor/bin/phpstan analyse --memory-limit=2G
+        exit 1
+    fi
 else
-    echo -e "${RED}❌ PHPStan: Errors found${NC}"
-    echo -e "${YELLOW}Please fix PHPStan errors before committing.${NC}"
-    vendor/bin/phpstan analyse --memory-limit=2G
-    exit 1
+    echo -e "${YELLOW}⚠️  PHPStan not found. Skipping static analysis.${NC}"
 fi
 
 echo -e "${GREEN}✅ All pre-commit checks passed!${NC}"
