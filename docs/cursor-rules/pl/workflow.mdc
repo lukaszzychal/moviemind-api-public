@@ -44,10 +44,22 @@ npm run markdownlint:check
 cd api && vendor/bin/pint
 ```
 
-### 3. PHPStan (analiza statyczna)
+### 3. PHPStan Fixer (analiza statyczna z auto-fix)
 ```bash
-cd api && vendor/bin/phpstan analyse --memory-limit=2G
+# Użyj PHPStan Fixer wrapper (używa głównego autoloadera projektu)
+cd api && ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest
+
+# Lub użyj z istniejącym outputem JSON z PHPStan
+cd api && vendor/bin/phpstan analyse --memory-limit=2G --error-format=json > phpstan-output.json 2>&1 || true
+cd api && ../scripts/phpstan-fixer-wrapper --input=phpstan-output.json --mode=suggest
 ```
+
+**Tryby:**
+- `--mode=suggest` (domyślny) - Pokazuje co zostałoby zmienione bez modyfikacji plików (bezpieczne)
+- `--mode=apply` - Faktycznie zapisuje zmiany do plików (używaj z ostrożnością)
+
+**Rekomendacja:** Zawsze najpierw uruchom z `--mode=suggest`, aby podglądnąć zmiany przed ich zastosowaniem.
+
 Poziom: 5. Zero błędów przed commitem.
 
 #### Archiwizacja logów PHPStan
@@ -162,7 +174,7 @@ Napraw krytyczne luki przed commitem.
 npm run markdownlint:fix && \
 cd api && \
   vendor/bin/pint && \
-  vendor/bin/phpstan analyse --memory-limit=2G && \
+  ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest && \
   php artisan test && \
   cd .. && \
   gitleaks protect --source . --verbose --no-banner && \

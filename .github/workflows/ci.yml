@@ -121,6 +121,15 @@ jobs:
         run: |
           if [ -f vendor/bin/phpstan ]; then vendor/bin/phpstan analyse --memory-limit=2G; else echo "PHPStan not installed"; fi
 
+      - name: PHPStan Fixer (suggest mode)
+        working-directory: api
+        run: |
+          if [ -f ../scripts/phpstan-fixer-wrapper ]; then
+            ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest || echo "PHPStan Fixer: Review suggested fixes"
+          else
+            echo "PHPStan Fixer not installed"
+          fi
+
   docker-build:
     needs: [test, security]
     name: Docker Build
