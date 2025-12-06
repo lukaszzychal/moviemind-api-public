@@ -577,6 +577,12 @@ paths:
                         category: core_ai
                         default: true
                         togglable: true
+                      - name: tmdb_verification
+                        active: true
+                        description: TMDb API verification for movies and people before AI generation. Verifies entity existence in TMDb before queueing AI generation job.
+                        category: moderation
+                        default: true
+                        togglable: true
   /v1/admin/flags/{name}:
     post:
       tags: [Admin]
