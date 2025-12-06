@@ -55,4 +55,26 @@ class AdminFlagsTest extends TestCase
             $this->assertNotEmpty($entries[0]['name'] ?? null);
         }
     }
+
+    public function test_tmdb_verification_flag_is_togglable(): void
+    {
+        Feature::deactivate('tmdb_verification');
+        $res = $this->postJson('/api/v1/admin/flags/tmdb_verification', ['state' => 'on']);
+        $res->assertOk()->assertJson(['name' => 'tmdb_verification', 'active' => true]);
+
+        $res = $this->postJson('/api/v1/admin/flags/tmdb_verification', ['state' => 'off']);
+        $res->assertOk()->assertJson(['name' => 'tmdb_verification', 'active' => false]);
+    }
+
+    public function test_tmdb_verification_flag_is_listed(): void
+    {
+        $res = $this->getJson('/api/v1/admin/flags');
+        $res->assertOk();
+
+        $tmdbFlag = collect($res->json('data'))->firstWhere('name', 'tmdb_verification');
+        $this->assertNotNull($tmdbFlag);
+        $this->assertSame('tmdb_verification', $tmdbFlag['name']);
+        $this->assertTrue($tmdbFlag['togglable']);
+        $this->assertSame('moderation', $tmdbFlag['category']);
+    }
 }

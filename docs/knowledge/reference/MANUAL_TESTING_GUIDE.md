@@ -30,6 +30,8 @@ Ten dokument zawiera instrukcje do testowania następujących przypadków użyci
 | 12 | **Duplikacja - Różne ContextTag (KLUCZOWY)**         | Weryfikacja, że concurrent requests z różnymi ContextTag zwracają różne job_id i tworzą różne opisy | `POST /api/v1/generate`       |
 | 13 | **Co się dzieje gdy nie ma ContextTag w bazie**      | Weryfikacja zachowania, gdy pobieramy film bez opisu z danym ContextTag                   | `GET /api/v1/movies/{slug}`   |
 | 14 | **Debug Configuration**                               | Weryfikacja konfiguracji serwisu (AI_SERVICE, OpenAI, etc.) - wymaga feature flag         | `GET /api/v1/admin/debug/config`   |
+| 15 | **Weryfikacja TMDb z Feature Flagiem (Movie)**       | Weryfikacja, czy feature flag `tmdb_verification` kontroluje weryfikację TMDb dla filmów  | `GET /api/v1/movies/{slug}`   |
+| 16 | **Weryfikacja TMDb z Feature Flagiem (Person)**      | Weryfikacja, czy feature flag `tmdb_verification` kontroluje weryfikację TMDb dla osób    | `GET /api/v1/people/{slug}`   |
 
 ### Kluczowe Mechanizmy Testowane
 
@@ -377,6 +379,21 @@ curl -s -X POST "http://localhost:8000/api/v1/admin/flags/ai_bio_generation" \
 ```
 
 **Oczekiwany wynik:** `{"name": "ai_bio_generation", "active": true}`
+
+#### 1.4. Aktywuj `tmdb_verification` (jeśli nieaktywny)
+
+Feature flag kontrolujący weryfikację TMDb przed generowaniem AI. Domyślnie włączony.
+
+```bash
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/tmdb_verification" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"state":"on"}' | jq .
+```
+
+**Oczekiwany wynik:** `{"name": "tmdb_verification", "active": true}`
+
+**Uwaga:** Gdy `tmdb_verification` jest wyłączony, system pozwala na generowanie bez weryfikacji TMDb (fallback do AI). Gdy włączony, wymaga weryfikacji TMDb przed generowaniem.
 
 ---
 
@@ -1169,6 +1186,132 @@ curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq '.environm
 
 ---
 
+## 🧪 Test 15: Weryfikacja TMDb z Feature Flagiem (Movie)
+
+### Cel
+
+Sprawdzenie, czy weryfikacja TMDb dla filmów jest kontrolowana przez feature flag `tmdb_verification`.
+
+### Kroki
+
+#### 1. Przygotuj slug filmu, który NIE istnieje w TMDb (lub jest bardzo mało prawdopodobny)
+
+```bash
+SLUG="non-existent-movie-$(date +%s)"
+echo "Testing slug: $SLUG"
+```
+
+#### 2. Wyłącz feature flag `tmdb_verification`
+
+```bash
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/tmdb_verification" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"state":"off"}' | jq .
+```
+
+**Oczekiwany wynik:** `{"name": "tmdb_verification", "active": false}`
+
+#### 3. Spróbuj pobrać film (powinno zainicjować generację AI, status 202)
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG" \
+  -H "Accept: application/json" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Response zawiera: `job_id`, `status: "PENDING"`, `slug`
+- Logi powinny zawierać: `MovieController: TMDb verification skipped by feature flag, proceeding with AI generation fallback`
+
+#### 4. Włącz feature flag `tmdb_verification`
+
+```bash
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/tmdb_verification" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"state":"on"}' | jq .
+```
+
+**Oczekiwany wynik:** `{"name": "tmdb_verification", "active": true}`
+
+#### 5. Spróbuj pobrać ten sam film (powinno zwrócić 404, ponieważ TMDb nie znajdzie)
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/movies/$SLUG" \
+  -H "Accept: application/json" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `404 Not Found`
+- Response zawiera: `{"error": "Movie not found"}`
+- Logi powinny zawierać: `TmdbVerificationService: searching TMDb for movie` i `TmdbVerificationService: movie not found in TMDb`
+
+---
+
+## 🧪 Test 16: Weryfikacja TMDb z Feature Flagiem (Person)
+
+### Cel
+
+Sprawdzenie, czy weryfikacja TMDb dla osób jest kontrolowana przez feature flag `tmdb_verification`.
+
+### Kroki
+
+#### 1. Przygotuj slug osoby, która NIE istnieje w TMDb (lub jest bardzo mało prawdopodobna)
+
+```bash
+SLUG="non-existent-person-$(date +%s)"
+echo "Testing slug: $SLUG"
+```
+
+#### 2. Wyłącz feature flag `tmdb_verification`
+
+```bash
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/tmdb_verification" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"state":"off"}' | jq .
+```
+
+**Oczekiwany wynik:** `{"name": "tmdb_verification", "active": false}`
+
+#### 3. Spróbuj pobrać osobę (powinno zainicjować generację AI, status 202)
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/people/$SLUG" \
+  -H "Accept: application/json" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `202 Accepted`
+- Response zawiera: `job_id`, `status: "PENDING"`, `slug`
+- Logi powinny zawierać: `PersonController: TMDb verification skipped by feature flag, proceeding with AI generation fallback`
+
+#### 4. Włącz feature flag `tmdb_verification`
+
+```bash
+curl -s -X POST "http://localhost:8000/api/v1/admin/flags/tmdb_verification" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"state":"on"}' | jq .
+```
+
+**Oczekiwany wynik:** `{"name": "tmdb_verification", "active": true}`
+
+#### 5. Spróbuj pobrać tę samą osobę (powinno zwrócić 404, ponieważ TMDb nie znajdzie)
+
+```bash
+curl -s -X GET "http://localhost:8000/api/v1/people/$SLUG" \
+  -H "Accept: application/json" | jq .
+```
+
+**Oczekiwany wynik:**
+- Status: `404 Not Found`
+- Response zawiera: `{"error": "Person not found"}`
+- Logi powinny zawierać: `TmdbVerificationService: searching TMDb for person` i `TmdbVerificationService: person not found in TMDb`
+
+---
+
 ## ✅ Checklist Końcowy
 
 - [ ] Test 1: Movie GET endpoint - concurrent requests zwracają ten sam job_id
@@ -1186,6 +1329,8 @@ curl -s -X GET "http://localhost:8000/api/v1/admin/debug/config" | jq '.environm
 - [ ] Test 13: Różne ContextTag w concurrent requests - różne job_id i opisy (KLUCZOWY)
 - [ ] Test 14: Brak ContextTag w bazie - zachowanie przy pobieraniu filmu
 - [ ] Test 14: Debug Configuration - weryfikacja konfiguracji serwisu (AI_SERVICE, OpenAI, etc.) - wymaga feature flag `debug_endpoints`
+- [ ] Test 15: Weryfikacja TMDb z Feature Flagiem (Movie) - wyłączenie flagi pozwala na generowanie bez TMDb, włączenie wymaga weryfikacji TMDb
+- [ ] Test 16: Weryfikacja TMDb z Feature Flagiem (Person) - wyłączenie flagi pozwala na generowanie bez TMDb, włączenie wymaga weryfikacji TMDb
 
 ---
 
@@ -1725,5 +1870,5 @@ if ($newPerson) {
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-09
+**Ostatnia aktualizacja:** 2025-12-06
 

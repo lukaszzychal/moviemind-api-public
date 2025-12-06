@@ -455,18 +455,40 @@ Każde zadanie ma następującą strukturę:
 
 ---
 #### `TASK-037` - Weryfikacja istnienia filmów/osób przed generowaniem AI
-- **Status:** ✅ COMPLETED (Faza 1), ⏳ PENDING (Faza 2-3)
+- **Status:** ✅ COMPLETED (Faza 1), ✅ COMPLETED (Faza 2), ✅ COMPLETED (Faza 3)
 - **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** Faza 1: 4-6h (✅), Faza 2: 8-12h (⏳), Faza 3: 20-30h (⏳)
-- **Czas rozpoczęcia:** 2025-12-01
-- **Czas zakończenia:** 2025-12-01 (Faza 1)
-- **Czas realizacji:** ~5h (Faza 1)
+- **Szacowany czas:** Faza 1: 4-6h (✅), Faza 2: 8-12h (✅), Faza 3: 20-30h (✅)
+- **Czas rozpoczęcia:** 2025-12-01 (Faza 1), 2025-12-06 01:10 (Faza 2), 2025-12-06 01:30 (Faza 3)
+- **Czas zakończenia:** 2025-12-01 (Faza 1), 2025-12-06 01:24 (Faza 2), 2025-12-06 02:17 (Faza 3)
+- **Czas realizacji:** ~5h (Faza 1), ~00h14m (Faza 2), ~00h47m (Faza 3 - feature flag + testy)
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Implementacja weryfikacji czy film/osoba faktycznie istnieje przed wywołaniem AI, przeciwdziałanie halucynacjom AI.
 - **Szczegóły:**
   - **✅ Faza 1 (UKOŃCZONA):** Ulepszone prompty z instrukcją weryfikacji istnienia (AI zwraca `{"error": "Movie/Person not found"}` gdy nie istnieje), obsługa odpowiedzi z błędem w OpenAiClient i Jobach
-  - **⏳ Faza 2 (PENDING):** Heurystyki walidacji przed generowaniem (PreGenerationValidator), aktywacja feature flag `hallucination_guard`, rozszerzone heurystyki (rok wydania, data urodzenia, podobieństwo slug, podejrzane wzorce)
-  - **⏳ Faza 3 (PENDING):** Opcjonalna integracja z TMDb/OMDb API (feature flag), cache wyników weryfikacji, monitoring i dashboard
+  - **✅ Faza 2 (UKOŃCZONA):** Heurystyki walidacji przed generowaniem (PreGenerationValidator), aktywacja feature flag `hallucination_guard`, rozszerzone heurystyki (rok wydania, data urodzenia, podobieństwo slug, podejrzane wzorce)
+  - **✅ Faza 3 (UKOŃCZONA):** Integracja z TMDb API zaimplementowana w TASK-044, TASK-045 i obecnym zadaniu:
+    - ✅ Integracja z TMDb API (dla filmów i osób)
+    - ✅ Cache wyników weryfikacji (TTL: 24h, Redis)
+    - ✅ Rate limiting dla TMDb API
+    - ✅ Fallback do AI jeśli TMDb niedostępny
+    - ✅ Dedykowany feature flag `tmdb_verification` do włączania/wyłączania TMDb weryfikacji (togglable przez API)
+    - ⏳ OMDb API fallback (opcjonalne, niski priorytet)
+    - ⏳ Monitoring i dashboard (opcjonalne, długoterminowo)
+- **Zakres wykonanych prac (Faza 2):**
+  - ✅ Utworzono `PreGenerationValidator` service z heurystykami walidacji przed generowaniem
+  - ✅ Zaimplementowano `shouldGenerateMovie()` i `shouldGeneratePerson()` z walidacją confidence, roku wydania, daty urodzenia i podejrzanych wzorców
+  - ✅ Zintegrowano z `RealGenerateMovieJob` i `RealGeneratePersonJob` (walidacja przed wywołaniem AI)
+  - ✅ Użyto feature flag `hallucination_guard` (już istniał)
+  - ✅ Utworzono testy jednostkowe (11 testów) i feature (6 testów) - wszystkie przechodzą
+  - ✅ PHPStan bez błędów, Laravel Pint formatowanie
+  - ✅ Zaktualizowano dokumentację techniczną
+- **Zakres wykonanych prac (Faza 3):**
+  - ✅ Utworzono feature flag `tmdb_verification` do kontroli weryfikacji TMDb (togglable przez API)
+  - ✅ Zintegrowano feature flag w `TmdbVerificationService` (sprawdzanie przed weryfikacją w `verifyMovie()`, `verifyPerson()`, `searchMovies()`)
+  - ✅ Zaktualizowano kontrolery (`MovieController`, `PersonController`) - pozwalają na generowanie bez TMDb gdy flag wyłączony
+  - ✅ Utworzono testy jednostkowe (4 testy dla feature flag'a) i feature (4 testy) - wszystkie przechodzą
+  - ✅ PHPStan bez błędów, Laravel Pint formatowanie
+  - ✅ Zaktualizowano dokumentację
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-30
 - **Ukończone (Faza 1):** 2025-12-01

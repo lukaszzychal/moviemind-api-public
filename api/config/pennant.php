@@ -27,6 +27,7 @@ use App\Features\rate_limit_free_plan;
 use App\Features\recommendation_engine;
 use App\Features\redis_cache_bios;
 use App\Features\redis_cache_descriptions;
+use App\Features\tmdb_verification;
 use App\Features\toxicity_filter;
 use App\Features\usage_analytics;
 use App\Features\webhook_billing;
@@ -112,6 +113,13 @@ $flags = [
         'description' => 'Require manual moderation before publishing.',
         'category' => 'moderation',
         'default' => false,
+        'togglable' => true,
+    ],
+    'tmdb_verification' => [
+        'class' => tmdb_verification::class,
+        'description' => 'TMDb API verification for movies and people before AI generation. Verifies entity existence in TMDb before queueing AI generation job.',
+        'category' => 'moderation',
+        'default' => true,
         'togglable' => true,
     ],
 

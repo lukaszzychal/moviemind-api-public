@@ -102,9 +102,19 @@ class PersonController extends Controller
             ], 400);
         }
 
-        // Verify person exists in TMDb before queueing job
+        // Verify person exists in TMDb before queueing job (if feature flag enabled)
         $tmdbData = $this->tmdbVerificationService->verifyPerson($slug);
         if (! $tmdbData) {
+            // If TMDb verification is disabled (feature flag off), allow generation without TMDb data
+            if (! Feature::active('tmdb_verification')) {
+                $result = $this->queuePersonGenerationAction->handle(
+                    $slug,
+                    tmdbData: null
+                );
+
+                return response()->json($result, 202);
+            }
+
             return response()->json(['error' => 'Person not found'], 404);
         }
 

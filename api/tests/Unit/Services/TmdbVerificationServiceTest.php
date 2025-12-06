@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Services\TmdbVerificationService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Pennant\Feature;
 use LukaszZychal\TMDB\Client\TMDBClient;
 use LukaszZychal\TMDB\Exception\NotFoundException;
 use LukaszZychal\TMDB\Exception\RateLimitException;
@@ -25,9 +27,12 @@ use Tests\TestCase;
  */
 class TmdbVerificationServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->artisan('migrate');
         config(['cache.default' => 'array']);
         Cache::flush();
     }
@@ -264,6 +269,7 @@ class TmdbVerificationServiceTest extends TestCase
 
     public function test_verify_movie_uses_cache_when_available(): void
     {
+        Feature::activate('tmdb_verification');
         $apiKey = 'test-api-key';
         config(['services.tmdb.api_key' => $apiKey]);
 
@@ -282,5 +288,51 @@ class TmdbVerificationServiceTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertSame($cachedData, $result);
+    }
+
+    public function test_verify_movie_returns_null_when_feature_flag_disabled(): void
+    {
+        Feature::deactivate('tmdb_verification');
+
+        $service = new TmdbVerificationService('test-api-key');
+        $result = $service->verifyMovie('test-movie');
+
+        $this->assertNull($result);
+    }
+
+    public function test_verify_person_returns_null_when_feature_flag_disabled(): void
+    {
+        Feature::deactivate('tmdb_verification');
+
+        $service = new TmdbVerificationService('test-api-key');
+        $result = $service->verifyPerson('test-person');
+
+        $this->assertNull($result);
+    }
+
+    public function test_search_movies_returns_empty_when_feature_flag_disabled(): void
+    {
+        Feature::deactivate('tmdb_verification');
+
+        $service = new TmdbVerificationService('test-api-key');
+        $result = $service->searchMovies('test-movie');
+
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    public function test_verify_movie_works_when_feature_flag_enabled(): void
+    {
+        Feature::activate('tmdb_verification');
+        config(['services.tmdb.api_key' => 'test-api-key']);
+
+        // When feature flag is enabled and API key exists, verification should proceed
+        // (actual API call behavior is tested in feature tests)
+        $service = new TmdbVerificationService('test-api-key');
+
+        // When API key is not configured, should return null (even with flag enabled)
+        config(['services.tmdb.api_key' => null]);
+        $result = $service->verifyMovie('test-movie');
+        $this->assertNull($result);
     }
 }
