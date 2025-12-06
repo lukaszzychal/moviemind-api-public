@@ -803,25 +803,38 @@ GET /api/v1/movies/non-existent-movie-test-9999
 ## 📝 Checklist Implementacji
 
 ### TASK-037 Faza 1:
-- [ ] Zaktualizować prompty w `OpenAiClient::generateMovie()`
-- [ ] Zaktualizować prompty w `OpenAiClient::generatePerson()`
-- [ ] Dodać obsługę `{"error": "..."}` w `OpenAiClient::makeApiCall()`
-- [ ] Dodać obsługę błędów "not found" w `RealGenerateMovieJob`
-- [ ] Dodać obsługę błędów "not found" w `RealGeneratePersonJob`
-- [ ] Dodać testy jednostkowe dla nowych promptów
-- [ ] Dodać testy feature dla scenariusza "not found"
-- [ ] Zaktualizować dokumentację API
+- [x] Zaktualizować prompty w `OpenAiClient::generateMovie()`
+- [x] Zaktualizować prompty w `OpenAiClient::generatePerson()`
+- [x] Dodać obsługę `{"error": "..."}` w `OpenAiClient::makeApiCall()`
+- [x] Dodać obsługę błędów "not found" w `RealGenerateMovieJob`
+- [x] Dodać obsługę błędów "not found" w `RealGeneratePersonJob`
+- [x] Dodać testy jednostkowe dla nowych promptów
+- [x] Dodać testy feature dla scenariusza "not found"
+- [x] Zaktualizować dokumentację API
+
+### TASK-037 Faza 2:
+- [x] Utworzyć `PreGenerationValidator` service
+- [x] Zaimplementować `shouldGenerateMovie()` z heurystykami
+- [x] Zaimplementować `shouldGeneratePerson()` z heurystykami
+- [x] Zaimplementować walidację roku wydania
+- [x] Zaimplementować wykrywanie podejrzanych wzorców
+- [x] Zintegrować z `RealGenerateMovieJob` (przed wywołaniem AI)
+- [x] Zintegrować z `RealGeneratePersonJob` (przed wywołaniem AI)
+- [x] Użyć feature flag `hallucination_guard` (już istnieje)
+- [x] Dodać testy jednostkowe dla `PreGenerationValidator` (11 testów)
+- [x] Dodać testy feature dla integracji z Jobami (6 testów)
+- [x] Zaktualizować dokumentację
 
 ### TASK-038 Faza 1:
-- [ ] Utworzyć `AiDataValidator` service
-- [ ] Zaimplementować `validateMovieData()`
-- [ ] Zaimplementować `validatePersonData()`
-- [ ] Zaimplementować `calculateSimilarity()`
-- [ ] Zintegrować z `RealGenerateMovieJob`
-- [ ] Zintegrować z `RealGeneratePersonJob`
-- [ ] Dodać testy jednostkowe dla `AiDataValidator`
-- [ ] Dodać testy feature dla scenariusza niezgodności
-- [ ] Zaktualizować dokumentację
+- [x] Utworzyć `AiDataValidator` service
+- [x] Zaimplementować `validateMovieData()`
+- [x] Zaimplementować `validatePersonData()`
+- [x] Zaimplementować `calculateSimilarity()`
+- [x] Zintegrować z `RealGenerateMovieJob`
+- [x] Zintegrować z `RealGeneratePersonJob`
+- [x] Dodać testy jednostkowe dla `AiDataValidator`
+- [x] Dodać testy feature dla scenariusza niezgodności
+- [x] Zaktualizować dokumentację
 
 ---
 
@@ -834,5 +847,5 @@ GET /api/v1/movies/non-existent-movie-test-9999
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-01
+**Ostatnia aktualizacja:** 2025-12-06
 

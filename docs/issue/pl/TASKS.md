@@ -455,18 +455,26 @@ Każde zadanie ma następującą strukturę:
 
 ---
 #### `TASK-037` - Weryfikacja istnienia filmów/osób przed generowaniem AI
-- **Status:** ✅ COMPLETED (Faza 1), ⏳ PENDING (Faza 2-3)
+- **Status:** ✅ COMPLETED (Faza 1), ✅ COMPLETED (Faza 2), ⏳ PENDING (Faza 3)
 - **Priorytet:** 🔴 Wysoki
-- **Szacowany czas:** Faza 1: 4-6h (✅), Faza 2: 8-12h (⏳), Faza 3: 20-30h (⏳)
-- **Czas rozpoczęcia:** 2025-12-01
-- **Czas zakończenia:** 2025-12-01 (Faza 1)
-- **Czas realizacji:** ~5h (Faza 1)
+- **Szacowany czas:** Faza 1: 4-6h (✅), Faza 2: 8-12h (✅), Faza 3: 20-30h (⏳)
+- **Czas rozpoczęcia:** 2025-12-01 (Faza 1), 2025-12-06 01:10 (Faza 2)
+- **Czas zakończenia:** 2025-12-01 (Faza 1), 2025-12-06 01:24 (Faza 2)
+- **Czas realizacji:** ~5h (Faza 1), ~00h14m (Faza 2)
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Implementacja weryfikacji czy film/osoba faktycznie istnieje przed wywołaniem AI, przeciwdziałanie halucynacjom AI.
 - **Szczegóły:**
   - **✅ Faza 1 (UKOŃCZONA):** Ulepszone prompty z instrukcją weryfikacji istnienia (AI zwraca `{"error": "Movie/Person not found"}` gdy nie istnieje), obsługa odpowiedzi z błędem w OpenAiClient i Jobach
-  - **⏳ Faza 2 (PENDING):** Heurystyki walidacji przed generowaniem (PreGenerationValidator), aktywacja feature flag `hallucination_guard`, rozszerzone heurystyki (rok wydania, data urodzenia, podobieństwo slug, podejrzane wzorce)
+  - **✅ Faza 2 (UKOŃCZONA):** Heurystyki walidacji przed generowaniem (PreGenerationValidator), aktywacja feature flag `hallucination_guard`, rozszerzone heurystyki (rok wydania, data urodzenia, podobieństwo slug, podejrzane wzorce)
   - **⏳ Faza 3 (PENDING):** Opcjonalna integracja z TMDb/OMDb API (feature flag), cache wyników weryfikacji, monitoring i dashboard
+- **Zakres wykonanych prac (Faza 2):**
+  - ✅ Utworzono `PreGenerationValidator` service z heurystykami walidacji przed generowaniem
+  - ✅ Zaimplementowano `shouldGenerateMovie()` i `shouldGeneratePerson()` z walidacją confidence, roku wydania, daty urodzenia i podejrzanych wzorców
+  - ✅ Zintegrowano z `RealGenerateMovieJob` i `RealGeneratePersonJob` (walidacja przed wywołaniem AI)
+  - ✅ Użyto feature flag `hallucination_guard` (już istniał)
+  - ✅ Utworzono testy jednostkowe (11 testów) i feature (6 testów) - wszystkie przechodzą
+  - ✅ PHPStan bez błędów, Laravel Pint formatowanie
+  - ✅ Zaktualizowano dokumentację techniczną
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-30
 - **Ukończone (Faza 1):** 2025-12-01

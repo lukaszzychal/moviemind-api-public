@@ -430,6 +430,25 @@ class RealGenerateMovieJob implements ShouldQueue
      */
     private function createMovieRecord(OpenAiClientInterface $openAiClient): array
     {
+        // Pre-generation validation (before calling AI)
+        if (Feature::active('hallucination_guard')) {
+            $preValidator = app(\App\Services\PreGenerationValidator::class);
+            $preValidation = $preValidator->shouldGenerateMovie($this->slug);
+
+            if (! $preValidation['should_generate']) {
+                Log::warning('Pre-generation validation failed for movie', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'reason' => $preValidation['reason'],
+                    'confidence' => $preValidation['confidence'] ?? null,
+                ]);
+
+                throw new \RuntimeException(
+                    "Pre-generation validation failed: {$preValidation['reason']}"
+                );
+            }
+        }
+
         $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
 
         if ($aiResponse['success'] === false) {
