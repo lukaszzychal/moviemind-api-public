@@ -27,6 +27,7 @@ class MovieDisambiguationTest extends TestCase
     public function test_movie_returns_disambiguation_when_multiple_matches_found(): void
     {
         Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
 
         // Mock TMDb search to return multiple results
         $this->mock(TmdbVerificationService::class, function ($mock) {
@@ -72,6 +73,7 @@ class MovieDisambiguationTest extends TestCase
     public function test_movie_disambiguation_allows_selection_by_tmdb_id(): void
     {
         Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
 
         // Mock TMDb search and selection
         $this->mock(TmdbVerificationService::class, function ($mock) {
@@ -104,6 +106,7 @@ class MovieDisambiguationTest extends TestCase
     public function test_movie_disambiguation_returns_404_when_invalid_tmdb_id(): void
     {
         Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
 
         // Mock TMDb search with different IDs
         $this->mock(TmdbVerificationService::class, function ($mock) {
@@ -129,6 +132,7 @@ class MovieDisambiguationTest extends TestCase
     public function test_movie_returns_single_match_without_disambiguation(): void
     {
         Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
 
         // Mock TMDb to return single match
         $this->mock(TmdbVerificationService::class, function ($mock) {

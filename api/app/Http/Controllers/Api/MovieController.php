@@ -92,9 +92,20 @@ class MovieController extends Controller
             return $this->handleDisambiguationSelection($slug, (int) $tmdbId);
         }
 
-        // Verify movie exists in TMDb before queueing job
+        // Verify movie exists in TMDb before queueing job (if feature flag enabled)
         $tmdbData = $this->tmdbVerificationService->verifyMovie($slug);
         if (! $tmdbData) {
+            // If TMDb verification is disabled (feature flag off), allow generation without TMDb data
+            if (! Feature::active('tmdb_verification')) {
+                $result = $this->queueMovieGenerationAction->handle(
+                    $slug,
+                    locale: Locale::EN_US->value,
+                    tmdbData: null
+                );
+
+                return response()->json($result, 202);
+            }
+
             // Check if there are multiple matches (disambiguation needed)
             $searchResults = $this->tmdbVerificationService->searchMovies($slug, 5);
             if (count($searchResults) > 1) {

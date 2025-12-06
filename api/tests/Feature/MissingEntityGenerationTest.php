@@ -46,6 +46,7 @@ class MissingEntityGenerationTest extends TestCase
     public function test_movie_missing_returns_404_when_not_found_in_tmdb(): void
     {
         Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
 
         // Use fake EntityVerificationService - set movie to null (not found)
         $fake = $this->fakeEntityVerificationService();
@@ -87,6 +88,7 @@ class MissingEntityGenerationTest extends TestCase
     public function test_person_missing_returns_404_when_not_found_in_tmdb(): void
     {
         Feature::activate('ai_bio_generation');
+        Feature::activate('tmdb_verification');
 
         // Use fake EntityVerificationService - set person to null (not found)
         $fake = $this->fakeEntityVerificationService();
@@ -240,6 +242,34 @@ class MissingEntityGenerationTest extends TestCase
 
         // Verify only one event was dispatched (slot management prevents duplicate jobs)
         Event::assertDispatched(PersonGenerationRequested::class, 1);
+    }
+
+    public function test_movie_generation_bypasses_tmdb_when_feature_flag_disabled(): void
+    {
+        Feature::activate('ai_description_generation');
+        Feature::deactivate('tmdb_verification');
+
+        // Use fake EntityVerificationService - set movie to null (not found)
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovie('non-existent-movie-xyz', null);
+
+        // When tmdb_verification is disabled, it should bypass TMDb check and allow generation
+        $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
+        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug']);
+    }
+
+    public function test_person_generation_bypasses_tmdb_when_feature_flag_disabled(): void
+    {
+        Feature::activate('ai_bio_generation');
+        Feature::deactivate('tmdb_verification');
+
+        // Use fake EntityVerificationService - set person to null (not found)
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setPerson('non-existent-person-xyz', null);
+
+        // When tmdb_verification is disabled, it should bypass TMDb check and allow generation
+        $res = $this->getJson('/api/v1/people/non-existent-person-xyz');
+        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug']);
     }
 
     public function test_concurrent_requests_via_generate_endpoint_for_person_only_dispatch_one_job(): void

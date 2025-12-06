@@ -6,6 +6,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Laravel\Pennant\Feature;
 use LukaszZychal\TMDB\Client\TMDBClient;
 use LukaszZychal\TMDB\Exception\NotFoundException;
 use LukaszZychal\TMDB\Exception\RateLimitException;
@@ -42,6 +43,13 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
      */
     public function searchMovies(string $slug, int $limit = 5): array
     {
+        // Check feature flag first - if disabled, skip TMDb search
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return [];
+        }
+
         $cacheKey = self::CACHE_PREFIX_MOVIE.'search:'.$slug.':'.$limit;
 
         // Check cache first
@@ -152,6 +160,13 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
      */
     public function verifyMovie(string $slug): ?array
     {
+        // Check feature flag first - if disabled, skip TMDb verification (fallback to AI)
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return null;
+        }
+
         $cacheKey = self::CACHE_PREFIX_MOVIE.$slug;
 
         // Check cache first
@@ -262,6 +277,13 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
      */
     public function verifyPerson(string $slug): ?array
     {
+        // Check feature flag first - if disabled, skip TMDb verification (fallback to AI)
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return null;
+        }
+
         $cacheKey = self::CACHE_PREFIX_PERSON.$slug;
 
         // Check cache first

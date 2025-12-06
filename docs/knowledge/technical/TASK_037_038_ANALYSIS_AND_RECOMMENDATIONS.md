@@ -825,6 +825,15 @@ GET /api/v1/movies/non-existent-movie-test-9999
 - [x] Dodać testy feature dla integracji z Jobami (6 testów)
 - [x] Zaktualizować dokumentację
 
+### TASK-037 Faza 3:
+- [x] Utworzyć feature flag `tmdb_verification` (plik feature + konfiguracja)
+- [x] Zintegrować feature flag w `TmdbVerificationService` (sprawdzanie przed weryfikacją)
+- [x] Zaktualizować kontrolery (`MovieController`, `PersonController`) - pozwalają na generowanie bez TMDb gdy flag wyłączony
+- [x] Dodać testy jednostkowe dla feature flag'a (4 testy)
+- [x] Dodać testy feature dla kontroli flag'a przez API (2 testy)
+- [x] Dodać testy feature dla kontrolerów z wyłączonym flag'iem (2 testy)
+- [x] Zaktualizować dokumentację
+
 ### TASK-038 Faza 1:
 - [x] Utworzyć `AiDataValidator` service
 - [x] Zaimplementować `validateMovieData()`
