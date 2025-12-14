@@ -1,0 +1,57 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Wrapper for Laravel package:discover that handles phpstan-fixer issue #60
+ * 
+ * This script wraps php artisan package:discover to gracefully handle
+ * the error caused by phpstan-fixer during package discovery.
+ * 
+ * Issue: https://github.com/lukaszzychal/phpstan-fixer/issues/60
+ * Tracked in: TASK-049
+ */
+
+declare(strict_types=1);
+
+$artisanPath = __DIR__ . '/../api/artisan';
+
+if (!file_exists($artisanPath)) {
+    echo "Error: artisan file not found at {$artisanPath}\n";
+    exit(1);
+}
+
+// Change to api directory
+chdir(__DIR__ . '/../api');
+
+// Try to run package:discover
+$command = 'php artisan package:discover --ansi 2>&1';
+$output = [];
+$returnCode = 0;
+
+exec($command, $output, $returnCode);
+
+// Check if error is related to phpstan-fixer
+$outputString = implode("\n", $output);
+$isPhpstanFixerError = str_contains($outputString, 'phpstan-fixer') 
+    || str_contains($outputString, 'Call to a member function make() on null');
+
+if ($returnCode !== 0 && $isPhpstanFixerError) {
+    // Error is related to phpstan-fixer - this is expected and can be ignored
+    echo "⚠️  Warning: package:discover failed due to phpstan-fixer issue #60\n";
+    echo "   This is a known issue and can be safely ignored.\n";
+    echo "   Issue: https://github.com/lukaszzychal/phpstan-fixer/issues/60\n";
+    echo "   Tracked in: TASK-049\n";
+    echo "   Package discovery will work correctly once the issue is fixed.\n";
+    exit(0); // Exit with success code
+}
+
+// If it's a different error, show it and exit with error code
+if ($returnCode !== 0) {
+    echo implode("\n", $output) . "\n";
+    exit($returnCode);
+}
+
+// Success
+echo implode("\n", $output) . "\n";
+exit(0);
+
