@@ -152,7 +152,6 @@ Każde zadanie ma następującą strukturę:
     - **Czas:** 2-3h
     - **Status:** ⏳ PENDING
 
-15. **`TASK-018`** - Wydzielenie PhpstanFixer jako paczki Composer
     - **Dlaczego:** Reużywalność, możliwość użycia w innych projektach
     - **Czas:** 3-4h
     - **Status:** ⏳ PENDING
@@ -211,7 +210,6 @@ Każde zadanie ma następującą strukturę:
 - `TASK-033` - Usunięcie Actor
 - `TASK-028` - Synchronizacja Issues
 - `TASK-029` - Standaryzacja testów
-- `TASK-018` - PhpstanFixer package
 - `TASK-031` - Wersjonowanie opisów
 - `TASK-040` - Analiza TOON vs JSON
 
@@ -924,22 +922,6 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-018` - Wydzielenie PhpstanFixer jako paczki Composer
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 3-4 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
-- **Opis:** Przeniesienie modułu `App\Support\PhpstanFixer` do osobnej paczki Composer instalowanej jako zależność projektu.
-- **Szczegóły:**
-  - Wydzielić kod do repozytorium/paczki z przestrzenią nazw np. `Moviemind\PhpstanFixer`.
-  - Przygotować `composer.json`, autoload PSR-4 i dokumentację instalacji/konfiguracji.
-  - Zastąpić bieżącą implementację importem paczki i zaktualizować DI w aplikacji.
-  - Dodać pipeline publikacji (packagist lub private repo) oraz opis wersjonowania.
-- **Zależności:** TASK-017
-- **Utworzone:** 2025-11-08
 
 ---
 
@@ -1241,8 +1223,8 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 27
-- **Zakończone:** 21
+- **Aktywne:** 26
+- **Zakończone:** 22
 - **Anulowane:** 0
 - **W trakcie:** 0
 
