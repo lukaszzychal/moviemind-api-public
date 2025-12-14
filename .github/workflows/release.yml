@@ -27,7 +27,7 @@ jobs:
           extensions: mbstring, dom, curl, libxml, zip
 
       - name: Cache Composer packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor
           key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
