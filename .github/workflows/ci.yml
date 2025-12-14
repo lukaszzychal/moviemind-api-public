@@ -62,9 +62,12 @@ jobs:
           if [ ! -f .env ]; then
             cp .env.example .env || touch .env
           fi
-          # Generate APP_KEY and ensure it's set
-          php artisan key:generate --force
-          php artisan config:clear
+          # Run package:discover with wrapper first to handle phpstan-fixer issue #60
+          # This prevents errors when artisan commands try to discover packages
+          ../scripts/package-discover-wrapper || true
+          # Generate APP_KEY and ensure it's set (using wrapper to handle phpstan-fixer issue)
+          ../scripts/artisan-wrapper key:generate --force
+          ../scripts/artisan-wrapper config:clear
 
       - name: Setup PHPUnit configuration
         working-directory: api

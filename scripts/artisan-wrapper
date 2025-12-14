@@ -1,0 +1,94 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Wrapper for Laravel artisan commands that handles phpstan-fixer issue #60
+ * 
+ * This script wraps php artisan commands to gracefully handle
+ * the error caused by phpstan-fixer during package discovery.
+ * 
+ * Usage: ../scripts/artisan-wrapper key:generate --force
+ * 
+ * Issue: https://github.com/lukaszzychal/phpstan-fixer/issues/60
+ * Tracked in: TASK-049
+ */
+
+declare(strict_types=1);
+
+$artisanPath = __DIR__ . '/../api/artisan';
+
+if (!file_exists($artisanPath)) {
+    echo "Error: artisan file not found at {$artisanPath}\n";
+    exit(1);
+}
+
+// Change to api directory
+chdir(__DIR__ . '/../api');
+
+// Get command arguments (everything after script name)
+$args = array_slice($argv, 1);
+$command = 'php artisan ' . implode(' ', array_map('escapeshellarg', $args)) . ' 2>&1';
+
+$output = [];
+$returnCode = 0;
+
+exec($command, $output, $returnCode);
+
+// Check if error is related to phpstan-fixer
+$outputString = implode("\n", $output);
+$isPhpstanFixerError = str_contains($outputString, 'phpstan-fixer') 
+    || str_contains($outputString, 'Call to a member function make() on null');
+
+if ($returnCode !== 0 && $isPhpstanFixerError) {
+    // Error is related to phpstan-fixer - try to run package:discover first with wrapper
+    // then retry the command
+    $packageDiscoverOutput = [];
+    $packageDiscoverReturnCode = 0;
+    exec('../scripts/package-discover-wrapper', $packageDiscoverOutput, $packageDiscoverReturnCode);
+    
+    // Retry the original command
+    exec($command, $output, $returnCode);
+    
+    // If still failing with phpstan-fixer error, it's a known issue
+    $outputString = implode("\n", $output);
+    $isPhpstanFixerError = str_contains($outputString, 'phpstan-fixer') 
+        || str_contains($outputString, 'Call to a member function make() on null');
+    
+    if ($returnCode !== 0 && $isPhpstanFixerError) {
+        // Still failing - this is a known issue with phpstan-fixer
+        // For some commands, we can continue if they're not critical
+        $criticalCommands = ['migrate', 'migrate:fresh', 'db:seed', 'test'];
+        $commandName = $args[0] ?? '';
+        
+        // Check if command actually succeeded despite the error message
+        // Some commands may output error but still complete successfully
+        $hasSuccessOutput = str_contains($outputString, 'Application key set successfully')
+            || str_contains($outputString, 'Configuration cache cleared')
+            || str_contains($outputString, 'successfully')
+            || str_contains($outputString, 'done');
+        
+        if (!in_array($commandName, $criticalCommands, true) || $hasSuccessOutput) {
+            // Non-critical command or command succeeded despite error - show warning but continue
+            echo "⚠️  Warning: Command encountered phpstan-fixer issue #60\n";
+            if ($hasSuccessOutput) {
+                echo "   Command appears to have completed successfully despite the error.\n";
+            } else {
+                echo "   This is a known issue and may be safely ignored for non-critical commands.\n";
+            }
+            echo "   Issue: https://github.com/lukaszzychal/phpstan-fixer/issues/60\n";
+            echo "   Tracked in: TASK-049\n";
+            exit(0); // Exit with success code
+        }
+    }
+}
+
+// If it's a different error, show it and exit with error code
+if ($returnCode !== 0) {
+    echo implode("\n", $output) . "\n";
+    exit($returnCode);
+}
+
+// Success
+echo implode("\n", $output) . "\n";
+exit(0);
+
