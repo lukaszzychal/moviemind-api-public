@@ -182,7 +182,9 @@ class PreGenerationValidator
     {
         // Birth dates in slugs are less common, but we can check for suspicious patterns
         // Like very old dates or future dates
-        $yearPattern = '/\b(1[0-7]\d{2}|18[0-4]\d|20\d{3})\b/'; // Years before 1850 or after 2000 (suspicious for birth dates)
+        // Match any 4-digit year that could be a birth date (1850-current year)
+        // But also check for future years (which are invalid for birth dates)
+        $yearPattern = '/\b(1[0-7]\d{2}|18[0-9]\d|19\d{2}|20[0-3]\d)\b/'; // Match years 1000-2039
         if (preg_match($yearPattern, $slug, $matches) === 1) {
             $year = (int) $matches[1];
             $currentYear = (int) date('Y');

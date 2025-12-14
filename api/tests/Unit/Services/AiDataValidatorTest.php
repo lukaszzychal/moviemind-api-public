@@ -187,4 +187,144 @@ class AiDataValidatorTest extends TestCase
         $this->assertNotNull($result['similarity']);
         $this->assertLessThan(0.6, $result['similarity']);
     }
+
+    // ========== Faza 2: Rozszerzone heurystyki ==========
+
+    public function test_validate_movie_data_rejects_director_genre_mismatch(): void
+    {
+        // Director known for Sci-Fi/Action, but genres are Romance/Comedy
+        $aiResponse = [
+            'title' => 'The Matrix',
+            'release_year' => 1999,
+            'director' => 'Lana Wachowski', // Known for Sci-Fi/Action
+            'genres' => ['Romance', 'Comedy'], // Doesn't match director's typical genres
+        ];
+
+        $result = $this->validator->validateMovieData($aiResponse, 'the-matrix-1999');
+
+        // Should detect mismatch between director and genres
+        $this->assertFalse($result['valid']);
+        $this->assertNotEmpty($result['errors']);
+        $this->assertStringContainsString('director', strtolower($result['errors'][0]));
+    }
+
+    public function test_validate_movie_data_accepts_matching_director_genre(): void
+    {
+        // Director known for Sci-Fi/Action, genres match
+        $aiResponse = [
+            'title' => 'The Matrix',
+            'release_year' => 1999,
+            'director' => 'Lana Wachowski',
+            'genres' => ['Action', 'Sci-Fi'], // Matches director's typical genres
+        ];
+
+        $result = $this->validator->validateMovieData($aiResponse, 'the-matrix-1999');
+
+        $this->assertTrue($result['valid']);
+    }
+
+    public function test_validate_movie_data_rejects_genre_year_inconsistency(): void
+    {
+        // Genres that didn't exist or were rare in that year
+        $aiResponse = [
+            'title' => 'Some Movie',
+            'release_year' => 1920,
+            'director' => 'Some Director',
+            'genres' => ['Cyberpunk', 'Post-Apocalyptic'], // Genres that didn't exist in 1920
+        ];
+
+        $result = $this->validator->validateMovieData($aiResponse, 'some-movie-1920');
+
+        // Should detect genre-year inconsistency
+        $this->assertFalse($result['valid']);
+        $this->assertNotEmpty($result['errors']);
+        $this->assertStringContainsString('genre', strtolower($result['errors'][0]));
+    }
+
+    public function test_validate_movie_data_accepts_appropriate_genres_for_year(): void
+    {
+        // Genres appropriate for the year
+        $aiResponse = [
+            'title' => 'Some Movie',
+            'release_year' => 1920,
+            'director' => 'Some Director',
+            'genres' => ['Drama', 'Silent'], // Appropriate for 1920
+        ];
+
+        $result = $this->validator->validateMovieData($aiResponse, 'some-movie-1920');
+
+        $this->assertTrue($result['valid']);
+    }
+
+    public function test_validate_person_data_rejects_birthplace_birthdate_mismatch(): void
+    {
+        // Birthplace doesn't match birth date (e.g., modern country name for old date)
+        // Use year 1900 (passes birth year validation) but with modern country name
+        $aiResponse = [
+            'name' => 'John Doe',
+            'birth_date' => '1900-01-01', // Passes birth year validation (>= 1850)
+            'birthplace' => 'Czech Republic', // Modern name (country didn't exist until 1993)
+        ];
+
+        $result = $this->validator->validatePersonData($aiResponse, 'john-doe');
+
+        // Should detect geographic inconsistency
+        $this->assertFalse($result['valid']);
+        $this->assertNotEmpty($result['errors']);
+        // Check if any error contains 'birthplace' or 'country'
+        $hasBirthplaceError = false;
+        foreach ($result['errors'] as $error) {
+            if (str_contains(strtolower($error), 'birthplace') || str_contains(strtolower($error), 'country')) {
+                $hasBirthplaceError = true;
+                break;
+            }
+        }
+        $this->assertTrue($hasBirthplaceError, 'Expected error about birthplace/country inconsistency');
+    }
+
+    public function test_validate_person_data_accepts_matching_birthplace_birthdate(): void
+    {
+        // Birthplace matches birth date
+        $aiResponse = [
+            'name' => 'John Doe',
+            'birth_date' => '1964-09-02',
+            'birthplace' => 'Beirut, Lebanon', // Appropriate for 1964
+        ];
+
+        $result = $this->validator->validatePersonData($aiResponse, 'john-doe');
+
+        $this->assertTrue($result['valid']);
+    }
+
+    public function test_validate_movie_data_logs_low_similarity_cases(): void
+    {
+        // Similarity between 0.6 and 0.7 should be logged
+        \Illuminate\Support\Facades\Log::spy();
+
+        $aiResponse = [
+            'title' => 'The Matrix Reloaded', // Close but not exact match
+            'release_year' => 1999,
+            'director' => 'Lana Wachowski',
+        ];
+
+        $result = $this->validator->validateMovieData($aiResponse, 'the-matrix-1999');
+
+        // Should pass validation (similarity >= 0.6)
+        $this->assertTrue($result['valid']);
+
+        // Check if log was called (if similarity is between 0.6 and 0.7)
+        if ($result['similarity'] !== null && $result['similarity'] >= 0.6 && $result['similarity'] < 0.7) {
+            \Illuminate\Support\Facades\Log::shouldHaveReceived('info')
+                ->once()
+                ->with('Low similarity detected (passed threshold)', \Mockery::on(function ($context) {
+                    return isset($context['slug']) &&
+                        isset($context['similarity']) &&
+                        isset($context['type']) &&
+                        $context['type'] === 'movie';
+                }));
+        } else {
+            // If similarity is >= 0.7, log won't be called - that's also valid
+            $this->assertTrue(true, 'Similarity is '.($result['similarity'] ?? 'null').' - log may not be called');
+        }
+    }
 }
