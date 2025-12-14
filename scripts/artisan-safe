@@ -1,0 +1,48 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Safe Artisan wrapper that ensures package manifest exists before running commands
+ *
+ * This script wraps php artisan commands to ensure the package manifest is built
+ * before any command runs, preventing "Call to a member function make() on null"
+ * errors that occur when the manifest doesn't exist and Laravel tries to build it
+ * through PackageDiscoverCommand, which requires the container.
+ *
+ * Issue: https://github.com/lukaszzychal/phpstan-fixer/issues/60
+ * Tracked in: TASK-049
+ */
+
+declare(strict_types=1);
+
+$artisanPath = __DIR__ . '/../api/artisan';
+$manifestPath = __DIR__ . '/../api/bootstrap/cache/packages.php';
+$builderScript = __DIR__ . '/build-package-manifest.php';
+
+if (!file_exists($artisanPath)) {
+    echo "Error: artisan file not found at {$artisanPath}\n";
+    exit(1);
+}
+
+// Ensure package manifest exists before running any command
+// This prevents Laravel from trying to build it through PackageDiscoverCommand
+if (!file_exists($manifestPath) && file_exists($builderScript)) {
+    @exec("php {$builderScript} 2>&1", $output, $returnCode);
+    if ($returnCode !== 0) {
+        // If building manifest fails, continue anyway - Laravel will try to build it
+        // but at least we tried
+    }
+}
+
+// Change to api directory
+chdir(__DIR__ . '/../api');
+
+// Get all arguments and pass them to artisan
+$args = array_slice($argv, 1);
+$command = 'php artisan ' . implode(' ', array_map('escapeshellarg', $args));
+
+// Run the command
+passthru($command, $returnCode);
+
+exit($returnCode);
+
