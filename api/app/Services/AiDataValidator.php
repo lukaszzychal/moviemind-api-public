@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
+
+use Illuminate\Support\Facades\Log;
 
 /**
  * Validates AI-generated data against slug to prevent hallucinations and data inconsistencies.
@@ -8,6 +12,8 @@ namespace App\Services;
 class AiDataValidator
 {
     private const MIN_SIMILARITY_THRESHOLD = 0.6;
+
+    private const LOW_SIMILARITY_LOG_THRESHOLD = 0.7; // Log cases with similarity between 0.6 and 0.7
 
     private const MIN_MOVIE_YEAR = 1888;
 
@@ -55,6 +61,38 @@ class AiDataValidator
             }
         }
 
+        // 4. Faza 2: Validate director-genre consistency
+        if (isset($aiResponse['director'], $aiResponse['genres']) && is_array($aiResponse['genres'])) {
+            $directorGenreValidation = $this->validateDirectorGenreConsistency(
+                $aiResponse['director'],
+                $aiResponse['genres']
+            );
+            if (! $directorGenreValidation['valid']) {
+                $errors[] = $directorGenreValidation['reason'];
+            }
+        }
+
+        // 5. Faza 2: Validate genre-year consistency
+        if (isset($aiResponse['genres'], $aiResponse['release_year']) && is_array($aiResponse['genres'])) {
+            $genreYearValidation = $this->validateGenreYearConsistency(
+                $aiResponse['genres'],
+                (int) $aiResponse['release_year']
+            );
+            if (! $genreYearValidation['valid']) {
+                $errors[] = $genreYearValidation['reason'];
+            }
+        }
+
+        // 6. Faza 2: Log suspicious cases (even if passed validation)
+        if ($similarity !== null && $similarity >= self::MIN_SIMILARITY_THRESHOLD && $similarity < self::LOW_SIMILARITY_LOG_THRESHOLD) {
+            Log::info('Low similarity detected (passed threshold)', [
+                'slug' => $slug,
+                'title' => $aiResponse['title'] ?? null,
+                'similarity' => $similarity,
+                'type' => 'movie',
+            ]);
+        }
+
         return [
             'valid' => empty($errors),
             'errors' => $errors,
@@ -95,6 +133,31 @@ class AiDataValidator
             if ($similarity < self::MIN_SIMILARITY_THRESHOLD) {
                 $errors[] = "Name '{$aiResponse['name']}' does not match slug '{$slug}' (similarity: ".number_format($similarity, 2).')';
             }
+        }
+
+        // 3. Faza 2: Validate birthplace-birthdate consistency (geography)
+        if (isset($aiResponse['birthplace'], $aiResponse['birth_date'])) {
+            $birthDate = \DateTime::createFromFormat('Y-m-d', $aiResponse['birth_date']);
+            if ($birthDate) {
+                $birthYear = (int) $birthDate->format('Y');
+                $geographyValidation = $this->validateBirthplaceBirthdateConsistency(
+                    $aiResponse['birthplace'],
+                    $birthYear
+                );
+                if (! $geographyValidation['valid']) {
+                    $errors[] = $geographyValidation['reason'];
+                }
+            }
+        }
+
+        // 4. Faza 2: Log suspicious cases (even if passed validation)
+        if ($similarity !== null && $similarity >= self::MIN_SIMILARITY_THRESHOLD && $similarity < self::LOW_SIMILARITY_LOG_THRESHOLD) {
+            Log::info('Low similarity detected (passed threshold)', [
+                'slug' => $slug,
+                'name' => $aiResponse['name'] ?? null,
+                'similarity' => $similarity,
+                'type' => 'person',
+            ]);
         }
 
         return [
@@ -162,5 +225,181 @@ class AiDataValidator
         $text = (string) preg_replace('/[^a-z0-9-]/', '', $text);
 
         return trim($text, '-');
+    }
+
+    /**
+     * Validate director-genre consistency.
+     * Checks if director is known for genres that match the provided genres.
+     *
+     * @param  string  $director  Director name
+     * @param  array<string>  $genres  Movie genres
+     * @return array<string, mixed> Returns array with keys: 'valid' (bool), 'reason' (string)
+     */
+    private function validateDirectorGenreConsistency(string $director, array $genres): array
+    {
+        // Known director-genre mappings (can be extended with database lookup)
+        $directorGenres = $this->getDirectorTypicalGenres($director);
+
+        // If we don't have data about this director, skip validation
+        if (empty($directorGenres)) {
+            return [
+                'valid' => true,
+                'reason' => 'Director not in validation database',
+            ];
+        }
+
+        // Check if at least one genre matches director's typical genres
+        $normalizedGenres = array_map('strtolower', $genres);
+        $normalizedDirectorGenres = array_map('strtolower', $directorGenres);
+
+        $hasMatchingGenre = false;
+        foreach ($normalizedGenres as $genre) {
+            if (in_array($genre, $normalizedDirectorGenres, true)) {
+                $hasMatchingGenre = true;
+                break;
+            }
+        }
+
+        if (! $hasMatchingGenre) {
+            return [
+                'valid' => false,
+                'reason' => "Director '{$director}' is not typically associated with genres: ".implode(', ', $genres),
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'reason' => 'Director-genre consistency validated',
+        ];
+    }
+
+    /**
+     * Get typical genres for a director.
+     * This is a simplified implementation - in production, this could query a database.
+     *
+     * @param  string  $director  Director name
+     * @return array<string> Array of typical genres
+     */
+    private function getDirectorTypicalGenres(string $director): array
+    {
+        // Normalize director name for comparison
+        $directorLower = strtolower($director);
+
+        // Known director-genre mappings (simplified - can be extended)
+        $directorGenreMap = [
+            'lana wachowski' => ['Action', 'Sci-Fi', 'Thriller'],
+            'lilly wachowski' => ['Action', 'Sci-Fi', 'Thriller'],
+            'wachowski' => ['Action', 'Sci-Fi', 'Thriller'],
+            'christopher nolan' => ['Action', 'Thriller', 'Sci-Fi', 'Drama'],
+            'quentin tarantino' => ['Crime', 'Drama', 'Thriller', 'Action'],
+            'martin scorsese' => ['Crime', 'Drama', 'Thriller'],
+            'steven spielberg' => ['Adventure', 'Drama', 'Action', 'Sci-Fi'],
+            'ridley scott' => ['Sci-Fi', 'Action', 'Drama', 'Thriller'],
+            'james cameron' => ['Action', 'Adventure', 'Sci-Fi'],
+        ];
+
+        // Check exact match first
+        if (isset($directorGenreMap[$directorLower])) {
+            return $directorGenreMap[$directorLower];
+        }
+
+        // Check partial match (e.g., "Lana Wachowski" contains "wachowski")
+        foreach ($directorGenreMap as $knownDirector => $genres) {
+            if (str_contains($directorLower, $knownDirector) || str_contains($knownDirector, $directorLower)) {
+                return $genres;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Validate genre-year consistency.
+     * Checks if genres are appropriate for the release year.
+     *
+     * @param  array<string>  $genres  Movie genres
+     * @param  int  $year  Release year
+     * @return array<string, mixed> Returns array with keys: 'valid' (bool), 'reason' (string)
+     */
+    private function validateGenreYearConsistency(array $genres, int $year): array
+    {
+        // Genres that didn't exist or were very rare before certain years
+        $genreEras = [
+            'Cyberpunk' => 1980, // First cyberpunk film: Blade Runner (1982)
+            'Post-Apocalyptic' => 1950, // Rare before 1950s
+            'Zombie' => 1968, // Night of the Living Dead (1968)
+            'Found Footage' => 1999, // The Blair Witch Project (1999)
+            'Superhero' => 1978, // Superman (1978) - though comics existed earlier
+            'Anime' => 1960, // First anime films in 1960s
+        ];
+
+        $normalizedGenres = array_map('strtolower', $genres);
+
+        foreach ($normalizedGenres as $genre) {
+            // Check if genre has an era requirement
+            foreach ($genreEras as $genreName => $minYear) {
+                if (str_contains($genre, strtolower($genreName))) {
+                    if ($year < $minYear) {
+                        return [
+                            'valid' => false,
+                            'reason' => "Genre '{$genreName}' is inconsistent with release year {$year} (genre emerged around {$minYear})",
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'valid' => true,
+            'reason' => 'Genre-year consistency validated',
+        ];
+    }
+
+    /**
+     * Validate birthplace-birthdate consistency.
+     * Checks if birthplace name is appropriate for the birth year (geography/history).
+     *
+     * @param  string  $birthplace  Birthplace
+     * @param  int  $birthYear  Birth year
+     * @return array<string, mixed> Returns array with keys: 'valid' (bool), 'reason' (string)
+     */
+    private function validateBirthplaceBirthdateConsistency(string $birthplace, int $birthYear): array
+    {
+        // Modern country names that didn't exist before certain dates
+        $countryEras = [
+            'united states of america' => 1776,
+            'usa' => 1776,
+            'united states' => 1776,
+            'russia' => 1991, // Modern Russia (post-Soviet)
+            'russian federation' => 1991,
+            'czech republic' => 1993,
+            'slovakia' => 1993,
+            'czechoslovakia' => 1918, // Existed 1918-1993
+            'yugoslavia' => 1918, // Existed 1918-1992
+            'soviet union' => 1922, // Existed 1922-1991
+            'ussr' => 1922,
+            'east germany' => 1949, // Existed 1949-1990
+            'west germany' => 1949, // Existed 1949-1990
+            'germany' => 1871, // Modern unified Germany
+        ];
+
+        $birthplaceLower = strtolower($birthplace);
+
+        // Check if birthplace contains a modern country name
+        foreach ($countryEras as $countryName => $minYear) {
+            if (str_contains($birthplaceLower, $countryName)) {
+                if ($birthYear < $minYear) {
+                    return [
+                        'valid' => false,
+                        'reason' => "Birthplace '{$birthplace}' contains country name that didn't exist in {$birthYear} (emerged around {$minYear})",
+                    ];
+                }
+            }
+        }
+
+        return [
+            'valid' => true,
+            'reason' => 'Birthplace-birthdate consistency validated',
+        ];
     }
 }
