@@ -463,7 +463,9 @@ Każde zadanie ma następującą strukturę:
   - **Status testów:** Wszystkie testy Feature nie przechodzą z powodu błędu `package:discover` podczas inicjalizacji Laravel
   - **Dodatkowe informacje:** Błąd nie wpływa na działanie aplikacji w runtime, tylko na uruchamianie testów Feature, które wymagają pełnej inicjalizacji Laravel (w tym `package:discover`)
   - **Workaround w CI:** `package:discover` został przywrócony w `post-autoload-dump` w `composer.json` i używa `scripts/package-discover-wrapper`. Komendy `php artisan` w CI używają `scripts/artisan-wrapper`.
-  - **Aktualna wersja:** v1.2.1 (zaktualizowana 2025-12-14)
+  - **Aktualna wersja:** v1.2.2 (zaktualizowana 2025-12-14)
+  - **Status issue #63:** Naprawione - `dont-discover` jest teraz tablicą `[]` zamiast boolean `true`
+  - **Status issue #60:** Nadal występuje - błąd inicjalizacji Laravel podczas `package:discover`
 
 ---
 
