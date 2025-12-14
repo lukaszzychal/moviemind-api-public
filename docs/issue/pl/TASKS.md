@@ -455,6 +455,7 @@ Każde zadanie ma następującą strukturę:
   - **Workaround:** Testy zostały oznaczone jako `skip` z informacją o błędzie i linkiem do issue #60
   - **Status testów:** Wszystkie 6 testów w `PreGenerationValidatorTest` są obecnie pomijane (`markTestSkipped()`) do czasu rozwiązania problemu w bibliotece
   - **Dodatkowe informacje:** Błąd nie wpływa na działanie aplikacji w runtime, tylko na uruchamianie testów Feature, które wymagają pełnej inicjalizacji Laravel (w tym `package:discover`)
+  - **Workaround w CI:** `package:discover` został tymczasowo usunięty z `post-autoload-dump` w `composer.json`, aby umożliwić `composer install` w CI. `package:discover` można uruchomić ręcznie po instalacji, jeśli potrzeba.
 
 ---
 

@@ -91,8 +91,10 @@
             "@php artisan test"
         ],
         "post-autoload-dump": [
-            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump"
+            // Note: package:discover removed temporarily due to phpstan-fixer issue #60
+            // https://github.com/lukaszzychal/phpstan-fixer/issues/60
+            // Will be re-enabled after fix is released (tracked in TASK-049)
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
@@ -111,7 +113,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "lukaszzychal/phpstan-fixer"
+            ]
         }
     },
     "config": {
