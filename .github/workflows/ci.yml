@@ -82,8 +82,20 @@ jobs:
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
         run: |
-          # Run package:discover with wrapper before tests to handle phpstan-fixer issue #60
+          # Workaround for phpstan-fixer issue #60
+          # Run package:discover with wrapper to generate packages.php cache
+          # Even if it fails, we'll use the existing cache file
           ../scripts/package-discover-wrapper || true
+          # Ensure packages.php exists with valid content (even if package:discover failed)
+          # This prevents Laravel from trying to rebuild it during app initialization
+          if [ ! -f bootstrap/cache/packages.php ] || [ ! -s bootstrap/cache/packages.php ]; then
+            # Use the backup if it exists, otherwise create empty manifest
+            if [ -f bootstrap/cache/packages.php.bak ]; then
+              cp bootstrap/cache/packages.php.bak bootstrap/cache/packages.php
+            else
+              echo "<?php return [];" > bootstrap/cache/packages.php
+            fi
+          fi
           composer test
 
   security:
