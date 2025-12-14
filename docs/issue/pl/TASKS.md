@@ -432,30 +432,38 @@ Każde zadanie ma następującą strukturę:
 - **Czas zakończenia:** --
 - **Czas realizacji:** --
 - **Realizacja:** Do ustalenia
-- **Opis:** Sprawdzenie, czy problem z `package:discover` w Laravel został rozwiązany w bibliotece `phpstan-fixer` (issue #60). Jeśli tak, przetestowanie poprawki i usunięcie workaround (wrapper script).
+- **Opis:** Sprawdzenie, czy problem z `package:discover` w Laravel został rozwiązany w bibliotece `phpstan-fixer` (issue #60, #63). Jeśli tak, przetestowanie poprawki i usunięcie workaround (wrapper script).
 - **Szczegóły:**
-  - Sprawdzić status issue #60 w repozytorium `lukaszzychal/phpstan-fixer`: https://github.com/lukaszzychal/phpstan-fixer/issues/60
-  - Jeśli problem został rozwiązany (dodano `"extra": { "laravel": { "dont-discover": true } }`):
+  - Sprawdzić status issue #60 i #63 w repozytorium `lukaszzychal/phpstan-fixer`:
+    - Issue #60: https://github.com/lukaszzychal/phpstan-fixer/issues/60 (zamknięte, ale fix niepełny)
+    - Issue #63: https://github.com/lukaszzychal/phpstan-fixer/issues/63 (nowe - `dont-discover` powinno być tablicą, nie boolean)
+  - Jeśli problem został rozwiązany (zmieniono `"dont-discover": true` na `"dont-discover": []`):
     - Zaktualizować pakiet do najnowszej wersji
     - Przetestować, czy `composer install` i `composer update` działają bez błędów
     - Przetestować, czy `php artisan package:discover` działa poprawnie
-    - Usunąć wrapper script (`scripts/phpstan-fixer-wrapper`) jeśli nie jest już potrzebny
-    - Zaktualizować wszystkie miejsca używające wrappera na bezpośrednie użycie `vendor/bin/phpstan-fixer`
+    - Przetestować, czy testy Feature przechodzą bez błędów
+    - Usunąć wrapper scripts (`scripts/package-discover-wrapper`, `scripts/artisan-wrapper`) jeśli nie są już potrzebne
+    - Zaktualizować wszystkie miejsca używające wrapperów na bezpośrednie użycie komend
     - Zaktualizować dokumentację (workflow.mdc, pre-commit hook, CI workflow)
     - Uruchomić testy i upewnić się, że wszystko działa
   - Jeśli problem nie został rozwiązany:
-    - Zaktualizować issue #60 z informacją o statusie
-    - Pozostawić wrapper script jako workaround
+    - Zaktualizować issue #63 z informacją o statusie
+    - Pozostawić wrapper scripts jako workaround
 - **Zależności:** Brak
 - **Utworzone:** 2025-12-06
-- **Powiązane issue:** https://github.com/lukaszzychal/phpstan-fixer/issues/60
+- **Zaktualizowane:** 2025-12-14
+- **Powiązane issue:**
+  - Issue #60: https://github.com/lukaszzychal/phpstan-fixer/issues/60 (zamknięte, ale fix niepełny)
+  - Issue #63: https://github.com/lukaszzychal/phpstan-fixer/issues/63 (nowe - `dont-discover` powinno być tablicą)
 - **Obserwacje:**
-  - **Problem z testami:** Testy w `api/tests/Feature/PreGenerationValidatorTest.php` nie przechodzą z powodu błędu `Call to a member function make() on null` w `vendor/laravel/framework/src/Illuminate/Console/Command.php:175`
+  - **Problem z testami:** Testy Feature nie przechodzą z powodu błędu `Call to a member function make() on null` w `vendor/laravel/framework/src/Illuminate/Console/Command.php:175`
   - **Przyczyna:** Błąd występuje podczas `package:discover` w Laravel, gdy próbuje przetworzyć pakiet `phpstan-fixer` podczas uruchamiania testów
+  - **Nowy problem:** W wersji v1.2.1 `"dont-discover": true` (boolean) zamiast `"dont-discover": []` (array), co powoduje błąd `array_merge(): Argument #2 must be of type array, true given` w `PackageManifest.php:135`
   - **Workaround:** Testy zostały oznaczone jako `skip` z informacją o błędzie i linkiem do issue #60
-  - **Status testów:** Wszystkie 6 testów w `PreGenerationValidatorTest` są obecnie pomijane (`markTestSkipped()`) do czasu rozwiązania problemu w bibliotece
+  - **Status testów:** Wszystkie testy Feature nie przechodzą z powodu błędu `package:discover` podczas inicjalizacji Laravel
   - **Dodatkowe informacje:** Błąd nie wpływa na działanie aplikacji w runtime, tylko na uruchamianie testów Feature, które wymagają pełnej inicjalizacji Laravel (w tym `package:discover`)
-  - **Workaround:** Utworzono wrapper script `scripts/package-discover-wrapper`, który obsługuje błąd z `phpstan-fixer` i zwraca kod sukcesu, pozwalając na kontynuację `composer install`. Wrapper jest używany w `post-autoload-dump` w `composer.json`.
+  - **Workaround w CI:** `package:discover` został przywrócony w `post-autoload-dump` w `composer.json` i używa `scripts/package-discover-wrapper`. Komendy `php artisan` w CI używają `scripts/artisan-wrapper`.
+  - **Aktualna wersja:** v1.2.1 (zaktualizowana 2025-12-14)
 
 ---
 
