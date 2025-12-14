@@ -1,6 +1,6 @@
 # 📊 Lista Zadań według Priorytetów i Kolejności
 
-**Data aktualizacji:** 2025-12-06 (TASK-037 zaktualizowany na COMPLETED)  
+**Data aktualizacji:** 2025-12-06 (TASK-037 zaktualizowany na COMPLETED, TASK-049 dodany)  
 **Źródło:** `docs/issue/pl/TASKS.md`
 
 ---
@@ -44,6 +44,7 @@
 | 11 | TASK-028    | ⏳ PENDING  | Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues                   | 0.5-1h         | Brak                      | Usprawnienie workflow           |
 | 12 | TASK-029    | ⏳ PENDING  | Uporządkowanie testów według wzorca AAA lub GWT                                 | 2-3h           | Brak                      | Standaryzacja testów            |
 | 13 | TASK-018    | ⏳ PENDING  | Wydzielenie PhpstanFixer jako paczki Composer                                   | 3-4h           | TASK-017 ✅               | Reużywalność                   |
+| 14 | TASK-049    | ⏳ PENDING  | Weryfikacja naprawy problemu phpstan-fixer z Laravel package:discover            | 1-2h           | Brak                      | Weryfikacja issue #60           |
 
 ### Faza 4: Dokumentacja i analiza
 
@@ -74,7 +75,7 @@
 ### Status
 
 - **🔄 W trakcie:** 0 zadań
-- **⏳ Oczekujące:** 26 zadań
+- **⏳ Oczekujące:** 27 zadań
 - **✅ Zakończone:** 22 zadań (w tym TASK-037, TASK-048)
 
 ### Priorytety

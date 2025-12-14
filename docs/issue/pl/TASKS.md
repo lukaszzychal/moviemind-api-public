@@ -212,6 +212,7 @@ Każde zadanie ma następującą strukturę:
 - `TASK-029` - Standaryzacja testów
 - `TASK-031` - Wersjonowanie opisów
 - `TASK-040` - Analiza TOON vs JSON
+- `TASK-049` - Weryfikacja naprawy phpstan-fixer
 
 #### 🟢 Niski Priorytet (Roadmap)
 - `TASK-008` - Webhooks System
@@ -419,6 +420,34 @@ Każde zadanie ma następującą strukturę:
   - Dodać testy regresyjne (feature/unit) zabezpieczające poprawione zachowanie oraz zaktualizować dokumentację API, jeśli kontrakt ulegnie zmianie.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+
+---
+
+#### `TASK-049` - Weryfikacja naprawy problemu phpstan-fixer z Laravel package:discover
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Sprawdzenie, czy problem z `package:discover` w Laravel został rozwiązany w bibliotece `phpstan-fixer` (issue #60). Jeśli tak, przetestowanie poprawki i usunięcie workaround (wrapper script).
+- **Szczegóły:**
+  - Sprawdzić status issue #60 w repozytorium `lukaszzychal/phpstan-fixer`: https://github.com/lukaszzychal/phpstan-fixer/issues/60
+  - Jeśli problem został rozwiązany (dodano `"extra": { "laravel": { "dont-discover": true } }`):
+    - Zaktualizować pakiet do najnowszej wersji
+    - Przetestować, czy `composer install` i `composer update` działają bez błędów
+    - Przetestować, czy `php artisan package:discover` działa poprawnie
+    - Usunąć wrapper script (`scripts/phpstan-fixer-wrapper`) jeśli nie jest już potrzebny
+    - Zaktualizować wszystkie miejsca używające wrappera na bezpośrednie użycie `vendor/bin/phpstan-fixer`
+    - Zaktualizować dokumentację (workflow.mdc, pre-commit hook, CI workflow)
+    - Uruchomić testy i upewnić się, że wszystko działa
+  - Jeśli problem nie został rozwiązany:
+    - Zaktualizować issue #60 z informacją o statusie
+    - Pozostawić wrapper script jako workaround
+- **Zależności:** Brak
+- **Utworzone:** 2025-12-06
+- **Powiązane issue:** https://github.com/lukaszzychal/phpstan-fixer/issues/60
 
 ---
 
@@ -1223,7 +1252,7 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 26
+- **Aktywne:** 27
 - **Zakończone:** 22
 - **Anulowane:** 0
 - **W trakcie:** 0
