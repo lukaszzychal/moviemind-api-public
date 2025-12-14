@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-12-06  
+**Ostatnia aktualizacja:** 2025-12-14  
 **Status:** 🔄 Aktywny
 
 ---
@@ -152,7 +152,6 @@ Każde zadanie ma następującą strukturę:
     - **Czas:** 2-3h
     - **Status:** ⏳ PENDING
 
-15. **`TASK-018`** - Wydzielenie PhpstanFixer jako paczki Composer
     - **Dlaczego:** Reużywalność, możliwość użycia w innych projektach
     - **Czas:** 3-4h
     - **Status:** ⏳ PENDING
@@ -211,7 +210,6 @@ Każde zadanie ma następującą strukturę:
 - `TASK-033` - Usunięcie Actor
 - `TASK-028` - Synchronizacja Issues
 - `TASK-029` - Standaryzacja testów
-- `TASK-018` - PhpstanFixer package
 - `TASK-031` - Wersjonowanie opisów
 - `TASK-040` - Analiza TOON vs JSON
 
@@ -924,26 +922,58 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-#### `TASK-018` - Wydzielenie PhpstanFixer jako paczki Composer
-- **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 3-4 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
-- **Opis:** Przeniesienie modułu `App\Support\PhpstanFixer` do osobnej paczki Composer instalowanej jako zależność projektu.
-- **Szczegóły:**
-  - Wydzielić kod do repozytorium/paczki z przestrzenią nazw np. `Moviemind\PhpstanFixer`.
-  - Przygotować `composer.json`, autoload PSR-4 i dokumentację instalacji/konfiguracji.
-  - Zastąpić bieżącą implementację importem paczki i zaktualizować DI w aplikacji.
-  - Dodać pipeline publikacji (packagist lub private repo) oraz opis wersjonowania.
-- **Zależności:** TASK-017
-- **Utworzone:** 2025-11-08
 
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-049` - Weryfikacja naprawy problemu phpstan-fixer z Laravel package:discover
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4-6 godzin
+- **Czas rozpoczęcia:** 2025-12-14
+- **Czas zakończenia:** 2025-12-14
+- **Czas realizacji:** ~04h00m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Weryfikacja naprawy problemu `Call to a member function make() on null` podczas `package:discover` w Laravel po aktualizacji `phpstan-fixer` do v1.2.2.
+- **Szczegóły:**
+  - ✅ Zaktualizowano `phpstan-fixer` do v1.2.2
+  - ✅ Zweryfikowano, że `dont-discover` jest poprawnie ustawione jako tablica `[]`
+  - ✅ Problem nadal występuje - błąd `Call to a member function make() on null` podczas `package:discover` i testów Feature
+  - ✅ Utworzono workaround: `scripts/build-package-manifest.php` - bezpośredni builder manifestu bez kontenera Laravel
+  - ✅ Workaround działa dla `composer install/update`, ale nie rozwiązuje problemu w testach Feature
+  - ✅ Dodano instrukcje odtworzenia błędu do issue #60 w repo phpstan-fixer
+  - ✅ Utworzono branch `test/phpstan-fixer-issue-60` dla przyszłych testów
+  - ✅ Usunięto `phpstan-fixer` z `require-dev` w głównym kodzie (tymczasowe rozwiązanie)
+  - ✅ Przywrócono standardowy PHPStan w pre-commit hook
+- **Zakres wykonanych prac:**
+  - ✅ Zaktualizowano `phpstan-fixer` do v1.2.2
+  - ✅ Zweryfikowano konfigurację `dont-discover` (poprawne jako tablica `[]`)
+  - ✅ Zidentyfikowano, że problem nie jest związany z `dont-discover`, ale z inicjalizacją kontenera Laravel
+  - ✅ Utworzono workaround: `scripts/build-package-manifest.php`
+  - ✅ Zaktualizowano `scripts/package-discover-wrapper` aby używał bezpośredniego buildera
+  - ✅ Dodano instrukcje odtworzenia błędu do issue #60
+  - ✅ Utworzono branch testowy `test/phpstan-fixer-issue-60`
+  - ✅ Usunięto `phpstan-fixer` z `require-dev` w main (tymczasowe rozwiązanie)
+  - ✅ Przywrócono standardowy PHPStan w pre-commit hook
+  - ✅ Utworzono dokumentację techniczną: `PHPSTAN_FIXER_PACKAGE_DISCOVER_SOLUTION.md`, `PHPSTAN_FIXER_REPRODUCTION_STEPS.md`
+- **Obserwacje:**
+  - Problem występuje zarówno w runtime (`php artisan package:discover`), jak i w testach Feature
+  - `PackageManifest` może być budowany bez kontenera Laravel (przetestowano)
+  - Problem jest w `PackageDiscoverCommand`, który wymaga kontenera podczas `Command::run()`
+  - Workaround działa dla `composer install/update`, ale nie rozwiązuje problemu w testach
+  - Tymczasowe rozwiązanie: usunięcie `phpstan-fixer` z `require-dev` do czasu naprawy w bibliotece
+- **Zależności:** Brak
+- **Utworzone:** 2025-12-14
+- **Ukończone:** 2025-12-14
+- **Issue:** https://github.com/lukaszzychal/phpstan-fixer/issues/60
+- **Dokumentacja:**
+  - [`docs/knowledge/technical/PHPSTAN_FIXER_PACKAGE_DISCOVER_SOLUTION.md`](../../knowledge/technical/PHPSTAN_FIXER_PACKAGE_DISCOVER_SOLUTION.md)
+  - [`docs/knowledge/technical/PHPSTAN_FIXER_REPRODUCTION_STEPS.md`](../../knowledge/technical/PHPSTAN_FIXER_REPRODUCTION_STEPS.md)
+  - [`docs/knowledge/technical/PHPSTAN_FIXER_LIBRARY_SOLUTION_PROPOSAL.md`](../../knowledge/technical/PHPSTAN_FIXER_LIBRARY_SOLUTION_PROPOSAL.md)
+  - [`docs/knowledge/technical/PHPSTAN_FIXER_LARAVEL_ISSUE_PROPOSAL.md`](../../knowledge/technical/PHPSTAN_FIXER_LARAVEL_ISSUE_PROPOSAL.md)
+
+---
 
 ### `TASK-048` - Kompleksowa dokumentacja bezpieczeństwa aplikacji (OWASP, AI security, audyty)
 - **Status:** ✅ COMPLETED
@@ -1241,12 +1271,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 27
-- **Zakończone:** 21
+- **Aktywne:** 25
+- **Zakończone:** 23
 - **Anulowane:** 0
 - **W trakcie:** 0
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-06
+**Ostatnia aktualizacja:** 2025-12-14
 

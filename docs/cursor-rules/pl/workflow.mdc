@@ -44,23 +44,26 @@ npm run markdownlint:check
 cd api && vendor/bin/pint
 ```
 
-### 3. PHPStan Fixer (analiza statyczna z auto-fix)
+### 3. PHPStan (analiza statyczna)
 ```bash
-# Użyj PHPStan Fixer wrapper (używa głównego autoloadera projektu)
-cd api && ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest
+cd api && vendor/bin/phpstan analyse --memory-limit=2G
+```
+Poziom: 5. Zero błędów przed commitem.
+
+#### PHPStan Auto-Fix (opcjonalne - używa wewnętrznej komendy)
+```bash
+# Tryb suggest (podgląd zmian, domyślny)
+cd api && php artisan phpstan:auto-fix --mode=suggest
+
+# Tryb apply (zapisuje zmiany do plików)
+cd api && php artisan phpstan:auto-fix --mode=apply
 
 # Lub użyj z istniejącym outputem JSON z PHPStan
 cd api && vendor/bin/phpstan analyse --memory-limit=2G --error-format=json > phpstan-output.json 2>&1 || true
-cd api && ../scripts/phpstan-fixer-wrapper --input=phpstan-output.json --mode=suggest
+cd api && php artisan phpstan:auto-fix --input=phpstan-output.json --mode=suggest
 ```
 
-**Tryby:**
-- `--mode=suggest` (domyślny) - Pokazuje co zostałoby zmienione bez modyfikacji plików (bezpieczne)
-- `--mode=apply` - Faktycznie zapisuje zmiany do plików (używaj z ostrożnością)
-
-**Rekomendacja:** Zawsze najpierw uruchom z `--mode=suggest`, aby podglądnąć zmiany przed ich zastosowaniem.
-
-Poziom: 5. Zero błędów przed commitem.
+**Uwaga:** Wewnętrzna komenda `phpstan:auto-fix` używa modułu `App\Support\PhpstanFixer`. To jest oddzielne od zewnętrznego pakietu `lukaszzychal/phpstan-fixer` (który został usunięty z powodu problemów z kompatybilnością Laravel).
 
 #### Archiwizacja logów PHPStan
 - Po każdym uruchomieniu PHPStan zapisz pełny output (`stdout` + `stderr`) do pliku logów.
@@ -174,7 +177,7 @@ Napraw krytyczne luki przed commitem.
 npm run markdownlint:fix && \
 cd api && \
   vendor/bin/pint && \
-  ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest && \
+  vendor/bin/phpstan analyse --memory-limit=2G && \
   php artisan test && \
   cd .. && \
   gitleaks protect --source . --verbose --no-banner && \

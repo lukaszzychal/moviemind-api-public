@@ -44,23 +44,26 @@ npm run markdownlint:check
 cd api && vendor/bin/pint
 ```
 
-### 3. PHPStan Fixer (static analysis with auto-fix)
+### 3. PHPStan (static analysis)
 ```bash
-# Use PHPStan Fixer wrapper (uses project's autoloader)
-cd api && ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest
+cd api && vendor/bin/phpstan analyse --memory-limit=2G
+```
+Level: 5. Zero errors before commit.
+
+#### PHPStan Auto-Fix (optional - uses internal command)
+```bash
+# Suggest mode (preview changes, default)
+cd api && php artisan phpstan:auto-fix --mode=suggest
+
+# Apply mode (write changes to files)
+cd api && php artisan phpstan:auto-fix --mode=apply
 
 # Or use with existing PHPStan JSON output
 cd api && vendor/bin/phpstan analyse --memory-limit=2G --error-format=json > phpstan-output.json 2>&1 || true
-cd api && ../scripts/phpstan-fixer-wrapper --input=phpstan-output.json --mode=suggest
+cd api && php artisan phpstan:auto-fix --input=phpstan-output.json --mode=suggest
 ```
 
-**Modes:**
-- `--mode=suggest` (default) - Shows what would be changed without modifying files (safe)
-- `--mode=apply` - Actually writes changes to files (use with caution)
-
-**Recommendation:** Always run with `--mode=suggest` first to preview changes before applying them.
-
-Level: 5. Zero errors before commit.
+**Note:** The internal `phpstan:auto-fix` command uses `App\Support\PhpstanFixer` module. This is separate from the external `lukaszzychal/phpstan-fixer` package (which was removed due to Laravel compatibility issues).
 
 #### PHPStan Log Archiving
 - After each PHPStan run, save the full output (`stdout` + `stderr`) to a log file.
@@ -175,7 +178,7 @@ Fix critical vulnerabilities before commit.
 npm run markdownlint:fix && \
 cd api && \
   vendor/bin/pint && \
-  ../scripts/phpstan-fixer-wrapper --phpstan-command="vendor/bin/phpstan analyse --memory-limit=2G --error-format=json" --mode=suggest && \
+  vendor/bin/phpstan analyse --memory-limit=2G && \
   php artisan test && \
   cd .. && \
   gitleaks protect --source . --verbose --no-banner && \
