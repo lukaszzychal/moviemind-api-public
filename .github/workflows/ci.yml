@@ -81,7 +81,10 @@ jobs:
           APP_ENV: testing
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
-        run: composer test
+        run: |
+          # Run package:discover with wrapper before tests to handle phpstan-fixer issue #60
+          ../scripts/package-discover-wrapper || true
+          composer test
 
   security:
     name: Security & Lint

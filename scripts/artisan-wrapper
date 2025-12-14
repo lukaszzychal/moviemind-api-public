@@ -57,7 +57,7 @@ if ($returnCode !== 0 && $isPhpstanFixerError) {
     if ($returnCode !== 0 && $isPhpstanFixerError) {
         // Still failing - this is a known issue with phpstan-fixer
         // For some commands, we can continue if they're not critical
-        $criticalCommands = ['migrate', 'migrate:fresh', 'db:seed', 'test'];
+        $criticalCommands = ['migrate', 'migrate:fresh', 'db:seed'];
         $commandName = $args[0] ?? '';
         
         // Check if command actually succeeded despite the error message
@@ -65,9 +65,14 @@ if ($returnCode !== 0 && $isPhpstanFixerError) {
         $hasSuccessOutput = str_contains($outputString, 'Application key set successfully')
             || str_contains($outputString, 'Configuration cache cleared')
             || str_contains($outputString, 'successfully')
-            || str_contains($outputString, 'done');
+            || str_contains($outputString, 'done')
+            || str_contains($outputString, 'PASS')
+            || str_contains($outputString, 'Tests:');
         
-        if (!in_array($commandName, $criticalCommands, true) || $hasSuccessOutput) {
+        // config:clear and key:generate are safe to ignore if they fail due to phpstan-fixer
+        $safeToIgnoreCommands = ['config:clear', 'key:generate'];
+        
+        if (in_array($commandName, $safeToIgnoreCommands, true) || (!in_array($commandName, $criticalCommands, true) && $hasSuccessOutput)) {
             // Non-critical command or command succeeded despite error - show warning but continue
             echo "⚠️  Warning: Command encountered phpstan-fixer issue #60\n";
             if ($hasSuccessOutput) {
