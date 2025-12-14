@@ -1278,5 +1278,5 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-06
+**Ostatnia aktualizacja:** 2025-12-14
 
