@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a3b5af2adb6476968a1c891691bcf912",
+    "content-hash": "e49e2d597316a54655e34577d03fad17",
     "packages": [
         {
             "name": "brick/math",
@@ -6844,16 +6844,16 @@
         },
         {
             "name": "lukaszzychal/phpstan-fixer",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lukaszzychal/phpstan-fixer.git",
-                "reference": "3d90bcee7092837a696263efbc1e38bed6a66fbb"
+                "reference": "957708811baec56fce818b6f177eb14bf327eb94"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lukaszzychal/phpstan-fixer/zipball/3d90bcee7092837a696263efbc1e38bed6a66fbb",
-                "reference": "3d90bcee7092837a696263efbc1e38bed6a66fbb",
+                "url": "https://api.github.com/repos/lukaszzychal/phpstan-fixer/zipball/957708811baec56fce818b6f177eb14bf327eb94",
+                "reference": "957708811baec56fce818b6f177eb14bf327eb94",
                 "shasum": ""
             },
             "require": {
@@ -6875,6 +6875,11 @@
                 "bin/phpstan-fixer"
             ],
             "type": "library",
+            "extra": {
+                "laravel": {
+                    "dont-discover": []
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "PhpstanFixer\\": "src/PhpstanFixer/"
@@ -6907,7 +6912,7 @@
                 "issues": "https://github.com/lukaszzychal/phpstan-fixer/issues",
                 "source": "https://github.com/lukaszzychal/phpstan-fixer"
             },
-            "time": "2025-12-14T13:01:45+00:00"
+            "time": "2025-12-14T15:18:24+00:00"
         },
         {
             "name": "mockery/mockery",
