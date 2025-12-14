@@ -1,6 +1,6 @@
 # 📊 Lista Zadań według Priorytetów i Kolejności
 
-**Data aktualizacji:** 2025-12-06  
+**Data aktualizacji:** 2025-12-06 (TASK-037 zaktualizowany na COMPLETED)  
 **Źródło:** `docs/issue/pl/TASKS.md`
 
 ---
@@ -10,7 +10,7 @@
 | #  | ID          | Status     | Tytuł                                                                           | Szacowany czas | Zależności                | Notatki                     |
 |----|-------------|------------|---------------------------------------------------------------------------------|----------------|---------------------------|-----------------------------|
 | 1  | TASK-043    | ⏳ PENDING  | Implementacja zasady wykrywania BREAKING CHANGE                                | 2-3h           | Brak                      | Bezpieczeństwo zmian        |
-| 2  | TASK-037    | ⏳ PENDING  | Weryfikacja istnienia filmów/osób przed generowaniem AI (Faza 2-3)             | 8-12h (F2)     | Faza 1 ✅                 | Faza 1 ukończona           |
+| 2  | TASK-037    | ✅ COMPLETED | Weryfikacja istnienia filmów/osób przed generowaniem AI (Faza 2-3)             | 8-12h (F2)     | Faza 1 ✅                 | Wszystkie fazy ukończone   |
 | 3  | TASK-038    | ⏳ PENDING  | Weryfikacja zgodności danych AI z slugiem (Faza 2)                             | 6-8h           | Faza 1 ✅                 | Faza 1 ukończona           |
 
 ---
@@ -74,12 +74,12 @@
 ### Status
 
 - **🔄 W trakcie:** 0 zadań
-- **⏳ Oczekujące:** 27 zadań
-- **✅ Zakończone:** 21 zadań (w tym TASK-048)
+- **⏳ Oczekujące:** 26 zadań
+- **✅ Zakończone:** 22 zadań (w tym TASK-037, TASK-048)
 
 ### Priorytety
 
-- **🔴 Wysoki:** 3 zadania (TASK-048 ✅, TASK-043, TASK-037, TASK-038)
+- **🔴 Wysoki:** 2 zadania (TASK-043, TASK-038) - TASK-037 ✅, TASK-048 ✅
 - **🟡 Średni:** 18 zadań
 - **🟢 Niski:** 5 zadań
 
@@ -114,8 +114,8 @@
 
 ### Najpierw (🔴 Wysoki Priorytet)
 
-1. **TASK-043** - BREAKING CHANGE detection (zabezpiecza przyszłe zmiany)
-2. **TASK-037** (F2-3) - Weryfikacja przed AI (krytyczne dla jakości)
+1. **TASK-043** - BREAKING CHANGE detection (zabezpiecza przyszłe zmiany) ✅
+2. **TASK-037** (F2-3) - Weryfikacja przed AI (krytyczne dla jakości) ✅ COMPLETED
 3. **TASK-038** (F2) - Weryfikacja zgodności danych (krytyczne dla jakości)
 
 ### Następnie (🟡 Średni - Faza 1)
