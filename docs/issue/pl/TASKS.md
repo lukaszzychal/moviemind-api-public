@@ -213,6 +213,7 @@ Każde zadanie ma następującą strukturę:
 - `TASK-031` - Wersjonowanie opisów
 - `TASK-040` - Analiza TOON vs JSON
 - `TASK-049` - Weryfikacja naprawy phpstan-fixer
+- `TASK-050` - Aktualizacja do maksymalnych wersji PHP i Laravel
 
 #### 🟢 Niski Priorytet (Roadmap)
 - `TASK-008` - Webhooks System
@@ -454,6 +455,59 @@ Każde zadanie ma następującą strukturę:
   - **Workaround:** Testy zostały oznaczone jako `skip` z informacją o błędzie i linkiem do issue #60
   - **Status testów:** Wszystkie 6 testów w `PreGenerationValidatorTest` są obecnie pomijane (`markTestSkipped()`) do czasu rozwiązania problemu w bibliotece
   - **Dodatkowe informacje:** Błąd nie wpływa na działanie aplikacji w runtime, tylko na uruchamianie testów Feature, które wymagają pełnej inicjalizacji Laravel (w tym `package:discover`)
+
+---
+
+#### `TASK-050` - Aktualizacja projektu do maksymalnych wersji PHP i Laravel
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4-8 godziny
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Zaktualizowanie projektu do maksymalnych dostępnych wersji PHP i Laravel oraz wszystkich zależności do najnowszych kompatybilnych wersji.
+- **Szczegóły:**
+  - **Aktualizacja PHP:**
+    - Sprawdzić najnowszą dostępną wersję PHP (8.4 lub 8.5 jeśli dostępne)
+    - Zaktualizować `composer.json` constraint z `^8.2` do `^8.4` (lub wyższej)
+    - Zaktualizować platform config w `composer.json` z `8.2.0` do najnowszej wersji
+    - Zaktualizować CI workflow (`.github/workflows/ci.yml`) jeśli potrzeba
+    - Sprawdzić kompatybilność wszystkich zależności z nową wersją PHP
+  - **Aktualizacja Laravel:**
+    - Sprawdzić najnowszą dostępną wersję Laravel 12.x (obecnie: v12.36.1)
+    - Zaktualizować `composer.json` constraint do najnowszej wersji `^12.0` (lub konkretnej wersji)
+    - Uruchomić `composer update laravel/framework` i sprawdzić breaking changes
+    - Przejrzeć dokumentację migracji Laravel dla zmian między wersjami
+  - **Aktualizacja zależności:**
+    - Zaktualizować wszystkie zależności do najnowszych kompatybilnych wersji
+    - Sprawdzić `composer outdated` i zaktualizować pakiety
+    - Zweryfikować kompatybilność zależności z nowymi wersjami PHP i Laravel
+    - Rozwiązać konflikty zależności jeśli wystąpią
+  - **Aktualizacja zależności dev:**
+    - Zaktualizować narzędzia deweloperskie (PHPStan, PHPUnit, Pint, etc.)
+    - Sprawdzić kompatybilność z nowymi wersjami PHP i Laravel
+  - **Testowanie:**
+    - Uruchomić wszystkie testy (unit i feature)
+    - Sprawdzić PHPStan (poziom 5, zero błędów)
+    - Sprawdzić Laravel Pint (formatowanie)
+    - Przetestować manualnie kluczowe funkcjonalności
+    - Sprawdzić CI workflow dla wszystkich wersji PHP
+  - **Dokumentacja:**
+    - Zaktualizować dokumentację projektu z nowymi wersjami
+    - Zaktualizować README jeśli zawiera informacje o wersjach
+    - Zaktualizować `.cursor/rules/workflow.mdc` jeśli potrzeba
+- **Zależności:** 
+  - TASK-049 (opcjonalnie - może pomóc w rozwiązaniu problemów z testami)
+- **Utworzone:** 2025-12-14
+- **Aktualne wersje:**
+  - PHP: `^8.2` (platform: `8.2.0`)
+  - Laravel: `^12.0` (zainstalowana: `v12.36.1`)
+  - CI testuje: PHP 8.2, 8.3, 8.4
+- **Cel:**
+  - PHP: `^8.4` (lub wyższa jeśli dostępna)
+  - Laravel: najnowsza wersja `12.x`
+  - Wszystkie zależności: najnowsze kompatybilne wersje
 
 ---
 
@@ -1258,12 +1312,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 27
+- **Aktywne:** 28
 - **Zakończone:** 22
 - **Anulowane:** 0
 - **W trakcie:** 0
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-06
+**Ostatnia aktualizacja:** 2025-12-14
 
