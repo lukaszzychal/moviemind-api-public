@@ -48,7 +48,7 @@ jobs:
           vendor/bin/phpstan analyse --memory-limit=2G --error-format=json > ../phpstan-results.json || true
       
       - name: Upload PHPStan Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: phpstan-results
@@ -95,7 +95,7 @@ jobs:
           php artisan test --coverage --coverage-html=../coverage-report || true
       
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: coverage-report
@@ -157,7 +157,7 @@ jobs:
           echo "5. Verify DRY principle compliance" >> ../code-quality-metrics.md
       
       - name: Upload Code Quality Metrics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: code-quality-metrics
@@ -219,7 +219,7 @@ jobs:
           echo "**Note:** This is an automated code quality audit. Manual audits should be conducted quarterly/semi-annually according to the guide." >> comprehensive-code-quality-audit.md
       
       - name: Upload Comprehensive Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: comprehensive-code-quality-audit-report

@@ -43,7 +43,7 @@ jobs:
         redact: true
     
     - name: Upload GitLeaks results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: failure()
       with:
         name: gitleaks-results
@@ -82,7 +82,7 @@ jobs:
         fi
     
     - name: Upload security audit results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: security-audit-results
         path: security-audit.json
