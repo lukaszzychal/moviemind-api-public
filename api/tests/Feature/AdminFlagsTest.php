@@ -15,6 +15,10 @@ class AdminFlagsTest extends TestCase
         parent::setUp();
         $this->artisan('migrate');
         $this->artisan('db:seed');
+
+        // Bypass Admin API auth for tests (testing flag functionality, not auth)
+        config(['app.env' => 'local']);
+        putenv('ADMIN_AUTH_BYPASS_ENVS=local,staging');
     }
 
     public function test_list_flags(): void

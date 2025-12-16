@@ -62,7 +62,7 @@ Każde zadanie ma następującą strukturę:
 2. **`TASK-050`** - Dodanie Basic Auth dla endpointów admin
    - **Dlaczego:** **KRYTYCZNY PROBLEM BEZPIECZEŃSTWA** - Endpointy `/api/v1/admin/*` są obecnie publiczne i niechronione. Każdy może przełączać flagi, co stanowi poważne zagrożenie bezpieczeństwa.
    - **Czas:** 2-3h
-   - **Status:** ⏳ PENDING
+   - **Status:** ✅ COMPLETED (2025-12-16)
    - **Priorytet:** 🔴🔴🔴 Najwyższy - wymaga natychmiastowej naprawy
    - **Zależności:** Brak
 
@@ -201,7 +201,8 @@ Każde zadanie ma następującą strukturę:
 ### 📋 Podsumowanie według Priorytetów
 
 #### 🔴 Wysoki Priorytet (Krytyczne)
-- `TASK-050` - Basic Auth dla endpointów admin (🔴🔴🔴 Najwyższy - bezpieczeństwo)
+<<<<<<< HEAD
+- ~~`TASK-050` - Basic Auth dla endpointów admin~~ ✅ COMPLETED
 - `TASK-037` (Faza 2-3) - Weryfikacja istnienia przed AI
 - `TASK-038` (Faza 2) - Weryfikacja zgodności danych
 
@@ -1006,32 +1007,39 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-050` - Dodanie Basic Auth dla endpointów admin
-- **Status:** ⏳ PENDING
+<<<<<<< HEAD
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴🔴🔴 Najwyższy
 - **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-16
+- **Czas zakończenia:** 2025-12-16
+- **Czas realizacji:** ~02h00m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** **KRYTYCZNY PROBLEM BEZPIECZEŃSTWA** - Endpointy `/api/v1/admin/*` są obecnie publiczne i niechronione. Każdy może przełączać flagi feature, co stanowi poważne zagrożenie bezpieczeństwa.
 - **Szczegóły:**
-  - Utworzenie middleware `AdminBasicAuth` (analogicznie do `HorizonBasicAuth`)
-  - Konfiguracja zmiennych środowiskowych: `ADMIN_ALLOWED_EMAILS`, `ADMIN_BASIC_AUTH_PASSWORD`
-  - Dodanie middleware do route'ów `/api/v1/admin/*`
-  - Możliwość bypassu w środowiskach local/staging (opcjonalnie)
-  - Wymuszenie autoryzacji w produkcji (nawet jeśli przypadkowo dodano do bypass)
-  - Utworzenie testów autoryzacji dla endpointów admin
-  - Aktualizacja dokumentacji operacyjnej i plików `.env.example`
-- **Zakres wymaganych prac:**
-  - Utworzenie `app/Http/Middleware/AdminBasicAuth.php`
-  - Rejestracja middleware w `bootstrap/app.php`
-  - Dodanie middleware do route'ów admin w `routes/api.php`
-  - Aktualizacja plików `.env.example` (local, staging, production) z komentarzami bezpieczeństwa
-  - Utworzenie testów autoryzacji (`tests/Feature/AdminBasicAuthTest.php`)
-  - Aktualizacja dokumentacji bezpieczeństwa
+  - ✅ Utworzenie middleware `AdminBasicAuth` (analogicznie do `HorizonBasicAuth`)
+  - ✅ Konfiguracja zmiennych środowiskowych: `ADMIN_ALLOWED_EMAILS`, `ADMIN_BASIC_AUTH_PASSWORD`, `ADMIN_AUTH_BYPASS_ENVS`
+  - ✅ Dodanie middleware do route'ów `/api/v1/admin/*`
+  - ✅ Możliwość bypassu w środowiskach local/staging
+  - ✅ Wymuszenie autoryzacji w produkcji (nawet jeśli przypadkowo dodano do bypass)
+  - ✅ Utworzenie testów autoryzacji dla endpointów admin (13 testów, wszystkie przechodzą)
+  - ✅ Aktualizacja dokumentacji operacyjnej i plików `.env.example`
+- **Zakres wykonanych prac:**
+  - ✅ Utworzono `app/Http/Middleware/AdminBasicAuth.php` z logowaniem prób dostępu
+  - ✅ Zarejestrowano middleware w `bootstrap/app.php` jako `admin.basic`
+  - ✅ Dodano middleware do route'ów admin w `routes/api.php`
+  - ✅ Zaktualizowano pliki `.env.example` (local, staging, production) z komentarzami bezpieczeństwa
+  - ✅ Utworzono testy autoryzacji (`tests/Feature/AdminBasicAuthTest.php`) - 13 testów, wszystkie przechodzą
+  - ✅ Zaktualizowano `AdminFlagsTest.php` - dodano bypass autoryzacji w setUp() dla testów funkcjonalności
+  - ✅ Utworzono dokumentację (`docs/knowledge/tutorials/ADMIN_API_BASIC_AUTH.md`)
+  - ✅ Wszystkie testy przechodzą: 281 passed (965 assertions)
+  - ✅ PHPStan bez błędów, Laravel Pint formatowanie
 - **Zależności:** Brak
 - **Utworzone:** 2025-12-16
-- **Uwaga:** To jest krytyczny problem bezpieczeństwa - endpointy admin muszą być zabezpieczone przed nieautoryzowanym dostępem.
+- **Ukończone:** 2025-12-16
+- **Powiązane dokumenty:**
+  - [`docs/knowledge/tutorials/ADMIN_API_BASIC_AUTH.md`](../../knowledge/tutorials/ADMIN_API_BASIC_AUTH.md)
+  - [`docs/knowledge/tutorials/HORIZON_SETUP.md`](../../knowledge/tutorials/HORIZON_SETUP.md) (podobna implementacja)
 
 ---
 
@@ -1381,8 +1389,10 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 26
-- **Zakończone:** 23
+<<<<<<< HEAD
+- **Aktywne:** 25
+- **Aktywne:** 25
+- **Zakończone:** 24
 - **Anulowane:** 0
 - **W trakcie:** 0
 
