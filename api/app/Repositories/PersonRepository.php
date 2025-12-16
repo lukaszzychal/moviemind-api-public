@@ -12,10 +12,10 @@ class PersonRepository
     {
         return Person::query()
             ->when($query, function ($builder) use ($query) {
-                $builder->where('name', 'ILIKE', "%$query%")
-                    ->orWhere('birthplace', 'ILIKE', "%$query%")
+                $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ["%$query%"])
+                    ->orWhereRaw('LOWER(birthplace) LIKE LOWER(?)', ["%$query%"])
                     ->orWhereHas('movies', function ($qm) use ($query) {
-                        $qm->where('title', 'ILIKE', "%$query%");
+                        $qm->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"]);
                     });
             })
             ->with(['defaultBio', 'movies'])

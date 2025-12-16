@@ -11,10 +11,10 @@ class MovieRepository
     {
         return Movie::query()
             ->when($query, function ($builder) use ($query) {
-                $builder->where('title', 'ILIKE', "%$query%")
-                    ->orWhere('director', 'ILIKE', "%$query%")
+                $builder->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"])
+                    ->orWhereRaw('LOWER(director) LIKE LOWER(?)', ["%$query%"])
                     ->orWhereHas('genres', function ($qg) use ($query) {
-                        $qg->where('name', 'ILIKE', "%$query%");
+                        $qg->whereRaw('LOWER(name) LIKE LOWER(?)', ["%$query%"]);
                     });
             })
             ->with(['defaultDescription', 'genres', 'people'])

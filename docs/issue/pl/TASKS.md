@@ -359,20 +359,55 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-022` - Endpoint listy osób (List People)
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-14 14:30:00
+- **Czas zakończenia:** 2025-12-14 15:15:00
+- **Czas realizacji:** 45 minut
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Dodanie endpointu `GET /api/v1/people` zwracającego listę osób w formacie analogicznym do listy filmów.
 - **Szczegóły:**
-  - Ujednolicić parametry filtrowania, sortowania i paginacji z endpointem `List movies`.
-  - Zaimplementować kontroler, resource oraz testy feature dla nowego endpointu.
-  - Zaktualizować dokumentację (OpenAPI, Postman, Insomnia) oraz przykłady odpowiedzi.
+  - ✅ Ujednolicić parametry filtrowania, sortowania i paginacji z endpointem `List movies`.
+  - ✅ Zaimplementować kontroler, resource oraz testy feature dla nowego endpointu.
+  - ✅ Zaktualizować dokumentację (OpenAPI, Postman, Insomnia) oraz przykłady odpowiedzi.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Realizacja szczegóły:**
+  - Endpoint `/api/v1/people` już istniał, dodano testy feature
+  - Naprawiono kompatybilność z SQLite (LIKE zamiast ILIKE dla testów)
+  - Dodano testy: `test_list_people_returns_ok`, `test_list_people_with_search_query`
+  - Ujednolicono parametry z endpointem movies (oba używają `q` do wyszukiwania)
+  - Dokumentacja OpenAPI już była zaktualizowana
+  - Wszystkie testy przechodzą: 266 passed
+---
+
+#### `TASK-023` - Naprawa niespójnego wyszukiwania (case-insensitive) i dodanie testu wyszukiwania dla movies
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 1-2 godziny
+- **Czas rozpoczęcia:** 2025-12-16 15:45:00
+- **Czas zakończenia:** 2025-12-16 16:00:00
+- **Czas realizacji:** 15 minut
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Naprawa niespójnego zachowania wyszukiwania między SQLite (testy) a PostgreSQL (produkcja) oraz dodanie brakującego testu wyszukiwania dla endpointu movies.
+- **Szczegóły:**
+  - ✅ Zastąpiono `ILIKE`/`LIKE` przez `LOWER() LIKE LOWER()` w `MovieRepository::searchMovies()` i `PersonRepository::searchPeople()`
+  - ✅ Zapewniono spójne case-insensitive wyszukiwanie w obu bazach danych (SQLite i PostgreSQL)
+  - ✅ Dodano test `test_list_movies_with_search_query()` w `MoviesApiTest`
+  - ✅ Dodano test `test_list_movies_search_is_case_insensitive()` do weryfikacji case-insensitive wyszukiwania
+  - ✅ Wszystkie testy przechodzą: 268 passed
+- **Zależności:** TASK-022
+- **Utworzone:** 2025-12-16
+- **Realizacja szczegóły:**
+  - Zastąpiono `ILIKE`/`LIKE` przez `LOWER() LIKE LOWER()` w obu repozytoriach
+  - Usunięto logikę wykrywania bazy danych (nie jest już potrzebna)
+  - Dodano 2 nowe testy dla movies endpoint
+  - Wszystkie testy przechodzą: 268 passed (2 nowe testy)
+- **Uwagi:**
+  - `LOWER() LIKE LOWER()` zapewnia spójne case-insensitive wyszukiwanie w obu bazach danych
+  - Rozwiązanie jest bardziej niezawodne i czytelne niż poprzednie
+
 ---
 
 #### `TASK-024` - Wdrożenie planu baseline locking z dokumentu AI_BASELINE_LOCKING_PLAN.md

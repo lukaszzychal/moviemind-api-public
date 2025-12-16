@@ -21,6 +21,36 @@ class PeopleApiTest extends TestCase
         Cache::flush();
     }
 
+    public function test_list_people_returns_ok(): void
+    {
+        $response = $this->getJson('/api/v1/people');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'name', 'slug', 'bios_count',
+                    ],
+                ],
+            ]);
+
+        $this->assertIsInt($response->json('data.0.bios_count'));
+    }
+
+    public function test_list_people_with_search_query(): void
+    {
+        $response = $this->getJson('/api/v1/people?q=Christopher');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'name', 'slug', 'bios_count',
+                    ],
+                ],
+            ]);
+    }
+
     public function test_show_person_returns_payload(): void
     {
         $movies = $this->getJson('/api/v1/movies');
