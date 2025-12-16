@@ -260,25 +260,130 @@ Jobs z `high` queue są przetwarzane pierwsze.
 
 ## 🔐 **Security**
 
-### **Gate Authorization:**
+### **Basic Authentication (HTTP Basic Auth):**
 
-**`app/Providers/HorizonServiceProvider.php`:**
+Horizon używa **HTTP Basic Authentication** do zabezpieczenia panelu administracyjnego w produkcji.
+
+**Jak to działa:**
+1. W środowisku lokalnym/staging: **Bypass** - dostęp bez autoryzacji
+2. W produkcji: **Wymagane Basic Auth** - username (email) + password
+
+**Middleware:** `app/Http/Middleware/HorizonBasicAuth.php`
 ```php
-protected function gate(): void
+public function handle(Request $request, Closure $next): Response
 {
-    Gate::define('viewHorizon', function ($user = null) {
-        // Local: dostęp dla wszystkich
-        if (app()->environment('local')) {
-            return true;
-        }
-        
-        // Production: tylko autoryzowani użytkownicy
-        return in_array(optional($user)->email, [
-            'admin@example.com',
-        ]);
-    });
+    $currentEnv = config('app.env');
+    $bypassEnvironments = config('horizon.auth.bypass_environments', []);
+
+    // Bypass w lokalnym/staging
+    if (in_array($currentEnv, $bypassEnvironments, true)) {
+        return $next($request);
+    }
+
+    // Produkcja wymaga Basic Auth
+    $username = $request->getUser();  // Email z HORIZON_ALLOWED_EMAILS
+    $password = $request->getPassword();  // HORIZON_BASIC_AUTH_PASSWORD
+
+    // Sprawdź czy email jest autoryzowany i hasło jest poprawne
+    // ...
 }
 ```
+
+**Konfiguracja w `config/horizon.php`:**
+```php
+'middleware' => ['web', 'horizon.basic'],  // Basic Auth middleware
+
+'auth' => [
+    'bypass_environments' => explode(',', env('HORIZON_AUTH_BYPASS_ENVS', 'local,staging')),
+    'allowed_emails' => array_filter(array_map('trim', explode(',', env('HORIZON_ALLOWED_EMAILS', '')))),
+    'basic_auth_password' => env('HORIZON_BASIC_AUTH_PASSWORD'),
+],
+```
+
+### **Environment Configuration:**
+
+#### **Local Development:**
+```env
+APP_ENV=local
+HORIZON_AUTH_BYPASS_ENVS=local,staging
+HORIZON_ALLOWED_EMAILS=
+HORIZON_BASIC_AUTH_PASSWORD=
+```
+- ✅ **Bypass enabled** - dostęp dla wszystkich w środowisku lokalnym
+- ✅ **No authentication required** - Basic Auth jest pomijany
+
+#### **Staging:**
+```env
+APP_ENV=staging
+HORIZON_AUTH_BYPASS_ENVS=local,staging
+HORIZON_ALLOWED_EMAILS=
+HORIZON_BASIC_AUTH_PASSWORD=
+```
+- ✅ **Bypass enabled** - dostęp dla wszystkich w środowisku staging
+- ✅ **No authentication required** - Basic Auth jest pomijany
+
+#### **Production:**
+```env
+APP_ENV=production
+HORIZON_AUTH_BYPASS_ENVS=
+HORIZON_ALLOWED_EMAILS=admin@example.com,ops@example.com
+HORIZON_BASIC_AUTH_PASSWORD=super-secure-password-here
+```
+- ❌ **Bypass disabled** - **WYMAGANE** - produkcja NIGDY nie powinna mieć bypass
+- ✅ **Authorized emails required** - **WYMAGANE** - muszą być ustawione autoryzowane adresy e-mail
+- ✅ **Basic Auth password required** - **WYMAGANE** - silne hasło (min. 32 znaki)
+- 🔒 **Security safeguards:**
+  - Basic Auth wymaga poprawnego emaila (z `HORIZON_ALLOWED_EMAILS`) i hasła
+  - Jeśli `HORIZON_ALLOWED_EMAILS` jest puste w produkcji, dostęp zostanie zablokowany
+  - Jeśli `HORIZON_BASIC_AUTH_PASSWORD` jest puste w produkcji, dostęp zostanie zablokowany
+
+### **Jak używać Basic Auth w przeglądarce:**
+
+1. **Otwórz panel Horizon:** `https://api.example.com/horizon`
+2. **Przeglądarka wyświetli dialog logowania:**
+   - **Username:** Email z `HORIZON_ALLOWED_EMAILS` (np. `admin@example.com`)
+   - **Password:** Wartość z `HORIZON_BASIC_AUTH_PASSWORD`
+3. **Po zalogowaniu:** Panel Horizon się otworzy
+
+**Uwaga:** W środowisku lokalnym/staging dialog logowania się nie pojawi (bypass enabled).
+
+### **Security Best Practices:**
+
+1. **✅ DO:**
+   - Ustaw `HORIZON_AUTH_BYPASS_ENVS=` (puste) w produkcji
+   - Ustaw `HORIZON_ALLOWED_EMAILS` z listą autoryzowanych adresów e-mail w produkcji
+   - Ustaw `HORIZON_BASIC_AUTH_PASSWORD` z silnym hasłem (min. 32 znaki) w produkcji
+   - Używaj tylko zaufanych adresów e-mail dla autoryzacji
+   - Regularnie przeglądaj listę autoryzowanych adresów e-mail
+   - Rotuj hasło Basic Auth regularnie (co 3-6 miesięcy)
+   - Używaj HTTPS w produkcji (Basic Auth bez HTTPS jest niebezpieczne!)
+
+2. **❌ DON'T:**
+   - NIE dodawaj `production` do `HORIZON_AUTH_BYPASS_ENVS`
+   - NIE zostawiaj `HORIZON_ALLOWED_EMAILS` pustego w produkcji
+   - NIE zostawiaj `HORIZON_BASIC_AUTH_PASSWORD` pustego w produkcji
+   - NIE używaj słabych haseł (min. 32 znaki, losowe)
+   - NIE używaj publicznych adresów e-mail dla autoryzacji
+   - NIE udostępniaj panelu Horizon publicznie bez autoryzacji
+   - NIE używaj Basic Auth bez HTTPS w produkcji
+
+### **Testing Authorization:**
+
+Testy autoryzacji znajdują się w:
+- **`tests/Feature/HorizonAuthorizationTest.php`** - Testy Gate authorization (11 testów)
+- **`tests/Feature/HorizonBasicAuthTest.php`** - Testy Basic Auth middleware (10 testów)
+
+**Testy Basic Auth:**
+- ✅ Test bypass w środowisku lokalnym
+- ✅ Test bypass w środowisku staging
+- ✅ Test wymagania credentials w produkcji
+- ✅ Test dostępu z poprawnymi credentials
+- ✅ Test odmowy dostępu z niepoprawnym emailem
+- ✅ Test odmowy dostępu z niepoprawnym hasłem
+- ✅ Test case-insensitive porównania emaili
+- ✅ Test obsługi wielu autoryzowanych emaili
+- ✅ Test odmowy dostępu gdy brak hasła w konfiguracji
+- ✅ Test odmowy dostępu gdy brak emaili w konfiguracji
 
 ---
 

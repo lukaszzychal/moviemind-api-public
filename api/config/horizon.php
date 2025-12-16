@@ -83,7 +83,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', 'horizon.basic'],
 
     /*
     |--------------------------------------------------------------------------
@@ -255,5 +255,6 @@ return [
     'auth' => [
         'bypass_environments' => explode(',', env('HORIZON_AUTH_BYPASS_ENVS', 'local,staging')),
         'allowed_emails' => array_filter(array_map('trim', explode(',', env('HORIZON_ALLOWED_EMAILS', '')))),
+        'basic_auth_password' => env('HORIZON_BASIC_AUTH_PASSWORD'),
     ],
 ];

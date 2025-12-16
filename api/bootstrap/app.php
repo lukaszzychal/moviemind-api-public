@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'horizon.basic' => \App\Http\Middleware\HorizonBasicAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -86,7 +86,7 @@ Każde zadanie ma następującą strukturę:
 6. **`TASK-013`** - Konfiguracja dostępu do Horizon
    - **Dlaczego:** Bezpieczeństwo - zabezpiecza panel Horizon w produkcji
    - **Czas:** 1-2h
-   - **Status:** ⏳ PENDING
+   - **Status:** ✅ COMPLETED
 
 #### Faza 2: Usprawnienia funkcjonalne (🟡 Średni Priorytet)
 
@@ -183,7 +183,7 @@ Każde zadanie ma następującą strukturę:
 
 #### Minimalny zakres POC:
 
-1. **`TASK-013`** - Konfiguracja dostępu do Horizon (bezpieczeństwo)
+1. **`TASK-013`** - Konfiguracja dostępu do Horizon (bezpieczeństwo) ✅
 2. **`TASK-022`** - Endpoint listy osób (podstawowa funkcjonalność)
 3. **`TASK-025`** - Standaryzacja flag (uproszczenie zarządzania)
 
@@ -198,7 +198,7 @@ Każde zadanie ma następującą strukturę:
 - `TASK-038` (Faza 2) - Weryfikacja zgodności danych
 
 #### 🟡 Średni Priorytet (Ważne)
-- `TASK-013` - Konfiguracja Horizon
+- ~~`TASK-013` - Konfiguracja Horizon~~ ✅ COMPLETED
 - `TASK-022` - Lista osób
 - `TASK-024` - Baseline locking
 - `TASK-025` - Standaryzacja flag
@@ -297,20 +297,29 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-013` - Konfiguracja dostępu do Horizon
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-14
+- **Czas zakończenia:** 2025-12-14
+- **Czas realizacji:** ~01h30m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Uporządkowanie reguł dostępu do panelu Horizon poza środowiskiem lokalnym.
 - **Szczegóły:**
-  - Przeniesienie listy autoryzowanych adresów e-mail do konfiguracji/ENV.
-  - Dodanie testów/reguł zapobiegających przypadkowemu otwarciu panelu w produkcji.
-  - Aktualizacja dokumentacji operacyjnej.
+  - ✅ Przeniesienie listy autoryzowanych adresów e-mail do konfiguracji/ENV.
+  - ✅ Dodanie testów/reguł zapobiegających przypadkowemu otwarciu panelu w produkcji.
+  - ✅ Aktualizacja dokumentacji operacyjnej.
+- **Zakres wykonanych prac:**
+  - ✅ Zaktualizowano zmienne środowiskowe w `env/local.env.example`, `env/staging.env.example`, `env/production.env.example` z komentarzami bezpieczeństwa
+  - ✅ Utworzono testy autoryzacji Horizon (`tests/Feature/HorizonAuthorizationTest.php`) - 11 testów, wszystkie przechodzą
+  - ✅ Dodano zabezpieczenia bezpieczeństwa w `HorizonServiceProvider`:
+    - Wymuszenie autoryzacji w produkcji nawet jeśli przypadkowo dodano `production` do `bypass_environments`
+    - Wymaganie `HORIZON_ALLOWED_EMAILS` w produkcji
+    - Logowanie ostrzeżeń i błędów dla nieprawidłowej konfiguracji
+  - ✅ Zaktualizowano dokumentację (`docs/knowledge/tutorials/HORIZON_SETUP.md`) o szczegóły autoryzacji i best practices
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-08
+- **Ukończone:** 2025-12-14
 
 ---
 
