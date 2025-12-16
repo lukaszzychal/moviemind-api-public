@@ -100,7 +100,7 @@ Każde zadanie ma następującą strukturę:
 4. **`TASK-022`** - Endpoint listy osób (List People)
    - **Dlaczego:** Parzystość API - uzupełnia podstawowe endpointy
    - **Czas:** 2-3h
-   - **Status:** ⏳ PENDING
+   - **Status:** ✅ COMPLETED (2025-12-14)
 
 5. **`TASK-024`** - Wdrożenie planu baseline locking
    - **Dlaczego:** Stabilizuje mechanizm generowania, zapobiega race conditions
@@ -116,7 +116,7 @@ Każde zadanie ma następującą strukturę:
 7. **`TASK-026`** - Zbadanie pól zaufania w odpowiedziach kolejkowanych generacji
    - **Dlaczego:** Poprawa UX - użytkownik widzi poziom pewności generacji
    - **Czas:** 1-2h
-   - **Status:** ⏳ PENDING
+   - **Status:** ✅ COMPLETED (2025-12-16)
 
 #### Faza 3: Infrastruktura i CI/CD (🟡 Średni Priorytet)
 
@@ -208,10 +208,10 @@ Każde zadanie ma następującą strukturę:
 
 #### 🟡 Średni Priorytet (Ważne)
 - ~~`TASK-013` - Konfiguracja Horizon~~ ✅ COMPLETED
-- `TASK-022` - Lista osób
+- ~~`TASK-022` - Lista osób~~ ✅ COMPLETED
 - ~~`TASK-024` - Baseline locking~~ ✅ COMPLETED
 - ~~`TASK-025` - Standaryzacja flag~~ ✅ COMPLETED
-- `TASK-026` - Pola zaufania
+- `TASK-026` - Pola zaufania ✅
 - `TASK-011` - CI dla staging
 - `TASK-015` - Testy Newman
 - `TASK-019` - Docker Distroless
@@ -469,13 +469,13 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-026` - Zbadanie pól zaufania w odpowiedziach kolejkowanych generacji
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED (2025-12-16)
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-16
+- **Czas zakończenia:** 2025-12-16
+- **Czas realizacji:** ~1h
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Weryfikacja pól `confidence` oraz `confidence_level` zwracanych, gdy endpointy show automatycznie uruchamiają generowanie dla brakujących encji.
 - **Szczegóły:**
   - Odtworzyć odpowiedź dla `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` w scenariuszu braku encji i kolejki joba.
@@ -483,6 +483,27 @@ Każde zadanie ma następującą strukturę:
   - Dodać testy regresyjne (feature/unit) zabezpieczające poprawione zachowanie oraz zaktualizować dokumentację API, jeśli kontrakt ulegnie zmianie.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Zakres wykonanych prac:**
+  - **Problem:** Kontrolery `MovieController::show()` i `PersonController::show()` nie przekazywały wartości `confidence` do akcji kolejkowania, co powodowało zwracanie `confidence = null` i `confidence_level = "unknown"` w odpowiedziach 202.
+  - **Rozwiązanie:**
+    - Naprawiono `MovieController::show()` - dodano przekazywanie `$validation['confidence']` do `queueMovieGenerationAction->handle()` w dwóch miejscach (gdy TMDb verification jest wyłączone i gdy jest włączone).
+    - Naprawiono `PersonController::show()` - dodano przekazywanie `$validation['confidence']` do `queuePersonGenerationAction->handle()` w dwóch miejscach.
+    - Naprawiono `MovieController::handleDisambiguationSelection()` - dodano ponowną walidację slug i przekazywanie `confidence`.
+  - **Testy:**
+    - Utworzono nowy plik testowy `ConfidenceFieldsTest.php` z 6 testami sprawdzającymi:
+      - Obecność pól `confidence` i `confidence_level` w odpowiedziach 202
+      - Poprawność typów danych (float dla confidence, string dla confidence_level)
+      - Wartości nie są null/unknown dla poprawnych slugów
+      - Zgodność confidence z walidacją slug
+    - Zaktualizowano istniejące testy w `MissingEntityGenerationTest.php` - dodano asercje sprawdzające pola confidence.
+  - **Dokumentacja:**
+    - Zaktualizowano schemat OpenAPI `AcceptedGeneration` - dodano pola `confidence`, `confidence_level`, `locale` i `context_tag` z opisami.
+- **Powiązane dokumenty:**
+  - `api/app/Http/Controllers/Api/MovieController.php`
+  - `api/app/Http/Controllers/Api/PersonController.php`
+  - `api/tests/Feature/ConfidenceFieldsTest.php`
+  - `api/tests/Feature/MissingEntityGenerationTest.php`
+  - `api/public/docs/openapi.yaml`
 
 ---
 

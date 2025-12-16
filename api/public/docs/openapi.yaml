@@ -504,6 +504,24 @@ components:
           enum: [PENDING]
         slug:
           type: string
+        confidence:
+          type: number
+          format: float
+          description: Confidence score (0.0-1.0) indicating how likely the slug represents a valid entity
+          nullable: true
+        confidence_level:
+          type: string
+          enum: [high, medium, low, very_low, unknown]
+          description: Human-readable confidence level based on slug validation
+          nullable: true
+        locale:
+          type: string
+          description: Locale for the generation (e.g., en-US, pl-PL)
+          nullable: true
+        context_tag:
+          type: string
+          description: Context tag for the generation (e.g., modern, critical, humorous)
+          nullable: true
     GenerateRequest:
       type: object
       required: [entity_type, entity_id]

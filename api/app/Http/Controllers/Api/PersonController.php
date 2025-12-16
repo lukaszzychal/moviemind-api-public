@@ -109,6 +109,7 @@ class PersonController extends Controller
             if (! Feature::active('tmdb_verification')) {
                 $result = $this->queuePersonGenerationAction->handle(
                     $slug,
+                    confidence: $validation['confidence'],
                     tmdbData: null
                 );
 
@@ -120,6 +121,7 @@ class PersonController extends Controller
 
         $result = $this->queuePersonGenerationAction->handle(
             $slug,
+            confidence: $validation['confidence'],
             tmdbData: $tmdbData
         );
 
