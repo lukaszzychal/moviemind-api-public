@@ -291,17 +291,35 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-011` - Stworzenie CI dla staging (GHCR)
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-16
+- **Czas zakończenia:** 2025-12-16
+- **Czas realizacji:** ~01h00m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Przygotowanie workflow GitHub Actions budującego obraz Docker dla środowiska staging i publikującego go do GitHub Container Registry.
 - **Szczegóły:** Skonfigurować pipeline (trigger np. na push/tag `staging`), dodać logowanie do GHCR, poprawne tagowanie obrazu oraz wymagane sekrety.
+- **Zakres wykonanych prac:**
+  - ✅ Utworzono workflow `.github/workflows/staging.yml` z triggerami:
+    - Push do brancha `staging`
+    - Tagi `staging*`
+    - Manual trigger (`workflow_dispatch`) z opcją force rebuild
+  - ✅ Skonfigurowano logowanie do GHCR używając `GITHUB_TOKEN` (automatyczny token)
+  - ✅ Zaimplementowano tagowanie obrazów:
+    - `staging` - najnowszy obraz z brancha staging
+    - `staging-<short-sha>` - obraz z konkretnym commitem (krótki hash)
+    - `staging-<full-sha>` - obraz z konkretnym commitem (pełny hash)
+  - ✅ Użyto Docker Buildx z cache (GitHub Actions cache) dla szybszych buildów
+  - ✅ Zaimplementowano build stage `production` (używany dla staging i production)
+  - ✅ Dodano output summary z informacjami o opublikowanych obrazach
+  - ✅ Zaktualizowano dokumentację GHCR o workflow staging
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-07
+- **Ukończone:** 2025-12-16
+- **Powiązane dokumenty:**
+  - [`.github/workflows/staging.yml`](../../../.github/workflows/staging.yml)
+  - [`docs/knowledge/reference/GITHUB_CONTAINER_REGISTRY.md`](../../knowledge/reference/GITHUB_CONTAINER_REGISTRY.md)
 
 ---
 
@@ -469,20 +487,26 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-026` - Zbadanie pól zaufania w odpowiedziach kolejkowanych generacji
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 1-2 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-14
+- **Czas zakończenia:** 2025-12-14
+- **Czas realizacji:** ~2 godziny
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Weryfikacja pól `confidence` oraz `confidence_level` zwracanych, gdy endpointy show automatycznie uruchamiają generowanie dla brakujących encji.
 - **Szczegóły:**
-  - Odtworzyć odpowiedź dla `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` w scenariuszu braku encji i kolejki joba.
-  - Zidentyfikować przyczynę wartości `confidence = null` i `confidence_level = unknown` w payloadzie oraz określić oczekiwane wartości.
-  - Dodać testy regresyjne (feature/unit) zabezpieczające poprawione zachowanie oraz zaktualizować dokumentację API, jeśli kontrakt ulegnie zmianie.
+  - ✅ Odtworzyć odpowiedź dla `GET /api/v1/movies/{slug}` oraz `GET /api/v1/people/{slug}` w scenariuszu braku encji i kolejki joba.
+  - ✅ Zidentyfikować przyczynę wartości `confidence = null` i `confidence_level = unknown` w payloadzie oraz określić oczekiwane wartości.
+  - ✅ Dodać testy regresyjne (feature/unit) zabezpieczające poprawione zachowanie oraz zaktualizować dokumentację API, jeśli kontrakt ulegnie zmianie.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Realizacja szczegóły:**
+  - Naprawiono pola `confidence` i `confidence_level` w odpowiedziach 202 Accepted
+  - Dodano metodę `confidenceLabel()` w `QueueMovieGenerationAction` i `QueuePersonGenerationAction`
+  - Zaimplementowano logikę konwersji confidence na confidence_level (high/medium/low/very_low/unknown)
+  - Dodano testy feature: `ConfidenceFieldsTest.php` oraz rozszerzono `MissingEntityGenerationTest.php`
+  - Zaktualizowano dokumentację OpenAPI z polami confidence
 
 ---
 
