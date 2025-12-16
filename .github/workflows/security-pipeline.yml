@@ -20,7 +20,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Run Hadolint
         uses: hadolint/hadolint-action@v3.1.0
@@ -51,7 +51,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Check if package.json exists
         id: check-package
@@ -99,7 +99,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Check Security Headers Configuration
         run: |
@@ -137,7 +137,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -184,7 +184,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Download artifacts from other workflows
         run: |
