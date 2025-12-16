@@ -38,6 +38,44 @@ class MoviesApiTest extends TestCase
         $this->assertIsInt($response->json('data.0.descriptions_count'));
     }
 
+    public function test_list_movies_with_search_query(): void
+    {
+        $response = $this->getJson('/api/v1/movies?q=Matrix');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'title', 'release_year', 'director', 'descriptions_count',
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_list_movies_search_is_case_insensitive(): void
+    {
+        // Test that search works regardless of case
+        $response1 = $this->getJson('/api/v1/movies?q=matrix');
+        $response2 = $this->getJson('/api/v1/movies?q=MATRIX');
+        $response3 = $this->getJson('/api/v1/movies?q=Matrix');
+
+        $response1->assertOk();
+        $response2->assertOk();
+        $response3->assertOk();
+
+        // All should return the same results (case-insensitive)
+        $this->assertSame(
+            count($response1->json('data')),
+            count($response2->json('data')),
+            'Search should be case-insensitive'
+        );
+        $this->assertSame(
+            count($response2->json('data')),
+            count($response3->json('data')),
+            'Search should be case-insensitive'
+        );
+    }
+
     public function test_show_movie_returns_ok(): void
     {
         $index = $this->getJson('/api/v1/movies');
