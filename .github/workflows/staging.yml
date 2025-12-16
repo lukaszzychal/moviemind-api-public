@@ -63,9 +63,6 @@ jobs:
           build-args: |
             BUILDKIT_INLINE_CACHE=1
 
-      - name: Image digest
-        run: echo "Image pushed with digest: ${{ steps.meta.outputs.digest }}"
-
       - name: Output image tags
         run: |
           echo "## 🐳 Staging Docker Image Published" >> $GITHUB_STEP_SUMMARY
