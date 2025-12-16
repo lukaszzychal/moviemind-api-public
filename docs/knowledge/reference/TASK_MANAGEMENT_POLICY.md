@@ -1,0 +1,36 @@
+# Task Management System
+
+> **Source:** Migrated from `.cursor/rules/old/task-management.mdc`  
+> **Category:** reference
+
+## ⭐ ALWAYS START FROM `docs/issue/TASKS.md`
+
+Before starting work:
+
+1. Read `docs/issue/TASKS.md` - find a task with status `⏳ PENDING`
+2. Change status to `🔄 IN_PROGRESS`
+3. Read task details (if there's a link)
+4. Execute the task according to the description
+5. After completion: change status to `✅ COMPLETED`, move to "Completed" section
+
+## Task system structure
+
+- **`docs/issue/TASKS.md`** - main task backlog (always start from this)
+- **`docs/issue/README.md`** - system usage instructions
+- **`docs/issue/TASK_TEMPLATE.md`** - template for new tasks
+- **`docs/issue/*.md`** - detailed task descriptions (if available)
+
+## Task priorities
+
+- 🔴 **High** - critical, execute as soon as possible
+- 🟡 **Medium** - important, but not critical
+- 🟢 **Low** - can be done later (often roadmap items)
+
+## Prioritization function (for AI)
+
+1. Always analyze all `⏳ PENDING` tasks, collecting: priority, dependencies, blocking risks, and required resources.
+2. First plan 🔴 tasks (stability, security), then 🟡, finally 🟢.
+3. Promote tasks that unblock others or are thematically related (e.g. CI, security) – minimize context switching.
+4. Report result as an ordered list with a brief justification "why" for each point.
+5. When user asks for order, apply the above steps and present recommendation as a list.
+

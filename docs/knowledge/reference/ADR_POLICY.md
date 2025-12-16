@@ -1,0 +1,146 @@
+# Architecture Decision Records (ADR)
+
+> **Source:** Migrated from `.cursor/rules/old/architecture-decisions.mdc`  
+> **Category:** reference
+
+## 📋 When to create a new ADR?
+
+**ALWAYS** create a new ADR in `docs/adr/` when:
+1. **Making an important architectural decision** - technology choice, framework, library
+2. **Changing approach** - strategy change, pattern, architecture
+3. **Resolving conflict** - choosing between alternative solutions
+4. **Documenting trade-off** - compromises and consequences of decisions
+5. **Introducing new standard** - conventions, practices, principles
+
+## 📁 Location
+
+All ADRs are located in: `docs/adr/README.md`
+
+## 📝 ADR Format
+
+Each ADR should contain:
+
+```markdown
+## ADR-XXX: Decision Title
+
+### 🇵🇱
+
+**Status:** ✅ Accepted / ⏳ Proposed / ❌ Rejected  
+**Date:** YYYY-MM-DD  
+**Context:** Why the decision was made
+
+### 🎯 Decision
+
+Clear statement of the decision.
+
+### 💡 Rationale
+
+Detailed rationale:
+- Advantages of chosen solution
+- Disadvantages of rejected alternatives
+- Consequences of decision
+
+### 🔄 Consequences
+
+- **Positive:** Benefits of decision
+- **Negative:** Drawbacks and limitations
+
+### 📊 Alternatives considered:
+
+1. **Alternative 1** - why rejected
+2. **Alternative 2** - why rejected
+3. **Chosen solution** - chosen ✅
+
+---
+
+## ADR-XXX: Decision Title
+
+### 🇬🇧
+
+**Status:** ✅ Accepted / ⏳ Proposed / ❌ Rejected  
+**Date:** YYYY-MM-DD  
+**Context:** Why the decision was made
+
+### 🎯 Decision
+
+Clear statement of the decision.
+
+### 💡 Rationale
+
+Detailed rationale:
+- Advantages of chosen solution
+- Disadvantages of rejected alternatives
+- Consequences of decision
+
+### 🔄 Consequences
+
+- **Positive:** Benefits of decision
+- **Negative:** Drawbacks and limitations
+
+### 📊 Alternatives considered:
+
+1. **Alternative 1** - why rejected
+2. **Alternative 2** - why rejected
+3. **Chosen solution** - chosen ✅
+```
+
+## 🔢 ADR Numbering
+
+- **ADR-001, ADR-002, ...** - sequential numbers
+- Check the last number in `docs/adr/README.md`
+- Use the next available number
+
+## 🔄 ADR Creation Workflow
+
+1. **When making a decision:**
+   - If decision is important → create ADR
+   - If choosing between alternatives → create ADR
+   - If changing approach → create ADR
+
+2. **Format:**
+   - Add ADR to `docs/adr/README.md`
+   - Add link in table of contents (PL and EN)
+   - Use format from examples above
+
+3. **After creation:**
+   - Update table of contents in README.md
+   - Add creation date
+   - Set appropriate status
+
+## ⚠️ Important Rules
+
+1. **Don't skip ADRs** - important decisions must be documented
+2. **Be honest** - document both advantages and disadvantages
+3. **Document context** - explain why the decision was made
+4. **Update status** - change status if decision was changed
+5. **Bilingual** - always add PL and EN versions
+
+## 📌 Examples When to Create ADR
+
+### ✅ Create ADR when:
+- Choosing framework (Laravel vs Symfony) → ADR-001 ✅
+- Choosing architecture (monolith vs microservices) → ADR-002 ✅
+- Choosing strategy (dual-repo) → ADR-003 ✅
+- Choosing approach (generation-first vs translate) → ADR-004 ✅
+- Choosing Git workflow (Trunk Flow vs GitFlow) → ADR-005 ✅
+- Choosing tool (Feature Flags) → ADR-006 ✅
+- Choosing database (PostgreSQL vs MySQL)
+- Choosing cache (Redis vs Memcached)
+- Choosing queue system (Horizon vs RabbitMQ)
+
+### ❌ Don't create ADR when:
+- Decision is obvious and has no alternatives
+- Decision is temporary (experiment)
+- Decision concerns only one small task
+- Decision has no impact on architecture
+
+## 🔗 Related Documents
+
+- [ADR README](../../adr/README.md) - All ADRs
+- [Knowledge Base](../) - Technical documents
+- [Tasks](../../issue/) - Task-related documents
+
+---
+
+**Remember:** ADRs are the project's decision history. Document important decisions systematically!
+
