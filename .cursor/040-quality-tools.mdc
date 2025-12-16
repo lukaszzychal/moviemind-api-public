@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# Quality tools before commit (short)
+
+When PHP code changes:
+- run Pint
+- run PHPStan
+- run php artisan test
+
+When Markdown changes:
+- run markdownlint fix/check (project config)
+
+When security-sensitive changes:
+- run gitleaks
+- run composer audit
+
+Do not repeat long command blocks in every response. Mention only what is relevant to the current change.
