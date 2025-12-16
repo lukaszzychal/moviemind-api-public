@@ -4,10 +4,9 @@ on:
   # Manual trigger for comprehensive code quality audits
   workflow_dispatch:
   # Quarterly comprehensive audit (first day of quarter at 2 AM UTC)
-  schedule:
-    - cron: '0 2 1 1,4,7,10 *'
   # Semi-annually detailed audit (first day of January and July at 3 AM UTC)
   schedule:
+    - cron: '0 2 1 1,4,7,10 *'
     - cron: '0 3 1 1,7 *'
 
 permissions:

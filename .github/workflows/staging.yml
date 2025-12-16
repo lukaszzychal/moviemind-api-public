@@ -46,11 +46,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=tag
+            type=ref,event=branch,prefix=staging-
+            type=ref,event=tag,prefix=staging-
             type=sha,prefix=staging-,format=short
             type=sha,prefix=staging-
-            type=raw,value=staging,enable={{is_default_branch}}
+            type=raw,value=staging
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
