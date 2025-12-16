@@ -9,3 +9,9 @@ alwaysApply: true
 - Use Unit tests for pure business logic.
 - Mock only external boundaries (e.g., OpenAI, TMDb). Avoid mocking internal repositories/services.
 - Prefer custom fakes/test doubles for interfaces.
+
+## Feature Flags in Tests
+
+- **Developer flags (`category: 'experiments'`):** Test by manually enabling the flag in dev/staging. Do NOT enable developer flags in production.
+- **Product flags:** Test both enabled/disabled states when the flag affects behavior.
+- **After feature deployment:** Remove developer flags and their conditional code from tests.

@@ -51,12 +51,51 @@ Pełna lista i opisy znajdują się w `config/pennant.php`.
 - [TASK_018_FEATURE_FLAGS.md](../../tasks/TASK_018_FEATURE_FLAGS.md)
 - [docs/openapi.yaml](../../openapi.yaml) – zaktualizowane schematy odpowiedzi
 
+## 🎛️ Typy flag
+
+### Flagi produktowe (Product Flags)
+
+**Charakterystyka:**
+- Długoterminowe włączanie/wyłączanie funkcji w produkcji
+- Kategorie: `core_ai`, `moderation`, `public_api`, `billing`, `i18n`, `performance`, `analytics`, `recommendations`, `operations`
+- Mogą być `togglable: true` (zarządzane przez API admina)
+- Domyślna wartość zależy od funkcji
+
+**Przykłady:**
+- `ai_description_generation` - core_ai, default: true, togglable: true
+- `tmdb_verification` - moderation, default: true, togglable: true
+- `public_jobs_polling` - public_api, default: true, togglable: true
+
+### Flagi developerskie (Developer Flags)
+
+**Charakterystyka:**
+- Tymczasowe flagi używane podczas developmentu
+- Kategoria: `experiments`
+- Zawsze `default: false` (domyślnie wyłączone)
+- Zawsze `togglable: false` (nie można toggleować przez API - bezpieczeństwo)
+- Opis zawiera słowa: "Experimental", "WIP", "Work in progress"
+
+**Przykłady:**
+- `generate_v2_pipeline` - experiments, default: false, togglable: false
+- `description_style_packs` - experiments, default: false, togglable: false
+
+**Lifecycle:**
+1. **Tworzenie:** Twórz flagę wraz z rozpoczęciem pracy nad funkcją
+2. **Testowanie:** Testuj ręcznie włączając flagę w dev/staging (NIE w produkcji)
+3. **Usuwanie:** **Obowiązkowo usuń flagę po wdrożeniu funkcji** - usuń z `config/pennant.php`, usuń klasę z `app/Features/`, usuń kod warunkowy
+
+**Kiedy używać:**
+- Każda nowa lub ryzykowna funkcja zaburzająca stabilność
+- Funkcje w trakcie developmentu (WIP)
+- Eksperymentalne funkcje testowane przed wdrożeniem
+
 ## 📌 Notatki
 
 - Dodając nową flagę, uzupełnij `config/pennant.php` (opis, kategoria, togglable) oraz rozważ aktualizację dokumentacji API/Postman.
 - Jeżeli flaga ma być modyfikowalna z panelu, ustaw `togglable: true` i dodaj testy pokrywające scenariusz.
+- **Flagi developerskie (`category: 'experiments'`) muszą być usunięte po wdrożeniu funkcji** - nie pozostawiaj ich w kodzie.
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-10
+**Ostatnia aktualizacja:** 2025-12-16
 

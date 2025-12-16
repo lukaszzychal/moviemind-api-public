@@ -104,7 +104,7 @@ Każde zadanie ma następującą strukturę:
 6. **`TASK-025`** - Standaryzacja flag produktowych i developerskich
    - **Dlaczego:** Uporządkowanie zarządzania flagami, wspiera rozwój
    - **Czas:** 1h
-   - **Status:** ⏳ PENDING
+   - **Status:** ✅ COMPLETED
 
 7. **`TASK-026`** - Zbadanie pól zaufania w odpowiedziach kolejkowanych generacji
    - **Dlaczego:** Poprawa UX - użytkownik widzi poziom pewności generacji
@@ -201,7 +201,7 @@ Każde zadanie ma następującą strukturę:
 - ~~`TASK-013` - Konfiguracja Horizon~~ ✅ COMPLETED
 - `TASK-022` - Lista osób
 - `TASK-024` - Baseline locking
-- `TASK-025` - Standaryzacja flag
+- ~~`TASK-025` - Standaryzacja flag~~ ✅ COMPLETED
 - `TASK-026` - Pola zaufania
 - `TASK-011` - CI dla staging
 - `TASK-015` - Testy Newman
@@ -430,19 +430,21 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-025` - Standaryzacja flag produktowych i developerskich
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 1 godzina
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
-- **Opis:** Uzupełnienie `.cursor/rules/coding-standards.mdc` o zasady korzystania z dwóch typów feature flag (produktowe vs developerskie) oraz aktualizacja powiązanej dokumentacji.
+- **Zakończone:** 2025-12-16
+- **Czas rozpoczęcia:** 2025-12-16
+- **Czas zakończenia:** 2025-12-16
+- **Czas realizacji:** 00h30m (auto)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Uzupełnienie `docs/cursor-rules/pl/coding-standards.mdc` o zasady korzystania z dwóch typów feature flag (produktowe vs developerskie) oraz aktualizacja powiązanej dokumentacji.
 - **Szczegóły:**
-  - Zdefiniować w sekcji flag rozróżnienie na flagi produktowe (długoterminowe włączanie/wyłączanie funkcji) i flagi developerskie (tymczasowe, domyślnie wyłączone do czasu zakończenia prac).
-  - Opisać lifecycle flag developerskich: tworzenie wraz z rozpoczęciem funkcji, testowanie po ręcznym włączeniu, obowiązkowe usuwanie po wdrożeniu.
-  - Dodać wskazówki kiedy stosować flagi developerskie (każda nowa lub ryzykowna funkcja zaburzająca stabilność) oraz zasady nazewnictwa i dokumentacji.
-  - Zsynchronizować wiedzę w `docs/knowledge/reference/FEATURE_FLAGS*.md` (jeśli wymaga uzupełnienia) i upewnić się, że instrukcje są spójne PL/EN.
+  - Dodano sekcję "Feature Flags" w `docs/cursor-rules/pl/coding-standards.mdc` z rozróżnieniem na flagi produktowe i developerskie.
+  - Opisano lifecycle flag developerskich: tworzenie, testowanie, obowiązkowe usuwanie po wdrożeniu.
+  - Zaktualizowano `docs/knowledge/reference/FEATURE_FLAGS.md` i `FEATURE_FLAGS.en.md` o typy flag i lifecycle.
+  - Dodano przykłady konfiguracji i zasady nazewnictwa.
+  - Dodano przypomnienia o feature flags w `.cursor/060-testing-policy.mdc` (testowanie) i `.cursor/020-task-protocol.mdc` (cleanup po taskach).
+  - Utworzono regułę `.cursor/015-cursor-rules-cost-optimization.mdc` dla optymalizacji kosztów przy modyfikacji reguł.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
 

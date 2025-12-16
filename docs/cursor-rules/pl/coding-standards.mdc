@@ -228,6 +228,101 @@ Wzorce GRASP pomagają przypisywać odpowiedzialności w projektowaniu obiektowy
 - **Nie optymalizuj przedwcześnie** - najpierw działający kod, potem optymalizacja
 - **Rozważ czytelność** - czytelny kod jest często wystarczająco szybki
 
+## Feature Flags
+
+### Typy flag
+
+W projekcie używamy dwóch typów feature flag:
+
+#### 1. Flagi produktowe (Product Flags)
+
+**Charakterystyka:**
+- Długoterminowe włączanie/wyłączanie funkcji w produkcji
+- Kategorie: `core_ai`, `moderation`, `public_api`, `billing`, `i18n`, `performance`, `analytics`, `recommendations`, `operations`
+- Mogą być `togglable: true` (zarządzane przez API admina)
+- Domyślna wartość zależy od funkcji (często `true` dla core features)
+
+**Przykłady:**
+- `ai_description_generation` - core_ai, default: true, togglable: true
+- `tmdb_verification` - moderation, default: true, togglable: true
+- `public_jobs_polling` - public_api, default: true, togglable: true
+
+**Kiedy używać:**
+- Funkcje które mogą być włączane/wyłączane w produkcji
+- Funkcje wymagające gradual rollout
+- Funkcje które mogą wymagać szybkiego rollbacku
+
+#### 2. Flagi developerskie (Developer Flags)
+
+**Charakterystyka:**
+- Tymczasowe flagi używane podczas developmentu
+- Kategoria: `experiments`
+- Zawsze `default: false` (domyślnie wyłączone)
+- Zawsze `togglable: false` (nie można toggleować przez API - bezpieczeństwo)
+- Opis zawiera słowa: "Experimental", "WIP", "Work in progress"
+
+**Przykłady:**
+- `generate_v2_pipeline` - experiments, default: false, togglable: false
+- `description_style_packs` - experiments, default: false, togglable: false
+
+**Kiedy używać:**
+- Każda nowa lub ryzykowna funkcja zaburzająca stabilność
+- Funkcje w trakcie developmentu (WIP)
+- Eksperymentalne funkcje testowane przed wdrożeniem
+- Funkcje które mogą powodować problemy w produkcji
+
+### Lifecycle flag developerskich
+
+1. **Tworzenie:**
+   - Twórz flagę developerską wraz z rozpoczęciem pracy nad funkcją
+   - Ustaw `category: 'experiments'`, `default: false`, `togglable: false`
+   - Dodaj opis z informacją że to eksperymentalna funkcja
+
+2. **Testowanie:**
+   - Testuj funkcję ręcznie włączając flagę w środowisku dev/staging
+   - NIE włączaj flag developerskich w produkcji
+   - Używaj flag developerskich do izolacji nowych funkcji
+
+3. **Wdrożenie:**
+   - Po wdrożeniu funkcji do produkcji, **obowiązkowo usuń flagę developerską**
+   - Usuń kod związany z flagą (warunki `Feature::active()`)
+   - Usuń definicję flagi z `config/pennant.php`
+   - Usuń klasę flagi z `app/Features/`
+   - Zaktualizuj testy (usuń testy związane z flagą)
+
+### Zasady nazewnictwa
+
+- **Flagi produktowe:** opisowe nazwy funkcji (np. `ai_description_generation`, `tmdb_verification`)
+- **Flagi developerskie:** nazwy z prefiksem eksperymentalnym lub sufiksem `_v2`, `_experimental` (np. `generate_v2_pipeline`)
+
+### Dokumentacja
+
+- Każda flaga musi mieć `description` w `config/pennant.php`
+- Flagi developerskie muszą mieć w opisie informację o tymczasowym charakterze
+- Po usunięciu flagi developerskiej, zaktualizuj dokumentację
+
+### Przykład konfiguracji
+
+```php
+// Flaga produktowa
+'ai_description_generation' => [
+    'class' => ai_description_generation::class,
+    'description' => 'Enables AI-generated movie/series descriptions.',
+    'category' => 'core_ai',
+    'default' => true,
+    'togglable' => true,
+],
+
+// Flaga developerska
+'generate_v2_pipeline' => [
+    'class' => generate_v2_pipeline::class,
+    'description' => 'Experimental v2 generation flow (WIP - remove after deployment).',
+    'category' => 'experiments',
+    'default' => false,
+    'togglable' => false,
+],
+```
+
 ## Standardy kodowania
 
 - **PSR-12** - formatowanie (enforced przez Pint)
