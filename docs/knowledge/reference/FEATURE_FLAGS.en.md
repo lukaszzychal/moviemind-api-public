@@ -51,12 +51,51 @@ Refer to `config/pennant.php` for the full list and descriptions.
 - [TASK_018_FEATURE_FLAGS.en.md](../../tasks/TASK_018_FEATURE_FLAGS.en.md)
 - [docs/openapi.yaml](../../openapi.yaml) – updated response schemas
 
+## 🎛️ Flag Types
+
+### Product Flags
+
+**Characteristics:**
+- Long-term feature toggles for production
+- Categories: `core_ai`, `moderation`, `public_api`, `billing`, `i18n`, `performance`, `analytics`, `recommendations`, `operations`
+- May be `togglable: true` (managed via admin API)
+- Default value depends on feature
+
+**Examples:**
+- `ai_description_generation` - core_ai, default: true, togglable: true
+- `tmdb_verification` - moderation, default: true, togglable: true
+- `public_jobs_polling` - public_api, default: true, togglable: true
+
+### Developer Flags
+
+**Characteristics:**
+- Temporary flags used during development
+- Category: `experiments`
+- Always `default: false` (disabled by default)
+- Always `togglable: false` (cannot be toggled via API - security)
+- Description contains: "Experimental", "WIP", "Work in progress"
+
+**Examples:**
+- `generate_v2_pipeline` - experiments, default: false, togglable: false
+- `description_style_packs` - experiments, default: false, togglable: false
+
+**Lifecycle:**
+1. **Creation:** Create flag when starting work on feature
+2. **Testing:** Test by manually enabling flag in dev/staging (NOT in production)
+3. **Removal:** **Mandatory removal after feature deployment** - remove from `config/pennant.php`, remove class from `app/Features/`, remove conditional code
+
+**When to use:**
+- Any new or risky feature that could destabilize production
+- Features under development (WIP)
+- Experimental features tested before deployment
+
 ## 📌 Notes
 
 - When adding a new flag, extend `config/pennant.php` (description, category, togglable) and update API/Postman docs if needed.
 - If a flag should be managed via the admin API, set `togglable: true` and cover it with tests.
+- **Developer flags (`category: 'experiments'`) must be removed after feature deployment** - do not leave them in code.
 
 ---
 
-**Last updated:** 2025-11-10
+**Last updated:** 2025-12-16
 

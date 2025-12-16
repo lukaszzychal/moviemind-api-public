@@ -14,3 +14,11 @@ alwaysApply: true
   - mark COMPLETED
   - add a short summary of changes
   - list commands/tests executed
+
+## Feature Flags Cleanup
+
+- **If task used developer flags (`category: 'experiments'`):** After feature deployment, **mandatory cleanup:**
+  - Remove flag definition from `config/pennant.php`
+  - Remove flag class from `app/Features/`
+  - Remove conditional code (`Feature::active()` checks)
+  - Update tests (remove flag-related test cases)
