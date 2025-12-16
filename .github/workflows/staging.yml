@@ -9,7 +9,7 @@ on:
       force_rebuild:
         description: 'Force rebuild without cache'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 env:
@@ -62,9 +62,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=staging
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-
-      - name: Image digest
-        run: echo "Image pushed with digest: ${{ steps.meta.outputs.digest }}"
 
       - name: Output image tags
         run: |
