@@ -9,12 +9,16 @@ class MovieRepository
 {
     public function searchMovies(?string $query, int $limit = 50): Collection
     {
+        $driver = config('database.default');
+        $isPostgres = $driver === 'pgsql';
+        $likeOperator = $isPostgres ? 'ILIKE' : 'LIKE';
+
         return Movie::query()
-            ->when($query, function ($builder) use ($query) {
-                $builder->where('title', 'ILIKE', "%$query%")
-                    ->orWhere('director', 'ILIKE', "%$query%")
-                    ->orWhereHas('genres', function ($qg) use ($query) {
-                        $qg->where('name', 'ILIKE', "%$query%");
+            ->when($query, function ($builder) use ($query, $likeOperator) {
+                $builder->where('title', $likeOperator, "%$query%")
+                    ->orWhere('director', $likeOperator, "%$query%")
+                    ->orWhereHas('genres', function ($qg) use ($query, $likeOperator) {
+                        $qg->where('name', $likeOperator, "%$query%");
                     });
             })
             ->with(['defaultDescription', 'genres', 'people'])

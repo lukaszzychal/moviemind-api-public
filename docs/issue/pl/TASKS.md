@@ -359,20 +359,27 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-022` - Endpoint listy osób (List People)
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-14 14:30:00
+- **Czas zakończenia:** 2025-12-14 15:15:00
+- **Czas realizacji:** 45 minut
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Dodanie endpointu `GET /api/v1/people` zwracającego listę osób w formacie analogicznym do listy filmów.
 - **Szczegóły:**
-  - Ujednolicić parametry filtrowania, sortowania i paginacji z endpointem `List movies`.
-  - Zaimplementować kontroler, resource oraz testy feature dla nowego endpointu.
-  - Zaktualizować dokumentację (OpenAPI, Postman, Insomnia) oraz przykłady odpowiedzi.
+  - ✅ Ujednolicić parametry filtrowania, sortowania i paginacji z endpointem `List movies`.
+  - ✅ Zaimplementować kontroler, resource oraz testy feature dla nowego endpointu.
+  - ✅ Zaktualizować dokumentację (OpenAPI, Postman, Insomnia) oraz przykłady odpowiedzi.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Realizacja szczegóły:**
+  - Endpoint `/api/v1/people` już istniał, dodano testy feature
+  - Naprawiono kompatybilność z SQLite (LIKE zamiast ILIKE dla testów)
+  - Dodano testy: `test_list_people_returns_ok`, `test_list_people_with_search_query`
+  - Ujednolicono parametry z endpointem movies (oba używają `q` do wyszukiwania)
+  - Dokumentacja OpenAPI już była zaktualizowana
+  - Wszystkie testy przechodzą: 266 passed
 ---
 
 #### `TASK-024` - Wdrożenie planu baseline locking z dokumentu AI_BASELINE_LOCKING_PLAN.md

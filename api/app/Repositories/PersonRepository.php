@@ -10,12 +10,16 @@ class PersonRepository
 {
     public function searchPeople(?string $query, int $limit = 50): Collection
     {
+        $driver = config('database.default');
+        $isPostgres = $driver === 'pgsql';
+        $likeOperator = $isPostgres ? 'ILIKE' : 'LIKE';
+
         return Person::query()
-            ->when($query, function ($builder) use ($query) {
-                $builder->where('name', 'ILIKE', "%$query%")
-                    ->orWhere('birthplace', 'ILIKE', "%$query%")
-                    ->orWhereHas('movies', function ($qm) use ($query) {
-                        $qm->where('title', 'ILIKE', "%$query%");
+            ->when($query, function ($builder) use ($query, $likeOperator) {
+                $builder->where('name', $likeOperator, "%$query%")
+                    ->orWhere('birthplace', $likeOperator, "%$query%")
+                    ->orWhereHas('movies', function ($qm) use ($query, $likeOperator) {
+                        $qm->where('title', $likeOperator, "%$query%");
                     });
             })
             ->with(['defaultBio', 'movies'])
