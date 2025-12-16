@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
-
 # Test Driven Development (TDD)
+
+> **Source:** Migrated from `.cursor/rules/old/testing.mdc`  
+> **Category:** reference
 
 ## Basic principle
 
@@ -172,3 +171,4 @@ $service = Mockery::mock(MovieService::class);
 - **Detroit School:** Data transformation tests, calculation tests, validation tests
 - **London School:** External API tests ONLY (TMDb, OpenAI)
 - **Outside-In:** Feature tests, acceptance tests, end-to-end scenarios
+

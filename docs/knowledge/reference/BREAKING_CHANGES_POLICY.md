@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
-
 # Breaking Change Detection and Impact Analysis
+
+> **Source:** Migrated from `.cursor/rules/old/breaking-change-detection.mdc`  
+> **Category:** reference
 
 ## Principle
 
@@ -97,3 +96,4 @@ Changes that are NOT breaking:
 - AI Agent MUST stop and inform user if breaking change detected
 - AI Agent MUST provide impact analysis and alternatives
 - AI Agent MUST propose safe change process before proceeding
+

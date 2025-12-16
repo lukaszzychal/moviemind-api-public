@@ -1,7 +1,7 @@
----
-alwaysApply: true
----
 # Architecture Decision Records (ADR)
+
+> **Source:** Migrated from `.cursor/rules/old/architecture-decisions.mdc`  
+> **Category:** reference
 
 ## 📋 When to create a new ADR?
 
@@ -136,10 +136,11 @@ Detailed rationale:
 
 ## 🔗 Related Documents
 
-- [ADR README](../docs/adr/README.md) - All ADRs
-- [Knowledge Base](../docs/knowledge/) - Technical documents
-- [Tasks](../docs/tasks/) - Task-related documents
+- [ADR README](../../adr/README.md) - All ADRs
+- [Knowledge Base](../) - Technical documents
+- [Tasks](../../issue/) - Task-related documents
 
 ---
 
 **Remember:** ADRs are the project's decision history. Document important decisions systematically!
+

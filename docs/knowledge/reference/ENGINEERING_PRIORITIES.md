@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
+# Engineering Priorities
 
-# Priorities
+> **Source:** Migrated from `.cursor/rules/old/priorities.mdc`  
+> **Category:** reference
 
 ## 🎯 Priority Hierarchy
 
@@ -17,3 +16,4 @@ In case of conflicts, priorities are as follows:
 ## Principle
 
 **Security > Tests > Quality > Readability > Practices**
+

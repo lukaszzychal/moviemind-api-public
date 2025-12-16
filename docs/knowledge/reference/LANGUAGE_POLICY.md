@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
-
 # Language Priority for Cursor Rules
+
+> **Source:** Migrated from `.cursor/rules/old/language-priority.mdc`  
+> **Category:** reference
 
 ## Principle
 
@@ -63,3 +62,4 @@ docs/*.md                    # Polish (project documentation)
 ---
 
 **Remember:** English is the source of truth. Polish versions are translations maintained for learning purposes.
+

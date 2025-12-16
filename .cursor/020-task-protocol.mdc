@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+
+# Task protocol (docs/issue/TASKS.md)
+
+- Start from docs/issue/TASKS.md and pick a task with status PENDING.
+- Before coding, produce:
+  1) goal in 2-4 sentences
+  2) acceptance criteria
+  3) explicit scope: 1-3 target files
+- Do not implement "TASK-xxx" without an explicit file scope.
+- After completion:
+  - mark COMPLETED
+  - add a short summary of changes
+  - list commands/tests executed

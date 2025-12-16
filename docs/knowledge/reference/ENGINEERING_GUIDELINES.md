@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
+# Engineering Guidelines
 
-# Code Writing Standards
+> **Source:** Migrated from `.cursor/rules/old/coding-standards.mdc`, `.cursor/rules/old/philosophy.mdc`, `.cursor/rules/old/dont-do.mdc`  
+> **Category:** reference
 
 ## Philosophy: Pragmatic approach
 
@@ -10,6 +9,25 @@ alwaysApply: true
 - Readability > Conciseness
 - Simple code is better than "perfect" code following all principles
 - Don't apply principles forcefully
+
+## 💡 Key principles in a nutshell
+
+1. **TDD** - Test before code, always
+2. **Tools** - Pint, PHPStan, tests before commit
+3. **SOLID** - Apply pragmatically, not forcefully
+4. **DRY** - Remove duplication, but don't overdo it
+5. **Readability** - Code must be understandable to others
+6. **Refactoring** - When code is hard to maintain
+7. **Security** - Always check secrets before commit
+
+## Philosophy
+
+**Principles are tools, not goals in themselves.**
+
+- Code must be **readable** and **understandable**
+- Apply principles **pragmatically**, not fanatically
+- **Simplicity** is better than excessive abstraction
+- **Readability** is more important than "perfect" architecture
 
 ## KISS (Keep It Simple, Stupid)
 
@@ -360,10 +378,10 @@ During task execution, check:
 
 ### Related Documentation
 
-- [Code Quality Audits Guide](../../docs/knowledge/technical/CODE_QUALITY_AUDITS_GUIDE.md) - Comprehensive guide
-- [Security Audits Guide](../../docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) - Security audits
-- [Refactoring Proposals](../../docs/knowledge/technical/REFACTORING_PROPOSAL.md) - Refactoring proposals
-- [Code Quality Tools](../../docs/knowledge/reference/CODE_QUALITY_TOOLS.md) - Code quality tools
+- [Code Quality Audits Guide](../technical/CODE_QUALITY_AUDITS_GUIDE.md) - Comprehensive guide
+- [Security Audits Guide](../technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) - Security audits
+- [Refactoring Proposals](../technical/REFACTORING_PROPOSAL.md) - Refactoring proposals
+- [Code Quality Tools](./CODE_QUALITY_TOOLS.md) - Code quality tools
 
 ## Coding standards
 
@@ -374,3 +392,33 @@ During task execution, check:
 - **Return types** - always specify return type
 - **Repository Pattern** - use Repository for data access, not direct Model queries in Jobs/Services
 - **Dependency Injection** - prefer constructor injection, use service container
+
+## 🚫 What NOT to do
+
+### Prohibited list
+
+1. ❌ Commit without tests
+2. ❌ Ignore failing tests
+3. ❌ Skip code quality tools (Pint, PHPStan, tests)
+4. ❌ Commit secrets (always check GitLeaks)
+5. ❌ Commit debug code (`dd()`, `dump()`, `var_dump()`)
+6. ❌ Create too large commits (one commit = one logical change)
+7. ❌ Apply principles forcefully (don't create excessive abstractions)
+8. ❌ Ignore code smells (fix when they hinder work)
+9. ❌ Create code without thinking about readability
+10. ❌ Skip type hints and strict types
+
+### Principle
+
+If something is on the "NOT to do" list, it means it is **prohibited** and should not happen.
+
+## 📚 Additional Resources
+
+- **Tasks:** `docs/issue/TASKS.md` - ⭐ START HERE
+- **Detailed rules:** `docs/AI_AGENT_CONTEXT_RULES.md`
+- **Tests:** `docs/TESTING_STRATEGY.md`
+- **Quality tools:** `docs/CODE_QUALITY_TOOLS.md`
+- **Architecture:** `docs/ARCHITECTURE_ANALYSIS.md`
+- **Project context:** `CLAUDE.md`
+- **Cursor explanation:** `docs/CURSOR_RULES_EXPLANATION.md`
+

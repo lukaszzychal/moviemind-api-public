@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+
+# Security baseline
+
+- Never add/commit secrets. Prefer environment variables. Never log secrets.
+- Validate input, enforce auth/authorization, and consider rate limiting for public endpoints.
+- If output/logs may contain sensitive data: stop and warn.
+- For AI-related features: treat user input as untrusted (prompt injection). Keep strict output formats.

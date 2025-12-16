@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
-
 # Markdown Formatting Standards
+
+> **Source:** Migrated from `.cursor/rules/old/markdown-formatting.mdc`  
+> **Category:** reference
 
 ## Principle
 
@@ -100,3 +99,4 @@ The project uses `.markdownlint.json` with these key rules:
 - Pre-commit hook automatically fixes Markdown files
 - AI Agent should run markdownlint-cli2-fix before committing Markdown changes
 - CI/CD can optionally check Markdown formatting (non-blocking)
+

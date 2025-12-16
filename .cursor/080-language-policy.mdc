@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+# Language policy
+
+- .cursor/rules and CLAUDE.md must be in English.
+- Polish translations live under docs/ for learning/reference and should be updated when practical.

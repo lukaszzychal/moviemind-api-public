@@ -1,16 +1,179 @@
----
-alwaysApply: true
+# Security Process
+
+> **Source:** Migrated from `.cursor/rules/old/secret-detection.mdc` and `.cursor/rules/old/security-awareness.mdc`  
+> **Category:** reference
+
+## Secret Detection
+
+### Basic Principle
+
+**ALWAYS check for secrets before commit and push. Zero tolerance for secrets in the repository.**
+
+### Automatic Git Hooks Installation
+
+**ALWAYS before commit or push - automatically check and install hooks:**
+
+1. **Check if hooks are installed:**
+   ```bash
+   if [ ! -f ".git/hooks/pre-commit" ]; then
+       # Automatically install hooks
+       if [ -f "scripts/git-hooks/pre-commit" ]; then
+           cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+           chmod +x .git/hooks/pre-commit
+           echo "✅ Git hooks installed automatically"
+       else
+           echo "⚠️  Git hooks template not found at scripts/git-hooks/pre-commit"
+       fi
+   fi
+   ```
+
+2. **For AI Agent - automatic installation:**
+   - Before every `git commit` or `git push`, automatically check if `.git/hooks/pre-commit` exists
+   - If it doesn't exist, automatically install from `scripts/git-hooks/pre-commit`
+   - Make sure the hook has execute permissions (`chmod +x`)
+   - Don't ask the user - execute automatically
+
+3. **Check if GitLeaks is installed:**
+   ```bash
+   if ! command -v gitleaks &> /dev/null; then
+       echo "⚠️  GitLeaks not installed. Install with: brew install gitleaks"
+       echo "⚠️  Or run: ./scripts/setup-pre-commit.sh"
+       # Don't block, but warn the user
+   fi
+   ```
+
+### Secret Verification Before Commit
+
+**BEFORE EVERY COMMIT:**
+
+1. **Run GitLeaks on staged files:**
+   ```bash
+   gitleaks protect --source . --verbose --no-banner --staged
+   ```
+
+2. **If secrets are detected:**
+   - ❌ **BLOCK commit**
+   - Inform the user about detected secrets
+   - Show secret location (files, lines)
+   - Suggest removing secrets and using environment variables
+
+3. **If GitLeaks is not installed:**
+   - ⚠️ Warn the user
+   - Suggest installation: `brew install gitleaks` or `./scripts/setup-pre-commit.sh`
+   - **DO NOT BLOCK** commit, but clearly warn
+
+### Secret Verification Before Push
+
+**BEFORE EVERY PUSH:**
+
+1. **Run GitLeaks on entire repository:**
+   ```bash
+   gitleaks protect --source . --verbose --no-banner
+   ```
+
+2. **If secrets are detected:**
+   - ❌ **BLOCK push**
+   - Inform the user about detected secrets
+   - Check commit history - the secret might be in an old commit
+   - Suggest using `git filter-branch` or `git filter-repo` to remove secrets from history
+
+### Types of Secrets to Detect
+
+GitLeaks detects:
+- API keys (OpenAI, AWS, Google Cloud, etc.)
+- Passwords
+- Tokens (JWT, OAuth, etc.)
+- Private keys (SSH, GPG, etc.)
+- Database credentials
+- Secret keys and seed phrases
+
+### Files to Check
+
+**Always check:**
+- `.env` and `.env.*` (should be in `.gitignore`)
+- `.env.bak` and `*.env.bak` (should be in `.gitignore`)
+- Configuration files with passwords
+- Files with hardcoded credentials
+- Backup files with secrets
+
+### Workflow Before Commit
+
+```bash
+# 1. Check if hooks are installed
+if [ ! -f ".git/hooks/pre-commit" ]; then
+    cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+    chmod +x .git/hooks/pre-commit
+fi
+
+# 2. Check secrets
+if command -v gitleaks &> /dev/null; then
+    gitleaks protect --source . --verbose --no-banner --staged
+    if [ $? -ne 0 ]; then
+        echo "❌ Secrets detected! Commit blocked."
+        exit 1
+    fi
+else
+    echo "⚠️  GitLeaks not installed. Install with: brew install gitleaks"
+fi
+
+# 3. Continue with other checks (Pint, PHPStan, etc.)
+```
+
+### Workflow Before Push
+
+```bash
+# 1. Check secrets in entire repository
+if command -v gitleaks &> /dev/null; then
+    gitleaks protect --source . --verbose --no-banner
+    if [ $? -ne 0 ]; then
+        echo "❌ Secrets detected! Push blocked."
+        exit 1
+    fi
+else
+    echo "⚠️  GitLeaks not installed. Install with: brew install gitleaks"
+    echo "⚠️  Proceeding without secret check (NOT RECOMMENDED)"
+fi
+```
+
+### What to Do When a Secret is Detected
+
+1. **Remove secret from file:**
+   - Replace secret with environment variable
+   - Use `.env` for local values
+   - Use GitHub Secrets for CI/CD
+
+2. **If secret is in commit history:**
+   - Use `git filter-branch` or `git filter-repo` to remove from history
+   - Regenerate the secret (API key, password, etc.)
+   - Update all places where the secret was used
+
+3. **Update `.gitignore`:**
+   - Make sure files with secrets are ignored
+   - Add patterns for backup files (`.env.bak`, `*.bak`)
+
+### Tools
+
+- **GitLeaks** - main tool for secret detection
+- **GitHub Push Protection** - backup at GitHub level (works after push)
+- **Git hooks** - local protection before commit
+
+### Priority
+
+**Security > Everything Else**
+
+Secrets in the repository are a critical security problem. Always check before commit and push.
+
 ---
 
-# Security Awareness and Practices
+## Security Awareness and Practices
 
-## Principle
+### Principle
 
 **Security is the highest priority. Always consider security implications during development, code review, and task execution.**
 
-## Security-First Mindset
+### Security-First Mindset
 
-### During Development
+#### During Development
 
 1. **Always consider security:**
    - Before writing code, think about security implications
@@ -35,9 +198,9 @@ alwaysApply: true
    - [ ] SQL injection protection (ORM used)
    - [ ] XSS protection (if applicable)
 
-## Security Standards
+### Security Standards
 
-### OWASP Top 10
+#### OWASP Top 10
 
 Always consider OWASP Top 10 vulnerabilities:
 1. Broken Access Control
@@ -51,7 +214,7 @@ Always consider OWASP Top 10 vulnerabilities:
 9. Security Logging and Monitoring Failures
 10. Server-Side Request Forgery (SSRF)
 
-### OWASP LLM Top 10 (for AI features)
+#### OWASP LLM Top 10 (for AI features)
 
 Always consider OWASP LLM Top 10 vulnerabilities:
 1. Prompt Injection
@@ -65,9 +228,9 @@ Always consider OWASP LLM Top 10 vulnerabilities:
 9. Overreliance
 10. Model Theft
 
-## Security Audits
+### Security Audits
 
-### Ad-hoc Security Reviews
+#### Ad-hoc Security Reviews
 
 **When:** During code review or when implementing new features
 
@@ -84,7 +247,7 @@ Always consider OWASP LLM Top 10 vulnerabilities:
 - Security checklist verification
 - Best practices check
 
-### Comprehensive Security Audits
+#### Comprehensive Security Audits
 
 **Frequency:**
 - **Quarterly** (every 3 months) - basic audits
@@ -167,9 +330,9 @@ When conducting comprehensive audits, use the following template:
 - [ ] Task 2
 ```
 
-## Security Issue Prioritization
+### Security Issue Prioritization
 
-### Priority Levels
+#### Priority Levels
 
 1. **🔴 Critical (P0)** - Fix immediately, blocks deployment
    - Active exploits
@@ -192,7 +355,7 @@ When conducting comprehensive audits, use the following template:
    - Informational findings
    - Enhancement opportunities
 
-### Handling Security Issues
+#### Handling Security Issues
 
 **During task execution:**
 - ✅ **Minor issues** - fix immediately as part of current task
@@ -205,15 +368,15 @@ When conducting comprehensive audits, use the following template:
 - Track remediation progress
 - Verify fixes
 
-## Security Tools and Automation
+### Security Tools and Automation
 
-### Pre-Commit
+#### Pre-Commit
 
 - GitLeaks - secret detection
 - Markdownlint - documentation formatting
 - PHP linting (Pint) - code formatting
 
-### CI/CD Pipeline
+#### CI/CD Pipeline
 
 - GitLeaks security scan (every commit, daily at 2 AM UTC)
 - Composer audit (every PR, weekly)
@@ -221,7 +384,7 @@ When conducting comprehensive audits, use the following template:
 - Docker security scan (every build)
 - PHPStan static analysis (every PR)
 
-### Automated Security Scans
+#### Automated Security Scans
 
 **Frequency:**
 - **GitLeaks:** Every commit + daily at 2:00 UTC
@@ -230,9 +393,9 @@ When conducting comprehensive audits, use the following template:
 - **Docker Scan:** Every build
 - **PHPStan:** Every PR
 
-## Security Best Practices
+### Security Best Practices
 
-### Secrets Management
+#### Secrets Management
 
 **Never:**
 - ❌ Hardcode secrets in code
@@ -246,7 +409,7 @@ When conducting comprehensive audits, use the following template:
 - ✅ Verify with GitLeaks before commit
 - ✅ Rotate secrets regularly
 
-### Input Validation
+#### Input Validation
 
 **Always:**
 - ✅ Validate all inputs
@@ -255,7 +418,7 @@ When conducting comprehensive audits, use the following template:
 - ✅ Verify data types
 - ✅ Use parameterized queries (ORM)
 
-### Error Handling
+#### Error Handling
 
 **Security considerations:**
 - ✅ Generic error messages for users
@@ -264,7 +427,7 @@ When conducting comprehensive audits, use the following template:
 - ✅ No file paths in errors
 - ✅ No sensitive data in errors
 
-### Logging
+#### Logging
 
 **Security logging:**
 - ✅ Log all security events
@@ -273,7 +436,7 @@ When conducting comprehensive audits, use the following template:
 - ✅ Implement log rotation
 - ✅ Monitor security logs
 
-### AI Security (Prompt Injection)
+#### AI Security (Prompt Injection)
 
 **For AI features:**
 - ✅ Sanitize all inputs used in prompts
@@ -282,9 +445,9 @@ When conducting comprehensive audits, use the following template:
 - ✅ Use multi-layer validation
 - ✅ Verify output format
 
-## Security Documentation
+### Security Documentation
 
-### Required Documentation
+#### Required Documentation
 
 1. **Security Policy** (`SECURITY.md`)
    - Vulnerability reporting
@@ -302,7 +465,7 @@ When conducting comprehensive audits, use the following template:
    - Protection mechanisms
    - Recommendations
 
-### Documentation Updates
+#### Documentation Updates
 
 **When to update:**
 - After security audits
@@ -311,9 +474,9 @@ When conducting comprehensive audits, use the following template:
 - When security procedures change
 - Quarterly review
 
-## Incident Response
+### Incident Response
 
-### Response Procedure
+#### Response Procedure
 
 1. **Detection**
    - Security alerts
@@ -338,7 +501,7 @@ When conducting comprehensive audits, use the following template:
    - Remediation steps
    - Lessons learned
 
-### Post-Incident Review
+#### Post-Incident Review
 
 **After every incident:**
 1. Post-mortem meeting (48h after)
@@ -346,9 +509,9 @@ When conducting comprehensive audits, use the following template:
 3. Update procedures
 4. Follow-up audit (if applicable)
 
-## Security Metrics
+### Security Metrics
 
-### Key Metrics
+#### Key Metrics
 
 1. **Vulnerability Metrics**
    - Number of vulnerabilities found
@@ -370,7 +533,7 @@ When conducting comprehensive audits, use the following template:
    - Response time (MTTR)
    - Remediation time
 
-### Security Score
+#### Security Score
 
 **Scoring system:**
 - **A+ (90-100):** Excellent security posture
@@ -387,15 +550,15 @@ When conducting comprehensive audits, use the following template:
 - Audit frequency
 - Incident response time
 
-## Related Documents
+### Related Documents
 
-- [`SECURITY.md`](../../SECURITY.md) - Security Policy
-- [`docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md`](../../docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) - Comprehensive Security Guide
-- [`docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md`](../../docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md) - Prompt Injection Analysis
+- [`SECURITY.md`](../../../SECURITY.md) - Security Policy
+- [`docs/knowledge/technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md`](../technical/APPLICATION_SECURITY_COMPREHENSIVE_GUIDE.md) - Comprehensive Security Guide
+- [`docs/knowledge/technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md`](../technical/PROMPT_INJECTION_SECURITY_ANALYSIS.md) - Prompt Injection Analysis
 - [OWASP Top 10](https://owasp.org/Top10/) - OWASP Top 10
 - [OWASP LLM Top 10](https://owasp.org/www-project-llm-top-10/) - OWASP LLM Top 10
 
-## Enforcement
+### Enforcement
 
 - AI Agent MUST consider security during task execution
 - AI Agent MUST fix minor security issues immediately
@@ -403,3 +566,4 @@ When conducting comprehensive audits, use the following template:
 - AI Agent MUST document security findings
 - AI Agent MUST follow security best practices
 - AI Agent MUST update security documentation when needed
+

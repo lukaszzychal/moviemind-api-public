@@ -1,10 +1,42 @@
----
-alwaysApply: true
+# Pre-Commit and Release Checklist
+
+> **Source:** Migrated from `.cursor/rules/old/checklist.mdc` and `.cursor/rules/old/workflow.mdc`  
+> **Category:** reference
+
+## Pre-Commit Checklist
+
+### Tools
+- [ ] Code formatted by Pint
+- [ ] PHPStan without errors
+- [ ] All tests pass
+- [ ] GitLeaks does not detect secrets
+- [ ] Composer audit does not detect critical vulnerabilities
+
+### Tests
+- [ ] New code has tests (if it's a new feature)
+- [ ] Tests are readable
+- [ ] TDD was applied
+
+### Quality
+- [ ] Code is readable and follows conventions
+- [ ] SOLID applied (when it makes sense)
+- [ ] Duplication removed (when needed)
+- [ ] Type hints and `declare(strict_types=1)`
+
+### Cleanup
+- [ ] No debug code
+- [ ] No unused code
+- [ ] No commented code (unless it explains "why")
+
+### Git
+- [ ] Commit message is descriptive and follows convention
+- [ ] Commit contains one logical change
+
 ---
 
-# Pre-Commit Workflow (REQUIRED)
+## Pre-Commit Workflow (REQUIRED)
 
-## Automatic Git Hooks Installation
+### Automatic Git Hooks Installation
 
 **BEFORE EVERY COMMIT OR PUSH - automatically check and install hooks:**
 
@@ -75,17 +107,17 @@ cd api && vendor/bin/phpstan analyse --memory-limit=2G 2>&1 | tee ../docs/logs/p
 ```
 - Do not delete existing log files - they will be needed in future projects.
 
-### 3. PHPUnit (tests)
+### 4. PHPUnit (tests)
 ```bash
 cd api && php artisan test
 ```
 All tests must pass.
 
-### 4. Markdownlint (Markdown formatting) - **AUTOMATICALLY IN PRE-COMMIT HOOK**
+### 5. Markdownlint (Markdown formatting) - **AUTOMATICALLY IN PRE-COMMIT HOOK**
 
 Pre-commit hook automatically runs markdownlint-cli2-fix for .md files before commit.
 
-### 5. GitLeaks (secrets) - **REQUIRED BEFORE COMMIT AND PUSH**
+### 6. GitLeaks (secrets) - **REQUIRED BEFORE COMMIT AND PUSH**
 ```bash
 gitleaks protect --source . --verbose --no-banner
 ```
@@ -105,13 +137,13 @@ brew install gitleaks
 - Check if `.git/hooks/pre-commit` exists, if not - copy from `scripts/git-hooks/pre-commit`
 - Make sure the hook has execute permissions: `chmod +x .git/hooks/pre-commit`
 
-### 6. Composer Audit (security)
+### 7. Composer Audit (security)
 ```bash
 cd api && composer audit
 ```
 Fix critical vulnerabilities before commit.
 
-### 6. API Documentation Update (if endpoints were changed)
+### 8. API Documentation Update (if endpoints were changed)
 **IMPORTANT:** If API endpoints were added/changed/removed, **ALWAYS** update:
 
 #### OpenAPI Spec
@@ -145,7 +177,7 @@ Fix critical vulnerabilities before commit.
 - Postman: JSON format compatible with Postman Collection v2.1
 - Insomnia: JSON format compatible with Insomnia Export
 
-### 7. Manual Testing Instructions Update (if testing mechanisms were changed)
+### 9. Manual Testing Instructions Update (if testing mechanisms were changed)
 **IMPORTANT:** If testing mechanisms, endpoints, feature flags, response format, or log structure were changed, **ALWAYS** update:
 
 #### Manual Testing Guide
@@ -279,3 +311,4 @@ cd api && \
     - Include only information that is available and providing it doesn't consume additional tokens.
 - If token information is not available or providing it would consume additional tokens, omit this information.
 - In the context of MovieMind API application, if you mention the model used by the application (e.g. OpenAI), always provide the full model name (e.g. `gpt-4o-mini`).
+

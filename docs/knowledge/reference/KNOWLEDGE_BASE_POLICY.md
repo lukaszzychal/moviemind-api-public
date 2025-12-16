@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
-
 # Creating Documents in Knowledge Base
+
+> **Source:** Migrated from `.cursor/rules/old/knowledge-documentation.mdc`  
+> **Category:** reference
 
 ## 📚 Knowledge Base - Document Creation Rules
 
@@ -23,7 +22,7 @@ docs/knowledge/
 ├── tutorials/    # Short tutorials and introductions
 ├── journal/      # Knowledge journal - problems and solutions
 ├── technical/    # Technical and analytical documents
-└── reference/    # Reference documents (setup, config, tools)
+└── reference/     # Reference documents (setup, config, tools)
 ```
 
 ### 📝 Document Format
@@ -256,3 +255,4 @@ Comparison of Events vs Jobs approaches in Laravel.
 ---
 
 **Remember:** Documentation is an investment in the project's future. Create documents systematically!
+

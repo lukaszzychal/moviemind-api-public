@@ -1,8 +1,7 @@
----
-alwaysApply: true
----
-
 # Task Management System
+
+> **Source:** Migrated from `.cursor/rules/old/task-management.mdc`  
+> **Category:** reference
 
 ## ⭐ ALWAYS START FROM `docs/issue/TASKS.md`
 
@@ -34,3 +33,4 @@ Before starting work:
 3. Promote tasks that unblock others or are thematically related (e.g. CI, security) – minimize context switching.
 4. Report result as an ordered list with a brief justification "why" for each point.
 5. When user asks for order, apply the above steps and present recommendation as a list.
+
