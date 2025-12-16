@@ -39,8 +39,14 @@ class MissingEntityGenerationTest extends TestCase
         ]);
 
         $res = $this->getJson('/api/v1/movies/annihilation');
-        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug'])
+        $res->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
             ->assertJson(['locale' => 'en-US']);
+
+        // Verify confidence fields are set (not null/unknown)
+        $this->assertNotNull($res->json('confidence'));
+        $this->assertNotSame('unknown', $res->json('confidence_level'));
+        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
     }
 
     public function test_movie_missing_returns_404_when_not_found_in_tmdb(): void
@@ -81,8 +87,14 @@ class MissingEntityGenerationTest extends TestCase
         ]);
 
         $res = $this->getJson('/api/v1/people/john-doe');
-        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug'])
+        $res->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
             ->assertJson(['locale' => 'en-US']);
+
+        // Verify confidence fields are set (not null/unknown)
+        $this->assertNotNull($res->json('confidence'));
+        $this->assertNotSame('unknown', $res->json('confidence_level'));
+        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
     }
 
     public function test_person_missing_returns_404_when_not_found_in_tmdb(): void
@@ -255,7 +267,12 @@ class MissingEntityGenerationTest extends TestCase
 
         // When tmdb_verification is disabled, it should bypass TMDb check and allow generation
         $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
-        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug']);
+        $res->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level']);
+
+        // Verify confidence fields are set (not null/unknown)
+        $this->assertNotNull($res->json('confidence'));
+        $this->assertNotSame('unknown', $res->json('confidence_level'));
     }
 
     public function test_person_generation_bypasses_tmdb_when_feature_flag_disabled(): void
@@ -269,7 +286,12 @@ class MissingEntityGenerationTest extends TestCase
 
         // When tmdb_verification is disabled, it should bypass TMDb check and allow generation
         $res = $this->getJson('/api/v1/people/non-existent-person-xyz');
-        $res->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'slug']);
+        $res->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level']);
+
+        // Verify confidence fields are set (not null/unknown)
+        $this->assertNotNull($res->json('confidence'));
+        $this->assertNotSame('unknown', $res->json('confidence_level'));
     }
 
     public function test_concurrent_requests_via_generate_endpoint_for_person_only_dispatch_one_job(): void
