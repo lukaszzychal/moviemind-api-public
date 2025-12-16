@@ -242,11 +242,59 @@ docker run -p 8000:80 \
   ghcr.io/lukaszzychal/moviemind-api-public:latest
 ```
 
+## 🚀 Staging CI/CD Workflow
+
+### Workflow dla środowiska staging (`.github/workflows/staging.yml`):
+
+```yaml
+name: Staging CI/CD
+
+on:
+  push:
+    branches:
+      - staging
+    tags:
+      - 'staging*'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild without cache'
+        required: false
+        default: 'false'
+        type: boolean
+```
+
+### Tagowanie obrazów staging:
+
+- `staging` - najnowszy obraz z brancha staging
+- `staging-<short-sha>` - obraz z konkretnym commitem (krótki hash)
+- `staging-<full-sha>` - obraz z konkretnym commitem (pełny hash)
+- `staging-<tag>` - jeśli używasz tagów `staging-*`
+
+### Przykładowe użycie:
+
+```bash
+# Pobierz najnowszy staging image
+docker pull ghcr.io/lukaszzychal/moviemind-api-public:staging
+
+# Pobierz konkretną wersję
+docker pull ghcr.io/lukaszzychal/moviemind-api-public:staging-abc1234
+```
+
+### Różnice między staging a production:
+
+| Środowisko | Workflow | Trigger | Tagi |
+|------------|----------|---------|------|
+| **Staging** | `staging.yml` | Push do `staging` branch lub tag `staging*` | `staging`, `staging-<sha>` |
+| **Production** | `release.yml` | Tag `v*` | `v<version>`, `sha-<sha>`, `latest` |
+
 ## ✅ Checklist: Co Masz Teraz
 
 - ✅ Docker build w CI
 - ✅ Push do GHCR na każde push do main
 - ✅ Tagowanie jako `sha-<commit-hash>`
+- ✅ **Staging workflow** - automatyczny build i push dla brancha `staging`
+- ✅ **Staging tagowanie** - obrazy tagowane jako `staging`, `staging-<sha>`
 - ✅ Uprawnienia `packages: write` w workflow
 - ⚠️ Brak UI sprawdzania (ale możesz przez Packages tab)
 
