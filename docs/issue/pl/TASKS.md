@@ -201,6 +201,7 @@ Każde zadanie ma następującą strukturę:
 ### 📋 Podsumowanie według Priorytetów
 
 #### 🔴 Wysoki Priorytet (Krytyczne)
+<<<<<<< HEAD
 - ~~`TASK-050` - Basic Auth dla endpointów admin~~ ✅ COMPLETED
 - `TASK-037` (Faza 2-3) - Weryfikacja istnienia przed AI
 - `TASK-038` (Faza 2) - Weryfikacja zgodności danych
@@ -1006,6 +1007,7 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-050` - Dodanie Basic Auth dla endpointów admin
+<<<<<<< HEAD
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴🔴🔴 Najwyższy
 - **Szacowany czas:** 2-3 godziny
@@ -1387,6 +1389,8 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
+<<<<<<< HEAD
+- **Aktywne:** 25
 - **Aktywne:** 25
 - **Zakończone:** 24
 - **Anulowane:** 0
