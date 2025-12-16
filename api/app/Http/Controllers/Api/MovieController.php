@@ -99,6 +99,7 @@ class MovieController extends Controller
             if (! Feature::active('tmdb_verification')) {
                 $result = $this->queueMovieGenerationAction->handle(
                     $slug,
+                    confidence: $validation['confidence'],
                     locale: Locale::EN_US->value,
                     tmdbData: null
                 );
@@ -117,6 +118,7 @@ class MovieController extends Controller
 
         $result = $this->queueMovieGenerationAction->handle(
             $slug,
+            confidence: $validation['confidence'],
             locale: Locale::EN_US->value,
             tmdbData: $tmdbData
         );
@@ -144,8 +146,11 @@ class MovieController extends Controller
             return response()->json(['error' => 'Selected movie not found in search results'], 404);
         }
 
+        // Re-validate slug for confidence score
+        $validation = SlugValidator::validateMovieSlug($slug);
         $result = $this->queueMovieGenerationAction->handle(
             $slug,
+            confidence: $validation['confidence'],
             locale: Locale::EN_US->value,
             tmdbData: $selectedMovie
         );
