@@ -202,7 +202,22 @@ class RealGenerateMovieJob implements ShouldQueue
             ?? sprintf('Regenerated description for %s via RealGenerateMovieJob.', $movie->title);
 
         $locale = $this->resolveLocale();
-        $description = $this->shouldUpdateBaseline($movie, $locale)
+        $baselineLockingActive = $this->baselineLockingEnabled();
+        $willUpdateBaseline = $this->shouldUpdateBaseline($movie, $locale);
+
+        if ($baselineLockingActive) {
+            Log::info('Baseline locking active for movie generation', [
+                'job_id' => $this->jobId,
+                'slug' => $this->slug,
+                'movie_id' => $movie->id,
+                'baseline_description_id' => $this->baselineDescriptionId,
+                'will_update_baseline' => $willUpdateBaseline,
+                'locale' => $locale->value,
+                'context_tag' => $this->contextTag,
+            ]);
+        }
+
+        $description = $willUpdateBaseline
             ? $this->updateBaselineDescription($movie, $locale, [
                 'text' => (string) $descriptionText,
                 'origin' => DescriptionOrigin::GENERATED,
@@ -218,6 +233,18 @@ class RealGenerateMovieJob implements ShouldQueue
                     'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
                 ]
             );
+
+        if ($baselineLockingActive) {
+            Log::info('Baseline locking result for movie generation', [
+                'job_id' => $this->jobId,
+                'slug' => $this->slug,
+                'movie_id' => $movie->id,
+                'description_id' => $description->id,
+                'result' => $willUpdateBaseline ? 'baseline_updated' : 'alternative_appended',
+                'locale' => $locale->value,
+                'context_tag' => $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag,
+            ]);
+        }
 
         $this->promoteDefaultIfEligible($movie, $description);
         $this->invalidateMovieCaches($movie);

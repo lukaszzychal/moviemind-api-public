@@ -200,7 +200,22 @@ class RealGeneratePersonJob implements ShouldQueue
             ?? sprintf('Regenerated biography for %s via RealGeneratePersonJob.', $person->name);
 
         $locale = $this->resolveLocale();
-        $bio = $this->shouldUpdateBaseline($person, $locale)
+        $baselineLockingActive = $this->baselineLockingEnabled();
+        $willUpdateBaseline = $this->shouldUpdateBaseline($person, $locale);
+
+        if ($baselineLockingActive) {
+            Log::info('Baseline locking active for person generation', [
+                'job_id' => $this->jobId,
+                'slug' => $this->slug,
+                'person_id' => $person->id,
+                'baseline_bio_id' => $this->baselineBioId,
+                'will_update_baseline' => $willUpdateBaseline,
+                'locale' => $locale->value,
+                'context_tag' => $this->contextTag,
+            ]);
+        }
+
+        $bio = $willUpdateBaseline
             ? $this->updateBaselineBio($person, $locale, [
                 'text' => (string) $biography,
                 'origin' => DescriptionOrigin::GENERATED,
@@ -216,6 +231,18 @@ class RealGeneratePersonJob implements ShouldQueue
                     'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
                 ]
             );
+
+        if ($baselineLockingActive) {
+            Log::info('Baseline locking result for person generation', [
+                'job_id' => $this->jobId,
+                'slug' => $this->slug,
+                'person_id' => $person->id,
+                'bio_id' => $bio->id,
+                'result' => $willUpdateBaseline ? 'baseline_updated' : 'alternative_appended',
+                'locale' => $locale->value,
+                'context_tag' => $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag,
+            ]);
+        }
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
