@@ -388,6 +388,110 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
     }
 
     /**
+     * Search for people in TMDb (returns multiple results for disambiguation).
+     *
+     * @return array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int, biography?: string}>
+     */
+    public function searchPeople(string $slug, int $limit = 5): array
+    {
+        // Check feature flag first - if disabled, skip TMDb search
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return [];
+        }
+
+        $cacheKey = self::CACHE_PREFIX_PERSON.'search:'.$slug.':'.$limit;
+
+        // Check cache first
+        if ($cached = Cache::get($cacheKey)) {
+            Log::debug('TmdbVerificationService: cache hit for person search', ['slug' => $slug]);
+
+            return $cached === 'NOT_FOUND' ? [] : $cached;
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                Log::warning('TmdbVerificationService: API key not configured', ['slug' => $slug]);
+
+                return [];
+            }
+
+            // Extract name from slug for search
+            $query = str_replace('-', ' ', $slug);
+
+            Log::debug('TmdbVerificationService: searching people in TMDb', [
+                'slug' => $slug,
+                'query' => $query,
+            ]);
+
+            $response = $client->search()->people($query);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($data['results'])) {
+                Log::info('TmdbVerificationService: no people found in TMDb', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return [];
+            }
+
+            $results = [];
+            $matches = array_slice($data['results'], 0, $limit);
+
+            foreach ($matches as $match) {
+                $result = [
+                    'name' => $match['name'],
+                    'id' => $match['id'],
+                ];
+
+                if (! empty($match['known_for_department'])) {
+                    // Optional: add department info
+                }
+
+                $results[] = $result;
+            }
+
+            Log::info('TmdbVerificationService: found people in TMDb', [
+                'slug' => $slug,
+                'count' => count($results),
+            ]);
+
+            // Cache the results
+            Cache::put($cacheKey, $results, now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return $results;
+        } catch (NotFoundException $e) {
+            Log::info('TmdbVerificationService: no people found in TMDb (NotFoundException)', ['slug' => $slug]);
+            Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return [];
+        } catch (RateLimitException $e) {
+            Log::warning('TmdbVerificationService: TMDb rate limit exceeded', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        } catch (TMDBException $e) {
+            Log::error('TmdbVerificationService: TMDb API error', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        } catch (\Throwable $e) {
+            Log::error('TmdbVerificationService: unexpected error', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
      * Get movie details from TMDb including credits.
      */
     private function getMovieDetails(int $tmdbId): array

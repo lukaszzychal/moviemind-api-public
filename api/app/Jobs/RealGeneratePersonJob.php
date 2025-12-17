@@ -8,6 +8,7 @@ use App\Enums\Locale;
 use App\Models\Person;
 use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
+use App\Services\EntityVerificationServiceInterface;
 use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
@@ -82,7 +83,14 @@ class RealGeneratePersonJob implements ShouldQueue
             }
 
             try {
-                [$person, $bio, $localeValue, $contextTag] = $this->createPersonRecord($openAiClient);
+                $result = $this->createPersonRecord($openAiClient);
+
+                // If result is null, suggested slugs were found and error was already handled
+                if ($result === null) {
+                    return;
+                }
+
+                [$person, $bio, $localeValue, $contextTag] = $result;
                 $this->promoteDefaultIfEligible($person, $bio);
                 $this->invalidatePersonCaches($person);
                 $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $localeValue, $contextTag);
@@ -165,6 +173,30 @@ class RealGeneratePersonJob implements ShouldQueue
 
             // Check if it's a "not found" error from AI
             if (stripos($error, 'not found') !== false) {
+                // Try to find suggested slugs
+                $suggestedSlugs = $this->findSuggestedSlugs();
+
+                if (! empty($suggestedSlugs)) {
+                    Log::info('Person not found by AI during refresh, but found suggested slugs in TMDb', [
+                        'slug' => $this->slug,
+                        'job_id' => $this->jobId,
+                        'suggestions_count' => count($suggestedSlugs),
+                    ]);
+
+                    // Format error with suggested slugs
+                    $errorFormatter = app(JobErrorFormatter::class);
+                    $errorData = $errorFormatter->formatError(
+                        new \RuntimeException("Person not found: {$this->slug}"),
+                        $this->slug,
+                        'PERSON',
+                        $suggestedSlugs
+                    );
+
+                    $this->updateCache('FAILED', error: $errorData);
+
+                    return; // Don't throw exception, just end the job with error
+                }
+
                 Log::warning('Person not found by AI during refresh', [
                     'slug' => $this->slug,
                     'job_id' => $this->jobId,
@@ -446,7 +478,10 @@ class RealGeneratePersonJob implements ShouldQueue
     /**
      * @return array{0: Person, 1: PersonBio, 2: string, 3: string}
      */
-    private function createPersonRecord(OpenAiClientInterface $openAiClient): array
+    /**
+     * @return array{0: Person, 1: PersonBio, 2: string, 3: string}|null Returns null if suggested slugs were found (error already handled)
+     */
+    private function createPersonRecord(OpenAiClientInterface $openAiClient): ?array
     {
         // Pre-generation validation (before calling AI)
         if (Feature::active('hallucination_guard')) {
@@ -474,7 +509,31 @@ class RealGeneratePersonJob implements ShouldQueue
 
             // Check if it's a "not found" error from AI
             if (stripos($error, 'not found') !== false) {
-                Log::warning('Person not found by AI', [
+                // Try to find suggested slugs
+                $suggestedSlugs = $this->findSuggestedSlugs();
+
+                if (! empty($suggestedSlugs)) {
+                    Log::info('Person not found by AI, but found suggested slugs in TMDb', [
+                        'slug' => $this->slug,
+                        'job_id' => $this->jobId,
+                        'suggestions_count' => count($suggestedSlugs),
+                    ]);
+
+                    // Format error with suggested slugs
+                    $errorFormatter = app(JobErrorFormatter::class);
+                    $errorData = $errorFormatter->formatError(
+                        new \RuntimeException("Person not found: {$this->slug}"),
+                        $this->slug,
+                        'PERSON',
+                        $suggestedSlugs
+                    );
+
+                    $this->updateCache('FAILED', error: $errorData);
+
+                    return null; // Don't throw exception, just end the job with error
+                }
+
+                Log::warning('Person not found by AI and no suggestions available', [
                     'slug' => $this->slug,
                     'job_id' => $this->jobId,
                 ]);
@@ -663,5 +722,57 @@ class RealGeneratePersonJob implements ShouldQueue
             $resolvedLocale,
             $resolvedContextTag
         );
+    }
+
+    /**
+     * Find suggested slugs from TMDb when person is not found.
+     * Searches TMDb for people matching the slug and generates suggested slugs.
+     *
+     * @return array<int, array{slug: string, name: string, tmdb_id: int}>|null
+     */
+    private function findSuggestedSlugs(): ?array
+    {
+        // Only search if TMDb verification is enabled
+        if (! Feature::active('tmdb_verification')) {
+            return null;
+        }
+
+        try {
+            /** @var EntityVerificationServiceInterface $tmdbService */
+            $tmdbService = app(EntityVerificationServiceInterface::class);
+            $searchResults = $tmdbService->searchPeople($this->slug, 5);
+
+            if (empty($searchResults)) {
+                return null;
+            }
+
+            // Generate suggested slugs from TMDb results
+            $suggestedSlugs = [];
+            foreach ($searchResults as $result) {
+                $name = $result['name'];
+                if (empty($name)) {
+                    continue;
+                }
+
+                // Generate slug using Person model method
+                $suggestedSlug = Person::generateSlug($name);
+
+                $suggestedSlugs[] = [
+                    'slug' => $suggestedSlug,
+                    'name' => $name,
+                    'tmdb_id' => $result['id'],
+                ];
+            }
+
+            return $suggestedSlugs;
+        } catch (\Throwable $e) {
+            Log::warning('Failed to find suggested slugs from TMDb', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }

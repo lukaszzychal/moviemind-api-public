@@ -29,4 +29,11 @@ interface EntityVerificationServiceInterface
      * @return array{name: string, birthday: string, place_of_birth: string, id: int, biography?: string}|null
      */
     public function verifyPerson(string $slug): ?array;
+
+    /**
+     * Search for people in external database (returns multiple results for disambiguation).
+     *
+     * @return array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int, biography?: string}>
+     */
+    public function searchPeople(string $slug, int $limit = 5): array;
 }

@@ -232,6 +232,27 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
+#### `TASK-051` - Sugerowanie alternatywnych slugów przy błędzie "not found"
+- **Status:** 🔄 IN_PROGRESS
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 3-4 godziny
+- **Czas rozpoczęcia:** 2025-12-16
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Gdy AI zwraca błąd "Movie not found" lub "Person not found", system powinien wyszukać w TMDb możliwe pasujące filmy/osoby i zwrócić listę sugerowanych slugów w odpowiedzi błędu.
+- **Szczegóły:**
+  - Rozszerzyć `JobErrorFormatter` o możliwość dodania `suggested_slugs` do błędu typu `NOT_FOUND`
+  - W `RealGenerateMovieJob` - gdy AI zwraca "not found" i nie ma TMDb data, wyszukać w TMDb możliwe filmy i wygenerować slugi
+  - W `RealGeneratePersonJob` - analogicznie dla osób
+  - Każdy sugerowany slug powinien zawierać: `slug`, `title`/`name`, `release_year` (dla filmów), `director` (dla filmów), `tmdb_id`
+  - Odpowiedź błędu powinna zawierać pole `suggested_slugs` z listą możliwych opcji
+- **Zależności:** Brak
+- **Utworzone:** 2025-12-16
+- **Uwaga:** Poprawia UX - użytkownik dostaje sugestie zamiast tylko błędu
+
+---
+
 #### `TASK-008` - Webhooks System (Roadmap)
 - **Status:** ⏳ PENDING
 - **Priorytet:** 🟢 Niski
