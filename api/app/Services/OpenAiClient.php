@@ -62,11 +62,14 @@ class OpenAiClient implements OpenAiClientInterface
         if ($tmdbData !== null) {
             $tmdbData = $this->sanitizeTmdbData($tmdbData);
             $tmdbContext = $this->formatTmdbContext($tmdbData);
+            $directorInstruction = ! empty($tmdbData['director'])
+                ? 'The director is provided in TMDb data. Use that director name.'
+                : 'The director is NOT provided in TMDb data. You MUST research and provide the correct director name for this movie.';
             $systemPrompt = 'You are a movie database assistant. Generate a unique, original description for the movie based on the provided TMDb data. Do NOT copy the overview from TMDb. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot description), genres (array).';
-            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot), genres (array).";
+            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\n{$directorInstruction}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Director: {$directorInstruction}\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n\nReturn JSON with: title, release_year, director, description (your original movie plot), genres (array).";
         } else {
-            $systemPrompt = 'You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {"error": "Movie not found"}. Only if the movie exists, generate movie information from the slug. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
-            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).";
+            $systemPrompt = 'You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {"error": "Movie not found"}. Only if the movie exists, generate movie information from the slug. You MUST provide the director name by researching the movie. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
+            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).\n\nIMPORTANT requirements:\n- Director: You MUST research and provide the correct director name for this movie.\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.";
         }
 
         return $this->makeApiCall('movie', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
@@ -514,7 +517,7 @@ class OpenAiClient implements OpenAiClientInterface
                     ],
                     'description' => [
                         'type' => 'string',
-                        'description' => 'Movie plot description',
+                        'description' => 'Comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). Should be engaging, informative, and provide a clear overview of the movie\'s plot without major spoilers.',
                     ],
                     'genres' => [
                         'type' => 'array',
@@ -524,7 +527,7 @@ class OpenAiClient implements OpenAiClientInterface
                         'description' => 'Array of genre names',
                     ],
                 ],
-                'required' => [],
+                'required' => ['title', 'release_year', 'director', 'description', 'genres'],
             ],
         ];
     }

@@ -20,7 +20,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
 
 /**
@@ -198,8 +197,44 @@ class RealGenerateMovieJob implements ShouldQueue
             }
         }
 
-        $descriptionText = $aiResponse['description']
-            ?? sprintf('Regenerated description for %s via RealGenerateMovieJob.', $movie->title);
+        $descriptionText = $aiResponse['description'] ?? null;
+
+        // Validate description for refresh
+        if (! is_string($descriptionText) || trim($descriptionText) === '') {
+            Log::warning('AI response missing description during refresh', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'movie_id' => $movie->id,
+                'ai_response' => $aiResponse,
+            ]);
+
+            throw new \RuntimeException('AI response missing required description field');
+        }
+
+        if (strlen(trim($descriptionText)) < 50) {
+            Log::warning('AI response description too short during refresh', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'movie_id' => $movie->id,
+                'description_length' => strlen(trim($descriptionText)),
+                'ai_response' => $aiResponse,
+            ]);
+
+            throw new \RuntimeException(
+                'AI response description must be at least 50 characters long (current: '.strlen(trim($descriptionText)).')'
+            );
+        }
+
+        if (stripos($descriptionText, 'Regenerated description for') === 0 || stripos($descriptionText, 'Generated description for') === 0) {
+            Log::warning('AI response description is fallback text during refresh', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'movie_id' => $movie->id,
+                'ai_response' => $aiResponse,
+            ]);
+
+            throw new \RuntimeException('AI response description cannot be fallback text');
+        }
 
         $locale = $this->resolveLocale();
         $baselineLockingActive = $this->baselineLockingEnabled();
@@ -453,6 +488,348 @@ class RealGenerateMovieJob implements ShouldQueue
     }
 
     /**
+     * Get the minimum valid release year for movies.
+     * 1888 marks the beginning of cinematography with "Roundhay Garden Scene" by Louis Le Prince.
+     *
+     * @return int Minimum valid release year
+     */
+    private function getMinimumReleaseYear(): int
+    {
+        return 1888;
+    }
+
+    /**
+     * Get the maximum valid release year for movies.
+     * Current year + 10 allows for announced future releases.
+     *
+     * @return int Maximum valid release year
+     */
+    private function getMaximumReleaseYear(): int
+    {
+        return (int) date('Y') + 10;
+    }
+
+    /**
+     * Check if release year is missing (null).
+     *
+     * @param  int|null  $releaseYear  Release year to check
+     * @return bool True if release year is missing
+     */
+    private function isReleaseYearMissing(?int $releaseYear): bool
+    {
+        return $releaseYear === null;
+    }
+
+    /**
+     * Check if release year is before the cinema era began.
+     *
+     * @param  int|null  $releaseYear  Release year to check
+     * @return bool True if release year is before cinema era
+     */
+    private function isReleaseYearBeforeCinemaEra(?int $releaseYear): bool
+    {
+        if ($releaseYear === null) {
+            return false;
+        }
+
+        return $releaseYear < $this->getMinimumReleaseYear();
+    }
+
+    /**
+     * Check if release year is too far in the future.
+     *
+     * @param  int|null  $releaseYear  Release year to check
+     * @return bool True if release year is too far in the future
+     */
+    private function isReleaseYearTooFarInFuture(?int $releaseYear): bool
+    {
+        if ($releaseYear === null) {
+            return false;
+        }
+
+        return $releaseYear > $this->getMaximumReleaseYear();
+    }
+
+    /**
+     * Check if release year is valid (within acceptable range).
+     *
+     * @param  int|null  $releaseYear  Release year to validate
+     * @return bool True if release year is valid
+     */
+    private function isReleaseYearValid(?int $releaseYear): bool
+    {
+        if ($this->isReleaseYearMissing($releaseYear)) {
+            return false;
+        }
+
+        if ($this->isReleaseYearBeforeCinemaEra($releaseYear)) {
+            return false;
+        }
+
+        if ($this->isReleaseYearTooFarInFuture($releaseYear)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if title is missing or empty.
+     *
+     * @param  string|null  $title  Title to check
+     * @return bool True if title is missing or empty
+     */
+    private function isTitleMissingOrEmpty(?string $title): bool
+    {
+        return ! is_string($title) || trim($title) === '';
+    }
+
+    /**
+     * Check if director is missing (null or not a string).
+     *
+     * @param  string|null  $director  Director to check
+     * @return bool True if director is missing
+     */
+    private function isDirectorMissing(?string $director): bool
+    {
+        return ! is_string($director);
+    }
+
+    /**
+     * Check if director is empty (whitespace only).
+     *
+     * @param  string|null  $director  Director to check
+     * @return bool True if director is empty
+     */
+    private function isDirectorEmpty(?string $director): bool
+    {
+        if (! is_string($director)) {
+            return false;
+        }
+
+        return trim($director) === '';
+    }
+
+    /**
+     * Check if director is the fallback "Unknown Director" value.
+     *
+     * @param  string|null  $director  Director to check
+     * @return bool True if director is "Unknown Director"
+     */
+    private function isDirectorUnknownFallback(?string $director): bool
+    {
+        if (! is_string($director)) {
+            return false;
+        }
+
+        return strtolower(trim($director)) === 'unknown director';
+    }
+
+    /**
+     * Check if director is valid (not missing, not empty, not fallback value).
+     *
+     * @param  string|null  $director  Director to validate
+     * @return bool True if director is valid
+     */
+    private function isDirectorValid(?string $director): bool
+    {
+        if ($this->isDirectorMissing($director)) {
+            return false;
+        }
+
+        if ($this->isDirectorEmpty($director)) {
+            return false;
+        }
+
+        if ($this->isDirectorUnknownFallback($director)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get minimum required length for movie description.
+     *
+     * @return int Minimum description length in characters
+     */
+    private function getMinimumDescriptionLength(): int
+    {
+        return 50;
+    }
+
+    /**
+     * Check if description is missing (null or not a string).
+     *
+     * @param  string|null  $descriptionText  Description to check
+     * @return bool True if description is missing
+     */
+    private function isDescriptionMissing(?string $descriptionText): bool
+    {
+        return ! is_string($descriptionText);
+    }
+
+    /**
+     * Check if description is empty (whitespace only).
+     *
+     * @param  string|null  $descriptionText  Description to check
+     * @return bool True if description is empty
+     */
+    private function isDescriptionEmpty(?string $descriptionText): bool
+    {
+        if (! is_string($descriptionText)) {
+            return false;
+        }
+
+        return trim($descriptionText) === '';
+    }
+
+    /**
+     * Get the actual length of description (trimmed).
+     *
+     * @param  string|null  $descriptionText  Description to measure
+     * @return int Description length in characters
+     */
+    private function getDescriptionLength(?string $descriptionText): int
+    {
+        if (! is_string($descriptionText)) {
+            return 0;
+        }
+
+        return strlen(trim($descriptionText));
+    }
+
+    /**
+     * Check if description is too short (below minimum length).
+     *
+     * @param  string|null  $descriptionText  Description to check
+     * @return bool True if description is too short
+     */
+    private function isDescriptionTooShort(?string $descriptionText): bool
+    {
+        $length = $this->getDescriptionLength($descriptionText);
+        $minimumLength = $this->getMinimumDescriptionLength();
+
+        return $length < $minimumLength;
+    }
+
+    /**
+     * Check if description is the fallback text.
+     *
+     * @param  string|null  $descriptionText  Description to check
+     * @return bool True if description is fallback text
+     */
+    private function isDescriptionFallbackText(?string $descriptionText): bool
+    {
+        if (! is_string($descriptionText)) {
+            return false;
+        }
+
+        return stripos($descriptionText, 'Generated description for') === 0;
+    }
+
+    /**
+     * Check if description is valid (not missing, not empty, long enough, not fallback).
+     *
+     * @param  string|null  $descriptionText  Description to validate
+     * @return array{valid: bool, error: string|null} Validation result with error message if invalid
+     */
+    private function validateDescription(?string $descriptionText): array
+    {
+        if ($this->isDescriptionMissing($descriptionText) || $this->isDescriptionEmpty($descriptionText)) {
+            return [
+                'valid' => false,
+                'error' => 'Description is required and cannot be empty',
+            ];
+        }
+
+        if ($this->isDescriptionTooShort($descriptionText)) {
+            $length = $this->getDescriptionLength($descriptionText);
+            $minimumLength = $this->getMinimumDescriptionLength();
+
+            return [
+                'valid' => false,
+                'error' => "Description must be at least {$minimumLength} characters long (current: {$length})",
+            ];
+        }
+
+        if ($this->isDescriptionFallbackText($descriptionText)) {
+            return [
+                'valid' => false,
+                'error' => 'Description cannot be the fallback text "Generated description for..."',
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'error' => null,
+        ];
+    }
+
+    /**
+     * Validate AI response contains all required fields with proper values.
+     *
+     * @param  array<string, mixed>  $aiResponse  Full AI response
+     * @param  string|null  $title  Extracted title
+     * @param  int|null  $releaseYear  Extracted release year
+     * @param  string|null  $director  Extracted director
+     * @param  string|null  $descriptionText  Extracted description
+     *
+     * @throws \RuntimeException If required fields are missing or invalid
+     */
+    private function validateAiResponse(
+        array $aiResponse,
+        ?string $title,
+        ?int $releaseYear,
+        ?string $director,
+        ?string $descriptionText
+    ): void {
+        $errors = [];
+
+        // Validate title
+        if ($this->isTitleMissingOrEmpty($title)) {
+            $errors[] = 'Title is required and cannot be empty';
+        }
+
+        // Validate release year
+        if (! $this->isReleaseYearValid($releaseYear)) {
+            $minYear = $this->getMinimumReleaseYear();
+            $maxYear = $this->getMaximumReleaseYear();
+            $errors[] = "Release year is required and must be a valid year ({$minYear} to {$maxYear})";
+        }
+
+        // Validate director
+        if (! $this->isDirectorValid($director)) {
+            $errors[] = 'Director is required and cannot be empty or "Unknown Director"';
+        }
+
+        // Validate description
+        $descriptionValidation = $this->validateDescription($descriptionText);
+        if (! $descriptionValidation['valid']) {
+            $errors[] = $descriptionValidation['error'];
+        }
+
+        if (! empty($errors)) {
+            Log::warning('AI response validation failed for movie', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'errors' => $errors,
+                'ai_response' => $aiResponse,
+                'extracted_fields' => [
+                    'title' => $title,
+                    'release_year' => $releaseYear,
+                    'director' => $director,
+                    'description_length' => $descriptionText !== null ? strlen($descriptionText) : 0,
+                ],
+            ]);
+
+            throw new \RuntimeException(
+                'AI response validation failed: '.implode('; ', $errors)
+            );
+        }
+    }
+
+    /**
      * @return array{0: Movie, 1: MovieDescription, 2: string, 3: string}
      */
     private function createMovieRecord(OpenAiClientInterface $openAiClient): array
@@ -514,11 +891,31 @@ class RealGenerateMovieJob implements ShouldQueue
             }
         }
 
-        $title = $aiResponse['title'] ?? Str::of($this->slug)->replace('-', ' ')->title();
-        $releaseYear = $aiResponse['release_year'] ?? 1999;
-        $director = $aiResponse['director'] ?? 'Unknown Director';
-        $descriptionText = $aiResponse['description'] ?? "Generated description for {$title}.";
-        $genres = $aiResponse['genres'] ?? ['Action', 'Drama'];
+        // Validate and extract required fields from AI response
+        $title = $aiResponse['title'] ?? null;
+        $releaseYear = $aiResponse['release_year'] ?? null;
+        $director = $aiResponse['director'] ?? null;
+        $descriptionText = $aiResponse['description'] ?? null;
+        $genres = $aiResponse['genres'] ?? [];
+
+        // Use TMDb data as fallback for missing fields (only if TMDb data is available)
+        if ($this->tmdbData !== null) {
+            if (empty($title) && ! empty($this->tmdbData['title'])) {
+                $title = $this->tmdbData['title'];
+            }
+            if (empty($director) && ! empty($this->tmdbData['director'])) {
+                $director = $this->tmdbData['director'];
+            }
+            if ($releaseYear === null && ! empty($this->tmdbData['release_date'])) {
+                $year = (int) substr($this->tmdbData['release_date'], 0, 4);
+                if ($year > 0) {
+                    $releaseYear = $year;
+                }
+            }
+        }
+
+        // Validate required fields before proceeding
+        $this->validateAiResponse($aiResponse, $title, $releaseYear, $director, $descriptionText);
 
         // Generate unique slug from AI data instead of using slug from request
         // This ensures uniqueness and prevents conflicts with ambiguous slugs
