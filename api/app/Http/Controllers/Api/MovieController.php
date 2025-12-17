@@ -113,14 +113,17 @@ class MovieController extends Controller
                 return $this->respondWithDisambiguation($slug, $searchResults);
             }
 
-            // If search found results but verifyMovie didn't, return suggested slugs
+            // If search found results but verifyMovie didn't, use first result as tmdbData
+            // This allows job to use TMDb data as fallback when AI returns "not found"
             if (count($searchResults) === 1) {
                 $suggestedSlugs = $this->generateSuggestedSlugsFromSearchResults($searchResults);
+                // Use first search result as tmdbData - job can use it as fallback
+                $firstResult = $searchResults[0];
                 $result = $this->queueMovieGenerationAction->handle(
                     $slug,
                     confidence: $validation['confidence'],
                     locale: Locale::EN_US->value,
-                    tmdbData: null
+                    tmdbData: $firstResult
                 );
                 $result['suggested_slugs'] = $suggestedSlugs;
 
