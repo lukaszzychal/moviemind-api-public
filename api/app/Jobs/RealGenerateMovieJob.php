@@ -179,7 +179,11 @@ class RealGenerateMovieJob implements ShouldQueue
                     'movie_id' => $movie->id,
                 ]);
 
-                throw new \RuntimeException("Movie not found: {$this->slug}");
+                throw new \RuntimeException(
+                    "Movie not found by AI during refresh: '{$this->slug}' (movie_id: {$movie->id}). ".
+                    'AI could not generate description for existing movie. '.
+                    'This may indicate the movie data is incorrect or the slug format is ambiguous.'
+                );
             }
 
             throw new \RuntimeException('AI API returned error: '.$error);
@@ -342,13 +346,16 @@ class RealGenerateMovieJob implements ShouldQueue
             }
         }
 
-        $suffix = 2;
-        do {
-            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
-            $suffix++;
-        } while (in_array($candidate, $existingTags, true));
+        // All standard tags are used - fallback to DEFAULT
+        // This prevents creating invalid enum values like "DEFAULT_2"
+        // If user needs more descriptions, they should explicitly specify context_tag
+        Log::warning('All standard context tags are used, falling back to DEFAULT', [
+            'movie_id' => $movie->id,
+            'slug' => $movie->slug,
+            'existing_tags' => $existingTags,
+        ]);
 
-        return $candidate;
+        return ContextTag::DEFAULT->value;
     }
 
     private function cacheKey(): string
@@ -462,6 +469,15 @@ class RealGenerateMovieJob implements ShouldQueue
 
         if (! $baseline instanceof MovieDescription) {
             return $this->persistDescription($movie, $locale, $this->determineContextTag($movie, $locale), $attributes);
+        }
+
+        // If context_tag is explicitly provided and differs from baseline, create new description instead
+        if ($this->contextTag !== null) {
+            $normalizedContextTag = $this->normalizeContextTag($this->contextTag);
+            if ($normalizedContextTag !== null && $baseline->context_tag->value !== $normalizedContextTag) {
+                // User wants a different context_tag, create new description instead of updating baseline
+                return $this->persistDescription($movie, $locale, $normalizedContextTag, $attributes);
+            }
         }
 
         $baseline->fill(array_merge($attributes, [
@@ -963,7 +979,13 @@ class RealGenerateMovieJob implements ShouldQueue
                         'job_id' => $this->jobId,
                     ]);
 
-                    throw new \RuntimeException("Movie not found: {$this->slug}");
+                    throw new \RuntimeException(
+                        "Movie not found: '{$this->slug}'. ".
+                        'AI could not generate description and no TMDb data available. '.
+                        "Possible solutions: 1) Verify slug format (title-year, e.g., 'the-matrix-1999'), ".
+                        '2) Use disambiguation endpoint with ?tmdb_id parameter if multiple movies match, '.
+                        '3) Check if movie exists in TMDb database.'
+                    );
                 }
             } else {
                 // Other AI errors (not "not found")
@@ -1056,6 +1078,9 @@ class RealGenerateMovieJob implements ShouldQueue
                     'director' => $director,
                     'genres' => $genres,
                 ]);
+
+                // Invalidate movie search cache when new movie is created
+                $this->invalidateMovieSearchCache();
             }
         }
 
@@ -1253,6 +1278,26 @@ class RealGenerateMovieJob implements ShouldQueue
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * Invalidate movie search cache when a new movie is created.
+     * Uses tagged cache if supported, otherwise clears all search cache keys.
+     */
+    private function invalidateMovieSearchCache(): void
+    {
+        try {
+            // Try tagged cache invalidation (works with Redis, Memcached, DynamoDB)
+            Cache::tags(['movie_search'])->flush();
+            Log::debug('RealGenerateMovieJob: invalidated tagged cache after movie creation');
+        } catch (\BadMethodCallException $e) {
+            // Fallback: For database/file cache, we can't easily invalidate by tag
+            // Cache will expire naturally after TTL (1 hour)
+            // In production, consider using Redis for better cache control
+            Log::debug('RealGenerateMovieJob: tagged cache not supported, cache will expire naturally', [
+                'driver' => config('cache.default'),
+            ]);
         }
     }
 }

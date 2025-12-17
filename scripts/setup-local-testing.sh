@@ -646,6 +646,105 @@ main() {
     echo "  • Zatrzymanie: $DOCKER_COMPOSE_CMD down"
     echo "  • Restart: $DOCKER_COMPOSE_CMD restart"
     echo ""
+    
+    # API Endpoints Reference
+    print_header "📚 API Endpoints Reference"
+    
+    echo -e "${YELLOW}📽️  MOVIES${NC}"
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/movies"
+    echo "  Description: List all movies (with optional ?q=search query)"
+    echo "  Example: ${API_ENDPOINT}/movies?q=Matrix"
+    echo ""
+    
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/movies/search"
+    echo "  Description: Advanced movie search (local + TMDb)"
+    echo "  Query params: ?q=title&year=1999&director=Name&actor[]=Name1&actor[]=Name2&page=1&per_page=20"
+    echo "  Example: ${API_ENDPOINT}/movies/search?q=Matrix&year=1999&page=1&per_page=10"
+    echo ""
+    
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/movies/{slug}"
+    echo "  Description: Get movie by slug (may return disambiguation if ambiguous)"
+    echo "  Query params: ?description_id=123 (optional)"
+    echo "  Example: ${API_ENDPOINT}/movies/the-matrix-1999"
+    echo "  Example: ${API_ENDPOINT}/movies/matrix?tmdb_id=603 (select from disambiguation)"
+    echo ""
+    
+    echo -e "${GREEN}POST${NC} ${API_ENDPOINT}/movies/{slug}/refresh"
+    echo "  Description: Refresh movie metadata from TMDb"
+    echo "  Example: curl -X POST ${API_ENDPOINT}/movies/the-matrix-1999/refresh"
+    echo ""
+    
+    echo -e "${YELLOW}👤 PEOPLE${NC}"
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/people"
+    echo "  Description: List all people (with optional ?q=search query)"
+    echo "  Example: ${API_ENDPOINT}/people?q=Keanu"
+    echo ""
+    
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/people/{slug}"
+    echo "  Description: Get person by slug"
+    echo "  Query params: ?bio_id=123 (optional)"
+    echo "  Example: ${API_ENDPOINT}/people/keanu-reeves"
+    echo ""
+    
+    echo -e "${GREEN}POST${NC} ${API_ENDPOINT}/people/{slug}/refresh"
+    echo "  Description: Refresh person metadata from TMDb"
+    echo "  Example: curl -X POST ${API_ENDPOINT}/people/keanu-reeves/refresh"
+    echo ""
+    
+    echo -e "${YELLOW}🤖 GENERATION${NC}"
+    echo -e "${GREEN}POST${NC} ${API_ENDPOINT}/generate"
+    echo "  Description: Queue AI description/bio generation"
+    echo "  Required body: {\"entity_type\":\"MOVIE\",\"slug\":\"the-matrix-1999\"}"
+    echo "  Optional body fields: \"locale\":\"en-US\", \"context_tag\":\"DEFAULT\""
+    echo "  entity_type: MOVIE | ACTOR | PERSON"
+    echo "  context_tag: DEFAULT | modern | critical | humorous"
+    echo "  Example: curl -X POST ${API_ENDPOINT}/generate -H 'Content-Type: application/json' -d '{\"entity_type\":\"MOVIE\",\"slug\":\"the-matrix-1999\",\"locale\":\"en-US\",\"context_tag\":\"DEFAULT\"}'"
+    echo ""
+    
+    echo -e "${YELLOW}📋 JOBS${NC}"
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/jobs/{id}"
+    echo "  Description: Get generation job status"
+    echo "  Example: ${API_ENDPOINT}/jobs/7bec7007-7e93-4db5-afe4-0a96c490a16d"
+    echo ""
+    
+    echo -e "${YELLOW}🏥 HEALTH${NC}"
+    echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/health/openai"
+    echo "  Description: Check OpenAI API connectivity"
+    echo "  Example: ${API_ENDPOINT}/health/openai"
+    echo ""
+    
+    echo -e "${YELLOW}🔐 ADMIN (requires Basic Auth)${NC}"
+    echo -e "${GREEN}GET${NC}  ${ADMIN_ENDPOINT}/flags"
+    echo "  Description: List all feature flags"
+    echo "  Example: curl -u admin:password ${ADMIN_ENDPOINT}/flags"
+    echo ""
+    
+    echo -e "${GREEN}POST${NC} ${ADMIN_ENDPOINT}/flags/{name}"
+    echo "  Description: Set feature flag state"
+    echo "  Body: {\"state\":\"on\"} or {\"state\":\"off\"}"
+    echo "  Example: curl -u admin:password -X POST ${ADMIN_ENDPOINT}/flags/ai_description_generation -H 'Content-Type: application/json' -d '{\"state\":\"on\"}'"
+    echo ""
+    
+    echo -e "${GREEN}GET${NC}  ${ADMIN_ENDPOINT}/flags/usage"
+    echo "  Description: Get feature flags usage statistics"
+    echo "  Example: curl -u admin:password ${ADMIN_ENDPOINT}/flags/usage"
+    echo ""
+    
+    echo -e "${GREEN}GET${NC}  ${ADMIN_ENDPOINT}/debug/config"
+    echo "  Description: Get debug configuration (development only)"
+    echo "  Example: curl -u admin:password ${ADMIN_ENDPOINT}/debug/config"
+    echo ""
+    
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}Response Codes:${NC}"
+    echo "  200 - Success"
+    echo "  202 - Generation queued (check job status)"
+    echo "  300 - Disambiguation required (multiple matches)"
+    echo "  404 - Not found"
+    echo "  422 - Validation error"
+    echo "  500 - Server error"
+    echo ""
 }
 
 # Run main function
