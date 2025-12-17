@@ -131,11 +131,11 @@ class MovieResponseFormatter
             'Multiple movies found',
             300,
             [
-                'message' => 'Czy chodzi o któryś z tych filmów? Wybierz jeden z poniższych:',
+                'message' => 'Multiple movies match your search. Please select one from the options below:',
                 'slug' => $slug,
                 'options' => $options,
                 'count' => count($options),
-
+                'hint' => 'Use the slug from options to access specific movie (e.g., GET /api/v1/movies/{slug})',
             ]
         );
     }
@@ -251,13 +251,12 @@ class MovieResponseFormatter
     /**
      * Format refresh success response.
      */
-    public function formatRefreshSuccess(string $slug, int $movieId, int $tmdbId): JsonResponse
+    public function formatRefreshSuccess(string $slug, int $movieId): JsonResponse
     {
         return response()->json([
             'message' => 'Movie data refreshed from TMDb',
             'slug' => $slug,
             'movie_id' => $movieId,
-            'tmdb_id' => $tmdbId,
             'refreshed_at' => now()->toIso8601String(),
         ]);
     }

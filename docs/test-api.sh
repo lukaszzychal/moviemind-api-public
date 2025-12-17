@@ -91,7 +91,7 @@ fi
 # 6. Disambiguation Example
 echo -e "${BLUE}=== Disambiguation ===${NC}"
 make_request "GET" "/movies/bad-boys" "" "Get movie: bad-boys (may trigger disambiguation)"
-make_request "GET" "/movies/bad-boys?tmdb_id=9739" "" "Select from disambiguation: bad-boys (tmdb_id=9739)"
+make_request "GET" "/movies/bad-boys?slug=bad-boys-ii-2003" "" "Select from disambiguation: bad-boys (slug=bad-boys-ii-2003)"
 
 # 7. People
 echo -e "${BLUE}=== People ===${NC}"
@@ -128,7 +128,7 @@ echo -e "${GREEN}GET${NC}  ${API_URL}/movies/{slug}"
 echo "  Description: Get movie by slug (may return disambiguation if ambiguous)"
 echo "  Query params: ?description_id=123 (optional)"
 echo "  Example: ${API_URL}/movies/the-matrix-1999"
-echo "  Example: ${API_URL}/movies/matrix?tmdb_id=603 (select from disambiguation)"
+echo "  Example: ${API_URL}/movies/matrix?slug=the-matrix-1999 (select from disambiguation)"
 echo ""
 
 echo -e "${GREEN}POST${NC} ${API_URL}/movies/{slug}/refresh"

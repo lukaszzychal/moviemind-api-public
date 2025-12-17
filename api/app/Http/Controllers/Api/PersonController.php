@@ -103,10 +103,11 @@ class PersonController extends Controller
             ], 400);
         }
 
-        // Check for disambiguation request
-        $tmdbId = $request->query('tmdb_id');
-        if ($tmdbId !== null) {
-            return $this->handleDisambiguationSelection($slug, (int) $tmdbId);
+        // Check for disambiguation selection (user selects specific slug from disambiguation)
+        // Note: Disambiguation now uses slugs instead of tmdb_id
+        $selectedSlug = $request->query('slug');
+        if ($selectedSlug !== null) {
+            return $this->handleDisambiguationSelection($slug, (string) $selectedSlug);
         }
 
         // Verify person exists in TMDb before queueing job (if feature flag enabled)
@@ -187,35 +188,52 @@ class PersonController extends Controller
     }
 
     /**
-     * Handle disambiguation selection when user chooses specific person from TMDb results.
+     * Handle disambiguation selection when user chooses specific person by slug.
+     * This method is called when user selects a slug from disambiguation options.
      */
-    private function handleDisambiguationSelection(string $slug, int $tmdbId): JsonResponse
+    private function handleDisambiguationSelection(string $originalSlug, string $selectedSlug): JsonResponse
     {
-        // Search for people and find the one matching tmdb_id
-        $searchResults = $this->tmdbVerificationService->searchPeople($slug, 10);
-        $selectedPerson = null;
+        // Find person by selected slug
+        $person = $this->personRepository->findBySlugWithRelations($selectedSlug);
 
-        foreach ($searchResults as $result) {
-            if ($result['id'] === $tmdbId) {
-                $selectedPerson = $result;
-                break;
+        if (! $person) {
+            // Person doesn't exist yet - need to find it in TMDb and create it
+            // Search for people matching the original slug
+            $searchResults = $this->tmdbVerificationService->searchPeople($originalSlug, 10);
+
+            // Find the one that matches the selected slug
+            $selectedPerson = null;
+            foreach ($searchResults as $result) {
+                $birthDate = $result['birthday'] ?? null;
+                $birthplace = $result['place_of_birth'] ?? null;
+                $generatedSlug = Person::generateSlug($result['name'], $birthDate, $birthplace);
+
+                if ($generatedSlug === $selectedSlug) {
+                    $selectedPerson = $result;
+                    break;
+                }
             }
+
+            if (! $selectedPerson) {
+                return response()->json(['error' => 'Selected person not found in search results'], 404);
+            }
+
+            // Re-validate slug for confidence score
+            $validation = SlugValidator::validatePersonSlug($selectedSlug);
+            $result = $this->queuePersonGenerationAction->handle(
+                $selectedSlug,
+                confidence: $validation['confidence'],
+                locale: Locale::EN_US->value,
+                tmdbData: $selectedPerson
+            );
+
+            return response()->json($result, 202);
         }
 
-        if (! $selectedPerson) {
-            return response()->json(['error' => 'Selected person not found in search results'], 404);
-        }
+        // Person exists - return it directly by calling show method with a new request
+        $request = Request::create("/api/v1/people/{$selectedSlug}", 'GET');
 
-        // Re-validate slug for confidence score
-        $validation = SlugValidator::validatePersonSlug($slug);
-        $result = $this->queuePersonGenerationAction->handle(
-            $slug,
-            confidence: $validation['confidence'],
-            locale: Locale::EN_US->value,
-            tmdbData: $selectedPerson
-        );
-
-        return response()->json($result, 202);
+        return $this->show($request, $selectedSlug);
     }
 
     /**
@@ -223,17 +241,19 @@ class PersonController extends Controller
      */
     private function respondWithDisambiguation(string $slug, array $searchResults): JsonResponse
     {
-        $options = array_map(function ($result) use ($slug) {
-            $birthYear = ! empty($result['birthday']) ? substr($result['birthday'], 0, 4) : null;
+        $options = array_map(function ($result) {
+            $birthDate = $result['birthday'] ?? null;
             $birthplace = $result['place_of_birth'] ?? null;
+            $birthYear = ! empty($birthDate) ? substr($birthDate, 0, 4) : null;
+            $suggestedSlug = Person::generateSlug($result['name'], $birthDate, $birthplace);
 
             return [
-                'tmdb_id' => $result['id'],
+                'slug' => $suggestedSlug,
                 'name' => $result['name'],
-                'birth_year' => $birthYear,
+                'birth_year' => $birthYear ? (int) $birthYear : null,
                 'birthplace' => $birthplace,
                 'biography' => substr($result['biography'] ?? '', 0, 200).(strlen($result['biography'] ?? '') > 200 ? '...' : ''),
-                'select_url' => url("/api/v1/people/{$slug}?tmdb_id={$result['id']}"),
+                'select_url' => url("/api/v1/people/{$suggestedSlug}"),
             ];
         }, $searchResults);
 
@@ -243,6 +263,7 @@ class PersonController extends Controller
             'slug' => $slug,
             'options' => $options,
             'count' => count($options),
+            'hint' => 'Use the slug from options to access specific person (e.g., GET /api/v1/people/{slug})',
         ], 300); // 300 Multiple Choices
     }
 
@@ -250,7 +271,7 @@ class PersonController extends Controller
      * Generate suggested slugs from TMDb search results.
      *
      * @param  array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int}>  $searchResults
-     * @return array<int, array{slug: string, name: string, birth_year: int|null, birthplace: string|null, tmdb_id: int}>
+     * @return array<int, array{slug: string, name: string, birth_year: int|null, birthplace: string|null}>
      */
     private function generateSuggestedSlugsFromSearchResults(array $searchResults): array
     {
@@ -269,7 +290,6 @@ class PersonController extends Controller
                 'name' => $name,
                 'birth_year' => $birthYear,
                 'birthplace' => $birthplace,
-                'tmdb_id' => $result['id'],
             ];
         }
 
@@ -303,6 +323,12 @@ class PersonController extends Controller
             return response()->json(['error' => 'Failed to refresh person data from TMDb'], 500);
         }
 
+        // Update snapshot with fresh data
+        $snapshot->update([
+            'raw_data' => $freshData,
+            'fetched_at' => now(),
+        ]);
+
         // Invalidate cache
         Cache::forget($this->cacheKey($slug, null));
 
@@ -310,7 +336,6 @@ class PersonController extends Controller
             'message' => 'Person data refreshed from TMDb',
             'slug' => $slug,
             'person_id' => $person->id,
-            'tmdb_id' => $snapshot->tmdb_id,
             'refreshed_at' => now()->toIso8601String(),
         ]);
     }

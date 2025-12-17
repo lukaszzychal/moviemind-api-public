@@ -103,8 +103,8 @@ async function runTests() {
     console.log(`${colors.blue}=== Disambiguation ===${colors.reset}`);
     await makeRequest('GET', '/movies/bad-boys', null, 
         'Get movie: bad-boys (may trigger disambiguation)');
-    await makeRequest('GET', '/movies/bad-boys?tmdb_id=9739', null, 
-        'Select from disambiguation: bad-boys (tmdb_id=9739)');
+    await makeRequest('GET', '/movies/bad-boys?slug=bad-boys-ii-2003', null, 
+        'Select from disambiguation: bad-boys (slug=bad-boys-ii-2003)');
 
     // 7. People
     console.log(`${colors.blue}=== People ===${colors.reset}`);
@@ -144,7 +144,7 @@ function printEndpointsReference() {
     console.log('  Description: Get movie by slug (may return disambiguation if ambiguous)');
     console.log('  Query params: ?description_id=123 (optional)');
     console.log(`  Example: ${API_URL}/movies/the-matrix-1999`);
-    console.log(`  Example: ${API_URL}/movies/matrix?tmdb_id=603 (select from disambiguation)`);
+    console.log(`  Example: ${API_URL}/movies/matrix?slug=the-matrix-1999 (select from disambiguation)`);
     console.log('');
 
     console.log(`${colors.green}POST${colors.reset} ${API_URL}/movies/{slug}/refresh`);

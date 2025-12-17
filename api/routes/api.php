@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
+    Route::get('movies/search', [MovieController::class, 'search']);
     Route::get('movies/{slug}', [MovieController::class, 'show']);
     Route::post('movies/{slug}/refresh', [MovieController::class, 'refresh']);
     Route::get('people', [PersonController::class, 'index']);

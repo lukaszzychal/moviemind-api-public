@@ -354,6 +354,26 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             // Get best match (first result, TMDb sorts by relevance or we prioritized by year)
             $bestMatch = $data['results'][0];
 
+            // If year was specified in slug, verify that best match has matching year
+            // This prevents returning wrong movie (e.g., "the-matrix-2003" should not return "The Matrix (1999)")
+            if ($year !== null) {
+                $bestMatchYear = ! empty($bestMatch['release_date']) ? (int) substr($bestMatch['release_date'], 0, 4) : null;
+
+                if ($bestMatchYear !== $year) {
+                    Log::info('TmdbVerificationService: best match year does not match requested year', [
+                        'slug' => $slug,
+                        'requested_year' => $year,
+                        'best_match_year' => $bestMatchYear,
+                        'best_match_title' => $bestMatch['title'] ?? null,
+                    ]);
+
+                    // Year doesn't match - return null to allow searchMovies to handle disambiguation
+                    Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                    return null;
+                }
+            }
+
             // Get movie details to extract director
             $movieDetails = $this->getMovieDetails($bestMatch['id']);
             $director = $this->extractDirector($movieDetails);

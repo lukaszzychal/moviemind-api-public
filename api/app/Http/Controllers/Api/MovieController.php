@@ -6,17 +6,18 @@ use App\Actions\QueueMovieGenerationAction;
 use App\Enums\Locale;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
+use App\Http\Responses\MovieResponseFormatter;
 use App\Models\Movie;
-use App\Models\MovieDescription;
 use App\Repositories\MovieRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
-use App\Services\MovieDisambiguationService;
+use App\Services\MovieRetrievalService;
+use App\Services\MovieSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Laravel\Pennant\Feature;
 
 class MovieController extends Controller
 {
@@ -26,214 +27,113 @@ class MovieController extends Controller
         private readonly MovieRepository $movieRepository,
         private readonly HateoasService $hateoas,
         private readonly QueueMovieGenerationAction $queueMovieGenerationAction,
-        private readonly MovieDisambiguationService $movieDisambiguationService,
-        private readonly EntityVerificationServiceInterface $tmdbVerificationService
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService,
+        private readonly MovieSearchService $movieSearchService,
+        private readonly MovieRetrievalService $movieRetrievalService,
+        private readonly MovieResponseFormatter $responseFormatter
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $q = $request->query('q');
         $movies = $this->movieRepository->searchMovies($q, 50);
-        $data = $movies->map(fn (Movie $movie) => $this->transformMovie($movie));
+        $data = $movies->map(function (Movie $movie) {
+            $resource = MovieResource::make($movie)->additional([
+                '_links' => $this->hateoas->movieLinks($movie),
+            ]);
 
-        return response()->json(['data' => $data]);
+            return $resource->resolve();
+        });
+
+        return $this->responseFormatter->formatMovieList($data->toArray());
+    }
+
+    /**
+     * Search for movies with advanced criteria (local + external).
+     */
+    public function search(SearchMovieRequest $request): JsonResponse
+    {
+        $criteria = $request->getSearchCriteria();
+        $searchResult = $this->movieSearchService->search($criteria);
+
+        return $this->responseFormatter->formatSearchResult($searchResult);
     }
 
     public function show(Request $request, string $slug): JsonResponse
     {
         $descriptionId = $this->normalizeDescriptionId($request->query('description_id'));
         if ($descriptionId === false) {
-            return response()->json([
-                'error' => 'Invalid description_id parameter',
-            ], 422);
+            return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
         }
 
-        $cacheKey = $this->cacheKey($slug, $descriptionId);
-
-        if ($cached = Cache::get($cacheKey)) {
-            return response()->json($cached);
+        // Handle disambiguation selection (special case - user selects specific slug from disambiguation)
+        // Note: Disambiguation now uses slugs instead of tmdb_id
+        $selectedSlug = $request->query('slug');
+        if ($selectedSlug !== null) {
+            return $this->handleDisambiguationSelection($slug, (string) $selectedSlug);
         }
 
-        $movie = $this->movieRepository->findBySlugWithRelations($slug);
-        if ($movie) {
-            $selectedDescription = null;
-            if ($descriptionId !== null) {
-                $candidate = $movie->descriptions->firstWhere('id', $descriptionId);
-                if ($candidate instanceof MovieDescription) {
-                    $selectedDescription = $candidate;
-                }
+        $result = $this->movieRetrievalService->retrieveMovie($slug, $descriptionId);
 
-                if ($selectedDescription === null) {
-                    return response()->json(['error' => 'Description not found for movie'], 404);
-                }
-            }
+        $response = $this->responseFormatter->formatFromResult($result, $slug);
 
-            return $this->respondWithExistingMovie($movie, $slug, $selectedDescription, $cacheKey);
+        // Cache successful responses (but not disambiguation - they should be fresh)
+        if ($result->isFound() && ! $result->isCached() && ! $result->isDisambiguation()) {
+            $cacheKey = $this->cacheKey($slug, $descriptionId);
+            $responseData = json_decode($response->getContent(), true);
+            Cache::put($cacheKey, $responseData, now()->addSeconds(self::CACHE_TTL_SECONDS));
         }
 
-        if (! Feature::active('ai_description_generation')) {
-            return response()->json(['error' => 'Movie not found'], 404);
-        }
-
-        // Validate slug format and check for prompt injection
-        $validation = SlugValidator::validateMovieSlug($slug);
-        if (! $validation['valid']) {
-            return response()->json([
-                'error' => 'Invalid slug format',
-                'message' => $validation['reason'],
-                'confidence' => $validation['confidence'],
-                'slug' => $slug,
-            ], 400);
-        }
-
-        // Check for disambiguation request
-        $tmdbId = $request->query('tmdb_id');
-        if ($tmdbId !== null) {
-            return $this->handleDisambiguationSelection($slug, (int) $tmdbId);
-        }
-
-        // Verify movie exists in TMDb before queueing job (if feature flag enabled)
-        $tmdbData = $this->tmdbVerificationService->verifyMovie($slug);
-        if (! $tmdbData) {
-            // If TMDb verification is disabled (feature flag off), allow generation without TMDb data
-            if (! Feature::active('tmdb_verification')) {
-                $result = $this->queueMovieGenerationAction->handle(
-                    $slug,
-                    confidence: $validation['confidence'],
-                    locale: Locale::EN_US->value,
-                    tmdbData: null
-                );
-
-                return response()->json($result, 202);
-            }
-
-            // Check if there are multiple matches (disambiguation needed)
-            $searchResults = $this->tmdbVerificationService->searchMovies($slug, 5);
-            if (count($searchResults) > 1) {
-                return $this->respondWithDisambiguation($slug, $searchResults);
-            }
-
-            // If search found results but verifyMovie didn't, use first result as tmdbData
-            // This allows job to use TMDb data as fallback when AI returns "not found"
-            if (count($searchResults) === 1) {
-                $suggestedSlugs = $this->generateSuggestedSlugsFromSearchResults($searchResults);
-                // Use first search result as tmdbData - job can use it as fallback
-                $firstResult = $searchResults[0];
-                $result = $this->queueMovieGenerationAction->handle(
-                    $slug,
-                    confidence: $validation['confidence'],
-                    locale: Locale::EN_US->value,
-                    tmdbData: $firstResult
-                );
-                $result['suggested_slugs'] = $suggestedSlugs;
-
-                return response()->json($result, 202);
-            }
-
-            return response()->json(['error' => 'Movie not found'], 404);
-        }
-
-        $result = $this->queueMovieGenerationAction->handle(
-            $slug,
-            confidence: $validation['confidence'],
-            locale: Locale::EN_US->value,
-            tmdbData: $tmdbData
-        );
-
-        return response()->json($result, 202);
+        return $response;
     }
 
     /**
-     * Handle disambiguation selection when user chooses specific movie from TMDb results.
+     * Handle disambiguation selection when user chooses specific movie by slug.
+     * This method is called when user selects a slug from disambiguation options.
      */
-    private function handleDisambiguationSelection(string $slug, int $tmdbId): JsonResponse
+    private function handleDisambiguationSelection(string $originalSlug, string $selectedSlug): JsonResponse
     {
-        // Search for movies and find the one matching tmdb_id
-        $searchResults = $this->tmdbVerificationService->searchMovies($slug, 10);
-        $selectedMovie = null;
+        // Find movie by selected slug
+        $movie = $this->movieRepository->findBySlugWithRelations($selectedSlug);
 
-        foreach ($searchResults as $result) {
-            if ($result['id'] === $tmdbId) {
-                $selectedMovie = $result;
-                break;
+        if (! $movie) {
+            // Movie doesn't exist yet - need to find it in TMDb and create it
+            // Search for movies matching the original slug
+            $searchResults = $this->tmdbVerificationService->searchMovies($originalSlug, 10);
+
+            // Find the one that matches the selected slug
+            $selectedMovie = null;
+            foreach ($searchResults as $result) {
+                $year = ! empty($result['release_date']) ? substr($result['release_date'], 0, 4) : null;
+                $director = $result['director'] ?? null;
+                $generatedSlug = Movie::generateSlug($result['title'], $year ? (int) $year : null, $director);
+
+                if ($generatedSlug === $selectedSlug) {
+                    $selectedMovie = $result;
+                    break;
+                }
             }
-        }
 
-        if (! $selectedMovie) {
-            return response()->json(['error' => 'Selected movie not found in search results'], 404);
-        }
-
-        // Re-validate slug for confidence score
-        $validation = SlugValidator::validateMovieSlug($slug);
-        $result = $this->queueMovieGenerationAction->handle(
-            $slug,
-            confidence: $validation['confidence'],
-            locale: Locale::EN_US->value,
-            tmdbData: $selectedMovie
-        );
-
-        return response()->json($result, 202);
-    }
-
-    /**
-     * Respond with disambiguation options when multiple movies match the slug.
-     */
-    private function respondWithDisambiguation(string $slug, array $searchResults): JsonResponse
-    {
-        $options = array_map(function ($result) use ($slug) {
-            $year = ! empty($result['release_date']) ? substr($result['release_date'], 0, 4) : null;
-            $director = $result['director'] ?? null;
-
-            return [
-                'tmdb_id' => $result['id'],
-                'title' => $result['title'],
-                'release_year' => $year,
-                'director' => $director,
-                'overview' => substr($result['overview'] ?? '', 0, 200).(strlen($result['overview'] ?? '') > 200 ? '...' : ''),
-                'select_url' => url("/api/v1/movies/{$slug}?tmdb_id={$result['id']}"),
-            ];
-        }, $searchResults);
-
-        return response()->json([
-            'error' => 'Multiple movies found',
-            'message' => 'Multiple movies match this slug. Please select one:',
-            'slug' => $slug,
-            'options' => $options,
-            'count' => count($options),
-        ], 300); // 300 Multiple Choices
-    }
-
-    private function respondWithExistingMovie(
-        Movie $movie,
-        string $slug,
-        ?MovieDescription $selectedDescription,
-        string $cacheKey
-    ): JsonResponse {
-        $payload = $this->transformMovie($movie, $slug, $selectedDescription);
-        Cache::put($cacheKey, $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));
-
-        return response()->json($payload);
-    }
-
-    private function transformMovie(Movie $movie, ?string $slug = null, ?MovieDescription $selectedDescription = null): array
-    {
-        $resource = MovieResource::make($movie)->additional([
-            '_links' => $this->hateoas->movieLinks($movie),
-        ]);
-
-        if ($slug !== null) {
-            if ($meta = $this->movieDisambiguationService->determineMeta($movie, $slug)) {
-                $resource->additional(['_meta' => $meta]);
+            if (! $selectedMovie) {
+                return $this->responseFormatter->formatDisambiguationSelectionNotFound();
             }
+
+            // Re-validate slug for confidence score
+            $validation = SlugValidator::validateMovieSlug($selectedSlug);
+            $generationResult = $this->queueMovieGenerationAction->handle(
+                $selectedSlug,
+                confidence: $validation['confidence'],
+                locale: Locale::EN_US->value,
+                tmdbData: $selectedMovie
+            );
+
+            return $this->responseFormatter->formatGenerationQueued($generationResult);
         }
 
-        $data = $resource->resolve();
+        // Movie exists - return it directly
+        $result = $this->movieRetrievalService->retrieveMovie($selectedSlug, null);
 
-        if ($selectedDescription) {
-            $data['selected_description'] = $selectedDescription->toArray();
-        }
-
-        return $data;
+        return $this->responseFormatter->formatFromResult($result, $selectedSlug);
     }
 
     private function cacheKey(string $slug, ?int $descriptionId = null): string
@@ -257,44 +157,13 @@ class MovieController extends Controller
     }
 
     /**
-     * Generate suggested slugs from TMDb search results.
-     *
-     * @param  array<int, array{title: string, release_date?: string, id: int, director?: string}>  $searchResults
-     * @return array<int, array{slug: string, title: string, release_year: int|null, director: string|null, tmdb_id: int}>
-     */
-    private function generateSuggestedSlugsFromSearchResults(array $searchResults): array
-    {
-        $suggestedSlugs = [];
-        foreach ($searchResults as $result) {
-            $year = ! empty($result['release_date'])
-                ? (int) substr($result['release_date'], 0, 4)
-                : null;
-            $director = $result['director'] ?? null;
-
-            $suggestedSlugs[] = [
-                'slug' => Movie::generateSlug(
-                    $result['title'],
-                    $year,
-                    $director
-                ),
-                'title' => $result['title'],
-                'release_year' => $year,
-                'director' => $director,
-                'tmdb_id' => $result['id'],
-            ];
-        }
-
-        return $suggestedSlugs;
-    }
-
-    /**
      * Refresh movie data from TMDb.
      */
     public function refresh(string $slug): JsonResponse
     {
         $movie = $this->movieRepository->findBySlugWithRelations($slug);
         if (! $movie) {
-            return response()->json(['error' => 'Movie not found'], 404);
+            return $this->responseFormatter->formatNotFound();
         }
 
         // Find existing snapshot
@@ -303,7 +172,7 @@ class MovieController extends Controller
             ->first();
 
         if (! $snapshot) {
-            return response()->json(['error' => 'No TMDb snapshot found for this movie'], 404);
+            return $this->responseFormatter->formatRefreshNoSnapshot();
         }
 
         // Refresh movie details from TMDb
@@ -311,18 +180,18 @@ class MovieController extends Controller
         $tmdbService = $this->tmdbVerificationService;
         $freshData = $tmdbService->refreshMovieDetails($snapshot->tmdb_id);
         if (! $freshData) {
-            return response()->json(['error' => 'Failed to refresh movie data from TMDb'], 500);
+            return $this->responseFormatter->formatRefreshFailed();
         }
+
+        // Update snapshot with fresh data
+        $snapshot->update([
+            'raw_data' => $freshData,
+            'fetched_at' => now(),
+        ]);
 
         // Invalidate cache
         Cache::forget($this->cacheKey($slug, null));
 
-        return response()->json([
-            'message' => 'Movie data refreshed from TMDb',
-            'slug' => $slug,
-            'movie_id' => $movie->id,
-            'tmdb_id' => $snapshot->tmdb_id,
-            'refreshed_at' => now()->toIso8601String(),
-        ]);
+        return $this->responseFormatter->formatRefreshSuccess($slug, $movie->id);
     }
 }
