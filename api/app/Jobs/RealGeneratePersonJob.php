@@ -202,7 +202,11 @@ class RealGeneratePersonJob implements ShouldQueue
                     'job_id' => $this->jobId,
                 ]);
 
-                throw new \RuntimeException("Person not found: {$this->slug}");
+                throw new \RuntimeException(
+                    "Person not found by AI during refresh: '{$this->slug}' (person_id: {$person->id}). ".
+                    'AI could not generate biography for existing person. '.
+                    'This may indicate the person data is incorrect or the slug format is ambiguous.'
+                );
             }
 
             throw new \RuntimeException('AI API returned error: '.$error);
@@ -538,7 +542,13 @@ class RealGeneratePersonJob implements ShouldQueue
                     'job_id' => $this->jobId,
                 ]);
 
-                throw new \RuntimeException("Person not found: {$this->slug}");
+                throw new \RuntimeException(
+                    "Person not found: '{$this->slug}'. ".
+                    'AI could not generate biography and no TMDb data available. '.
+                    "Possible solutions: 1) Verify slug format (name-birthyear, e.g., 'keanu-reeves-1964'), ".
+                    '2) Use disambiguation endpoint with ?tmdb_id parameter if multiple people match, '.
+                    '3) Check if person exists in TMDb database.'
+                );
             }
 
             throw new \RuntimeException('AI API returned error: '.$error);
