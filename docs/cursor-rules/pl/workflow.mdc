@@ -4,6 +4,26 @@ alwaysApply: true
 
 # Workflow przed Commitem (WYMAGANE)
 
+## ⚠️ TDD PRZED WSZYSTKIM
+
+**PRZED rozpoczęciem implementacji funkcjonalności:**
+
+1. **Sprawdź czy to nowa funkcjonalność czy zmiana istniejącej**
+2. **Jeśli nowa funkcjonalność:**
+   - Najpierw napisz test (RED)
+   - Uruchom test - powinien FAILOWAĆ
+   - Napisz kod (GREEN)
+   - Uruchom test - powinien PRZECHODZIĆ
+   - Zrefaktoryzuj (REFACTOR)
+3. **Jeśli zmiana istniejącej funkcjonalności:**
+   - Najpierw zmień testy, aby oczekiwały nowego zachowania (RED)
+   - Uruchom testy - powinny FAILOWAĆ
+   - Zmień kod (GREEN)
+   - Uruchom testy - powinny PRZECHODZIĆ
+   - Zrefaktoryzuj (REFACTOR)
+
+**NIGDY nie pisz kodu przed testami!**
+
 ## Automatyczna instalacja Git Hooków
 
 **PRZED KAŻDYM COMMITEM LUB PUSHEM - automatycznie sprawdź i zainstaluj hooki:**
