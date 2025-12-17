@@ -179,7 +179,11 @@ class RealGenerateMovieJob implements ShouldQueue
                     'movie_id' => $movie->id,
                 ]);
 
-                throw new \RuntimeException("Movie not found: {$this->slug}");
+                throw new \RuntimeException(
+                    "Movie not found by AI during refresh: '{$this->slug}' (movie_id: {$movie->id}). ".
+                    'AI could not generate description for existing movie. '.
+                    'This may indicate the movie data is incorrect or the slug format is ambiguous.'
+                );
             }
 
             throw new \RuntimeException('AI API returned error: '.$error);
@@ -963,7 +967,13 @@ class RealGenerateMovieJob implements ShouldQueue
                         'job_id' => $this->jobId,
                     ]);
 
-                    throw new \RuntimeException("Movie not found: {$this->slug}");
+                    throw new \RuntimeException(
+                        "Movie not found: '{$this->slug}'. ".
+                        'AI could not generate description and no TMDb data available. '.
+                        "Possible solutions: 1) Verify slug format (title-year, e.g., 'the-matrix-1999'), ".
+                        '2) Use disambiguation endpoint with ?tmdb_id parameter if multiple movies match, '.
+                        '3) Check if movie exists in TMDb database.'
+                    );
                 }
             } else {
                 // Other AI errors (not "not found")
