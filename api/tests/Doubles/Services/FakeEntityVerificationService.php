@@ -30,6 +30,11 @@ class FakeEntityVerificationService implements EntityVerificationServiceInterfac
     private array $people = [];
 
     /**
+     * @var array<string, array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int, biography?: string}>>
+     */
+    private array $personSearchResults = [];
+
+    /**
      * Set movie data that will be returned by verifyMovie().
      *
      * @param  string  $slug  Movie slug
@@ -63,6 +68,17 @@ class FakeEntityVerificationService implements EntityVerificationServiceInterfac
     }
 
     /**
+     * Set search results that will be returned by searchPeople().
+     *
+     * @param  string  $slug  Person slug
+     * @param  array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int, biography?: string}>  $results  Search results
+     */
+    public function setPersonSearchResults(string $slug, array $results): void
+    {
+        $this->personSearchResults[$slug] = $results;
+    }
+
+    /**
      * Clear all configured data.
      */
     public function clear(): void
@@ -70,6 +86,7 @@ class FakeEntityVerificationService implements EntityVerificationServiceInterfac
         $this->movies = [];
         $this->movieSearchResults = [];
         $this->people = [];
+        $this->personSearchResults = [];
     }
 
     /**
@@ -96,5 +113,15 @@ class FakeEntityVerificationService implements EntityVerificationServiceInterfac
     public function verifyPerson(string $slug): ?array
     {
         return $this->people[$slug] ?? null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function searchPeople(string $slug, int $limit = 5): array
+    {
+        $results = $this->personSearchResults[$slug] ?? [];
+
+        return array_slice($results, 0, $limit);
     }
 }
