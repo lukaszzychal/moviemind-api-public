@@ -355,12 +355,34 @@ class MockGeneratePersonJob implements ShouldQueue
         // Following DIP: use Person model method, not direct slug from request
         $generatedSlug = Person::generateSlug((string) $name, $birthDate, $birthplace);
 
-        $person = Person::create([
-            'name' => (string) $name,
-            'slug' => $generatedSlug,
-            'birth_date' => $birthDate,
-            'birthplace' => $birthplace,
-        ]);
+        // Check if person already exists with generated slug (prevent duplicates)
+        // This handles race conditions where multiple jobs create the same person
+        /** @var PersonRepository $personRepository */
+        $personRepository = app(PersonRepository::class);
+        $existingByGeneratedSlug = $personRepository->findBySlugForJob($generatedSlug);
+        if ($existingByGeneratedSlug) {
+            // Person already exists with generated slug - use it
+            $person = $existingByGeneratedSlug;
+        } else {
+            // Check if person exists by name + birth date (even if slug differs)
+            // This prevents duplicates when slug format differs
+            $existingByNameBirth = Person::where('name', (string) $name)
+                ->where('birth_date', $birthDate)
+                ->first();
+
+            if ($existingByNameBirth) {
+                // Person already exists - use it
+                $person = $existingByNameBirth;
+            } else {
+                // Create new person
+                $person = Person::create([
+                    'name' => (string) $name,
+                    'slug' => $generatedSlug,
+                    'birth_date' => $birthDate,
+                    'birthplace' => $birthplace,
+                ]);
+            }
+        }
 
         $locale = $this->resolveLocale();
         $bio = $this->shouldUpdateBaseline($person, $locale)

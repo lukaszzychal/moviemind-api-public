@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Movie;
+use App\Models\Person;
+use App\Models\TmdbSnapshot;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Laravel\Pennant\Feature;
@@ -74,17 +77,87 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return [];
             }
 
-            // Convert slug to search query (replace hyphens with spaces)
-            $query = str_replace('-', ' ', $slug);
+            // Parse slug to extract title and year
+            $parsed = Movie::parseSlug($slug);
+            $title = $parsed['title'];
+            $year = $parsed['year'];
+
+            // Build search query from title only (without year)
+            $query = $title;
 
             Log::info('TmdbVerificationService: searching TMDb for movies', [
                 'slug' => $slug,
+                'title' => $title,
+                'year' => $year,
                 'query' => $query,
                 'limit' => $limit,
             ]);
 
-            $response = $client->search()->movies($query);
-            $data = json_decode($response->getBody()->getContents(), true);
+            // Search TMDb (library may or may not support year parameter)
+            // We'll try with year parameter if available, otherwise fallback to query-only
+            $data = null;
+            if ($year !== null) {
+                try {
+                    // Try to use year parameter if library supports it
+                    // If not supported, this will throw an exception and we'll fallback
+                    $response = $client->search()->movies($query, ['year' => $year]);
+                    $data = json_decode($response->getBody()->getContents(), true);
+
+                    if (! empty($data['results'])) {
+                        Log::info('TmdbVerificationService: found movies with year filter', [
+                            'slug' => $slug,
+                            'year' => $year,
+                            'count' => count($data['results']),
+                        ]);
+                    }
+                } catch (\ArgumentCountError|\TypeError $e) {
+                    // Library doesn't support year parameter - fallback to query-only
+                    Log::debug('TmdbVerificationService: library does not support year parameter, using query-only search', [
+                        'slug' => $slug,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $data = null;
+                } catch (\Throwable $e) {
+                    // Other error - log and fallback
+                    Log::warning('TmdbVerificationService: search with year failed, trying without year', [
+                        'slug' => $slug,
+                        'year' => $year,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $data = null;
+                }
+            }
+
+            // Fallback: search without year filter
+            if ($data === null || empty($data['results'])) {
+                $response = $client->search()->movies($query);
+                $data = json_decode($response->getBody()->getContents(), true);
+
+                // If year is available, prioritize results with matching year
+                if ($year !== null && ! empty($data['results'])) {
+                    $matchingYear = array_filter($data['results'], function ($result) use ($year) {
+                        $resultYear = ! empty($result['release_date']) ? (int) substr($result['release_date'], 0, 4) : null;
+
+                        return $resultYear === $year;
+                    });
+
+                    if (! empty($matchingYear)) {
+                        // Move matching year results to the beginning
+                        $otherResults = array_filter($data['results'], function ($result) use ($year) {
+                            $resultYear = ! empty($result['release_date']) ? (int) substr($result['release_date'], 0, 4) : null;
+
+                            return $resultYear !== $year;
+                        });
+                        $data['results'] = array_merge(array_values($matchingYear), array_values($otherResults));
+
+                        Log::info('TmdbVerificationService: prioritized results with matching year', [
+                            'slug' => $slug,
+                            'year' => $year,
+                            'matching_count' => count($matchingYear),
+                        ]);
+                    }
+                }
+            }
 
             if (empty($data['results'])) {
                 Log::info('TmdbVerificationService: no movies found in TMDb', ['slug' => $slug]);
@@ -192,16 +265,84 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return null;
             }
 
-            // Convert slug to search query (replace hyphens with spaces)
-            $query = str_replace('-', ' ', $slug);
+            // Parse slug to extract title and year
+            $parsed = Movie::parseSlug($slug);
+            $title = $parsed['title'];
+            $year = $parsed['year'];
+
+            // Build search query from title only (without year)
+            $query = $title;
 
             Log::info('TmdbVerificationService: searching TMDb for movie', [
                 'slug' => $slug,
+                'title' => $title,
+                'year' => $year,
                 'query' => $query,
             ]);
 
-            $response = $client->search()->movies($query);
-            $data = json_decode($response->getBody()->getContents(), true);
+            // Search TMDb (library may or may not support year parameter)
+            // We'll try with year parameter if available, otherwise fallback to query-only
+            $data = null;
+            if ($year !== null) {
+                try {
+                    // Try to use year parameter if library supports it
+                    // If not supported, this will throw an exception and we'll fallback
+                    $response = $client->search()->movies($query, ['year' => $year]);
+                    $data = json_decode($response->getBody()->getContents(), true);
+
+                    if (! empty($data['results'])) {
+                        Log::info('TmdbVerificationService: found movie with year filter', [
+                            'slug' => $slug,
+                            'year' => $year,
+                        ]);
+                    }
+                } catch (\ArgumentCountError|\TypeError $e) {
+                    // Library doesn't support year parameter - fallback to query-only
+                    Log::debug('TmdbVerificationService: library does not support year parameter, using query-only search', [
+                        'slug' => $slug,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $data = null;
+                } catch (\Throwable $e) {
+                    // Other error - log and fallback
+                    Log::warning('TmdbVerificationService: search with year failed, trying without year', [
+                        'slug' => $slug,
+                        'year' => $year,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $data = null;
+                }
+            }
+
+            // Fallback: search without year filter
+            if ($data === null || empty($data['results'])) {
+                $response = $client->search()->movies($query);
+                $data = json_decode($response->getBody()->getContents(), true);
+
+                // If year is available, prioritize results with matching year
+                if ($year !== null && ! empty($data['results'])) {
+                    $matchingYear = array_filter($data['results'], function ($result) use ($year) {
+                        $resultYear = ! empty($result['release_date']) ? (int) substr($result['release_date'], 0, 4) : null;
+
+                        return $resultYear === $year;
+                    });
+
+                    if (! empty($matchingYear)) {
+                        // Move matching year results to the beginning
+                        $otherResults = array_filter($data['results'], function ($result) use ($year) {
+                            $resultYear = ! empty($result['release_date']) ? (int) substr($result['release_date'], 0, 4) : null;
+
+                            return $resultYear !== $year;
+                        });
+                        $data['results'] = array_merge(array_values($matchingYear), array_values($otherResults));
+
+                        Log::info('TmdbVerificationService: prioritized result with matching year', [
+                            'slug' => $slug,
+                            'year' => $year,
+                        ]);
+                    }
+                }
+            }
 
             if (empty($data['results'])) {
                 Log::info('TmdbVerificationService: movie not found in TMDb', ['slug' => $slug]);
@@ -210,12 +351,25 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return null;
             }
 
-            // Get best match (first result, TMDb sorts by relevance)
+            // Get best match (first result, TMDb sorts by relevance or we prioritized by year)
             $bestMatch = $data['results'][0];
 
             // Get movie details to extract director
             $movieDetails = $this->getMovieDetails($bestMatch['id']);
             $director = $this->extractDirector($movieDetails);
+
+            // Save snapshot (entity_id will be null until entity is created)
+            if (! empty($movieDetails)) {
+                try {
+                    $this->saveSnapshot('MOVIE', null, $bestMatch['id'], 'movie', $movieDetails);
+                } catch (\Throwable $e) {
+                    Log::warning('TmdbVerificationService: failed to save snapshot', [
+                        'slug' => $slug,
+                        'tmdb_id' => $bestMatch['id'],
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $result = [
                 'title' => $bestMatch['title'],
@@ -309,14 +463,23 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return null;
             }
 
-            // Convert slug to search query (replace hyphens with spaces)
-            $query = str_replace('-', ' ', $slug);
+            // Parse slug to extract name and birth year
+            $parsed = Person::parseSlug($slug);
+            $name = $parsed['name'];
+            $birthYear = $parsed['birth_year'];
+
+            // Build search query from name only (without year)
+            $query = $name;
 
             Log::info('TmdbVerificationService: searching TMDb for person', [
                 'slug' => $slug,
+                'name' => $name,
+                'birth_year' => $birthYear,
                 'query' => $query,
             ]);
 
+            // Note: TMDb API doesn't support year parameter for person search,
+            // so we search by name and prioritize results with matching birth year
             $response = $client->search()->people($query);
             $data = json_decode($response->getBody()->getContents(), true);
 
@@ -327,11 +490,35 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return null;
             }
 
+            // If birth year is available, prioritize results with matching birth year
+            if ($birthYear !== null) {
+                // We need to get details for each result to check birth year
+                // For now, use first result and verify later in getPersonDetails
+                // This is a limitation - TMDb search doesn't return birth_date in search results
+                Log::debug('TmdbVerificationService: birth year available, will verify in details', [
+                    'slug' => $slug,
+                    'birth_year' => $birthYear,
+                ]);
+            }
+
             // Get best match (first result, TMDb sorts by relevance)
             $bestMatch = $data['results'][0];
 
             // Get person details to extract biography
             $personDetails = $this->getPersonDetails($bestMatch['id']);
+
+            // Save snapshot (entity_id will be null until entity is created)
+            if (! empty($personDetails)) {
+                try {
+                    $this->saveSnapshot('PERSON', null, $bestMatch['id'], 'person', $personDetails);
+                } catch (\Throwable $e) {
+                    Log::warning('TmdbVerificationService: failed to save snapshot', [
+                        'slug' => $slug,
+                        'tmdb_id' => $bestMatch['id'],
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $result = [
                 'name' => $bestMatch['name'],
@@ -418,14 +605,22 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return [];
             }
 
-            // Extract name from slug for search
-            $query = str_replace('-', ' ', $slug);
+            // Parse slug to extract name and birth year
+            $parsed = Person::parseSlug($slug);
+            $name = $parsed['name'];
+            $birthYear = $parsed['birth_year'];
+
+            // Build search query from name only (without year)
+            $query = $name;
 
             Log::debug('TmdbVerificationService: searching people in TMDb', [
                 'slug' => $slug,
+                'name' => $name,
+                'birth_year' => $birthYear,
                 'query' => $query,
             ]);
 
+            // Note: TMDb API doesn't support year parameter for person search
             $response = $client->search()->people($query);
             $data = json_decode($response->getBody()->getContents(), true);
 
@@ -614,5 +809,89 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
         $this->client = new TMDBClient($apiKey);
 
         return $this->client;
+    }
+
+    /**
+     * Save TMDb snapshot to database.
+     * If entity_id is null, snapshot will be saved and can be updated later when entity is created.
+     *
+     * @param  string  $entityType  MOVIE, PERSON, etc.
+     * @param  int|null  $entityId  Entity ID (null if entity doesn't exist yet)
+     * @param  int  $tmdbId  TMDb ID
+     * @param  string  $tmdbType  movie, person, tv
+     * @param  array  $rawData  Full TMDb response
+     */
+    public function saveSnapshot(string $entityType, ?int $entityId, int $tmdbId, string $tmdbType, array $rawData): TmdbSnapshot
+    {
+        return TmdbSnapshot::updateOrCreate(
+            [
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'tmdb_id' => $tmdbId,
+            ],
+            [
+                'tmdb_type' => $tmdbType,
+                'raw_data' => $rawData,
+                'fetched_at' => now(),
+            ]
+        );
+    }
+
+    /**
+     * Refresh movie details from TMDb and update snapshot.
+     *
+     * @param  int  $tmdbId  TMDb movie ID
+     * @return array|null Fresh movie details or null if failed
+     */
+    public function refreshMovieDetails(int $tmdbId): ?array
+    {
+        $movieDetails = $this->getMovieDetails($tmdbId);
+        if (empty($movieDetails)) {
+            return null;
+        }
+
+        // Update snapshot if exists
+        $snapshot = TmdbSnapshot::where('tmdb_id', $tmdbId)
+            ->where('tmdb_type', 'movie')
+            ->where('entity_type', 'MOVIE')
+            ->first();
+
+        if ($snapshot) {
+            $snapshot->update([
+                'raw_data' => $movieDetails,
+                'fetched_at' => now(),
+            ]);
+        }
+
+        return $movieDetails;
+    }
+
+    /**
+     * Refresh person details from TMDb and update snapshot.
+     *
+     * @param  int  $tmdbId  TMDb person ID
+     * @return array|null Fresh person details or null if failed
+     */
+    public function refreshPersonDetails(int $tmdbId): ?array
+    {
+        $personDetails = $this->getPersonDetails($tmdbId);
+        if (empty($personDetails)) {
+            return null;
+        }
+
+        // Update snapshot if exists
+        $snapshot = TmdbSnapshot::where('tmdb_id', $tmdbId)
+            ->where('tmdb_type', 'person')
+            ->where('entity_type', 'PERSON')
+            ->first();
+
+        if ($snapshot) {
+            $snapshot->update([
+                'raw_data' => $personDetails,
+                'fetched_at' => now(),
+            ]);
+        }
+
+        return $personDetails;
     }
 }

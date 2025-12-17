@@ -1029,13 +1029,35 @@ class RealGenerateMovieJob implements ShouldQueue
         // Following DIP: use Movie model method, not direct slug from request
         $generatedSlug = Movie::generateSlug((string) $title, $releaseYear, $director);
 
-        $movie = Movie::create([
-            'title' => (string) $title,
-            'slug' => $generatedSlug,
-            'release_year' => $releaseYear,
-            'director' => $director,
-            'genres' => $genres,
-        ]);
+        // Check if movie already exists with generated slug (prevent duplicates)
+        // This handles race conditions where multiple jobs create the same movie
+        /** @var MovieRepository $movieRepository */
+        $movieRepository = app(MovieRepository::class);
+        $existingByGeneratedSlug = $movieRepository->findBySlugForJob($generatedSlug);
+        if ($existingByGeneratedSlug) {
+            // Movie already exists with generated slug - use it
+            $movie = $existingByGeneratedSlug;
+        } else {
+            // Check if movie exists by title + year (even if slug differs)
+            // This prevents duplicates when slug format differs
+            $existingByTitleYear = Movie::where('title', (string) $title)
+                ->where('release_year', $releaseYear)
+                ->first();
+
+            if ($existingByTitleYear) {
+                // Movie already exists - use it
+                $movie = $existingByTitleYear;
+            } else {
+                // Create new movie
+                $movie = Movie::create([
+                    'title' => (string) $title,
+                    'slug' => $generatedSlug,
+                    'release_year' => $releaseYear,
+                    'director' => $director,
+                    'genres' => $genres,
+                ]);
+            }
+        }
 
         $locale = $this->resolveLocale();
         // Use TRANSLATED origin if description came from TMDb overview, otherwise GENERATED

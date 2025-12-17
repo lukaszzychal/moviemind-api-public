@@ -200,6 +200,23 @@ Zwróć tylko czysty tekst.
    docker compose logs -f horizon
    ```
 
+### 🚀 Automatyczne przygotowanie środowiska
+
+Możesz użyć skryptu `setup-local-testing.sh`, który automatycznie przygotuje środowisko:
+
+```bash
+# Podstawowe użycie (tryb mock)
+./scripts/setup-local-testing.sh
+
+# Z trybem real (OpenAI)
+./scripts/setup-local-testing.sh --ai-service real
+
+# Z rebuild kontenerów
+./scripts/setup-local-testing.sh --rebuild
+```
+
+**Szczegółowe instrukcje:** [`scripts/README.md`](scripts/README.md)
+
 ### Docker Compose Configuration
 
 See docker-compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres, Redis, Horizon).
