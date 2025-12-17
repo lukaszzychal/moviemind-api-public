@@ -8,6 +8,7 @@ use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Repositories\MovieRepository;
+use App\Services\EntityVerificationServiceInterface;
 use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
 use App\Services\OpenAiClientInterface;
@@ -82,7 +83,14 @@ class RealGenerateMovieJob implements ShouldQueue
             }
 
             try {
-                [$movie, $description, $localeValue, $contextTag] = $this->createMovieRecord($openAiClient);
+                $result = $this->createMovieRecord($openAiClient);
+
+                // If result is null, suggested slugs were found and error was already handled
+                if ($result === null) {
+                    return;
+                }
+
+                [$movie, $description, $localeValue, $contextTag] = $result;
                 $this->promoteDefaultIfEligible($movie, $description);
                 $this->invalidateMovieCaches($movie);
                 $this->updateCache('DONE', $movie->id, $movie->slug, $description->id, $localeValue, $contextTag);
@@ -830,9 +838,9 @@ class RealGenerateMovieJob implements ShouldQueue
     }
 
     /**
-     * @return array{0: Movie, 1: MovieDescription, 2: string, 3: string}
+     * @return array{0: Movie, 1: MovieDescription, 2: string, 3: string}|null Returns null if suggested slugs were found (error already handled)
      */
-    private function createMovieRecord(OpenAiClientInterface $openAiClient): array
+    private function createMovieRecord(OpenAiClientInterface $openAiClient): ?array
     {
         // Pre-generation validation (before calling AI)
         if (Feature::active('hallucination_guard')) {
@@ -860,15 +868,107 @@ class RealGenerateMovieJob implements ShouldQueue
 
             // Check if it's a "not found" error from AI
             if (stripos($error, 'not found') !== false) {
-                Log::warning('Movie not found by AI', [
-                    'slug' => $this->slug,
-                    'job_id' => $this->jobId,
-                ]);
+                // If we have TMDb data, use it to generate the movie despite AI saying "not found"
+                // This handles ambiguous slugs like "matrix-2003" where AI can't decide which movie
+                // TMDb data was already verified, so we can trust it
+                if ($this->tmdbData !== null && ! empty($this->tmdbData['title'])) {
+                    Log::info('Movie not found by AI, but TMDb data available - using TMDb data as fallback', [
+                        'slug' => $this->slug,
+                        'job_id' => $this->jobId,
+                        'tmdb_title' => $this->tmdbData['title'] ?? null,
+                        'tmdb_id' => $this->tmdbData['id'] ?? null,
+                        'tmdb_has_director' => ! empty($this->tmdbData['director']),
+                        'tmdb_has_overview' => ! empty($this->tmdbData['overview']),
+                    ]);
 
-                throw new \RuntimeException("Movie not found: {$this->slug}");
+                    // Use TMDb data directly to create the movie
+                    // This handles cases where AI can't decide between ambiguous movies
+                    // even when TMDb data is provided (e.g., "matrix-2003" could be Reloaded or Revolutions)
+                    // TMDb data was already verified by controller, so we can trust it
+                    Log::info('Using TMDb data directly to create movie despite AI "not found"', [
+                        'slug' => $this->slug,
+                        'job_id' => $this->jobId,
+                        'tmdb_title' => $this->tmdbData['title'] ?? null,
+                        'tmdb_id' => $this->tmdbData['id'] ?? null,
+                    ]);
+
+                    // Create response from TMDb data
+                    // We'll use TMDb data for title, director, release_year
+                    // For description, use TMDb overview as fallback if it's long enough
+                    // This allows the movie to be created even when AI can't generate description
+                    // Note: TMDb overview will be used, but it should be long enough to pass validation
+                    $tmdbOverview = $this->tmdbData['overview'] ?? null;
+                    $useTmdbOverview = ! empty($tmdbOverview) && strlen(trim($tmdbOverview)) >= $this->getMinimumDescriptionLength();
+
+                    $aiResponse = [
+                        'success' => true,
+                        'title' => $this->tmdbData['title'] ?? null,
+                        'release_year' => ! empty($this->tmdbData['release_date'])
+                            ? (int) substr($this->tmdbData['release_date'], 0, 4)
+                            : null,
+                        'director' => $this->tmdbData['director'] ?? null,
+                        'description' => $useTmdbOverview ? $tmdbOverview : null,
+                        'genres' => [],
+                        'model' => config('services.openai.model', 'gpt-4o-mini'),
+                    ];
+
+                    if (! $useTmdbOverview) {
+                        Log::warning('TMDb overview too short or missing, description will be null', [
+                            'slug' => $this->slug,
+                            'job_id' => $this->jobId,
+                            'overview_length' => $tmdbOverview !== null ? strlen(trim($tmdbOverview)) : 0,
+                            'minimum_length' => $this->getMinimumDescriptionLength(),
+                        ]);
+                    } else {
+                        Log::info('Using TMDb overview as description fallback', [
+                            'slug' => $this->slug,
+                            'job_id' => $this->jobId,
+                            'overview_length' => strlen(trim($tmdbOverview)),
+                        ]);
+                    }
+
+                    // Note: We don't retry AI generation here because:
+                    // 1. First call already had TMDb data and failed
+                    // 2. Retry with same data likely to fail again
+                    // 3. Using TMDb overview as fallback allows movie creation to proceed
+                    // 4. If overview is too short, validation will catch it and provide clear error
+                } else {
+                    // No TMDb data available - try to find suggested slugs
+                    $suggestedSlugs = $this->findSuggestedSlugs();
+
+                    if (! empty($suggestedSlugs)) {
+                        Log::info('Movie not found by AI, but found suggested slugs in TMDb', [
+                            'slug' => $this->slug,
+                            'job_id' => $this->jobId,
+                            'suggestions_count' => count($suggestedSlugs),
+                        ]);
+
+                        // Format error with suggested slugs
+                        $errorFormatter = app(JobErrorFormatter::class);
+                        $errorData = $errorFormatter->formatError(
+                            new \RuntimeException("Movie not found: {$this->slug}"),
+                            $this->slug,
+                            'MOVIE',
+                            $suggestedSlugs
+                        );
+
+                        $this->updateCache('FAILED', error: $errorData);
+
+                        return null; // Don't throw exception, just end the job with error
+                    }
+
+                    // No suggestions found - this is a real "not found"
+                    Log::warning('Movie not found by AI and no TMDb data or suggestions available', [
+                        'slug' => $this->slug,
+                        'job_id' => $this->jobId,
+                    ]);
+
+                    throw new \RuntimeException("Movie not found: {$this->slug}");
+                }
+            } else {
+                // Other AI errors (not "not found")
+                throw new \RuntimeException('AI API returned error: '.$error);
             }
-
-            throw new \RuntimeException('AI API returned error: '.$error);
         }
 
         // Validate AI response data consistency with slug
@@ -898,6 +998,9 @@ class RealGenerateMovieJob implements ShouldQueue
         $descriptionText = $aiResponse['description'] ?? null;
         $genres = $aiResponse['genres'] ?? [];
 
+        // Track if description came from TMDb overview (should be marked as TRANSLATED, not GENERATED)
+        $descriptionFromTmdb = false;
+
         // Use TMDb data as fallback for missing fields (only if TMDb data is available)
         if ($this->tmdbData !== null) {
             if (empty($title) && ! empty($this->tmdbData['title'])) {
@@ -912,6 +1015,10 @@ class RealGenerateMovieJob implements ShouldQueue
                     $releaseYear = $year;
                 }
             }
+            // Check if description came from TMDb overview
+            if (! empty($descriptionText) && ! empty($this->tmdbData['overview']) && $descriptionText === $this->tmdbData['overview']) {
+                $descriptionFromTmdb = true;
+            }
         }
 
         // Validate required fields before proceeding
@@ -922,20 +1029,44 @@ class RealGenerateMovieJob implements ShouldQueue
         // Following DIP: use Movie model method, not direct slug from request
         $generatedSlug = Movie::generateSlug((string) $title, $releaseYear, $director);
 
-        $movie = Movie::create([
-            'title' => (string) $title,
-            'slug' => $generatedSlug,
-            'release_year' => $releaseYear,
-            'director' => $director,
-            'genres' => $genres,
-        ]);
+        // Check if movie already exists with generated slug (prevent duplicates)
+        // This handles race conditions where multiple jobs create the same movie
+        /** @var MovieRepository $movieRepository */
+        $movieRepository = app(MovieRepository::class);
+        $existingByGeneratedSlug = $movieRepository->findBySlugForJob($generatedSlug);
+        if ($existingByGeneratedSlug) {
+            // Movie already exists with generated slug - use it
+            $movie = $existingByGeneratedSlug;
+        } else {
+            // Check if movie exists by title + year (even if slug differs)
+            // This prevents duplicates when slug format differs
+            $existingByTitleYear = Movie::where('title', (string) $title)
+                ->where('release_year', $releaseYear)
+                ->first();
+
+            if ($existingByTitleYear) {
+                // Movie already exists - use it
+                $movie = $existingByTitleYear;
+            } else {
+                // Create new movie
+                $movie = Movie::create([
+                    'title' => (string) $title,
+                    'slug' => $generatedSlug,
+                    'release_year' => $releaseYear,
+                    'director' => $director,
+                    'genres' => $genres,
+                ]);
+            }
+        }
 
         $locale = $this->resolveLocale();
+        // Use TRANSLATED origin if description came from TMDb overview, otherwise GENERATED
+        $descriptionOrigin = $descriptionFromTmdb ? DescriptionOrigin::TRANSLATED : DescriptionOrigin::GENERATED;
         $description = $this->shouldUpdateBaseline($movie, $locale)
             ? $this->updateBaselineDescription($movie, $locale, [
                 'text' => (string) $descriptionText,
-                'origin' => DescriptionOrigin::GENERATED,
-                'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                'origin' => $descriptionOrigin,
+                'ai_model' => $descriptionFromTmdb ? null : ($aiResponse['model'] ?? 'openai-gpt-4'),
             ])
             : $this->persistDescription(
                 $movie,
@@ -943,8 +1074,8 @@ class RealGenerateMovieJob implements ShouldQueue
                 $this->determineContextTag($movie, $locale),
                 [
                     'text' => (string) $descriptionText,
-                    'origin' => DescriptionOrigin::GENERATED,
-                    'ai_model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                    'origin' => $descriptionOrigin,
+                    'ai_model' => $descriptionFromTmdb ? null : ($aiResponse['model'] ?? 'openai-gpt-4'),
                 ]
             );
 
@@ -1068,5 +1199,60 @@ class RealGenerateMovieJob implements ShouldQueue
             $resolvedLocale,
             $resolvedContextTag
         );
+    }
+
+    /**
+     * Find suggested slugs from TMDb when movie is not found.
+     * Searches TMDb for movies matching the slug and generates suggested slugs.
+     *
+     * @return array<int, array{slug: string, title: string, release_year: int|null, director: string|null, tmdb_id: int}>|null
+     */
+    private function findSuggestedSlugs(): ?array
+    {
+        // Only search if TMDb verification is enabled
+        if (! Feature::active('tmdb_verification')) {
+            return null;
+        }
+
+        try {
+            /** @var EntityVerificationServiceInterface $tmdbService */
+            $tmdbService = app(EntityVerificationServiceInterface::class);
+            $searchResults = $tmdbService->searchMovies($this->slug, 5);
+
+            if (empty($searchResults)) {
+                return null;
+            }
+
+            // Generate suggested slugs from TMDb results
+            $suggestedSlugs = [];
+            foreach ($searchResults as $result) {
+                $year = ! empty($result['release_date'])
+                    ? (int) substr($result['release_date'], 0, 4)
+                    : null;
+                $director = $result['director'] ?? null;
+
+                $suggestedSlugs[] = [
+                    'slug' => Movie::generateSlug(
+                        $result['title'],
+                        $year,
+                        $director
+                    ),
+                    'title' => $result['title'],
+                    'release_year' => $year,
+                    'director' => $director,
+                    'tmdb_id' => $result['id'],
+                ];
+            }
+
+            return $suggestedSlugs;
+        } catch (\Throwable $e) {
+            Log::warning('Failed to find suggested slugs from TMDb', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }

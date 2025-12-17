@@ -113,6 +113,20 @@ class MovieController extends Controller
                 return $this->respondWithDisambiguation($slug, $searchResults);
             }
 
+            // If search found results but verifyMovie didn't, return suggested slugs
+            if (count($searchResults) === 1) {
+                $suggestedSlugs = $this->generateSuggestedSlugsFromSearchResults($searchResults);
+                $result = $this->queueMovieGenerationAction->handle(
+                    $slug,
+                    confidence: $validation['confidence'],
+                    locale: Locale::EN_US->value,
+                    tmdbData: null
+                );
+                $result['suggested_slugs'] = $suggestedSlugs;
+
+                return response()->json($result, 202);
+            }
+
             return response()->json(['error' => 'Movie not found'], 404);
         }
 
@@ -237,5 +251,75 @@ class MovieController extends Controller
         }
 
         return (int) $descriptionId;
+    }
+
+    /**
+     * Generate suggested slugs from TMDb search results.
+     *
+     * @param  array<int, array{title: string, release_date?: string, id: int, director?: string}>  $searchResults
+     * @return array<int, array{slug: string, title: string, release_year: int|null, director: string|null, tmdb_id: int}>
+     */
+    private function generateSuggestedSlugsFromSearchResults(array $searchResults): array
+    {
+        $suggestedSlugs = [];
+        foreach ($searchResults as $result) {
+            $year = ! empty($result['release_date'])
+                ? (int) substr($result['release_date'], 0, 4)
+                : null;
+            $director = $result['director'] ?? null;
+
+            $suggestedSlugs[] = [
+                'slug' => Movie::generateSlug(
+                    $result['title'],
+                    $year,
+                    $director
+                ),
+                'title' => $result['title'],
+                'release_year' => $year,
+                'director' => $director,
+                'tmdb_id' => $result['id'],
+            ];
+        }
+
+        return $suggestedSlugs;
+    }
+
+    /**
+     * Refresh movie data from TMDb.
+     */
+    public function refresh(string $slug): JsonResponse
+    {
+        $movie = $this->movieRepository->findBySlugWithRelations($slug);
+        if (! $movie) {
+            return response()->json(['error' => 'Movie not found'], 404);
+        }
+
+        // Find existing snapshot
+        $snapshot = \App\Models\TmdbSnapshot::where('entity_type', 'MOVIE')
+            ->where('entity_id', $movie->id)
+            ->first();
+
+        if (! $snapshot) {
+            return response()->json(['error' => 'No TMDb snapshot found for this movie'], 404);
+        }
+
+        // Refresh movie details from TMDb
+        /** @var \App\Services\TmdbVerificationService $tmdbService */
+        $tmdbService = $this->tmdbVerificationService;
+        $freshData = $tmdbService->refreshMovieDetails($snapshot->tmdb_id);
+        if (! $freshData) {
+            return response()->json(['error' => 'Failed to refresh movie data from TMDb'], 500);
+        }
+
+        // Invalidate cache
+        Cache::forget($this->cacheKey($slug, null));
+
+        return response()->json([
+            'message' => 'Movie data refreshed from TMDb',
+            'slug' => $slug,
+            'movie_id' => $movie->id,
+            'tmdb_id' => $snapshot->tmdb_id,
+            'refreshed_at' => now()->toIso8601String(),
+        ]);
     }
 }

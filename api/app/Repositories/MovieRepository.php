@@ -69,6 +69,7 @@ class MovieRepository
     /**
      * Find movie by slug for use in Jobs.
      * Handles ambiguous slugs (without year) by returning the most recent movie.
+     * Also handles cases where request slug doesn't have year but database slug does.
      * Uses lighter relations than findBySlugWithRelations (only 'descriptions').
      *
      * @param  string  $slug  The slug to search for
@@ -90,17 +91,33 @@ class MovieRepository
             return $movie;
         }
 
-        // If slug doesn't contain year, try to find by title only (ambiguous slug handling)
-        // This matches the behavior of findBySlugWithRelations()
+        // Parse slug to extract title and year
         $parsed = Movie::parseSlug($slug);
-        if ($parsed['year'] === null) {
-            $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
+        $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
 
+        // If slug from request doesn't contain year, try to find by title only
+        // This handles ambiguous slugs and cases where job generated slug with year
+        // but request slug doesn't have year
+        if ($parsed['year'] === null) {
             // Return most recent movie with matching title slug
+            // This will find movies like "the-matrix-1999" even if request slug is "the-matrix"
             return Movie::with('descriptions')
                 ->whereRaw('slug LIKE ?', ["{$titleSlug}%"])
                 ->orderBy('release_year', 'desc')
                 ->first();
+        }
+
+        // Slug from request HAS year - check if movie exists with same title + year
+        // This handles cases where slug format differs (e.g., "the-matrix" vs "the-matrix-1999")
+        // but represents the same movie
+        $year = $parsed['year'];
+        // Check if movie exists with same title and year (even if slug format differs)
+        $movie = Movie::with('descriptions')
+            ->whereRaw('slug LIKE ?', ["{$titleSlug}-{$year}%"])
+            ->where('release_year', $year)
+            ->first();
+        if ($movie) {
+            return $movie;
         }
 
         return null;

@@ -11,18 +11,31 @@ class JobErrorFormatter
     /**
      * Format exception to structured error format.
      *
-     * @return array{type: string, message: string, technical_message: string, user_message: string}
+     * @param  \Throwable  $exception  The exception to format
+     * @param  string  $slug  The slug that caused the error
+     * @param  string  $entityType  The entity type (MOVIE, PERSON, etc.)
+     * @param  array<int, array{slug: string, title?: string, name?: string, release_year?: int|null, director?: string|null, tmdb_id: int}>|null  $suggestedSlugs  Optional list of suggested slugs
+     * @return array{type: string, message: string, technical_message: string, user_message: string, suggested_slugs?: array}
      */
-    public function formatError(\Throwable $exception, string $slug, string $entityType): array
+    public function formatError(\Throwable $exception, string $slug, string $entityType, ?array $suggestedSlugs = null): array
     {
         $type = $this->detectErrorType($exception);
+        $entity = strtolower($entityType) === 'movie' ? 'movie' : 'person';
 
-        return [
+        $error = [
             'type' => $type->value,
             'message' => $this->getShortMessage($type, $entityType),
             'technical_message' => $exception->getMessage(),
             'user_message' => $this->getUserFriendlyMessage($type, $entityType),
         ];
+
+        // Add suggested slugs for NOT_FOUND errors
+        if ($type === JobErrorType::NOT_FOUND && ! empty($suggestedSlugs)) {
+            $error['suggested_slugs'] = $suggestedSlugs;
+            $error['user_message'] = "This {$entity} does not exist. Did you mean one of these?";
+        }
+
+        return $error;
     }
 
     /**

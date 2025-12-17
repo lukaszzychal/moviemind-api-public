@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
     Route::get('movies/{slug}', [MovieController::class, 'show']);
+    Route::post('movies/{slug}/refresh', [MovieController::class, 'refresh']);
     Route::get('people', [PersonController::class, 'index']);
     Route::get('people/{slug}', [PersonController::class, 'show']);
+    Route::post('people/{slug}/refresh', [PersonController::class, 'refresh']);
     Route::post('generate', [GenerateController::class, 'generate']);
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
