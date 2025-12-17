@@ -11,10 +11,13 @@ alwaysApply: true
 - [ ] GitLeaks nie wykrywa sekretów
 - [ ] Composer audit nie wykrywa krytycznych luk
 
-## Testy
+## Testy (TDD - OBOWIĄZKOWE)
+- [ ] **PRZED kodem:** Napisano test (RED) - test FAILUJE ✅
+- [ ] **Po kodzie:** Napisano kod (GREEN) - test PRZECHODZI ✅
+- [ ] **Po refaktoryzacji:** Zrefaktoryzowano (REFACTOR) - testy nadal PRZECHODZĄ ✅
 - [ ] Nowy kod ma testy (jeśli to nowa funkcjonalność)
 - [ ] Testy są czytelne
-- [ ] Stosowano TDD
+- [ ] **Stosowano TDD w prawidłowej kolejności** (RED → GREEN → REFACTOR)
 
 ## Jakość
 - [ ] Kod czytelny i zgodny z konwencjami

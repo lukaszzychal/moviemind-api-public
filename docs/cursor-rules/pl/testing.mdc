@@ -4,6 +4,32 @@ alwaysApply: true
 
 # Test Driven Development (TDD)
 
+## ⚠️ WYMAGANE PRZED KAŻDĄ ZMIANĄ KODU
+
+**PRZED rozpoczęciem implementacji funkcjonalności MUSISZ wykonać:**
+
+### 1. TDD Workflow Checklist (OBOWIĄZKOWY)
+
+**PRZED napisaniem jakiegokolwiek kodu implementacyjnego:**
+
+- [ ] **RED** - Napisałem test, który definiuje oczekiwane zachowanie
+- [ ] **RED** - Uruchomiłem test - test FAILUJE (to jest OK, to jest cel RED)
+- [ ] **GREEN** - Napisałem minimalny kod potrzebny do przejścia testu
+- [ ] **GREEN** - Uruchomiłem test - test PRZECHODZI
+- [ ] **REFACTOR** - Poprawiłem kod, zachowując przechodzące testy
+- [ ] **REFACTOR** - Uruchomiłem testy ponownie - wszystkie PRZECHODZĄ
+
+**Jeśli zmieniasz istniejący kod:**
+- [ ] Najpierw zmieniłem testy, aby oczekiwały nowego zachowania (RED)
+- [ ] Uruchomiłem testy - testy FAILUJĄ (to jest OK)
+- [ ] Zmieniłem kod, aby testy przeszły (GREEN)
+- [ ] Zrefaktoryzowałem kod (REFACTOR)
+
+**Jeśli naprawiasz bug:**
+- [ ] Najpierw napisałem test reprodukujący bug (RED - test failuje)
+- [ ] Naprawiłem bug w kodzie (GREEN - test przechodzi)
+- [ ] Zrefaktoryzowałem kod (REFACTOR)
+
 ## Zasada podstawowa
 
 **Zawsze pisz testy przed implementacją. Cykl Red-Green-Refactor.**
@@ -11,25 +37,63 @@ alwaysApply: true
 ## Cykl TDD
 
 1. **RED** - Napisz test, który definiuje oczekiwane zachowanie
+   - Test powinien FAILOWAĆ (to jest cel - pokazujemy że funkcjonalność nie istnieje)
+   - Uruchom test: `php artisan test --filter=test_name`
+   - Sprawdź że test failuje z oczekiwanym błędem
+   
 2. **GREEN** - Napisz minimalny kod potrzebny do przejścia testu
+   - Napisz TYLKO tyle kodu, ile potrzeba do przejścia testu
+   - Uruchom test: `php artisan test --filter=test_name`
+   - Sprawdź że test przechodzi
+   
 3. **REFACTOR** - Popraw kod, zachowując przechodzące testy
+   - Ulepsz kod (czytelność, wydajność, struktura)
+   - Uruchom testy ponownie: `php artisan test`
+   - Sprawdź że wszystkie testy nadal przechodzą
 
 ## ✅ Zawsze
 
-- Pisz testy przed kodem - najpierw test, potem implementacja
-- Uruchamiaj `php artisan test` po każdej zmianie
-- Nowy kod wymaga testów
-- Feature Tests dla endpointów API
-- Unit Tests dla logiki biznesowej
+- **Pisz testy przed kodem** - najpierw test, potem implementacja
+- **Uruchamiaj testy po każdej zmianie** - `php artisan test`
+- **Nowy kod wymaga testów** - bez wyjątków
+- **Feature Tests** dla endpointów API (`tests/Feature/`)
+- **Unit Tests** dla logiki biznesowej (`tests/Unit/`)
 
 ## ❌ NIGDY
 
-- Nie commituj kodu bez testów
-- Nie pomijaj testów "bo to mała zmiana"
-- Nie ignoruj failujących testów
-- **Nie pisz kodu implementacyjnego przed napisaniem testów** - to narusza zasadę TDD
+- ❌ **Nie pisz kodu implementacyjnego przed napisaniem testów** - to narusza zasadę TDD
+- ❌ Nie commituj kodu bez testów
+- ❌ Nie pomijaj testów "bo to mała zmiana"
+- ❌ Nie ignoruj failujących testów
+- ❌ Nie zmieniaj kodu przed zmianą testów (nawet jeśli to refaktoryzacja)
 
 ## Rodzaje testów
 
 - **Feature Tests** (`tests/Feature/`) - endpointy API i integracja
 - **Unit Tests** (`tests/Unit/`) - logika biznesowa i serwisy
+
+## Przykład poprawnego TDD workflow
+
+```php
+// 1. RED - Test definiuje wymaganie (test FAILUJE)
+public function test_movie_disambiguation_uses_slugs_instead_of_tmdb_id(): void
+{
+    $response = $this->getJson('/api/v1/movies/bad-boys');
+    
+    $response->assertStatus(300)
+        ->assertJsonMissing(['options' => [['tmdb_id' => 9738]]]) // Oczekujemy że NIE MA tmdb_id
+        ->assertJsonStructure(['options' => [['slug']]]); // Oczekujemy że JEST slug
+}
+// Uruchom: php artisan test --filter=test_movie_disambiguation_uses_slugs
+// Wynik: FAIL (bo kod jeszcze używa tmdb_id) ✅ To jest OK!
+
+// 2. GREEN - Minimalna implementacja (test PRZECHODZI)
+// Zmień kod w MovieRetrievalService::buildDisambiguationOptions()
+// Uruchom: php artisan test --filter=test_movie_disambiguation_uses_slugs
+// Wynik: PASS ✅
+
+// 3. REFACTOR - Ulepsz kod (testy nadal PRZECHODZĄ)
+// Popraw czytelność, wydajność, etc.
+// Uruchom: php artisan test
+// Wynik: Wszystkie testy PASS ✅
+```

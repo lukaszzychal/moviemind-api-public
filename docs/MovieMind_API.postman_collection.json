@@ -1,0 +1,566 @@
+{
+  "info": {
+    "name": "MovieMind API",
+    "description": "Complete API collection for MovieMind - Movie description generation service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "moviemind-api"
+  },
+  "item": [
+    {
+      "name": "Movies",
+      "item": [
+        {
+          "name": "List Movies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/movies?q={{search_query}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "movies"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{search_query}}",
+                  "description": "Optional search query (title, director, genre)"
+                }
+              ]
+            },
+            "description": "Get list of movies with optional search query"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Movies (Advanced)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/movies/search?q={{search_query}}&year={{year}}&director={{director}}&actor={{actor}}&page={{page}}&per_page={{per_page}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "movies", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{search_query}}",
+                  "description": "Search query (title, actor, etc.)"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}",
+                  "description": "Filter by release year (1900-2034)",
+                  "disabled": true
+                },
+                {
+                  "key": "director",
+                  "value": "{{director}}",
+                  "description": "Filter by director name",
+                  "disabled": true
+                },
+                {
+                  "key": "actor",
+                  "value": "{{actor}}",
+                  "description": "Filter by actor name (can be array: actor[]=name1&actor[]=name2)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "description": "Page number (min: 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "{{per_page}}",
+                  "description": "Items per page (min: 1, max: 100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Advanced movie search with filters (local + TMDb). Supports pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Movie by Slug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/movies/{{movie_slug}}?description_id={{description_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "movies", "{{movie_slug}}"],
+              "query": [
+                {
+                  "key": "description_id",
+                  "value": "{{description_id}}",
+                  "description": "Optional: specific description ID to return",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get movie details by slug. Returns 202 if generation is queued, 300 for disambiguation."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Movie with Disambiguation Selection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/movies/{{movie_slug}}?tmdb_id={{tmdb_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "movies", "{{movie_slug}}"],
+              "query": [
+                {
+                  "key": "tmdb_id",
+                  "value": "{{tmdb_id}}",
+                  "description": "TMDb ID to select from disambiguation options"
+                }
+              ]
+            },
+            "description": "Select specific movie from disambiguation results using TMDb ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Movie Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/movies/{{movie_slug}}/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "movies", "{{movie_slug}}", "refresh"]
+            },
+            "description": "Refresh movie data from TMDb (updates snapshot)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Movie-related endpoints"
+    },
+    {
+      "name": "Generation",
+      "item": [
+        {
+          "name": "Generate Movie Description",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"{{movie_slug}}\",\n  \"locale\": \"en-US\",\n  \"context_tag\": \"DEFAULT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "generate"]
+            },
+            "description": "Queue movie description generation. Returns job_id for tracking."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Multiple Context Tags",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"MOVIE\",\n  \"slug\": \"{{movie_slug}}\",\n  \"locale\": \"en-US\",\n  \"context_tag\": [\"DEFAULT\", \"modern\", \"humorous\", \"critical\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "generate"]
+            },
+            "description": "Generate multiple descriptions with different context tags"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/jobs/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "jobs", "{{job_id}}"]
+            },
+            "description": "Get status of generation job"
+          },
+          "response": []
+        }
+      ],
+      "description": "AI description generation endpoints"
+    },
+    {
+      "name": "People",
+      "item": [
+        {
+          "name": "List People",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/people?q={{search_query}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "people"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{search_query}}",
+                  "description": "Optional search query"
+                }
+              ]
+            },
+            "description": "Get list of people (actors, directors, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Person by Slug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/people/{{person_slug}}?bio_id={{bio_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "people", "{{person_slug}}"],
+              "query": [
+                {
+                  "key": "bio_id",
+                  "value": "{{bio_id}}",
+                  "description": "Optional: specific bio ID to return",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get person details by slug"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Person Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/people/{{person_slug}}/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "people", "{{person_slug}}", "refresh"]
+            },
+            "description": "Refresh person data from TMDb"
+          },
+          "response": []
+        }
+      ],
+      "description": "People-related endpoints"
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "OpenAI Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health/openai",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health", "openai"]
+            },
+            "description": "Check OpenAI API connectivity and configuration"
+          },
+          "response": []
+        }
+      ],
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Feature Flags",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/flags",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "flags"]
+            },
+            "description": "List all feature flags (requires admin auth)"
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Feature Flag",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"on\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/flags/{{flag_name}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "flags", "{{flag_name}}"]
+            },
+            "description": "Toggle feature flag on/off (requires admin auth)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Flag Usage",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/flags/usage",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "flags", "usage"]
+            },
+            "description": "Get feature flag usage statistics (requires admin auth)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Admin endpoints (require authentication)"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "movie_slug",
+      "value": "the-matrix-1999",
+      "type": "string"
+    },
+    {
+      "key": "person_slug",
+      "value": "keanu-reeves-1964",
+      "type": "string"
+    },
+    {
+      "key": "search_query",
+      "value": "Matrix",
+      "type": "string"
+    },
+    {
+      "key": "year",
+      "value": "1999",
+      "type": "string"
+    },
+    {
+      "key": "director",
+      "value": "Wachowski",
+      "type": "string"
+    },
+    {
+      "key": "actor",
+      "value": "Keanu",
+      "type": "string"
+    },
+    {
+      "key": "page",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "per_page",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tmdb_id",
+      "value": "603",
+      "type": "string"
+    },
+    {
+      "key": "description_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bio_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "flag_name",
+      "value": "ai_description_generation",
+      "type": "string"
+    },
+    {
+      "key": "admin_username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "password",
+      "type": "string"
+    }
+  ]
+}
+

@@ -56,12 +56,21 @@ class MovieRepository
     /**
      * Find all movies with the same title (different years).
      * Useful for disambiguation when multiple movies share a title.
+     * Searches by title slug in both slug field and title field to find all matches.
      */
     public function findAllByTitleSlug(string $baseSlug): Collection
     {
+        // Search by slug containing the base slug (e.g., "matrix" matches both "matrix-1973" and "armitage-dual-matrix-2002")
+        // Also search by title containing the base slug (e.g., "matrix" matches "Armitage: Dual Matrix")
+        $titleSlugPattern = '%'.str_replace('-', '%', $baseSlug).'%';
+        $slugPattern = '%'.$baseSlug.'%';
+
         return Movie::with(['descriptions', 'defaultDescription'])
             ->withCount('descriptions')
-            ->whereRaw('slug LIKE ?', ["{$baseSlug}%"])
+            ->where(function ($query) use ($slugPattern, $titleSlugPattern) {
+                $query->whereRaw('slug LIKE ?', [$slugPattern])
+                    ->orWhereRaw('LOWER(title) LIKE LOWER(?)', [$titleSlugPattern]);
+            })
             ->orderBy('release_year', 'desc')
             ->get();
     }

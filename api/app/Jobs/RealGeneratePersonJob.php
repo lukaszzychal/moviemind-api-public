@@ -333,13 +333,16 @@ class RealGeneratePersonJob implements ShouldQueue
             }
         }
 
-        $suffix = 2;
-        do {
-            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
-            $suffix++;
-        } while (in_array($candidate, $existingTags, true));
+        // All standard tags are used - fallback to DEFAULT
+        // This prevents creating invalid enum values like "DEFAULT_2"
+        // If user needs more descriptions, they should explicitly specify context_tag
+        \Illuminate\Support\Facades\Log::warning('All standard context tags are used, falling back to DEFAULT', [
+            'person_id' => $person->id,
+            'slug' => $person->slug,
+            'existing_tags' => $existingTags,
+        ]);
 
-        return $candidate;
+        return ContextTag::DEFAULT->value;
     }
 
     private function cacheKey(): string
