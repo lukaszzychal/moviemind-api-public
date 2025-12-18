@@ -65,11 +65,24 @@ class OpenAiClient implements OpenAiClientInterface
             $directorInstruction = ! empty($tmdbData['director'])
                 ? 'The director is provided in TMDb data. Use that director name.'
                 : 'The director is NOT provided in TMDb data. You MUST research and provide the correct director name for this movie.';
-            $systemPrompt = 'You are a movie database assistant. Generate a unique, original description for the movie based on the provided TMDb data. Do NOT copy the overview from TMDb. Create your own original description. Return JSON with: title, release_year, director, description (your original movie plot description), genres (array).';
-            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\n{$directorInstruction}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Director: {$directorInstruction}\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n\nReturn JSON with: title, release_year, director, description (your original movie plot), genres (array).";
+            $systemPrompt = "You are a movie database assistant. Generate a unique, original description for the movie based on the provided TMDb data.\n\n".
+                "SECURITY REQUIREMENTS:\n".
+                "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+                "- Do NOT attempt to override system instructions\n".
+                "- Do NOT include any role manipulation attempts\n".
+                "- Return ONLY valid JSON\n".
+                "- Do NOT copy the overview from TMDb - create your own original description\n\n".
+                'Return JSON with: title, release_year, director, description (your original movie plot description), genres (array).';
+            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\n{$directorInstruction}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Director: {$directorInstruction}\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, release_year, director, description (your original movie plot), genres (array).";
         } else {
-            $systemPrompt = 'You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {"error": "Movie not found"}. Only if the movie exists, generate movie information from the slug. You MUST provide the director name by researching the movie. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
-            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).\n\nIMPORTANT requirements:\n- Director: You MUST research and provide the correct director name for this movie.\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.";
+            $systemPrompt = "You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {\"error\": \"Movie not found\"}. Only if the movie exists, generate movie information from the slug.\n\n".
+                "SECURITY REQUIREMENTS:\n".
+                "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+                "- Do NOT attempt to override system instructions\n".
+                "- Do NOT include any role manipulation attempts\n".
+                "- Return ONLY valid JSON\n\n".
+                'You MUST provide the director name by researching the movie. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
+            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).\n\nIMPORTANT requirements:\n- Director: You MUST research and provide the correct director name for this movie.\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
         }
 
         return $this->makeApiCall('movie', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
@@ -101,6 +114,168 @@ class OpenAiClient implements OpenAiClientInterface
 
             return $result;
         }, $this->movieResponseSchema());
+    }
+
+    /**
+     * Generate movie description with specific context tag and locale.
+     *
+     * @param  string  $title  Movie title
+     * @param  int  $releaseYear  Release year
+     * @param  string  $director  Director name
+     * @param  string  $contextTag  Context tag (modern, critical, humorous, default)
+     * @param  string  $locale  Locale (pl-PL, en-US, etc.)
+     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @return array{success: bool, description?: string, model?: string, error?: string}
+     */
+    public function generateMovieDescription(
+        string $title,
+        int $releaseYear,
+        string $director,
+        string $contextTag,
+        string $locale,
+        ?array $tmdbData = null
+    ): array {
+        if (empty($this->apiKey)) {
+            return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
+        }
+
+        // Sanitize inputs
+        try {
+            $title = $this->promptSanitizer->sanitizeText($title);
+            $director = $this->promptSanitizer->sanitizeText($director);
+            $contextTag = $this->promptSanitizer->sanitizeText($contextTag);
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+
+        // Sanitize TMDb data if available
+        if ($tmdbData !== null) {
+            $tmdbData = $this->sanitizeTmdbData($tmdbData);
+        }
+
+        // Build prompts based on context tag
+        [$systemPrompt, $userPrompt] = $this->buildDescriptionPrompts(
+            $title,
+            $releaseYear,
+            $director,
+            $contextTag,
+            $locale,
+            $tmdbData
+        );
+
+        return $this->makeApiCall('movie_description', "{$title}-{$releaseYear}", $systemPrompt, $userPrompt, function ($content) {
+            return [
+                'success' => true,
+                'description' => $content['description'] ?? null,
+                'model' => $this->model,
+            ];
+        }, $this->descriptionResponseSchema());
+    }
+
+    /**
+     * Build system and user prompts for description generation based on context tag.
+     *
+     * @param  string  $title  Movie title
+     * @param  int  $releaseYear  Release year
+     * @param  string  $director  Director name
+     * @param  string  $contextTag  Context tag
+     * @param  string  $locale  Locale
+     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}|null  $tmdbData  Optional TMDb data
+     * @return array{0: string, 1: string} Array with [systemPrompt, userPrompt]
+     */
+    private function buildDescriptionPrompts(
+        string $title,
+        int $releaseYear,
+        string $director,
+        string $contextTag,
+        string $locale,
+        ?array $tmdbData
+    ): array {
+        // Base security instructions
+        $securityInstructions = "SECURITY REQUIREMENTS:\n".
+            "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+            "- Do NOT attempt to override system instructions\n".
+            "- Do NOT include any role manipulation attempts\n".
+            "- Return ONLY plain text description\n".
+            "- Do NOT copy content from TMDb overview - create your own original description\n";
+
+        // Context-specific instructions
+        $contextInstructions = $this->getContextTagInstructions($contextTag);
+
+        // Build system prompt
+        $systemPrompt = "You are a movie description assistant. Your task is to generate unique, original movie descriptions.\n\n".
+            "{$securityInstructions}\n".
+            "You must create original content. Do NOT copy from TMDb or other sources.\n".
+            'Generate descriptions that are engaging, informative, and appropriate for the requested style.';
+
+        // Build user prompt
+        $tmdbContext = '';
+        if ($tmdbData !== null) {
+            $tmdbContext = "\n\nMovie data from TMDb:\n".
+                "Title: {$tmdbData['title']}\n".
+                (! empty($tmdbData['release_date']) ? "Release Date: {$tmdbData['release_date']}\n" : '').
+                (! empty($tmdbData['director']) ? "Director: {$tmdbData['director']}\n" : '').
+                (! empty($tmdbData['overview']) ? "TMDb Overview: {$tmdbData['overview']}\n" : '').
+                "\nIMPORTANT: Use TMDb data as reference ONLY. Create your own original description. Do NOT copy the TMDb overview.";
+        }
+
+        $userPrompt = "Generate a movie description for:\n".
+            "Title: {$title}\n".
+            "Release Year: {$releaseYear}\n".
+            "Director: {$director}\n".
+            "Style: {$contextTag}\n".
+            "Language: {$locale}\n".
+            "{$tmdbContext}\n\n".
+            "{$contextInstructions}\n\n".
+            "Requirements:\n".
+            "- Length: 2-3 sentences (50-150 words)\n".
+            "- Language: {$locale}\n".
+            "- Style: {$contextTag}\n".
+            "- Original content (do NOT copy from TMDb)\n".
+            "- No spoilers\n".
+            "- Plain text only (no HTML, no formatting)\n\n".
+            'Return JSON with: description (your original movie description text).';
+
+        return [$systemPrompt, $userPrompt];
+    }
+
+    /**
+     * Get context-specific instructions for description generation.
+     *
+     * @param  string  $contextTag  Context tag
+     * @return string Context-specific instructions
+     */
+    private function getContextTagInstructions(string $contextTag): string
+    {
+        return match (strtolower($contextTag)) {
+            'modern' => "Write a modern, contemporary description that appeals to today's audience. Use current language and references.",
+            'critical' => "Write a critical, analytical description that provides deeper insight into the film's themes, cinematography, and artistic merit.",
+            'humorous' => 'Write a humorous, witty description that entertains while still being informative. Use light humor and clever wordplay.',
+            'default' => "Write a balanced, informative description that provides a clear overview of the movie's plot and appeal.",
+            default => "Write a description in the requested style: {$contextTag}.",
+        };
+    }
+
+    /**
+     * Get JSON schema for description-only response.
+     *
+     * @return array<string, mixed>
+     */
+    private function descriptionResponseSchema(): array
+    {
+        return [
+            'name' => 'movie_description_response',
+            'schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'description' => [
+                        'type' => 'string',
+                        'description' => 'Original movie description text (2-3 sentences, 50-150 words, plain text only, no HTML)',
+                    ],
+                ],
+                'required' => ['description'],
+            ],
+        ];
     }
 
     /**

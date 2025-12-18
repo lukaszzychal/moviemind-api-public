@@ -232,21 +232,26 @@ main
    - [x] Parametr `context_tag` może być array ✅
    - [x] Obsługa pojedynczego i wielu context_tag ✅
 
-3. **Zabezpieczenia AI:** (osobny branch: `feature/ai-security`)
-   - [ ] Rozszerzyć `RealGenerateMovieJob` o walidację outputu
-   - [ ] Sprawdzenie podobieństwa z oryginałem (anti-hallucination)
-   - [ ] Wykrywanie AI injection
-   - [ ] Sanityzacja HTML/XSS
+3. **Zabezpieczenia AI:** (osobny branch: `feature/ai-security` - PR #147 zmergowany + uzupełnienia)
+   - [x] Serwis `HtmlSanitizer` stworzony ✅ (PR #147)
+   - [x] Unit testy dla `HtmlSanitizer` (20+ test cases) ✅ (PR #147)
+   - [x] **Integracja `HtmlSanitizer` z `RealGenerateMovieJob`** ✅ (poprzez `AiOutputValidator`)
+   - [x] Serwis `AiOutputValidator` stworzony ✅
+   - [x] Rozszerzyć `RealGenerateMovieJob` o walidację outputu ✅
+   - [x] Sprawdzenie podobieństwa z oryginałem (anti-hallucination) ✅
+   - [x] Wykrywanie AI injection w outputcie ✅
 
 4. **System prompts:** (osobny branch: `feature/ai-security`)
-   - [ ] Zaktualizować prompty dla różnych context_tag
-   - [ ] Dodanie zabezpieczeń w system promptach
+   - [x] Metoda `generateMovieDescription()` z obsługą context_tag ✅
+   - [x] Zaktualizować prompty dla różnych context_tag ✅
+   - [x] Dodanie zabezpieczeń w system promptach ✅
 
 5. **Testy:**
    - [x] Feature test: generowanie wielu context_tag ✅ (18 passed, 88 assertions)
-   - [ ] Test zabezpieczeń (AI injection, XSS) (osobny branch)
-   - [ ] Test walidacji outputu (osobny branch)
-   - [ ] Unit test: prompt generation (osobny branch)
+   - [x] Unit testy XSS (`HtmlSanitizerTest`) ✅ (PR #147)
+   - [x] **Integracja zabezpieczeń w `RealGenerateMovieJob`** ✅
+   - [ ] Testy integracyjne: XSS, AI injection, walidacja outputu (do dodania w osobnych testach)
+   - [ ] Unit test: `AiOutputValidator` (do dodania)
 
 ### Akceptacja:
 - ✅ Można generować wiele context_tag jednocześnie

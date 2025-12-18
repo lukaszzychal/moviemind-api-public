@@ -8,6 +8,7 @@ use App\Enums\Locale;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Repositories\MovieRepository;
+use App\Services\AiOutputValidator;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\JobErrorFormatter;
 use App\Services\JobStatusService;
@@ -166,7 +167,36 @@ class RealGenerateMovieJob implements ShouldQueue
     private function refreshExistingMovie(Movie $movie, OpenAiClientInterface $openAiClient): void
     {
         $movie->loadMissing('descriptions');
-        $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($movie, $locale);
+
+        // Use generateMovieDescription if context_tag is specified, otherwise use generateMovie
+        if ($this->contextTag !== null || $contextTag !== ContextTag::DEFAULT->value) {
+            // Generate description with specific context tag
+            $aiResponse = $openAiClient->generateMovieDescription(
+                $movie->title,
+                $movie->release_year,
+                $movie->director,
+                $contextTag,
+                $locale->value,
+                $this->tmdbData
+            );
+
+            // Convert to format expected by rest of method
+            if ($aiResponse['success'] === true) {
+                $aiResponse = [
+                    'success' => true,
+                    'title' => $movie->title,
+                    'release_year' => $movie->release_year,
+                    'director' => $movie->director,
+                    'description' => $aiResponse['description'] ?? null,
+                    'model' => $aiResponse['model'] ?? 'openai-gpt-4',
+                ];
+            }
+        } else {
+            // Use generateMovie for default context (backward compatibility)
+            $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
+        }
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
@@ -223,30 +253,39 @@ class RealGenerateMovieJob implements ShouldQueue
             throw new \RuntimeException('AI response missing required description field');
         }
 
-        if (strlen(trim($descriptionText)) < 50) {
-            Log::warning('AI response description too short during refresh', [
+        // Sanitize and validate description using AiOutputValidator
+        /** @var AiOutputValidator $outputValidator */
+        $outputValidator = app(AiOutputValidator::class);
+        $validation = $outputValidator->validateAndSanitizeDescription($descriptionText, $this->tmdbData);
+
+        if (! $validation['valid']) {
+            Log::warning('AI output validation failed during refresh', [
                 'slug' => $this->slug,
                 'job_id' => $this->jobId,
                 'movie_id' => $movie->id,
-                'description_length' => strlen(trim($descriptionText)),
-                'ai_response' => $aiResponse,
+                'errors' => $validation['errors'],
+                'warnings' => $validation['warnings'],
+                'original_length' => strlen($descriptionText),
+                'sanitized_length' => strlen($validation['sanitized']),
             ]);
 
             throw new \RuntimeException(
-                'AI response description must be at least 50 characters long (current: '.strlen(trim($descriptionText)).')'
+                'AI output validation failed: '.implode('; ', $validation['errors'])
             );
         }
 
-        if (stripos($descriptionText, 'Regenerated description for') === 0 || stripos($descriptionText, 'Generated description for') === 0) {
-            Log::warning('AI response description is fallback text during refresh', [
+        // Log warnings if any
+        if (! empty($validation['warnings'])) {
+            Log::warning('AI output validation warnings during refresh', [
                 'slug' => $this->slug,
                 'job_id' => $this->jobId,
                 'movie_id' => $movie->id,
-                'ai_response' => $aiResponse,
+                'warnings' => $validation['warnings'],
             ]);
-
-            throw new \RuntimeException('AI response description cannot be fallback text');
         }
+
+        // Use sanitized description
+        $descriptionText = $validation['sanitized'];
 
         $locale = $this->resolveLocale();
         $baselineLockingActive = $this->baselineLockingEnabled();
@@ -1017,8 +1056,44 @@ class RealGenerateMovieJob implements ShouldQueue
         $title = $aiResponse['title'] ?? null;
         $releaseYear = $aiResponse['release_year'] ?? null;
         $director = $aiResponse['director'] ?? null;
-        $descriptionText = $aiResponse['description'] ?? null;
+        $rawDescriptionText = $aiResponse['description'] ?? null;
         $genres = $aiResponse['genres'] ?? [];
+
+        // Sanitize and validate description using AiOutputValidator
+        if ($rawDescriptionText !== null && is_string($rawDescriptionText)) {
+            /** @var AiOutputValidator $outputValidator */
+            $outputValidator = app(AiOutputValidator::class);
+            $validation = $outputValidator->validateAndSanitizeDescription($rawDescriptionText, $this->tmdbData);
+
+            if (! $validation['valid']) {
+                Log::warning('AI output validation failed', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'errors' => $validation['errors'],
+                    'warnings' => $validation['warnings'],
+                    'original_length' => strlen($rawDescriptionText),
+                    'sanitized_length' => strlen($validation['sanitized']),
+                ]);
+
+                throw new \RuntimeException(
+                    'AI output validation failed: '.implode('; ', $validation['errors'])
+                );
+            }
+
+            // Log warnings if any
+            if (! empty($validation['warnings'])) {
+                Log::warning('AI output validation warnings', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'warnings' => $validation['warnings'],
+                ]);
+            }
+
+            // Use sanitized description
+            $descriptionText = $validation['sanitized'];
+        } else {
+            $descriptionText = null;
+        }
 
         // Track if description came from TMDb overview (should be marked as TRANSLATED, not GENERATED)
         $descriptionFromTmdb = false;
