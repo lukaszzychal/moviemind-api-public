@@ -325,6 +325,9 @@ reset_database() {
     if $DOCKER_COMPOSE_CMD exec -T php php artisan migrate:fresh --force; then
         print_success "Baza danych wyczyszczona i migracje uruchomione"
         
+        # Debug: Show LOAD_FIXTURES value
+        echo "DEBUG: LOAD_FIXTURES=$LOAD_FIXTURES"
+        
         # Load test fixtures (seeders) if --seed option is provided
         if [ "$LOAD_FIXTURES" = "true" ]; then
             print_info "Ładowanie przykładowych danych testowych (seeders)..."
