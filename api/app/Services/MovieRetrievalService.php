@@ -39,28 +39,22 @@ class MovieRetrievalService
         $parsed = Movie::parseSlug($slug);
         $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
 
-        // Check if slug is ambiguous (no year) - check for multiple matches BEFORE checking cache
-        // This ensures disambiguation is returned even if cache exists
-        if ($parsed['year'] === null) {
-            $allMatches = $this->movieRepository->findAllByTitleSlug($titleSlug);
-            if ($allMatches->count() > 1) {
-                // Multiple movies found - return disambiguation (don't cache this)
-                $options = $this->buildLocalDisambiguationOptions($slug, $allMatches);
-
-                return MovieRetrievalResult::disambiguation($slug, $options);
-            }
-        }
-
-        // Check cache only after we know it's not a disambiguation case
+        // Check cache first for exact slug match (before disambiguation logic)
         $cacheKey = $this->generateCacheKey($slug, $descriptionId);
         if ($cachedData = Cache::get($cacheKey)) {
             return MovieRetrievalResult::fromCache($cachedData);
         }
 
-        // Check for exact match or single match
+        // Check if slug is ambiguous (no year) - check for multiple matches
+        // If multiple matches found, return the most recent one (200) with _meta, not disambiguation (300)
         if ($parsed['year'] === null) {
-            // Only one match found - use it
-            if (isset($allMatches) && $allMatches->count() === 1) {
+            $allMatches = $this->movieRepository->findAllByTitleSlug($titleSlug);
+            if ($allMatches->count() > 1) {
+                // Multiple movies found - return most recent one (already sorted by release_year desc)
+                // The _meta will be added by MovieDisambiguationService in the formatter
+                $movie = $allMatches->first();
+            } elseif ($allMatches->count() === 1) {
+                // Only one match found - use it
                 $movie = $allMatches->first();
             } else {
                 // No matches found - try exact match
