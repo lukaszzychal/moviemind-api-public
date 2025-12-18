@@ -3,6 +3,22 @@
 > **Note:** This directory contains Polish versions of Cursor rules for learning purposes.  
 > Cursor/Claude uses only English versions from `.cursor/rules/*.mdc` and `CLAUDE.md`.
 
+## ⚠️ Critical Rules (MUST FOLLOW)
+
+1. **TDD (Test-Driven Development)** - `testing.mdc`
+   - ⚠️ **NEVER write code before tests** - This is a BLOCKER
+   - Write tests FIRST, then implementation
+   - See `testing.mdc` for detailed TDD workflow
+
+2. **Thin Controllers** - `controller-architecture.mdc`
+   - ⚠️ **Controllers MUST be thin** - Max 20-30 lines per method
+   - Delegate business logic to Actions/Services
+   - See `controller-architecture.mdc` for detailed patterns
+
+3. **Pre-Commit Workflow** - `workflow.mdc`
+   - Run Pint, PHPStan, Tests, GitLeaks before commit
+   - See `workflow.mdc` for complete checklist
+
 ## 🎯 Language Priority
 
 **English is the PRIMARY and REQUIRED language for all files in `.cursor/rules/*.mdc`.**
