@@ -178,17 +178,26 @@ Wynik: ~13 filmów (tylko poziom 1, brak kaskady dalej)
 **Konfiguracja C: `AUTO_CREATE_RELATED_MOVIES=true, MAX_RELATIONSHIP_DEPTH=2`**
 ```
 The Matrix (1999) [depth=0]
-├── The Matrix Reloaded (2003) [depth=1] ✅ TWORZY
-│   ├── Fast & Furious (2001) [depth=2] ✅ TWORZY
-│   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
-│   ├── John Wick (2014) [depth=2] ✅ TWORZY
-│   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
-│   └── ... (10 więcej filmów na poziomie 2)
-├── Inception (2010) [depth=1] ✅ TWORZY
-│   ├── Shutter Island (2010) [depth=2] ✅ TWORZY
-│   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
-│   └── ... (10 więcej filmów na poziomie 2)
-└── ... (11 więcej filmów na poziomie 1)
+├── Collection: The Matrix Collection
+│   ├── The Matrix Reloaded (2003) [depth=1] ✅ TWORZY
+│   │   ├── Similar Movies (sci-fi/action):
+│   │   │   ├── Dune (2021) [depth=2] ✅ TWORZY
+│   │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+│   │   │   ├── Edge of Tomorrow (2014) [depth=2] ✅ TWORZY
+│   │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+│   │   │   └── ... (8 więcej podobnych sci-fi/action na poziomie 2)
+│   │   └── Collection: The Matrix Collection (już istniejące) ✅
+│   └── ... (2 więcej filmów z kolekcji)
+└── Similar Movies:
+    ├── Inception (2010) [depth=1] ✅ TWORZY
+    │   ├── Similar Movies (thriller/sci-fi):
+    │   │   ├── Shutter Island (2010) [depth=2] ✅ TWORZY
+    │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+    │   │   ├── The Prestige (2006) [depth=2] ✅ TWORZY
+    │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+    │   │   └── ... (8 więcej podobnych thriller/sci-fi na poziomie 2)
+    │   └── Collection: brak
+    └── ... (10 więcej podobnych filmów na poziomie 1)
 
 Wynik: ~13 filmów (poziom 1) + ~130 filmów (poziom 2) = ~143 filmy
 ```
