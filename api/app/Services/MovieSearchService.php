@@ -253,9 +253,16 @@ class MovieSearchService
                 $tmdbResults
             );
 
+            // Filter by year if specified (same logic as for local results)
+            if ($year !== null) {
+                $transformedResults = array_filter($transformedResults, function (array $result) use ($year) {
+                    return ($result['release_year'] ?? null) === $year;
+                });
+            }
+
             // Note: Slug generation will be done in search() method after getting local results
             // to ensure proper context-aware slug generation
-            return $transformedResults;
+            return array_values($transformedResults); // Re-index array after filtering
         } catch (\Throwable $e) {
             Log::warning('MovieSearchService: TMDB search failed', [
                 'query' => $query,
