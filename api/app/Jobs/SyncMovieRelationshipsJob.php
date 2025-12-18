@@ -31,7 +31,7 @@ class SyncMovieRelationshipsJob implements ShouldQueue
     public int $timeout = 120;
 
     public function __construct(
-        public int $movieId
+        public string $movieId
     ) {}
 
     /**

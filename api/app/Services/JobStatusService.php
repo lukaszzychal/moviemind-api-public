@@ -173,8 +173,13 @@ class JobStatusService
 
     /**
      * Mark job as completed.
+     *
+     * @param  string  $jobId  Job ID (UUID)
+     * @param  string  $entityType  Entity type (MOVIE, PERSON)
+     * @param  string  $entityId  Entity ID (UUID)
+     * @param  string|null  $slug  Optional slug
      */
-    public function markDone(string $jobId, string $entityType, int $entityId, ?string $slug = null): void
+    public function markDone(string $jobId, string $entityType, string $entityId, ?string $slug = null): void
     {
         $payload = [
             'status' => self::STATUS_DONE,

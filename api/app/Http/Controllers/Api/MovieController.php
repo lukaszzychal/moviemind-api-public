@@ -193,24 +193,40 @@ class MovieController extends Controller
         return $this->responseFormatter->formatFromResult($result, $selectedSlug);
     }
 
-    private function cacheKey(string $slug, ?int $descriptionId = null): string
+    /**
+     * Generate cache key for movie response.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @return string Cache key
+     */
+    private function cacheKey(string $slug, ?string $descriptionId = null): string
     {
         $suffix = $descriptionId !== null ? 'desc:'.$descriptionId : 'desc:default';
 
         return 'movie:'.$slug.':'.$suffix;
     }
 
-    private function normalizeDescriptionId(mixed $descriptionId): null|int|false
+    /**
+     * Normalize description ID from request (UUID string or null).
+     *
+     * @param  mixed  $descriptionId  Description ID from query parameter (UUID string or null)
+     * @return null|string|false Returns UUID string, null if not provided, or false if invalid
+     */
+    private function normalizeDescriptionId(mixed $descriptionId): null|string|false
     {
         if ($descriptionId === null || $descriptionId === '') {
             return null;
         }
 
-        if (filter_var($descriptionId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+        $descriptionId = (string) $descriptionId;
+
+        // Validate UUID format (UUIDv7 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $descriptionId)) {
             return false;
         }
 
-        return (int) $descriptionId;
+        return $descriptionId;
     }
 
     /**

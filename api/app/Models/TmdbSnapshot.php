@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id UUIDv7 primary key
  * @property string $entity_type
- * @property int $entity_id
+ * @property string $entity_id UUIDv7 foreign key (references movies.id or people.id)
  * @property int $tmdb_id
  * @property string $tmdb_type
  * @property array $raw_data
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class TmdbSnapshot extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'entity_type',
@@ -32,7 +33,7 @@ class TmdbSnapshot extends Model
     ];
 
     protected $casts = [
-        'entity_id' => 'integer',
+        'entity_id' => 'string', // Changed from integer to string (UUID)
         'tmdb_id' => 'integer',
         'raw_data' => 'array',
         'fetched_at' => 'datetime',

@@ -135,7 +135,7 @@ class PeopleApiTest extends TestCase
         ]);
 
         $response = $this->getJson(sprintf(
-            '/api/v1/people/%s?bio_id=%d',
+            '/api/v1/people/%s?bio_id=%s',
             $personSlug,
             $alternateBio->id
         ));

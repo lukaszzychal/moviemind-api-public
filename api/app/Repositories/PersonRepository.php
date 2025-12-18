@@ -73,9 +73,9 @@ class PersonRepository
      * Uses lighter relations than findBySlugWithRelations (only 'bios').
      *
      * @param  string  $slug  The slug to search for
-     * @param  int|null  $existingId  Optional existing person ID to check first
+     * @param  string|null  $existingId  Optional existing person ID (UUID) to check first
      */
-    public function findBySlugForJob(string $slug, ?int $existingId = null): ?Person
+    public function findBySlugForJob(string $slug, ?string $existingId = null): ?Person
     {
         // If existing ID is provided, try to find by ID first
         if ($existingId !== null) {

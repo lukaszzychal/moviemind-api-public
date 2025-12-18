@@ -82,9 +82,9 @@ class MovieRepository
      * Uses lighter relations than findBySlugWithRelations (only 'descriptions').
      *
      * @param  string  $slug  The slug to search for
-     * @param  int|null  $existingId  Optional existing movie ID to check first
+     * @param  string|null  $existingId  Optional existing movie ID (UUID) to check first
      */
-    public function findBySlugForJob(string $slug, ?int $existingId = null): ?Movie
+    public function findBySlugForJob(string $slug, ?string $existingId = null): ?Movie
     {
         // If existing ID is provided, try to find by ID first
         if ($existingId !== null) {

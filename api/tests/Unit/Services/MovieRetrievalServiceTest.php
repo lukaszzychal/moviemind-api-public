@@ -91,7 +91,8 @@ class MovieRetrievalServiceTest extends TestCase
         ]);
 
         $service = $this->createService();
-        $result = $service->retrieveMovie('the-matrix-1999', 999);
+        $nonExistentDescriptionId = '00000000-0000-0000-0000-000000000000'; // Non-existent UUID
+        $result = $service->retrieveMovie('the-matrix-1999', $nonExistentDescriptionId);
 
         $this->assertFalse($result->isFound());
         $this->assertTrue($result->isDescriptionNotFound());

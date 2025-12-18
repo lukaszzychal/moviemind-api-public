@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('people', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->date('birth_date')->nullable();
             $table->string('birthplace')->nullable();
@@ -17,8 +17,8 @@ return new class extends Migration
         });
 
         Schema::create('movie_person', function (Blueprint $table) {
-            $table->foreignId('movie_id')->constrained('movies')->cascadeOnDelete();
-            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->foreignUuid('movie_id')->constrained('movies')->cascadeOnDelete();
+            $table->foreignUuid('person_id')->constrained('people')->cascadeOnDelete();
             $table->string('role', 16); // ACTOR, DIRECTOR, WRITER, PRODUCER
             $table->string('character_name')->nullable(); // for ACTOR
             $table->string('job')->nullable(); // for crew

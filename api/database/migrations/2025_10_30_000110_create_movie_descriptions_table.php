@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('movie_descriptions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('movie_id')->constrained('movies')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('movie_id')->constrained('movies')->cascadeOnDelete();
             $table->string('locale', 10);
             $table->text('text');
             $table->string('context_tag', 64)->nullable();

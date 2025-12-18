@@ -39,8 +39,8 @@ class RealGeneratePersonJob implements ShouldQueue
     public function __construct(
         public string $slug,
         public string $jobId,
-        public ?int $existingPersonId = null,
-        public ?int $baselineBioId = null,
+        public ?string $existingPersonId = null,
+        public ?string $baselineBioId = null,
         public ?string $locale = null,
         public ?string $contextTag = null,
         public ?array $tmdbData = null
@@ -288,8 +288,8 @@ class RealGeneratePersonJob implements ShouldQueue
 
     private function updateCache(
         string $status,
-        ?int $id = null,
-        ?int $bioId = null,
+        ?string $id = null,
+        ?string $bioId = null,
         ?string $slug = null,
         ?string $locale = null,
         ?string $contextTag = null,
@@ -649,7 +649,8 @@ class RealGeneratePersonJob implements ShouldQueue
                 $currentDefault = $person->default_bio_id;
 
                 if ($this->baselineBioId !== null) {
-                    if ((int) $currentDefault !== $this->baselineBioId) {
+                    // Compare UUID strings (not int)
+                    if ((string) $currentDefault !== (string) $this->baselineBioId) {
                         return;
                     }
                 } elseif ($currentDefault !== null) {

@@ -5,13 +5,18 @@ namespace App\Models;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale as LocaleEnum;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $id UUIDv7 primary key
+ * @property string $person_id UUIDv7 foreign key
+ */
 class PersonBio extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'person_id', 'locale', 'text', 'context_tag', 'origin', 'ai_model',

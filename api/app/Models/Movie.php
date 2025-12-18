@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RelationshipType;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,12 +17,13 @@ use Illuminate\Support\Str;
  *
  * @author MovieMind API Team
  *
+ * @property string $id UUIDv7 primary key
  * @property int|null $tmdb_id
  * @property-read Pivot|null $pivot
  */
 class Movie extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'title', 'slug',
@@ -54,13 +56,13 @@ class Movie extends Model
      * @param  string  $title  Movie title
      * @param  int|null  $releaseYear  Release year
      * @param  string|null  $director  Director name (optional, helps with disambiguation)
-     * @param  int|null  $excludeId  Movie ID to exclude from duplicate check (for updates)
+     * @param  string|null  $excludeId  Movie ID (UUID) to exclude from duplicate check (for updates)
      */
     public static function generateSlug(
         string $title,
         ?int $releaseYear = null,
         ?string $director = null,
-        ?int $excludeId = null
+        ?string $excludeId = null
     ): string {
         $baseSlug = Str::slug($title);
 

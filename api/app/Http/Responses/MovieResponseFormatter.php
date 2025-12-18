@@ -251,8 +251,11 @@ class MovieResponseFormatter
 
     /**
      * Format refresh success response.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string  $movieId  Movie ID (UUID)
      */
-    public function formatRefreshSuccess(string $slug, int $movieId): JsonResponse
+    public function formatRefreshSuccess(string $slug, string $movieId): JsonResponse
     {
         return response()->json([
             'message' => 'Movie data refreshed from TMDb',

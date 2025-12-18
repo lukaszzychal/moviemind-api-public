@@ -9,12 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('people', function (Blueprint $table) {
-            $table->unsignedBigInteger('default_bio_id')->nullable()->after('birthplace')->index();
+            $table->uuid('default_bio_id')->nullable()->after('birthplace')->index();
         });
 
         Schema::create('person_bios', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('person_id')->constrained('people')->cascadeOnDelete();
             $table->string('locale', 10);
             $table->text('text');
             $table->string('context_tag', 64)->nullable();
