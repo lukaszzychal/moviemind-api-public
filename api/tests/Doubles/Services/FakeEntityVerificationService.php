@@ -124,4 +124,16 @@ class FakeEntityVerificationService implements EntityVerificationServiceInterfac
 
         return array_slice($results, 0, $limit);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function health(): array
+    {
+        return [
+            'success' => true,
+            'service' => 'fake',
+            'message' => 'Fake service is always healthy',
+        ];
+    }
 }

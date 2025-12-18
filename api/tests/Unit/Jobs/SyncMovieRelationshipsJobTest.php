@@ -9,9 +9,11 @@ use App\Jobs\SyncMovieRelationshipsJob;
 use App\Models\Movie;
 use App\Models\MovieRelationship;
 use App\Models\TmdbSnapshot;
+use App\Services\TmdbMovieCreationService;
 use App\Services\TmdbVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use Tests\TestCase;
 
 /**
@@ -27,7 +29,12 @@ class SyncMovieRelationshipsJobTest extends TestCase
     {
         parent::setUp();
         $this->artisan('migrate');
-        Log::fake();
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
@@ -45,12 +52,17 @@ class SyncMovieRelationshipsJobTest extends TestCase
         // When: Job runs
         $job = new SyncMovieRelationshipsJob($nonExistentMovieId);
         $tmdbService = $this->createMock(TmdbVerificationService::class);
-        $job->handle($tmdbService);
+        $tmdbMovieCreationService = $this->createMock(TmdbMovieCreationService::class);
 
-        // Then: No error thrown, warning logged
-        Log::assertLogged('warning', function ($message, $context) {
-            return str_contains($message, 'Movie not found');
-        });
+        // Mock Log calls
+        Log::shouldReceive('info')
+            ->zeroOrMoreTimes()
+            ->andReturnNull();
+        Log::shouldReceive('warning')
+            ->once()
+            ->with('SyncMovieRelationshipsJob: Movie not found', Mockery::type('array'));
+
+        $job->handle($tmdbService, $tmdbMovieCreationService);
     }
 
     /**
@@ -72,12 +84,17 @@ class SyncMovieRelationshipsJobTest extends TestCase
         // When: Job runs
         $job = new SyncMovieRelationshipsJob($movie->id);
         $tmdbService = $this->createMock(TmdbVerificationService::class);
-        $job->handle($tmdbService);
+        $tmdbMovieCreationService = $this->createMock(TmdbMovieCreationService::class);
 
-        // Then: Warning logged
-        Log::assertLogged('warning', function ($message, $context) {
-            return str_contains($message, 'No TMDb snapshot found');
-        });
+        // Mock Log calls
+        Log::shouldReceive('info')
+            ->zeroOrMoreTimes()
+            ->andReturnNull();
+        Log::shouldReceive('warning')
+            ->once()
+            ->with('SyncMovieRelationshipsJob: No TMDb snapshot found for movie', Mockery::type('array'));
+
+        $job->handle($tmdbService, $tmdbMovieCreationService);
     }
 
     /**
@@ -149,8 +166,18 @@ class SyncMovieRelationshipsJobTest extends TestCase
             ]);
 
         // When: Job runs
+        $tmdbMovieCreationService = $this->createMock(TmdbMovieCreationService::class);
+
+        // Mock Log calls - allow any info/warning calls
+        Log::shouldReceive('info')
+            ->zeroOrMoreTimes()
+            ->andReturnNull();
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnNull();
+
         $job = new SyncMovieRelationshipsJob($movie1->id);
-        $job->handle($tmdbService);
+        $job->handle($tmdbService, $tmdbMovieCreationService);
 
         // Then: Relationships should be created
         $this->assertEquals(2, MovieRelationship::where('movie_id', $movie1->id)->count());
