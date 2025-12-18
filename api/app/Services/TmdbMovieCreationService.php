@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Jobs\SyncMovieMetadataJob;
+use App\Jobs\SyncMovieRelationshipsJob;
 use App\Models\Movie;
 use App\Repositories\MovieRepository;
 use Illuminate\Support\Facades\Cache;
@@ -101,6 +102,9 @@ class TmdbMovieCreationService
 
         // Dispatch job to sync metadata (actors, crew) asynchronously
         SyncMovieMetadataJob::dispatch($movie->id);
+
+        // Dispatch job to sync relationships (sequels, prequels, etc.) asynchronously
+        SyncMovieRelationshipsJob::dispatch($movie->id);
 
         Log::info('Movie created from TMDb data (metadata only, description will be generated asynchronously)', [
             'request_slug' => $requestSlug,

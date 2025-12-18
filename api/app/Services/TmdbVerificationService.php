@@ -707,9 +707,12 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
     }
 
     /**
-     * Get movie details from TMDb including credits.
+     * Get movie details from TMDb including credits, similar movies, and collection.
+     * This is a public method for use in jobs.
+     *
+     * @return array Movie details with credits, similar, and belongs_to_collection
      */
-    private function getMovieDetails(int $tmdbId): array
+    public function getMovieDetails(int $tmdbId): array
     {
         try {
             $client = $this->getClient();
@@ -717,14 +720,41 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return [];
             }
 
-            // Get details with credits appended
-            $response = $client->movies()->getDetails($tmdbId, ['append_to_response' => 'credits']);
+            // Get details with credits, similar movies, and collection appended
+            $response = $client->movies()->getDetails($tmdbId, ['append_to_response' => 'credits,similar,belongs_to_collection']);
             $data = json_decode($response->getBody()->getContents(), true);
 
             return $data ?? [];
         } catch (\Throwable $e) {
             Log::warning('TmdbVerificationService: failed to get movie details', [
                 'tmdb_id' => $tmdbId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Get collection details from TMDb.
+     *
+     * @return array{id: int, name: string, parts?: array<int, array{id: int, title: string, release_date?: string}>}
+     */
+    public function getCollectionDetails(int $collectionId): array
+    {
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                return [];
+            }
+
+            $response = $client->collections()->getDetails($collectionId);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            return $data ?? [];
+        } catch (\Throwable $e) {
+            Log::warning('TmdbVerificationService: failed to get collection details', [
+                'collection_id' => $collectionId,
                 'error' => $e->getMessage(),
             ]);
 
@@ -814,6 +844,63 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
     /**
      * Get or create TMDb client.
      */
+    /**
+     * Perform a lightweight health check against the TMDb API.
+     *
+     * @return array{success: bool, service: string, message?: string, status?: int, error?: string}
+     */
+    public function health(): array
+    {
+        $apiKey = $this->apiKey ?? config('services.tmdb.api_key');
+
+        if (empty($apiKey)) {
+            return [
+                'success' => false,
+                'service' => 'tmdb',
+                'error' => 'TMDb API key not configured. Set TMDB_API_KEY in .env',
+            ];
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                return [
+                    'success' => false,
+                    'service' => 'tmdb',
+                    'error' => 'TMDb API key not configured. Set TMDB_API_KEY in .env',
+                ];
+            }
+
+            // Perform a lightweight test request (get movie by ID 603 - The Matrix)
+            // This is a simple, fast endpoint that doesn't require complex parameters
+            $response = $client->movies()->getDetails(603);
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode >= 200 && $statusCode < 300) {
+                return [
+                    'success' => true,
+                    'service' => 'tmdb',
+                    'message' => 'TMDb API is accessible',
+                    'status' => $statusCode,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'service' => 'tmdb',
+                'error' => "TMDb API returned status {$statusCode}",
+                'status' => $statusCode,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'service' => 'tmdb',
+                'error' => 'TMDb API is not reachable: '.$e->getMessage(),
+                'status' => 503,
+            ];
+        }
+    }
+
     private function getClient(): ?TMDBClient
     {
         if ($this->client !== null) {

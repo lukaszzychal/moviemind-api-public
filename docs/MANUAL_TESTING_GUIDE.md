@@ -200,8 +200,11 @@ tail -f storage/logs/laravel.log | grep "Queue"
 curl -X GET "http://localhost:8000/api/v1/health/openai"
 # Should return status 200 with OpenAI status
 
-# Note: TMDB API access is verified indirectly when creating/searching movies
-# There's no dedicated TMDB health endpoint
+# Check TMDB health (this verifies TMDB API connectivity)
+curl -X GET "http://localhost:8000/api/v1/health/tmdb"
+# Should return status 200 with TMDB status
+
+# Note: Both endpoints verify API connectivity and configuration
 ```
 
 ---
@@ -348,31 +351,34 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" | jq
          "origin": "GENERATED"
        }
      ],
-     "people": [
-       {
-         "id": 1,
-         "name": "Keanu Reeves",
-         "slug": "keanu-reeves",
-         "role": "ACTOR",
-         "character_name": "Neo"
-       }
-     ],
      "_links": {
        "self": {
          "href": "http://localhost:8000/api/v1/movies/the-matrix-1999"
+       },
+       "people": [],
+       "generate": {
+         "href": "http://localhost:8000/api/v1/generate",
+         "method": "POST",
+         "body": {
+           "entity_type": "MOVIE",
+           "entity_id": 1
+         }
        }
      }
    }
    ```
+   
+   **Note:** The `people` array is **not included** in the response for `GET /api/v1/movies/{slug}` endpoint by default. The `people` relation is only loaded when explicitly requested (e.g., in list endpoints). To get people data, use the `people` link in `_links` or access individual person endpoints.
 
 3. **Verify:**
    - [ ] Status code: `200 OK`
    - [ ] All movie fields present
    - [ ] `default_description` present (if exists)
    - [ ] `descriptions` array present with all descriptions
-   - [ ] `people` array present (actors, crew)
+   - [ ] `people` array is **NOT** present in response (not loaded by default for single movie endpoint)
+   - [ ] `_links.people` present (may be empty array if no people linked)
    - [ ] **Security:** `tmdb_id` is **NOT** present
-   - [ ] `_links` present
+   - [ ] `_links` present with `self` and `generate` links
 
 4. **Test with description_id parameter:**
    ```bash
@@ -972,6 +978,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/api/v1/health/openai` | Check OpenAI API health | No |
+| `GET` | `/api/v1/health/tmdb` | Check TMDb API health | No |
 | `GET` | `/api/v1/admin/flags` | List feature flags | Yes |
 | `POST` | `/api/v1/admin/flags/{name}` | Set feature flag | Yes |
 | `GET` | `/api/v1/admin/flags/usage` | Get flag usage info | Yes |
@@ -1008,11 +1015,37 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 **Objective:** Verify TMDB API connectivity.
 
-**Note:** There's no dedicated TMDB health endpoint, but connectivity can be verified indirectly.
-
 **Steps:**
 
-1. **Check TMDB via movie search (recommended):**
+1. **Check TMDB health endpoint (recommended):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/health/tmdb" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `200 OK` (if API is accessible)
+   - [ ] Response contains `success: true` and `message: "TMDb API is accessible"`
+   - [ ] If `503`, check `error` field for details
+
+2. **Verify response structure (success):**
+   ```json
+   {
+     "success": true,
+     "service": "tmdb",
+     "message": "TMDb API is accessible",
+     "status": 200
+   }
+   ```
+
+3. **Verify response structure (error - no API key):**
+   ```json
+   {
+     "success": false,
+     "service": "tmdb",
+     "error": "TMDb API key not configured. Set TMDB_API_KEY in .env"
+   }
+   ```
+
+4. **Alternative: Check TMDB via movie search (indirect verification):**
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" \
      -H "Accept: application/json" | jq
@@ -1021,7 +1054,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    - [ ] No TMDB-related errors in response
    - [ ] Check logs for TMDB connectivity issues
 
-2. **Direct TMDB API test (requires API key):**
+5. **Direct TMDB API test (requires API key):**
    ```bash
    # Get API key from .env
    TMDB_API_KEY=$(grep TMDB_API_KEY api/.env | cut -d '=' -f2)
@@ -1033,20 +1066,21 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    - [ ] Should return: `603` (The Matrix movie ID)
    - [ ] Status code: `200 OK`
 
-3. **Verify TMDB configuration:**
+6. **Verify TMDB configuration:**
    ```bash
    # Check if TMDB_API_KEY is set
    grep TMDB_API_KEY api/.env
    # Should show: TMDB_API_KEY=your_key_here
    ```
 
-4. **Check logs for TMDB errors:**
+7. **Check logs for TMDB errors:**
    ```bash
    tail -f api/storage/logs/laravel.log | grep -i tmdb
    # Look for connection errors or rate limit warnings
    ```
 
-5. **Verify:**
+8. **Verify:**
+   - [ ] TMDB health endpoint returns `200 OK` (or `503` with error details)
    - [ ] TMDB API key is configured
    - [ ] Direct API call succeeds
    - [ ] No connection errors in logs

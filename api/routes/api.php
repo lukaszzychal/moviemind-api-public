@@ -12,6 +12,7 @@ Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
     Route::get('movies/search', [MovieController::class, 'search']);
     Route::get('movies/{slug}', [MovieController::class, 'show']);
+    Route::get('movies/{slug}/related', [MovieController::class, 'related']);
     Route::post('movies/{slug}/refresh', [MovieController::class, 'refresh']);
     Route::get('people', [PersonController::class, 'index']);
     Route::get('people/{slug}', [PersonController::class, 'show']);
@@ -19,6 +20,7 @@ Route::prefix('v1')->group(function () {
     Route::post('generate', [GenerateController::class, 'generate']);
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
+    Route::get('health/tmdb', [HealthController::class, 'tmdb']);
 });
 
 Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {

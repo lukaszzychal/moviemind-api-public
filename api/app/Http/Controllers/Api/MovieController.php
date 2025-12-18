@@ -10,6 +10,7 @@ use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
 use App\Http\Responses\MovieResponseFormatter;
 use App\Models\Movie;
+use App\Models\MovieRelationship;
 use App\Repositories\MovieRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
@@ -193,5 +194,66 @@ class MovieController extends Controller
         Cache::forget($this->cacheKey($slug, null));
 
         return $this->responseFormatter->formatRefreshSuccess($slug, $movie->id);
+    }
+
+    /**
+     * Get related movies for a given movie.
+     *
+     * @author MovieMind API Team
+     */
+    public function related(Request $request, string $slug): JsonResponse
+    {
+        $movie = $this->movieRepository->findBySlugWithRelations($slug);
+        if (! $movie) {
+            return $this->responseFormatter->formatNotFound();
+        }
+
+        $filterTypes = $request->query('type', []);
+        if (! is_array($filterTypes)) {
+            $filterTypes = [$filterTypes];
+        }
+        $filterTypes = array_filter($filterTypes, fn ($type) => ! empty($type));
+        $validTypes = array_map(fn ($type) => strtoupper((string) $type), $filterTypes);
+
+        $relatedMovies = $movie->getRelatedMovies(count($validTypes) > 0 ? $validTypes : null);
+
+        $data = $relatedMovies->map(function (Movie $relatedMovie) use ($movie) {
+            $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
+                $query->where('movie_id', $movie->id)
+                    ->where('related_movie_id', $relatedMovie->id);
+            })->orWhere(function ($query) use ($movie, $relatedMovie) {
+                $query->where('movie_id', $relatedMovie->id)
+                    ->where('related_movie_id', $movie->id);
+            })->first();
+
+            $resource = MovieResource::make($relatedMovie)->additional([
+                '_links' => $this->hateoas->movieLinks($relatedMovie),
+            ]);
+
+            $movieData = $resource->resolve();
+            $movieData['relationship_type'] = $relationship?->relationship_type?->value ?? null;
+            $movieData['relationship_label'] = $relationship?->relationship_type?->label() ?? null;
+            $movieData['relationship_order'] = $relationship?->order;
+
+            return $movieData;
+        })->values()->toArray();
+
+        return response()->json([
+            'movie' => [
+                'id' => $movie->id,
+                'slug' => $movie->slug,
+                'title' => $movie->title,
+            ],
+            'related_movies' => $data,
+            'count' => count($data),
+            '_links' => [
+                'self' => [
+                    'href' => url("/api/v1/movies/{$slug}/related"),
+                ],
+                'movie' => [
+                    'href' => url("/api/v1/movies/{$slug}"),
+                ],
+            ],
+        ]);
     }
 }
