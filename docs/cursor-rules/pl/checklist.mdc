@@ -32,4 +32,7 @@ alwaysApply: true
 
 ## Git
 - [ ] Commit message jest opisowy i zgodny z konwencją
+- [ ] Commit message jest w języku angielskim (REQUIRED)
+- [ ] PR title jest w języku angielskim (REQUIRED)
+- [ ] PR description jest w języku angielskim (REQUIRED)
 - [ ] Commit zawiera jedną logiczną zmianę
