@@ -92,10 +92,9 @@ class SyncMovieRelationshipsJob implements ShouldQueue
             $this->syncCollectionRelationships($movie, $snapshot, $movieDetails['belongs_to_collection'], $tmdbVerificationService, $tmdbMovieCreationService);
         }
 
-        // Sync similar movies (SAME_UNIVERSE)
-        if (! empty($movieDetails['similar']['results'])) {
-            $this->syncSimilarMovies($movie, $movieDetails['similar']['results'], $tmdbVerificationService, $tmdbMovieCreationService);
-        }
+        // Note: Similar Movies are no longer stored in database.
+        // They are fetched dynamically from TMDB API and cached in MovieController::related()
+        // This prevents cascade effect and ensures always up-to-date recommendations.
 
         Log::info('SyncMovieRelationshipsJob finished', [
             'movie_id' => $this->movieId,
@@ -223,71 +222,13 @@ class SyncMovieRelationshipsJob implements ShouldQueue
     }
 
     /**
-     * Sync similar movies (SAME_UNIVERSE relationship).
+     * Similar Movies are no longer synced to database.
      *
-     * @param  array<int, array<string, mixed>>  $similarMovies
+     * They are fetched dynamically from TMDB API and cached in MovieController::related()
+     * This prevents cascade effect and ensures always up-to-date recommendations.
+     *
+     * @deprecated This method is no longer used. Similar Movies are handled in MovieController.
      */
-    private function syncSimilarMovies(
-        Movie $movie,
-        array $similarMovies,
-        TmdbVerificationService $tmdbVerificationService,
-        TmdbMovieCreationService $tmdbMovieCreationService
-    ): void {
-        // Limit to top 10 similar movies
-        $similarMovies = array_slice($similarMovies, 0, 10);
-
-        foreach ($similarMovies as $similarMovie) {
-            $tmdbId = $similarMovie['id'] ?? null;
-            if (! $tmdbId) {
-                continue;
-            }
-
-            // Find or create related movie
-            $relatedMovie = Movie::where('tmdb_id', $tmdbId)->first();
-            if (! $relatedMovie) {
-                // Movie doesn't exist yet - create it from TMDB data
-                $relatedTmdbData = [
-                    'id' => $tmdbId,
-                    'title' => ($similarMovie['title'] ?? '') ?: 'Unknown',
-                    'release_date' => $similarMovie['release_date'] ?? null,
-                    'overview' => null, // Overview not available in similar movies list
-                    'director' => null, // Director not available in similar movies list
-                ];
-
-                // Generate slug for the related movie
-                $releaseYear = ! empty($relatedTmdbData['release_date'])
-                    ? (int) substr($relatedTmdbData['release_date'], 0, 4)
-                    : null;
-                $generatedSlug = Movie::generateSlug($relatedTmdbData['title'], $releaseYear, null);
-
-                $relatedMovie = $tmdbMovieCreationService->createFromTmdb($relatedTmdbData, $generatedSlug);
-
-                if (! $relatedMovie) {
-                    Log::warning('SyncMovieRelationshipsJob: Failed to create similar movie', [
-                        'tmdb_id' => $tmdbId,
-                        'title' => $relatedTmdbData['title'],
-                    ]);
-
-                    continue;
-                }
-
-                Log::info('SyncMovieRelationshipsJob: Created similar movie', [
-                    'movie_id' => $movie->id,
-                    'related_movie_id' => $relatedMovie->id,
-                    'related_tmdb_id' => $tmdbId,
-                ]);
-            }
-
-            // Create SAME_UNIVERSE relationship if it doesn't exist
-            MovieRelationship::firstOrCreate(
-                [
-                    'movie_id' => $movie->id,
-                    'related_movie_id' => $relatedMovie->id,
-                    'relationship_type' => RelationshipType::SAME_UNIVERSE,
-                ]
-            );
-        }
-    }
 
     /**
      * Determine relationship type based on positions in collection.

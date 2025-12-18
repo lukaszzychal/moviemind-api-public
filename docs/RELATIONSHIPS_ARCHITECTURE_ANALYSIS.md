@@ -427,5 +427,122 @@ private function syncCollectionRelationships(...): void
 
 **Ostatnia aktualizacja:** 2025-01-XX  
 **Autor:** AI Assistant (Claude)  
-**Status:** 🔴 Wymaga decyzji i implementacji
+**Status:** ✅ Zaimplementowane (Rozwiązanie 3 - Tylko cache)
+
+---
+
+## ✅ Implementacja
+
+Rozwiązanie 3 zostało zaimplementowane w branchu `feature/cascade-movie-creation-control`.
+
+### Zmiany:
+
+1. **SyncMovieRelationshipsJob:**
+   - Usunięto tworzenie filmów dla Similar Movies (tylko linkowanie istniejących)
+   - Usunięto zapisywanie `SAME_UNIVERSE` relationships w bazie danych
+   - Collection relationships nadal są synchronizowane i przechowywane w bazie
+
+2. **MovieController::related():**
+   - Dodano filtrowanie `?type=collection|similar|all`
+   - Collection relationships - z bazy danych (SEQUEL, PREQUEL, SERIES, SPINOFF, REMAKE)
+   - Similar Movies - dynamicznie z TMDB API (cache 24h)
+   - Dodano metadane `filters` w odpowiedzi (type, collection_count, similar_count)
+
+3. **getSimilarMoviesFromTmdb():**
+   - Nowa metoda prywatna w `MovieController`
+   - Pobiera Similar Movies z TMDB API
+   - Cache'uje wyniki na 24h
+   - Zwraca pełne dane dla filmów istniejących lokalnie
+   - Zwraca minimalne dane TMDB dla filmów nieistniejących lokalnie (z linkiem do `/generate`)
+
+4. **Testy:**
+   - Zaktualizowano istniejące testy
+   - Dodano testy dla filtrowania `type=collection` i `type=similar`
+   - Wszystkie testy przechodzą (6 passed, 50 assertions)
+
+### Użycie:
+
+```bash
+# Wszystkie relacje (collection + similar)
+GET /api/v1/movies/{slug}/related
+
+# Tylko collection relationships (z bazy danych)
+GET /api/v1/movies/{slug}/related?type=collection
+
+# Tylko similar movies (z TMDB API, cache 24h)
+GET /api/v1/movies/{slug}/related?type=similar
+```
+
+### Przykład odpowiedzi:
+
+```json
+{
+  "movie": {
+    "id": "uuid",
+    "slug": "the-matrix-1999",
+    "title": "The Matrix"
+  },
+  "related_movies": [
+    {
+      "id": "uuid",
+      "slug": "the-matrix-reloaded-2003",
+      "title": "The Matrix Reloaded",
+      "relationship_type": "SEQUEL",
+      "relationship_label": "Sequel",
+      "relationship_order": 1
+    },
+    {
+      "id": null,
+      "slug": null,
+      "title": "Inception",
+      "release_year": 2010,
+      "relationship_type": "SAME_UNIVERSE",
+      "relationship_label": "Similar Movie",
+      "_meta": {
+        "exists_locally": false,
+        "tmdb_id": 27205,
+        "source": "tmdb_similar"
+      },
+      "_links": {
+        "generate": {
+          "href": "http://localhost:8000/api/v1/generate",
+          "method": "POST",
+          "body": {
+            "entity_type": "MOVIE",
+            "slug": "inception-2010"
+          }
+        }
+      }
+    }
+  ],
+  "count": 2,
+  "filters": {
+    "type": "all",
+    "collection_count": 1,
+    "similar_count": 1
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8000/api/v1/movies/the-matrix-1999/related"
+    },
+    "movie": {
+      "href": "http://localhost:8000/api/v1/movies/the-matrix-1999"
+    },
+    "collection": {
+      "href": "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type=collection"
+    },
+    "similar": {
+      "href": "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type=similar"
+    }
+  }
+}
+```
+
+### Korzyści:
+
+✅ **Brak efektu kaskady:** Similar Movies nie tworzą nowych filmów automatycznie  
+✅ **Aktualność:** Similar Movies są zawsze aktualne (cache 24h)  
+✅ **Wydajność:** Collection relationships są szybkie (z bazy danych)  
+✅ **Elastyczność:** Możliwość filtrowania po typie relacji  
+✅ **Czysta baza:** Similar Movies nie zaśmiecają bazy danych
 

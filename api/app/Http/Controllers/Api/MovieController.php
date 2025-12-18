@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\QueueMovieGenerationAction;
 use App\Enums\Locale;
+use App\Enums\RelationshipType;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SearchMovieRequest;
@@ -16,6 +17,7 @@ use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
 use App\Services\MovieRetrievalService;
 use App\Services\MovieSearchService;
+use App\Services\TmdbVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -271,6 +273,11 @@ class MovieController extends Controller
     /**
      * Get related movies for a given movie.
      *
+     * Supports filtering by relationship type:
+     * - ?type=collection - Only collection relationships (sequels, prequels, etc.)
+     * - ?type=similar - Only similar movies (from TMDB API, cached)
+     * - ?type=all or no filter - Both collection and similar movies
+     *
      * @author MovieMind API Team
      */
     public function related(Request $request, string $slug): JsonResponse
@@ -280,35 +287,51 @@ class MovieController extends Controller
             return $this->responseFormatter->formatNotFound();
         }
 
-        $filterTypes = $request->query('type', []);
-        if (! is_array($filterTypes)) {
-            $filterTypes = [$filterTypes];
+        // Parse type filter: collection, similar, or all (default)
+        $typeFilter = $request->query('type', 'all');
+        $typeFilter = strtolower((string) $typeFilter);
+
+        $collectionMovies = [];
+        $similarMovies = [];
+
+        // Collection relationships - from database (SEQUEL, PREQUEL, SERIES, SPINOFF, REMAKE)
+        if ($typeFilter === 'all' || $typeFilter === 'collection') {
+            $collectionTypes = [
+                RelationshipType::SEQUEL->value,
+                RelationshipType::PREQUEL->value,
+                RelationshipType::SERIES->value,
+                RelationshipType::SPINOFF->value,
+                RelationshipType::REMAKE->value,
+            ];
+            $collectionMovies = $movie->getRelatedMovies($collectionTypes)->map(function (Movie $relatedMovie) use ($movie) {
+                $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
+                    $query->where('movie_id', $movie->id)
+                        ->where('related_movie_id', $relatedMovie->id);
+                })->orWhere(function ($query) use ($movie, $relatedMovie) {
+                    $query->where('movie_id', $relatedMovie->id)
+                        ->where('related_movie_id', $movie->id);
+                })->first();
+
+                $resource = MovieResource::make($relatedMovie)->additional([
+                    '_links' => $this->hateoas->movieLinks($relatedMovie),
+                ]);
+
+                $movieData = $resource->resolve();
+                $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
+                $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
+                $movieData['relationship_order'] = $relationship?->order;
+
+                return $movieData;
+            })->values()->toArray();
         }
-        $filterTypes = array_filter($filterTypes, fn ($type) => ! empty($type));
-        $validTypes = array_map(fn ($type) => strtoupper((string) $type), $filterTypes);
 
-        $relatedMovies = $movie->getRelatedMovies(count($validTypes) > 0 ? $validTypes : null);
+        // Similar movies - from TMDB API (cached, not stored in database)
+        if ($typeFilter === 'all' || $typeFilter === 'similar') {
+            $similarMovies = $this->getSimilarMoviesFromTmdb($movie, limit: 10);
+        }
 
-        $data = $relatedMovies->map(function (Movie $relatedMovie) use ($movie) {
-            $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
-                $query->where('movie_id', $movie->id)
-                    ->where('related_movie_id', $relatedMovie->id);
-            })->orWhere(function ($query) use ($movie, $relatedMovie) {
-                $query->where('movie_id', $relatedMovie->id)
-                    ->where('related_movie_id', $movie->id);
-            })->first();
-
-            $resource = MovieResource::make($relatedMovie)->additional([
-                '_links' => $this->hateoas->movieLinks($relatedMovie),
-            ]);
-
-            $movieData = $resource->resolve();
-            $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
-            $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
-            $movieData['relationship_order'] = $relationship?->order;
-
-            return $movieData;
-        })->values()->toArray();
+        // Combine results
+        $allRelatedMovies = array_merge($collectionMovies, $similarMovies);
 
         return response()->json([
             'movie' => [
@@ -316,8 +339,13 @@ class MovieController extends Controller
                 'slug' => $movie->slug,
                 'title' => $movie->title,
             ],
-            'related_movies' => $data,
-            'count' => count($data),
+            'related_movies' => $allRelatedMovies,
+            'count' => count($allRelatedMovies),
+            'filters' => [
+                'type' => $typeFilter,
+                'collection_count' => count($collectionMovies),
+                'similar_count' => count($similarMovies),
+            ],
             '_links' => [
                 'self' => [
                     'href' => url("/api/v1/movies/{$slug}/related"),
@@ -325,7 +353,124 @@ class MovieController extends Controller
                 'movie' => [
                     'href' => url("/api/v1/movies/{$slug}"),
                 ],
+                'collection' => [
+                    'href' => url("/api/v1/movies/{$slug}/related?type=collection"),
+                ],
+                'similar' => [
+                    'href' => url("/api/v1/movies/{$slug}/related?type=similar"),
+                ],
             ],
         ]);
+    }
+
+    /**
+     * Get similar movies from TMDB API (cached for 24 hours).
+     * Similar movies are NOT stored in database to prevent cascade effect.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSimilarMoviesFromTmdb(Movie $movie, int $limit = 10): array
+    {
+        /** @var \App\Models\TmdbSnapshot|null $snapshot */
+        $snapshot = $movie->tmdbSnapshot;
+        if (! $snapshot) {
+            return [];
+        }
+
+        // Cache similar movies for 24 hours (they can change, but not frequently)
+        return Cache::remember(
+            "movie_similar_{$movie->id}_{$limit}",
+            now()->addHours(24),
+            function () use ($movie, $snapshot, $limit) {
+                try {
+                    // Similar movies are only available from TmdbVerificationService, not from interface
+                    if (! $this->tmdbVerificationService instanceof TmdbVerificationService) {
+                        return [];
+                    }
+
+                    $movieDetails = $this->tmdbVerificationService->getMovieDetails($snapshot->tmdb_id);
+                    $similarResults = $movieDetails['similar']['results'] ?? [];
+
+                    // Limit to top N similar movies
+                    $similarResults = array_slice($similarResults, 0, $limit);
+
+                    // Transform TMDB results to API format
+                    $transformed = [];
+                    foreach ($similarResults as $similarMovie) {
+                        $tmdbId = $similarMovie['id'] ?? null;
+                        if (! $tmdbId) {
+                            continue;
+                        }
+
+                        // Try to find existing movie in our database
+                        /** @var Movie|null $existingMovie */
+                        $existingMovie = Movie::where('tmdb_id', $tmdbId)->first();
+
+                        if ($existingMovie) {
+                            // Movie exists locally - return full movie data
+                            $resource = MovieResource::make($existingMovie)->additional([
+                                '_links' => $this->hateoas->movieLinks($existingMovie),
+                            ]);
+
+                            $movieData = $resource->resolve();
+                            $movieData['relationship_type'] = 'SAME_UNIVERSE';
+                            $movieData['relationship_label'] = 'Similar Movie';
+                            $movieData['relationship_order'] = null;
+
+                            $transformed[] = $movieData;
+                        } else {
+                            // Movie doesn't exist locally - return minimal TMDB data
+                            $transformed[] = [
+                                'id' => null,
+                                'slug' => null,
+                                'title' => $similarMovie['title'] ?? 'Unknown',
+                                'release_year' => ! empty($similarMovie['release_date'])
+                                    ? (int) substr($similarMovie['release_date'], 0, 4)
+                                    : null,
+                                'director' => null,
+                                'genres' => [],
+                                'description' => null,
+                                'descriptions' => [],
+                                'people' => [],
+                                'relationship_type' => 'SAME_UNIVERSE',
+                                'relationship_label' => 'Similar Movie',
+                                'relationship_order' => null,
+                                '_links' => [
+                                    'self' => null, // Movie doesn't exist locally
+                                    'generate' => [
+                                        'href' => url('/api/v1/generate'),
+                                        'method' => 'POST',
+                                        'body' => [
+                                            'entity_type' => 'MOVIE',
+                                            'slug' => Movie::generateSlug(
+                                                $similarMovie['title'] ?? 'Unknown',
+                                                ! empty($similarMovie['release_date'])
+                                                    ? (int) substr($similarMovie['release_date'], 0, 4)
+                                                    : null
+                                            ),
+                                        ],
+                                    ],
+                                ],
+                                '_meta' => [
+                                    'exists_locally' => false,
+                                    'tmdb_id' => $tmdbId,
+                                    'source' => 'tmdb_similar',
+                                ],
+                            ];
+                        }
+                    }
+
+                    return $transformed;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to fetch similar movies from TMDB', [
+                        'movie_id' => $movie->id,
+                        'tmdb_id' => $snapshot->tmdb_id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return [];
+                }
+            }
+        );
     }
 }
