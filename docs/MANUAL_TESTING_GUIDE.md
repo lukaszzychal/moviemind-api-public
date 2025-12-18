@@ -550,6 +550,21 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" | jq
 
 > **For detailed testing scenarios, see:** [Relationships Testing Guide](./MANUAL_TESTING_RELATIONSHIPS.md)
 
+---
+
+## 📺 TV Series API
+
+> **Status:** ⏸️ **Not yet implemented**  
+> **Planned:** Future feature
+
+**Note:** TV Series endpoints are planned but not yet implemented. This section will be updated when the feature is available.
+
+**Planned Endpoints:**
+- `GET /api/v1/series` - List all TV series
+- `GET /api/v1/series/{slug}` - Get series details
+- `GET /api/v1/series/{slug}/seasons` - Get seasons
+- `GET /api/v1/series/{slug}/episodes` - Get episodes
+
 ### Endpoints Overview
 
 | Method | Endpoint | Description |
