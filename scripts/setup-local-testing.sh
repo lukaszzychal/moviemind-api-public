@@ -658,7 +658,11 @@ main() {
     print_success "Kontenery Docker: uruchomione"
     print_success "Tryb AI: ${AI_SERVICE_MODE}"
     print_success "Baza danych: wyczyszczona i gotowa"
-    print_success "Przykładowe dane: załadowane (seeders)"
+    if [ "$LOAD_FIXTURES" = "true" ]; then
+        print_success "Przykładowe dane: załadowane (seeders)"
+    else
+        print_info "Przykładowe dane: pominięte (użyj --seed aby załadować)"
+    fi
     print_info "Flagi włączone: ${success_count}"
     print_info "Flagi pominięte (tylko do odczytu): ${skip_count}"
     
