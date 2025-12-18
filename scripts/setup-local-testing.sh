@@ -390,18 +390,25 @@ while [[ $# -gt 0 ]]; do
             show_help
             ;;
         --api-url)
+            if [ -z "$2" ]; then
+                print_error "Opcja --api-url wymaga wartości URL"
+                exit 1
+            fi
             API_BASE_URL="$2"
             API_ENDPOINT="${API_BASE_URL}/api/v1"
             ADMIN_ENDPOINT="${API_ENDPOINT}/admin"
-            shift
+            shift 2
+            continue
             ;;
         --ai-service)
-            if [ "$2" != "mock" ] && [ "$2" != "real" ]; then
+            if [ -z "$2" ] || ([ "$2" != "mock" ] && [ "$2" != "real" ]); then
                 print_error "Nieprawidłowy tryb AI: $2 (dozwolone: mock, real)"
+                echo "Użycie: --ai-service mock  lub  --ai-service real"
                 exit 1
             fi
             AI_SERVICE_MODE="$2"
-            shift
+            shift 2
+            continue
             ;;
         --no-start)
             NO_START=true
