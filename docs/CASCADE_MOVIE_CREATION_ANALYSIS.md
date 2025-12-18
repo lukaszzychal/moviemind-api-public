@@ -53,9 +53,18 @@ TmdbMovieCreationService::createFromTmdb() dispatchuje:
 The Matrix Reloaded (2003) został utworzony
 ↓
 SyncMovieRelationshipsJob dla "The Matrix Reloaded":
-  - Collection: The Matrix Collection (te same filmy, ale już istnieją) ✅
-  - Similar Movies: nowe filmy (np. Fast & Furious, John Wick, etc.)
-    → Tworzy kolejne ~10 filmów
+  - Collection: The Matrix Collection
+    → The Matrix (1999) - już istnieje ✅
+    → The Matrix Revolutions (2003) - już istnieje ✅
+    → The Matrix Resurrections (2021) - już istnieje ✅
+    (Wszystkie filmy z kolekcji już istnieją, więc nie tworzy nowych)
+  
+  - Similar Movies (z TMDB API): nowe filmy sci-fi/action
+    → Blade Runner 2049 (2017) - już istnieje ✅ (utworzony w kroku 2)
+    → Dune (2021) - **NIE ISTNIEJE** → tworzy
+    → Edge of Tomorrow (2014) - **NIE ISTNIEJE** → tworzy
+    → ... (8 więcej podobnych filmów sci-fi)
+    → Tworzy kolejne ~10 filmów sci-fi/action
 ```
 
 #### Krok 4: Kaskada dla "Inception" (2010)
@@ -65,8 +74,12 @@ Inception (2010) został utworzony
 ↓
 SyncMovieRelationshipsJob dla "Inception":
   - Collection: brak (Inception nie jest częścią kolekcji)
-  - Similar Movies: nowe filmy (np. Shutter Island, The Prestige, etc.)
-    → Tworzy kolejne ~10 filmów
+  - Similar Movies (z TMDB API): nowe filmy thriller/sci-fi
+    → Shutter Island (2010) - **NIE ISTNIEJE** → tworzy
+    → The Prestige (2006) - **NIE ISTNIEJE** → tworzy
+    → Interstellar (2014) - już istnieje ✅ (utworzony w kroku 2)
+    → ... (8 więcej podobnych filmów thriller/sci-fi)
+    → Tworzy kolejne ~10 filmów thriller/sci-fi
 ```
 
 #### Krok 5: Kaskada dla każdego nowo utworzonego filmu...
@@ -82,39 +95,59 @@ I tak dalej... **wykładniczy wzrost!**
 #### Wizualizacja kaskady:
 
 ```
-The Matrix (1999)
-├── The Matrix Reloaded (2003)
-│   ├── Fast & Furious (2001)
-│   │   ├── Fast & Furious 2 (2003)
-│   │   │   └── ... (kaskada kontynuuje się)
-│   │   └── ... (10+ podobnych filmów)
-│   ├── John Wick (2014)
-│   │   ├── John Wick 2 (2017)
-│   │   └── ... (10+ podobnych filmów)
-│   └── ... (10+ podobnych filmów)
-├── The Matrix Revolutions (2003)
-│   └── ... (10+ podobnych filmów)
-├── The Matrix Resurrections (2021)
-│   └── ... (10+ podobnych filmów)
-├── Inception (2010)
-│   ├── Shutter Island (2010)
-│   │   └── ... (10+ podobnych filmów)
-│   ├── The Prestige (2006)
-│   │   └── ... (10+ podobnych filmów)
-│   └── ... (10+ podobnych filmów)
-├── Blade Runner 2049 (2017)
-│   └── ... (10+ podobnych filmów)
-├── Interstellar (2014)
-│   └── ... (10+ podobnych filmów)
-└── ... (7 więcej podobnych filmów)
+The Matrix (1999) [depth=0]
+│
+├── Collection: The Matrix Collection
+│   ├── The Matrix Reloaded (2003) [depth=1] ✅
+│   │   ├── Similar Movies (sci-fi/action):
+│   │   │   ├── Dune (2021) [depth=2] ✅
+│   │   │   │   └── Similar Movies: ... (10+ podobnych sci-fi)
+│   │   │   ├── Edge of Tomorrow (2014) [depth=2] ✅
+│   │   │   │   └── Similar Movies: ... (10+ podobnych sci-fi)
+│   │   │   └── ... (8 więcej podobnych sci-fi/action)
+│   │   └── Collection: The Matrix Collection (już istniejące) ✅
+│   │
+│   ├── The Matrix Revolutions (2003) [depth=1] ✅
+│   │   ├── Similar Movies (sci-fi/action):
+│   │   │   └── ... (10+ podobnych sci-fi/action)
+│   │   └── Collection: The Matrix Collection (już istniejące) ✅
+│   │
+│   └── The Matrix Resurrections (2021) [depth=1] ✅
+│       ├── Similar Movies (sci-fi/action):
+│       │   └── ... (10+ podobnych sci-fi/action)
+│       └── Collection: The Matrix Collection (już istniejące) ✅
+│
+└── Similar Movies (sci-fi/action/thriller):
+    ├── Inception (2010) [depth=1] ✅
+    │   ├── Similar Movies (thriller/sci-fi):
+    │   │   ├── Shutter Island (2010) [depth=2] ✅
+    │   │   │   └── Similar Movies: ... (10+ podobnych thriller)
+    │   │   ├── The Prestige (2006) [depth=2] ✅
+    │   │   │   └── Similar Movies: ... (10+ podobnych thriller)
+    │   │   └── ... (8 więcej podobnych thriller/sci-fi)
+    │   └── Collection: brak
+    │
+    ├── Blade Runner 2049 (2017) [depth=1] ✅
+    │   ├── Similar Movies (sci-fi):
+    │   │   └── ... (10+ podobnych sci-fi)
+    │   └── Collection: brak
+    │
+    ├── Interstellar (2014) [depth=1] ✅
+    │   ├── Similar Movies (sci-fi):
+    │   │   └── ... (10+ podobnych sci-fi)
+    │   └── Collection: brak
+    │
+    └── ... (7 więcej podobnych filmów sci-fi/action)
 
 Poziom 0: 1 film (The Matrix)
-Poziom 1: ~13 filmów (collection + similar)
+Poziom 1: ~13 filmów (3 z collection + ~10 similar)
 Poziom 2: ~130 filmów (13 × ~10 podobnych)
 Poziom 3: ~1,300 filmów (130 × ~10 podobnych)
 Poziom 4: ~13,000 filmów (1,300 × ~10 podobnych)
 ...
 ```
+
+**Uwaga:** Powiązania "Similar Movies" pochodzą z TMDB API i są oparte na algorytmach rekomendacji TMDB (podobne gatunki, aktorzy, reżyserzy, popularność). Nie są to bezpośrednie relacje fabularne, ale filmy, które TMDB uważa za podobne.
 
 #### Przykład z różnymi konfiguracjami:
 
