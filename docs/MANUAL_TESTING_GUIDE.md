@@ -74,10 +74,22 @@ php artisan serve
 # Server should start on http://localhost:8000
 ```
 
-**Verify:**
+**Verify API health:**
 ```bash
+# Check OpenAI health
 curl http://localhost:8000/api/v1/health/openai
 # Should return 200 OK
+
+# Check TMDB connectivity (via test search)
+curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" \
+  -H "Accept: application/json" | jq
+# Should return 200 OK or 202 Accepted (if movie needs to be created)
+# If TMDB API is not accessible, you'll see errors in logs
+
+# Alternative: Direct TMDB API test (requires TMDB_API_KEY in .env)
+curl -X GET "https://api.themoviedb.org/3/movie/603?api_key=${TMDB_API_KEY}" \
+  -H "Accept: application/json" | jq '.id'
+# Should return: 603 (The Matrix movie ID)
 ```
 
 ### Step 2: Run Migrations
