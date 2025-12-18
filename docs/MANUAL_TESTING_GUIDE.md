@@ -240,10 +240,12 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" | jq
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq
 ```
 
-**Refresh movie:**
+**Refresh movie (⚠️ requires POST method):**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" | jq
+curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
+  -H "Accept: application/json" | jq
 ```
+**Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
 
 ### Scenario 1: List All Movies
 
@@ -437,13 +439,17 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" | jq
 
 **Objective:** Verify refreshing movie metadata from TMDB.
 
+**⚠️ Important:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
+
 **Steps:**
 
-1. **Refresh movie:**
+1. **Refresh movie (must use POST):**
    ```bash
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
      -H "Accept: application/json" | jq
    ```
+   
+   **Common mistake:** Opening this URL in a browser (which uses GET) will fail. Always use `curl -X POST` or a tool like Postman/Insomnia.
 
 2. **Verify response:**
    ```json
@@ -509,10 +515,12 @@ curl -X GET "http://localhost:8000/api/v1/people" | jq
 curl -X GET "http://localhost:8000/api/v1/people/keanu-reeves" | jq
 ```
 
-**Refresh person:**
+**Refresh person (⚠️ requires POST method):**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" | jq
+curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
+  -H "Accept: application/json" | jq
 ```
+**Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
 
 ### Scenario 1: List All People
 
@@ -600,13 +608,17 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" | jq
 
 **Objective:** Verify refreshing person metadata from TMDB.
 
+**⚠️ Important:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
+
 **Steps:**
 
-1. **Refresh person:**
+1. **Refresh person (must use POST):**
    ```bash
    curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
      -H "Accept: application/json" | jq
    ```
+   
+   **Common mistake:** Opening this URL in a browser (which uses GET) will fail. Always use `curl -X POST` or a tool like Postman/Insomnia.
 
 2. **Verify response:**
    ```json
