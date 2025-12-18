@@ -11,6 +11,7 @@ class GenerateRequest extends FormRequest
     /**
      * Prepare the data for validation.
      * Support both 'slug' and deprecated 'entity_id' fields.
+     * Convert single context_tag string to array for consistent handling.
      */
     protected function prepareForValidation(): void
     {
@@ -18,6 +19,20 @@ class GenerateRequest extends FormRequest
             $this->merge([
                 'slug' => $this->input('entity_id'),
             ]);
+        }
+
+        // Convert single context_tag string to array for consistent handling
+        if ($this->has('context_tag') && ! is_array($this->input('context_tag'))) {
+            $contextTag = $this->input('context_tag');
+            if ($contextTag !== null && $contextTag !== '') {
+                $this->merge([
+                    'context_tag' => [$contextTag],
+                ]);
+            } else {
+                $this->merge([
+                    'context_tag' => null,
+                ]);
+            }
         }
     }
 
@@ -41,7 +56,8 @@ class GenerateRequest extends FormRequest
             'slug' => 'required_without:entity_id|string|max:255',
             'entity_id' => 'required_without:slug|string|max:255',
             'locale' => ['nullable', 'string', 'max:10', Rule::in(Locale::values())],
-            'context_tag' => ['nullable', 'string', 'max:64'],
+            'context_tag' => ['nullable', 'array'],
+            'context_tag.*' => ['string', 'max:64', Rule::in(\App\Enums\ContextTag::values())],
         ];
     }
 

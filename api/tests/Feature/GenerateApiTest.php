@@ -340,12 +340,140 @@ class GenerateApiTest extends TestCase
             'context_tag' => 'invalid-tag',
         ]);
 
-        // Should still accept the request, but context_tag should be normalized/fallback to default
-        $resp->assertStatus(202);
+        // Invalid context_tag should be rejected by validation
+        // When single string is converted to array, validation error key is context_tag.0
+        $resp->assertStatus(422)
+            ->assertJsonValidationErrors(['context_tag.0']);
+    }
 
-        // The event should be dispatched, but context_tag handling depends on implementation
+    public function test_generate_movie_with_multiple_context_tags(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => 'multiple-context-movie',
+            'context_tag' => ['modern', 'critical', 'humorous'],
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJsonStructure([
+                'job_ids',
+                'status',
+                'message',
+                'slug',
+                'context_tags',
+                'locale',
+                'jobs',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'multiple-context-movie',
+                'context_tags' => ['modern', 'critical', 'humorous'],
+                'locale' => 'en-US',
+            ]);
+
+        // Verify multiple events were dispatched (one for each context tag)
+        Event::assertDispatched(MovieGenerationRequested::class, 3);
         Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'invalid-context-movie';
+            return $event->slug === 'multiple-context-movie'
+                && $event->contextTag === 'modern';
+        });
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
+            return $event->slug === 'multiple-context-movie'
+                && $event->contextTag === 'critical';
+        });
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
+            return $event->slug === 'multiple-context-movie'
+                && $event->contextTag === 'humorous';
+        });
+    }
+
+    public function test_generate_person_with_multiple_context_tags(): void
+    {
+        Feature::activate('ai_bio_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'PERSON',
+            'entity_id' => 'multiple-context-person',
+            'context_tag' => ['modern', 'critical'],
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJsonStructure([
+                'job_ids',
+                'status',
+                'message',
+                'slug',
+                'context_tags',
+                'locale',
+                'jobs',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'multiple-context-person',
+                'context_tags' => ['modern', 'critical'],
+                'locale' => 'en-US',
+            ]);
+
+        // Verify multiple events were dispatched (one for each context tag)
+        Event::assertDispatched(PersonGenerationRequested::class, 2);
+        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
+            return $event->slug === 'multiple-context-person'
+                && $event->contextTag === 'modern';
+        });
+        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
+            return $event->slug === 'multiple-context-person'
+                && $event->contextTag === 'critical';
+        });
+    }
+
+    public function test_generate_movie_with_single_context_tag_array_backward_compatibility(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        // Single context tag as array should work (backward compatibility)
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => 'single-array-context-movie',
+            'context_tag' => ['modern'],
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'single-array-context-movie',
+                'context_tag' => 'modern',
+            ]);
+
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
+            return $event->slug === 'single-array-context-movie'
+                && $event->contextTag === 'modern';
+        });
+    }
+
+    public function test_generate_movie_with_empty_context_tag_array(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        // Empty array should be treated as null
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => 'empty-context-movie',
+            'context_tag' => [],
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJsonStructure([
+                'job_id',
+                'status',
+                'slug',
+                'locale',
+            ]);
+
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
+            return $event->slug === 'empty-context-movie'
+                && ($event->contextTag === null || $event->contextTag === 'DEFAULT');
         });
     }
 }
