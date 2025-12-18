@@ -54,6 +54,7 @@ class MovieResource extends JsonResource
                     'slug' => $person->slug,
                     'role' => $person->pivot->role ?? null,
                     'character_name' => $person->pivot->character_name ?? null,
+                    // Note: tmdb_id is intentionally excluded from public API
                 ];
             })->values()->toArray();
         }

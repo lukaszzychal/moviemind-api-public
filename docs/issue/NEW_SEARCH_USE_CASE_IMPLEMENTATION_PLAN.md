@@ -27,39 +27,39 @@ main
 **Branch:** `feature/search-endpoint`  
 **Priorytet:** Wysoki  
 **Zależności:** Brak  
-**Szacowany czas:** 2-3 dni
+**Status:** ✅ **UKOŃCZONY**
 
 ### Zadania:
 
 1. **Utworzyć `MovieSearchService`:**
-   - [ ] Klasa `App\Services\MovieSearchService`
-   - [ ] Metoda `search(array $criteria): SearchResult`
-   - [ ] Wyszukiwanie lokalne (MovieRepository)
-   - [ ] Wyszukiwanie TMDB (TmdbVerificationService)
-   - [ ] Merge wyników (bez tmdb_id w odpowiedzi)
-   - [ ] Obsługa różnych scenariuszy (exact, ambiguous, none)
+   - [x] Klasa `App\Services\MovieSearchService` ✅
+   - [x] Metoda `search(array $criteria): SearchResult` ✅
+   - [x] Wyszukiwanie lokalne (MovieRepository) ✅
+   - [x] Wyszukiwanie TMDB (TmdbVerificationService) ✅
+   - [x] Merge wyników (bez tmdb_id w odpowiedzi) ✅
+   - [x] Obsługa różnych scenariuszy (exact, ambiguous, none) ✅
 
 2. **Utworzyć `SearchResult` DTO:**
-   - [ ] Klasa `App\Support\SearchResult`
-   - [ ] Właściwości: `results`, `total`, `local_count`, `external_count`, `match_type`, `confidence`
-   - [ ] Metody pomocnicze
+   - [x] Klasa `App\Support\SearchResult` ✅
+   - [x] Właściwości: `results`, `total`, `local_count`, `external_count`, `match_type`, `confidence` ✅
+   - [x] Metody pomocnicze ✅
 
 3. **Dodać endpoint:**
-   - [ ] Route: `GET /api/v1/movies/search`
-   - [ ] Controller method: `MovieController::search()`
-   - [ ] Request validation: `SearchMovieRequest`
-   - [ ] Query params: `q`, `year`, `director`, `actor[]`, `limit`
+   - [x] Route: `GET /api/v1/movies/search` ✅
+   - [x] Controller method: `MovieController::search()` ✅
+   - [x] Request validation: `SearchMovieRequest` ✅
+   - [x] Query params: `q`, `year`, `director`, `actor[]`, `limit` ✅
 
 4. **Cache'owanie wyników:**
-   - [ ] Cache key generation
-   - [ ] TTL: 1h dla wyników TMDB
-   - [ ] Cache invalidation
+   - [x] Cache key generation ✅
+   - [x] TTL: 1h dla wyników TMDB ✅
+   - [x] Cache invalidation ✅
 
 5. **Testy:**
-   - [ ] Feature test: `SearchMoviesTest`
-   - [ ] Unit test: `MovieSearchServiceTest`
-   - [ ] Testy dla różnych scenariuszy (exact, ambiguous, none)
-   - [ ] Testy cache'owania
+   - [x] Feature test: `SearchMoviesTest` ✅
+   - [x] Unit test: `MovieSearchServiceTest` ✅
+   - [x] Testy dla różnych scenariuszy (exact, ambiguous, none) ✅
+   - [x] Testy cache'owania ✅
 
 ### Akceptacja:
 - ✅ Endpoint zwraca wyniki lokalne + zewnętrzne (bez tmdb_id)
@@ -67,7 +67,7 @@ main
 - ✅ Cache działa poprawnie
 - ✅ Wszystkie testy przechodzą
 
-### Merge do: `main`
+### Merge do: `main` ✅
 
 ---
 
@@ -76,36 +76,36 @@ main
 **Branch:** `feature/hide-tmdb-ids`  
 **Priorytet:** Wysoki  
 **Zależności:** Brak (może być równolegle z Etapem 1)  
-**Szacowany czas:** 1-2 dni
+**Status:** ✅ **UKOŃCZONY**
 
 ### Zadania:
 
 1. **Zaktualizować `MovieController`:**
-   - [ ] Usunąć `tmdb_id` z odpowiedzi disambiguation
-   - [ ] Użyć slugów zamiast `tmdb_id` w `handleDisambiguationSelection()`
-   - [ ] Zaktualizować `respondWithDisambiguation()` - bez `tmdb_id`
+   - [x] Usunąć `tmdb_id` z odpowiedzi disambiguation ✅
+   - [x] Użyć slugów zamiast `tmdb_id` w `handleDisambiguationSelection()` ✅
+   - [x] Zaktualizować `respondWithDisambiguation()` - bez `tmdb_id` ✅
 
 2. **Zaktualizować `PersonController`:**
-   - [ ] Analogiczne zmiany jak w MovieController
+   - [x] Analogiczne zmiany jak w MovieController ✅
 
 3. **Zaktualizować Resources:**
-   - [ ] `MovieResource` - sprawdzić czy nie zwraca `tmdb_id`
-   - [ ] `PersonResource` - sprawdzić czy nie zwraca `tmdb_id`
+   - [x] `MovieResource` - sprawdzić czy nie zwraca `tmdb_id` ✅
+   - [x] `PersonResource` - sprawdzić czy nie zwraca `tmdb_id` ✅
 
 4. **Zaktualizować dokumentację:**
-   - [ ] OpenAPI spec - usunąć `tmdb_id` z przykładów
-   - [ ] README - zaktualizować przykłady
+   - [x] OpenAPI spec - usunąć `tmdb_id` z przykładów ✅
+   - [x] README - zaktualizować przykłady ✅
 
 5. **Testy:**
-   - [ ] Feature test: sprawdzić że odpowiedzi nie zawierają `tmdb_id`
-   - [ ] Test disambiguation - używa slugów zamiast `tmdb_id`
+   - [x] Feature test: sprawdzić że odpowiedzi nie zawierają `tmdb_id` ✅ (`TmdbIdHiddenTest`)
+   - [x] Test disambiguation - używa slugów zamiast `tmdb_id` ✅
 
 ### Akceptacja:
 - ✅ Żadna odpowiedź API nie zawiera `tmdb_id`
 - ✅ Disambiguation używa slugów
-- ✅ Wszystkie testy przechodzą
+- ✅ Wszystkie testy przechodzą (7 passed, 52 assertions)
 
-### Merge do: `main`
+### Merge do: `main` ✅
 
 ---
 
@@ -114,42 +114,49 @@ main
 **Branch:** `feature/movie-metadata-sync`  
 **Priorytet:** Średni  
 **Zależności:** Brak  
-**Szacowany czas:** 2-3 dni
+**Status:** ✅ **UKOŃCZONY**
 
 ### Zadania:
 
 1. **Utworzyć `SyncMovieMetadataJob`:**
-   - [ ] Klasa `App\Jobs\SyncMovieMetadataJob implements ShouldQueue`
-   - [ ] Pobieranie pełnych danych z TMDB (cast, crew)
-   - [ ] Tworzenie/znajdowanie obiektów Person
-   - [ ] Łączenie z filmem (movie_person pivot)
-   - [ ] Obsługa błędów i retry
+   - [x] Klasa `App\Jobs\SyncMovieMetadataJob implements ShouldQueue` ✅
+   - [x] Pobieranie pełnych danych z TMDB (cast, crew) ✅
+   - [x] Tworzenie/znajdowanie obiektów Person ✅
+   - [x] Łączenie z filmem (movie_person pivot) ✅
+   - [x] Obsługa błędów i retry ✅
 
 2. **Rozszerzyć `TmdbMovieCreationService`:**
-   - [ ] Wywołanie `SyncMovieMetadataJob` po utworzeniu filmu
-   - [ ] Tylko metadane przy pierwszym utworzeniu
+   - [x] Wywołanie `SyncMovieMetadataJob` po utworzeniu filmu ✅
+   - [x] Tylko metadane przy pierwszym utworzeniu ✅
 
 3. **Zaktualizować `/refresh` endpoint:**
-   - [ ] Tylko metadane filmu (tytuł, rok, reżyser, genres)
-   - [ ] **NIE** synchronizować aktorów ponownie
+   - [x] Tylko metadane filmu (tytuł, rok, reżyser, genres) ✅
+   - [x] **NIE** synchronizować aktorów ponownie ✅
 
 4. **Sprawdzić model `Person`:**
-   - [ ] Czy ma `tmdb_id`? (jeśli nie, dodać w migracji)
-   - [ ] Metoda `generateSlug()` jeśli potrzebna
+   - [x] Czy ma `tmdb_id`? ✅ (migracja: `2025_12_17_220207_add_tmdb_id_to_people_table.php`)
+   - [x] Metoda `generateSlug()` ✅ (istnieje w modelu Person)
 
 5. **Testy:**
-   - [ ] Feature test: `SyncMovieMetadataJobTest`
-   - [ ] Test tworzenia filmu z aktorami
-   - [ ] Test `/refresh` - tylko metadane
-   - [ ] Unit test: `TmdbMovieCreationServiceTest`
+   - [x] Feature test: `MovieMetadataSyncTest` ✅ (9 passed, 58 assertions)
+   - [x] Test tworzenia filmu z aktorami ✅
+   - [x] Test `/refresh` - tylko metadane ✅
+   - [x] Unit test: `SyncMovieMetadataJobTest` ✅
+   - [x] Testy edge cases (duplikaty, brak danych, puste tablice) ✅
 
 ### Akceptacja:
 - ✅ Film tworzy się z metadanymi
 - ✅ Aktorzy synchronizują się asynchronicznie
 - ✅ `/refresh` nie synchronizuje aktorów
-- ✅ Wszystkie testy przechodzą
+- ✅ Wszystkie testy przechodzą (9 passed, 58 assertions)
 
-### Merge do: `main`
+### Merge do: `main` ✅
+
+**Dodatkowe informacje:**
+- Migracja dla `tmdb_id` w tabeli `movies`: `2025_12_17_220440_add_tmdb_id_to_movies_table.php`
+- Migracja dla `tmdb_id` w tabeli `people`: `2025_12_17_220207_add_tmdb_id_to_people_table.php`
+- Dokumentacja testów: `docs/TEST_RESULTS_ETAP3.md`
+- Skrypt testowy: `docs/test-etap3-sync-metadata.sh`
 
 ---
 
@@ -452,6 +459,36 @@ Po zmergowaniu wszystkich branchy:
 - Jeśli znajdziesz nieużywane pliki/funkcje - oznacz komentarzami (patrz: `NEW_SEARCH_USE_CASE_ANALYSIS.md`)
 - Testy są obowiązkowe dla każdego etapu
 - Dokumentacja powinna być aktualizowana na bieżąco
+
+---
+
+---
+
+## 📊 Status Implementacji
+
+**Ostatnia aktualizacja:** 2025-12-17
+
+### ✅ Ukończone Etapy
+
+| Etap | Status | Testy | Dokumentacja |
+|------|--------|-------|---------------|
+| **Etap 1:** Endpoint Wyszukiwania Filmów | ✅ UKOŃCZONY | ✅ SearchMoviesTest | ✅ OpenAPI |
+| **Etap 2:** Ukrycie TMDB ID w API | ✅ UKOŃCZONY | ✅ TmdbIdHiddenTest (7 passed) | ✅ OpenAPI |
+| **Etap 3:** Synchronizacja Metadanych | ✅ UKOŃCZONY | ✅ MovieMetadataSyncTest (9 passed) | ✅ OpenAPI + TEST_RESULTS_ETAP3.md |
+
+### ⏳ Pozostałe Etapy
+
+- **Etap 4:** Powiązane Filmy (Relationships) - PENDING
+- **Etap 5:** Wielokrotne Generowanie Opisów - PENDING
+- **Etap 6:** Zgłaszanie Błędów (Movie Reports) - PENDING
+- **Etap 7:** Adaptive Rate Limiting - PENDING
+- **Etap 8:** Cache'owanie Wyszukiwania - PENDING
+
+### 📈 Postęp
+
+- **Ukończone:** 3/8 etapów (37.5%)
+- **W trakcie:** 0/8 etapów
+- **Oczekujące:** 5/8 etapów (62.5%)
 
 ---
 

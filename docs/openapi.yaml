@@ -78,6 +78,10 @@ paths:
     get:
       tags: [Movies]
       summary: Get movie by slug
+      description: |
+        Returns movie details including all descriptions and synchronized people (actors, directors, writers, producers).
+        People are automatically synchronized from TMDb when a movie is first created. The `people` array
+        contains actors with their character names and crew members with their roles.
       parameters:
         - in: path
           name: slug
@@ -166,6 +170,67 @@ paths:
                 properties:
                   error:
                     type: string
+  /v1/movies/{slug}/refresh:
+    post:
+      tags: [Movies]
+      summary: Refresh movie metadata from TMDb
+      description: |
+        Refreshes movie metadata (title, release_year, director, genres) from TMDb.
+        **Important:** This endpoint does NOT synchronize actors/crew. Actor and crew
+        synchronization happens automatically when a movie is first created from TMDb data.
+        Use this endpoint only to update core movie metadata.
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+          description: Movie slug identifier
+      responses:
+        '200':
+          description: Movie metadata refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Movie data refreshed from TMDb
+                  slug:
+                    type: string
+                    example: the-matrix-1999
+                  movie_id:
+                    type: integer
+                    example: 1
+                  refreshed_at:
+                    type: string
+                    format: date-time
+                    example: '2025-12-17T22:24:13+00:00'
+              examples:
+                default:
+                  value:
+                    message: Movie data refreshed from TMDb
+                    slug: the-matrix-1999
+                    movie_id: 1
+                    refreshed_at: '2025-12-17T22:24:13+00:00'
+        '404':
+          description: Movie not found or no TMDb snapshot exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Movie not found
+              examples:
+                movie_not_found:
+                  value:
+                    error: Movie not found
+                no_snapshot:
+                  value:
+                    error: No TMDb snapshot found for this movie
   /v1/people:
     get:
       tags: [People]

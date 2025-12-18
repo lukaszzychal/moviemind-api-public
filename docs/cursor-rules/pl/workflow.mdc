@@ -4,6 +4,21 @@ alwaysApply: true
 
 # Workflow przed Commitem (WYMAGANE)
 
+## 🌐 Language Convention (REQUIRED)
+
+**All commit messages, PR titles, and PR descriptions MUST be in English.**
+
+- ✅ **Commit messages:** Use English (e.g., `fix: resolve CI/CD test failures`)
+- ✅ **PR titles:** Use English (e.g., `feat: Stage 3 - Movie metadata synchronization`)
+- ✅ **PR descriptions:** Use English
+- ❌ **NOT Polish:** Do not use Polish in commits or PRs
+
+**Reason:** This is an open-source project and English is the standard language for international collaboration.
+
+**Exception:** Internal documentation files (`docs/pl/`) can remain in Polish, but all Git-related content (commits, PRs, issues) must be in English.
+
+# Workflow przed Commitem (WYMAGANE)
+
 ## ⚠️ TDD PRZED WSZYSTKIM
 
 **PRZED rozpoczęciem implementacji funkcjonalności:**

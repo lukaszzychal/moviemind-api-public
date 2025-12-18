@@ -20,7 +20,7 @@ class Person extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'birth_date', 'birthplace',
+        'name', 'slug', 'birth_date', 'birthplace', 'tmdb_id',
     ];
 
     protected $casts = [

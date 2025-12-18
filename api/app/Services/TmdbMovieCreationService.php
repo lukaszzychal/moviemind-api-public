@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Jobs\SyncMovieMetadataJob;
 use App\Models\Movie;
 use App\Repositories\MovieRepository;
 use Illuminate\Support\Facades\Cache;
@@ -24,7 +25,7 @@ class TmdbMovieCreationService
      * Create movie from TMDb data (metadata only, no description).
      * Description should be generated asynchronously via queue job.
      *
-     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}  $tmdbData
+     * @param  array{title: string, release_date?: string|null, overview?: string|null, id: int, director?: string|null}  $tmdbData
      * @param  string  $requestSlug  Original slug from request
      * @return Movie|null Returns null if movie already exists
      */
@@ -97,6 +98,9 @@ class TmdbMovieCreationService
 
         // Invalidate movie search cache when new movie is created
         $this->invalidateMovieSearchCache();
+
+        // Dispatch job to sync metadata (actors, crew) asynchronously
+        SyncMovieMetadataJob::dispatch($movie->id);
 
         Log::info('Movie created from TMDb data (metadata only, description will be generated asynchronously)', [
             'request_slug' => $requestSlug,

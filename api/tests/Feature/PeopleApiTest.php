@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\ContextTag;
 use App\Models\Person;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -130,7 +129,7 @@ class PeopleApiTest extends TestCase
         $alternateBio = $person->bios()->create([
             'locale' => 'en-US',
             'text' => 'Alternate biography generated for testing.',
-            'context_tag' => ContextTag::CRITICAL->value,
+            'context_tag' => 'critical',
             'origin' => 'GENERATED',
             'ai_model' => 'mock',
         ]);

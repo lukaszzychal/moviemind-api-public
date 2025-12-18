@@ -23,6 +23,7 @@ class Movie extends Model
         'director',
         'genres',
         'default_description_id',
+        'tmdb_id',
     ];
 
     protected $casts = [

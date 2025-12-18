@@ -342,7 +342,7 @@ class MovieSearchService
 
             $key = strtolower($title.'|'.($year ?? ''));
             $externalDuplicatesCount = isset($groupedByTitleYear[$key])
-                ? count(array_filter($groupedByTitleYear[$key], fn ($v) => $v !== 'local' && is_int($v)))
+                ? count(array_filter($groupedByTitleYear[$key], fn (int|string $v): bool => $v !== 'local'))
                 : 0;
             $hasLocalDuplicate = isset($groupedByTitleYear[$key])
                 && in_array('local', $groupedByTitleYear[$key], true);
@@ -445,19 +445,18 @@ class MovieSearchService
      */
     private function determineMatchType(array $mergedResults, array $localResults, array $tmdbResults): string
     {
-        if (empty($mergedResults)) {
+        $count = count($mergedResults);
+
+        if ($count === 0) {
             return 'none';
         }
 
-        if (count($mergedResults) === 1) {
+        if ($count === 1) {
             return 'exact';
         }
 
-        if (count($mergedResults) > 1) {
-            return 'ambiguous';
-        }
-
-        return 'partial';
+        // $count > 1
+        return 'ambiguous';
     }
 
     /**
