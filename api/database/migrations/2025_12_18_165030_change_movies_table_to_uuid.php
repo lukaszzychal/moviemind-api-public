@@ -109,10 +109,19 @@ return new class extends Migration
         // Change default_description_id column type from bigint to uuid
         DB::statement('ALTER TABLE movies ALTER COLUMN default_description_id TYPE uuid');
 
-        Schema::table('movies', function (Blueprint $table) {
-            // Recreate index on default_description_id
-            $table->index('default_description_id');
-        });
+        // Recreate index on default_description_id if it doesn't exist
+        // (The original create_movies_table migration already creates this index)
+        if ($driver === 'pgsql') {
+            DB::statement('CREATE INDEX IF NOT EXISTS movies_default_description_id_index ON movies (default_description_id)');
+        } else {
+            Schema::table('movies', function (Blueprint $table) {
+                // Check if index exists before creating (MySQL)
+                $indexes = DB::select("SHOW INDEXES FROM movies WHERE Key_name = 'movies_default_description_id_index'");
+                if (empty($indexes)) {
+                    $table->index('default_description_id');
+                }
+            });
+        }
 
         // Recreate foreign keys that reference movies.id (now UUID)
         if ($driver === 'pgsql') {
