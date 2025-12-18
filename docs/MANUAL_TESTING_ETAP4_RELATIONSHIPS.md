@@ -109,11 +109,15 @@ php artisan queue:work --tries=3 --timeout=120
 tail -f storage/logs/laravel.log | grep "Queue"
 ```
 
-### Step 4: Verify TMDB API Access
+### Step 4: Verify API Health
 
 ```bash
+# Check OpenAI health (this verifies API connectivity)
 curl -X GET "http://localhost:8000/api/v1/health/openai"
-# Should return status 200
+# Should return status 200 with OpenAI status
+
+# Note: TMDB API access is verified indirectly when creating/searching movies
+# There's no dedicated TMDB health endpoint
 ```
 
 ---
