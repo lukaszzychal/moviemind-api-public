@@ -18,18 +18,22 @@
 #   --ai-service MODE   Tryb AI: 'mock' (domyślnie) lub 'real'
 #   --no-start          Nie uruchamiaj kontenerów (zakłada że już działają)
 #   --rebuild           Rebuild kontenerów przed uruchomieniem
+#   --seed              Załaduj testowe dane (fixtures) po migracji
 #
 # Zmienne środowiskowe:
 #   API_BASE_URL        URL bazy API (domyślnie: http://localhost:8000)
 #   ADMIN_AUTH          Dane autoryzacji w formacie "user:password" (opcjonalne)
 #   DOCKER_COMPOSE_CMD  Komenda docker compose (domyślnie: docker compose)
 #   AI_SERVICE          Tryb AI: 'mock' lub 'real' (można też użyć --ai-service)
+#   LOAD_FIXTURES       Załaduj dane testowe: 'true' lub 'false' (można też użyć --seed)
 #
 # Przykłady:
 #   ./scripts/setup-local-testing.sh
-#   ./scripts/setup-local-testing.sh --ai-service real
-#   ./scripts/setup-local-testing.sh --rebuild
+#   ./scripts/setup-local-testing.sh --seed
+#   ./scripts/setup-local-testing.sh --ai-service real --seed
+#   ./scripts/setup-local-testing.sh --rebuild --seed
 #   API_BASE_URL=http://localhost:8000 ADMIN_AUTH="admin:secret" ./scripts/setup-local-testing.sh
+#   LOAD_FIXTURES=true ./scripts/setup-local-testing.sh
 #
 # Bezpieczeństwo:
 #   - Skrypt działa TYLKO w środowisku lokalnym (APP_ENV=local)
@@ -58,6 +62,7 @@ DOCKER_COMPOSE_CMD="${DOCKER_COMPOSE_CMD:-docker compose}"
 DOCKER_CONTAINER_PHP="moviemind-php"
 DOCKER_CONTAINER_NGINX="moviemind-nginx"
 AI_SERVICE_MODE="${AI_SERVICE:-mock}"  # Will be set by --ai-service option
+LOAD_FIXTURES="${LOAD_FIXTURES:-false}"  # Will be set by --seed option
 
 # Feature flags to enable
 REQUIRED_FLAGS=(
@@ -320,20 +325,23 @@ reset_database() {
     if $DOCKER_COMPOSE_CMD exec -T php php artisan migrate:fresh --force; then
         print_success "Baza danych wyczyszczona i migracje uruchomione"
         
-        # Load test fixtures (seeders)
-        print_info "Ładowanie przykładowych danych testowych (seeders)..."
-        if $DOCKER_COMPOSE_CMD exec -T php php artisan db:seed --force; then
-            print_success "Przykładowe dane załadowane"
-            print_info "Załadowane dane:"
-            print_info "  • Filmy: The Matrix (1999), Inception (2010)"
-            print_info "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
-            print_info "  • Gatunki: Action, Sci-Fi, Thriller"
-            return 0
+        # Load test fixtures (seeders) if --seed option is provided
+        if [ "$LOAD_FIXTURES" = "true" ]; then
+            print_info "Ładowanie przykładowych danych testowych (seeders)..."
+            if $DOCKER_COMPOSE_CMD exec -T php php artisan db:seed --force; then
+                print_success "Przykładowe dane załadowane"
+                print_info "Załadowane dane:"
+                print_info "  • Filmy: The Matrix (1999), Inception (2010)"
+                print_info "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
+                print_info "  • Gatunki: Action, Sci-Fi, Thriller"
+            else
+                print_warning "Nie udało się załadować przykładowych danych (seeders)"
+                print_warning "Możesz załadować je ręcznie: docker compose exec php php artisan db:seed"
+            fi
         else
-            print_warning "Nie udało się załadować przykładowych danych (seeders)"
-            print_warning "Możesz załadować je ręcznie: docker compose exec php php artisan db:seed"
-            return 0  # Continue even if seeding fails
+            print_info "Pomijam ładowanie danych testowych (użyj --seed aby załadować)"
         fi
+        return 0
     else
         print_error "Nie udało się wyczyścić bazy danych"
         print_warning "Sprawdź logi: $DOCKER_COMPOSE_CMD logs php"
@@ -354,19 +362,23 @@ show_help() {
     echo "  --ai-service MODE    Tryb AI: 'mock' (domyślnie) lub 'real'"
     echo "  --no-start          Nie uruchamiaj kontenerów (zakłada że już działają)"
     echo "  --rebuild           Rebuild kontenerów przed uruchomieniem"
+    echo "  --seed              Załaduj testowe dane (fixtures) po migracji"
     echo ""
     echo "Zmienne środowiskowe:"
     echo "  API_BASE_URL        URL bazy API (domyślnie: http://localhost:8000)"
     echo "  ADMIN_AUTH          Dane autoryzacji w formacie \"user:password\""
     echo "  DOCKER_COMPOSE_CMD  Komenda docker compose (domyślnie: docker compose)"
     echo "  AI_SERVICE          Tryb AI: 'mock' lub 'real' (można też użyć --ai-service)"
+    echo "  LOAD_FIXTURES       Załaduj dane testowe: 'true' lub 'false' (można też użyć --seed)"
     echo ""
     echo "Przykład:"
-    echo "  $0                                    # Tryb mock (domyślnie)"
-    echo "  $0 --ai-service real                  # Tryb real z OpenAI"
-    echo "  $0 --ai-service mock --rebuild         # Rebuild z trybem mock"
+    echo "  $0                                    # Tryb mock (domyślnie), bez danych testowych"
+    echo "  $0 --seed                             # Załaduj dane testowe po migracji"
+    echo "  $0 --ai-service real --seed           # Tryb real z OpenAI + dane testowe"
+    echo "  $0 --ai-service mock --rebuild --seed # Rebuild z trybem mock + dane testowe"
     echo "  API_BASE_URL=http://localhost:8000 $0"
     echo "  ADMIN_AUTH=\"admin:secret\" $0"
+    echo "  LOAD_FIXTURES=true $0                 # Załaduj dane testowe (zmienna środowiskowa)"
     echo ""
     echo "Uwaga:"
     echo "  - Tryb 'real' wymaga ustawienia OPENAI_API_KEY w .env"
@@ -415,6 +427,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         --rebuild)
             REBUILD=true
+            ;;
+        --seed)
+            LOAD_FIXTURES=true
             ;;
         *)
             print_error "Nieznana opcja: $1"

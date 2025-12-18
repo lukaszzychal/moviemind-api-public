@@ -92,8 +92,17 @@ REDIS_PORT=6379
 # Use real OpenAI API (requires OPENAI_API_KEY in .env)
 ./scripts/setup-local-testing.sh --ai-service real
 
+# Load test fixtures (seeders) after migration
+./scripts/setup-local-testing.sh --seed
+
+# Combine options: real AI + test fixtures
+./scripts/setup-local-testing.sh --ai-service real --seed
+
 # Rebuild containers before starting
 ./scripts/setup-local-testing.sh --rebuild
+
+# Rebuild + load fixtures
+./scripts/setup-local-testing.sh --rebuild --seed
 
 # Skip container startup (assumes containers already running)
 ./scripts/setup-local-testing.sh --no-start
@@ -110,14 +119,21 @@ ADMIN_AUTH="admin:password" ./scripts/setup-local-testing.sh
 export API_BASE_URL=http://localhost:8000
 export ADMIN_AUTH="admin:password"
 export AI_SERVICE=mock  # or 'real'
+export LOAD_FIXTURES=true  # or 'false' (load test fixtures)
 export DOCKER_COMPOSE_CMD="docker compose"
 ```
 
 **After running the script:**
 - ✅ All Docker containers are running
 - ✅ Database is fresh and migrated
+- ✅ Test fixtures loaded (if `--seed` option used)
 - ✅ Feature flags are enabled
 - ✅ API is ready for testing
+
+**Test fixtures include:**
+- Movies: The Matrix (1999), Inception (2010)
+- People: Keanu Reeves, The Wachowskis, Christopher Nolan
+- Genres: Action, Sci-Fi, Thriller
 
 **For detailed script documentation, see:** `scripts/setup-local-testing.sh` (contains inline help)
 
