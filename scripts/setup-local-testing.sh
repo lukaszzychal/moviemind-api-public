@@ -636,6 +636,7 @@ main() {
     print_success "Kontenery Docker: uruchomione"
     print_success "Tryb AI: ${AI_SERVICE_MODE}"
     print_success "Baza danych: wyczyszczona i gotowa"
+    print_success "Przykładowe dane: załadowane (seeders)"
     print_info "Flagi włączone: ${success_count}"
     print_info "Flagi pominięte (tylko do odczytu): ${skip_count}"
     
