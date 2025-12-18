@@ -250,8 +250,8 @@ main
    - [x] Feature test: generowanie wielu context_tag ✅ (18 passed, 88 assertions)
    - [x] Unit testy XSS (`HtmlSanitizerTest`) ✅ (PR #147)
    - [x] **Integracja zabezpieczeń w `RealGenerateMovieJob`** ✅
-   - [ ] Testy integracyjne: XSS, AI injection, walidacja outputu (do dodania w osobnych testach)
-   - [ ] Unit test: `AiOutputValidator` (do dodania)
+   - [x] Testy integracyjne: XSS, AI injection, walidacja outputu ✅ (`AiOutputValidationIntegrationTest` - 4 testy)
+   - [x] Unit test: `AiOutputValidator` ✅ (`AiOutputValidatorTest` - 13 testów, 1 skipped)
 
 ### Akceptacja:
 - ✅ Można generować wiele context_tag jednocześnie
@@ -321,7 +321,7 @@ main
 ### Akceptacja:
 - ✅ Użytkownik może zgłosić błąd
 - ✅ Admin widzi zgłoszenia z priorytetem
-- ✅ Po weryfikacji automatyczna regeneracja
+- ✅ Po weryfikacji automatyczna regeneracja, chyba ze jest wymagana recna/manualna interwencja
 - ✅ Wszystkie testy przechodzą
 
 ### Merge do: `main`
