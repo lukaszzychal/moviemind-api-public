@@ -14,6 +14,9 @@ class PersonResource extends JsonResource
     {
         $data = parent::toArray($request);
 
+        // Remove tmdb_id from public API responses
+        unset($data['tmdb_id']);
+
         $biosCount = $this->resource->bios_count
             ?? ($this->resource->relationLoaded('bios') ? $this->resource->bios->count() : 0);
 

@@ -859,9 +859,11 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
 
     /**
      * Refresh movie details from TMDb and update snapshot.
+     * Note: This method does NOT include credits (cast/crew) to avoid re-syncing actors.
+     * Only metadata (title, year, director, genres) is refreshed.
      *
      * @param  int  $tmdbId  TMDb movie ID
-     * @return array|null Fresh movie details or null if failed
+     * @return array|null Fresh movie details (without credits) or null if failed
      */
     public function refreshMovieDetails(int $tmdbId): ?array
     {
@@ -870,6 +872,10 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             return null;
         }
 
+        // Remove credits to prevent re-syncing actors/crew on refresh
+        // Credits are only synced once when movie is first created
+        unset($movieDetails['credits']);
+
         // Update snapshot if exists
         $snapshot = TmdbSnapshot::where('tmdb_id', $tmdbId)
             ->where('tmdb_type', 'movie')
@@ -877,8 +883,17 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             ->first();
 
         if ($snapshot) {
+            // Preserve existing credits in snapshot if they exist
+            $existingData = $snapshot->raw_data ?? [];
+            $existingCredits = $existingData['credits'] ?? null;
+
+            $updatedData = $movieDetails;
+            if ($existingCredits !== null) {
+                $updatedData['credits'] = $existingCredits;
+            }
+
             $snapshot->update([
-                'raw_data' => $movieDetails,
+                'raw_data' => $updatedData,
                 'fetched_at' => now(),
             ]);
         }
