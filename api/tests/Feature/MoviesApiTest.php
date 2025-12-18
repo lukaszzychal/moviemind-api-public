@@ -117,8 +117,19 @@ class MoviesApiTest extends TestCase
         $this->assertSame($first->json(), $second->json());
     }
 
+    /**
+     * Scenario: Select specific description by ID
+     *
+     * Given: A movie exists with multiple descriptions (different context_tag values)
+     * When: A GET request is made with ?description_id={id} parameter
+     * Then:
+     *   - The response should contain selected_description with the requested description
+     *   - The response should contain default_description with the baseline description
+     *   - The response should be cached with a specific cache key
+     */
     public function test_show_movie_can_select_specific_description(): void
     {
+        // Given: Movie with multiple descriptions
         $movie = Movie::with('descriptions')->firstOrFail();
         $baselineDescriptionId = $movie->default_description_id;
 
@@ -130,16 +141,19 @@ class MoviesApiTest extends TestCase
             'ai_model' => 'mock',
         ]);
 
+        // When: GET request with description_id parameter
         $response = $this->getJson(sprintf(
             '/api/v1/movies/%s?description_id=%d',
             $movie->slug,
             $altDescription->id
         ));
 
+        // Then: Response contains selected and default descriptions
         $response->assertOk()
             ->assertJsonPath('selected_description.id', $altDescription->id)
             ->assertJsonPath('default_description.id', $baselineDescriptionId);
 
+        // Then: Response is cached
         $cacheKey = $movie->slug.':desc:'.$altDescription->id;
         $this->assertTrue(Cache::has('movie:'.$cacheKey));
         $this->assertSame($response->json(), Cache::get('movie:'.$cacheKey));

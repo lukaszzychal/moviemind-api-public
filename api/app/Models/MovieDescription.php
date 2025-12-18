@@ -24,7 +24,7 @@ class MovieDescription extends Model
 
     protected $casts = [
         'locale' => LocaleEnum::class,
-        'context_tag' => ContextTag::class,
+        // context_tag is handled by getter to allow fallback for invalid values
         'origin' => DescriptionOrigin::class,
     ];
 
@@ -56,6 +56,21 @@ class MovieDescription extends Model
 
             return ContextTag::DEFAULT;
         }
+    }
+
+    /**
+     * Convert the model instance to an array, ensuring context_tag is serialized as string.
+     */
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+
+        // Convert context_tag enum to string value for JSON serialization
+        if (isset($array['context_tag']) && $array['context_tag'] instanceof ContextTag) {
+            $array['context_tag'] = $array['context_tag']->value;
+        }
+
+        return $array;
     }
 
     public function movie(): BelongsTo

@@ -137,10 +137,19 @@ class MovieMetadataSyncTest extends TestCase
     /**
      * Test that SyncMovieMetadataJob synchronizes actors and crew from TMDB snapshot.
      * Based on TEST_RESULTS_ETAP3.md - Scenariusz 1.
+     *
+     * Scenario: Sync job synchronizes actors and crew
+     *
+     * Given: A movie exists with TMDB snapshot containing credits (cast and crew)
+     * When: SyncMovieMetadataJob runs
+     * Then:
+     *   - Actors should be created and attached to the movie with character names
+     *   - Crew members (directors, writers, producers) should be created and attached with roles
+     *   - People should be linked by tmdb_id when available
      */
     public function test_sync_movie_metadata_job_synchronizes_actors_and_crew(): void
     {
-        // Arrange: Create movie with TMDB snapshot containing credits
+        // Given: Movie with TMDB snapshot containing credits
         $movie = Movie::create([
             'title' => 'Test Matrix Sync',
             'slug' => 'test-matrix-sync-1999',
@@ -173,15 +182,15 @@ class MovieMetadataSyncTest extends TestCase
             'fetched_at' => now(),
         ]);
 
-        // Act: Run SyncMovieMetadataJob
+        // When: SyncMovieMetadataJob runs
         $job = new \App\Jobs\SyncMovieMetadataJob($movie->id);
         $job->handle();
 
-        // Assert: Actors are synchronized
+        // Then: Actors and crew are synchronized
         $movie->refresh();
         $this->assertEquals(6, $movie->people->count(), 'Should have 6 people (3 actors + 3 crew)');
 
-        // Assert: Actors with character names
+        // Then: Actors with character names are correctly attached
         $keanu = Person::where('tmdb_id', 6384)->first();
         $this->assertNotNull($keanu, 'Keanu Reeves should be created');
         $this->assertEquals('Keanu Reeves', $keanu->name);
@@ -201,7 +210,7 @@ class MovieMetadataSyncTest extends TestCase
         $this->assertNotNull($carrie);
         $this->assertEquals('Carrie-Anne Moss', $carrie->name);
 
-        // Assert: Crew is synchronized
+        // Then: Crew members are correctly synchronized with multiple roles
         $lana = Person::where('tmdb_id', 172069)->first();
         $this->assertNotNull($lana);
         $this->assertEquals('Lana Wachowski', $lana->name);
