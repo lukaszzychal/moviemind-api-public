@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tmdb_snapshots', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('entity_type', 20)->comment('MOVIE, PERSON, TV_SERIES, etc.');
-            $table->unsignedBigInteger('entity_id')->comment('FK to movies/people/etc');
+            $table->uuid('entity_id')->comment('FK to movies/people/etc (UUID)');
             $table->unsignedInteger('tmdb_id')->comment('TMDb ID');
             $table->string('tmdb_type', 20)->comment('movie, person, tv');
             $table->jsonb('raw_data')->comment('Full TMDb response');

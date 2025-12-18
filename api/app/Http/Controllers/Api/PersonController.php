@@ -167,24 +167,40 @@ class PersonController extends Controller
         return $resource->resolve();
     }
 
-    private function cacheKey(string $slug, ?int $bioId = null): string
+    /**
+     * Generate cache key for person response.
+     *
+     * @param  string  $slug  Person slug
+     * @param  string|null  $bioId  Bio ID (UUID) or null
+     * @return string Cache key
+     */
+    private function cacheKey(string $slug, ?string $bioId = null): string
     {
         $suffix = $bioId !== null ? 'bio:'.$bioId : 'bio:default';
 
         return 'person:'.$slug.':'.$suffix;
     }
 
-    private function normalizeBioId(mixed $bioId): null|int|false
+    /**
+     * Normalize bio ID from request (UUID string or null).
+     *
+     * @param  mixed  $bioId  Bio ID from query parameter (UUID string or null)
+     * @return null|string|false Returns UUID string, null if not provided, or false if invalid
+     */
+    private function normalizeBioId(mixed $bioId): null|string|false
     {
         if ($bioId === null || $bioId === '') {
             return null;
         }
 
-        if (filter_var($bioId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+        $bioId = (string) $bioId;
+
+        // Validate UUID format (UUIDv7 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $bioId)) {
             return false;
         }
 
-        return (int) $bioId;
+        return $bioId;
     }
 
     /**

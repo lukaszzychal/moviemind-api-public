@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('movie_relationships', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('movie_id')->constrained('movies')->cascadeOnDelete();
-            $table->foreignId('related_movie_id')->constrained('movies')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('movie_id')->constrained('movies')->cascadeOnDelete();
+            $table->foreignUuid('related_movie_id')->constrained('movies')->cascadeOnDelete();
             $table->string('relationship_type', 20);
             $table->unsignedSmallInteger('order')->nullable();
             $table->timestamps();

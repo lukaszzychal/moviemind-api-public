@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\RelationshipType;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,10 +14,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Movie relationship model.
  *
  * @author MovieMind API Team
+ *
+ * @property string $id UUIDv7 primary key
+ * @property string $movie_id UUIDv7 foreign key
+ * @property string $related_movie_id UUIDv7 foreign key
  */
 class MovieRelationship extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'movie_id',

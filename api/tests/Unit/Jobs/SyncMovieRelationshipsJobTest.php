@@ -47,7 +47,7 @@ class SyncMovieRelationshipsJobTest extends TestCase
     public function test_job_handles_missing_movie_gracefully(): void
     {
         // Given: Movie does not exist
-        $nonExistentMovieId = 99999;
+        $nonExistentMovieId = (string) \Illuminate\Support\Str::uuid();
 
         // When: Job runs
         $job = new SyncMovieRelationshipsJob($nonExistentMovieId);

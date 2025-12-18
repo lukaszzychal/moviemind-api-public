@@ -143,7 +143,7 @@ class MoviesApiTest extends TestCase
 
         // When: GET request with description_id parameter
         $response = $this->getJson(sprintf(
-            '/api/v1/movies/%s?description_id=%d',
+            '/api/v1/movies/%s?description_id=%s',
             $movie->slug,
             $altDescription->id
         ));

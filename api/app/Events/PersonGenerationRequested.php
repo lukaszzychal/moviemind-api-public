@@ -12,8 +12,8 @@ class PersonGenerationRequested
     public function __construct(
         public string $slug,
         public string $jobId,
-        public ?int $existingPersonId = null,
-        public ?int $baselineBioId = null,
+        public ?string $existingPersonId = null,
+        public ?string $baselineBioId = null,
         public ?string $locale = null,
         public ?string $contextTag = null,
         public ?array $tmdbData = null

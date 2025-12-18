@@ -1,0 +1,139 @@
+---
+alwaysApply: true
+---
+# UUID Strategy Rules
+
+## 📋 Overview
+
+This document defines the UUID strategy for the MovieMind API project, based on ADR-008.
+
+## 🎯 UUID Versions Usage
+
+### UUIDv7 – Database Primary Keys (DB)
+
+**Use for:**
+- Primary keys in database tables (`movies.id`, `people.id`, `movie_descriptions.id`)
+- Events, logs
+- Entity identifiers
+
+**Why:**
+- Time-sortable (better index performance than random v4)
+- Better insert performance (sequential writes)
+- Better scalability compared to auto-increment
+- Doesn't reveal record count (security)
+
+**Implementation:**
+```php
+// Migrations
+$table->uuid('id')->primary(); // UUIDv7 (default in Laravel 12)
+
+// Models
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
+class Movie extends Model
+{
+    use HasUuids; // Generates UUIDv7 automatically
+}
+```
+
+**Example:** `0197f96c-b278-7f64-a32f-dae3cabe1ff0`
+
+**References:**
+- RFC: https://www.rfc-editor.org/rfc/rfc9562
+- Aiven: https://aiven.io/blog/uuidv7-is-officially-an-rfc-standard
+- Neon: https://neon.tech/blog/uuidv7
+
+### UUIDv4 – Universal Identifiers
+
+**Use for:**
+- Object identifiers in memory
+- Request-ID, Correlation-ID
+- Public IDs in URLs (when sorting doesn't matter)
+- Session identifiers
+- Job identifiers in queues
+
+**Implementation:**
+```php
+use Illuminate\Support\Str;
+
+// Request-ID, Correlation-ID
+$requestId = Str::uuid()->toString(); // UUIDv4
+
+// Public IDs in URLs
+$publicId = Str::uuid()->toString();
+```
+
+**⚠️ IMPORTANT:** UUID is **NOT** suitable as authentication token (bearer secret). UUID is too short/suboptimal for security tokens.
+
+**For authentication tokens, use:**
+```php
+// ❌ DON'T use UUID as token
+// $token = Str::uuid()->toString(); // TOO SHORT!
+
+// ✅ Use raw random bytes (32B = 256 bits)
+use Illuminate\Support\Str;
+
+$token = base64_encode(random_bytes(32));
+// Or base64url for URL-safe:
+$token = Str::replace(['+', '/', '='], ['-', '_', ''], base64_encode(random_bytes(32)));
+```
+
+**References:**
+- Wikipedia: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
+
+### UUIDv5 – Deterministic File Identifiers
+
+**Use for:**
+- Stable IDs computed from file fingerprint (e.g., `sha256(file)`)
+- File deduplication
+- Cache keys for files
+- Static resource identifiers
+
+**How it works:**
+- UUID = hash(namespace + name)
+- v5 uses SHA-1 (OK for identification/deduplication, not for security)
+
+**Implementation:**
+```php
+use Ramsey\Uuid\Uuid;
+
+// Namespace for files (can use constant)
+const FILE_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // DNS namespace
+
+// Generate UUIDv5 from file fingerprint
+$fileHash = hash_file('sha256', $filePath);
+$fileUuid = Uuid::uuid5(FILE_NAMESPACE, $fileHash)->toString();
+
+// Or with file size for better uniqueness:
+$fileHash = hash_file('sha256', $filePath);
+$fileSize = filesize($filePath);
+$fileUuid = Uuid::uuid5(FILE_NAMESPACE, $fileHash . '|' . $fileSize)->toString();
+```
+
+**References:**
+- Ramsey UUID: https://uuid.ramsey.dev/en/stable/rfc4122/version5.html
+
+## 📝 Rules Summary
+
+| UUID Version | Use Case | Example |
+|--------------|----------|---------|
+| **UUIDv7** | Database primary keys, events, logs | `movies.id`, `people.id` |
+| **UUIDv4** | Request-ID, Correlation-ID, public URLs | `request-id`, `correlation-id` |
+| **UUIDv5** | File fingerprints, deduplication | `sha256(file)` → UUID |
+
+## ⚠️ Important Rules
+
+1. **Never use UUID as authentication token** - use raw random bytes (32B) with base64url encoding
+2. **Always use UUIDv7 for database primary keys** - better performance and scalability
+3. **Use UUIDv4 for universal identifiers** - when sorting doesn't matter
+4. **Use UUIDv5 for file deduplication** - deterministic, same file = same UUID
+
+## 🔗 Related Documents
+
+- [ADR-008: UUID Strategy](../adr/README.md#adr-008-uuid-strategy---v7-v4-v5)
+- [UUID Migration Plan](../plan/UUIDV7_MIGRATION_PLAN.md)
+
+---
+
+**Last updated:** 2025-12-18  
+**Status:** ✅ Active

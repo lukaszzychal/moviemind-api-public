@@ -30,8 +30,11 @@ class MovieRetrievalService
 
     /**
      * Retrieve movie by slug, optionally with specific description.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
      */
-    public function retrieveMovie(string $slug, ?int $descriptionId): MovieRetrievalResult
+    public function retrieveMovie(string $slug, ?string $descriptionId): MovieRetrievalResult
     {
         // Parse slug to check if it contains year
         $parsed = Movie::parseSlug($slug);
@@ -81,7 +84,14 @@ class MovieRetrievalService
      *
      * @return MovieDescription|null|false Returns MovieDescription if found, null if no description_id provided, false if not found
      */
-    private function findSelectedDescription(Movie $movie, ?int $descriptionId): MovieDescription|null|false
+    /**
+     * Find selected description by ID (UUID).
+     *
+     * @param  Movie  $movie  Movie instance
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @return MovieDescription|null|false Returns description if found, null if not provided, false if invalid
+     */
+    private function findSelectedDescription(Movie $movie, ?string $descriptionId): MovieDescription|null|false
     {
         if ($descriptionId === null) {
             return null;
@@ -98,8 +108,11 @@ class MovieRetrievalService
 
     /**
      * Handle case when movie is not found locally.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
      */
-    private function handleMovieNotFound(string $slug, ?int $descriptionId): MovieRetrievalResult
+    private function handleMovieNotFound(string $slug, ?string $descriptionId): MovieRetrievalResult
     {
         if (! Feature::active('ai_description_generation')) {
             return MovieRetrievalResult::notFound();
@@ -115,8 +128,12 @@ class MovieRetrievalService
 
     /**
      * Attempt to find or create movie from TMDB.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @param  array  $validation  Validation result
      */
-    private function attemptToFindOrCreateMovieFromTmdb(string $slug, ?int $descriptionId, array $validation): MovieRetrievalResult
+    private function attemptToFindOrCreateMovieFromTmdb(string $slug, ?string $descriptionId, array $validation): MovieRetrievalResult
     {
         // If tmdb_verification is disabled, allow generation without TMDB check
         if (! Feature::active('tmdb_verification')) {
@@ -184,7 +201,15 @@ class MovieRetrievalService
     /**
      * Handle exact match found in TMDB.
      */
-    private function handleTmdbExactMatch(array $tmdbData, string $slug, ?int $descriptionId, array $validation): MovieRetrievalResult
+    /**
+     * Handle exact match from TMDB.
+     *
+     * @param  array  $tmdbData  TMDB movie data
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @param  array  $validation  Validation result
+     */
+    private function handleTmdbExactMatch(array $tmdbData, string $slug, ?string $descriptionId, array $validation): MovieRetrievalResult
     {
         $createdMovie = $this->tmdbMovieCreationService->createFromTmdb($tmdbData, $slug);
 
@@ -200,7 +225,14 @@ class MovieRetrievalService
     /**
      * Handle case when movie already exists (found by TMDB data).
      */
-    private function handleExistingMovieFromTmdb(array $tmdbData, ?int $descriptionId, array $validation): MovieRetrievalResult
+    /**
+     * Handle existing movie found from TMDB.
+     *
+     * @param  array  $tmdbData  TMDB movie data
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @param  array  $validation  Validation result
+     */
+    private function handleExistingMovieFromTmdb(array $tmdbData, ?string $descriptionId, array $validation): MovieRetrievalResult
     {
         $movieSlug = $this->generateSlugFromTmdbData($tmdbData);
         $existingMovie = $this->movieRepository->findBySlugWithRelations($movieSlug);
@@ -226,7 +258,14 @@ class MovieRetrievalService
     /**
      * Handle TMDB search results (multiple or single match).
      */
-    private function handleTmdbSearch(string $slug, ?int $descriptionId, array $validation): MovieRetrievalResult
+    /**
+     * Handle TMDB search (multiple or no results).
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @param  array  $validation  Validation result
+     */
+    private function handleTmdbSearch(string $slug, ?string $descriptionId, array $validation): MovieRetrievalResult
     {
         $searchResults = $this->tmdbVerificationService->searchMovies($slug, 5);
 
@@ -246,7 +285,15 @@ class MovieRetrievalService
     /**
      * Handle single result from TMDB search.
      */
-    private function handleSingleTmdbResult(array $tmdbResult, string $slug, ?int $descriptionId, array $validation): MovieRetrievalResult
+    /**
+     * Handle single TMDB search result.
+     *
+     * @param  array  $tmdbResult  Single TMDB movie result
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @param  array  $validation  Validation result
+     */
+    private function handleSingleTmdbResult(array $tmdbResult, string $slug, ?string $descriptionId, array $validation): MovieRetrievalResult
     {
         if ($this->doesYearMatchRequest($tmdbResult, $slug) === false) {
             return new MovieRetrievalResult(
@@ -379,8 +426,12 @@ class MovieRetrievalService
 
     /**
      * Generate cache key for movie.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @return string Cache key
      */
-    private function generateCacheKey(string $slug, ?int $descriptionId): string
+    private function generateCacheKey(string $slug, ?string $descriptionId): string
     {
         $suffix = $descriptionId !== null ? 'desc:'.$descriptionId : 'desc:default';
 

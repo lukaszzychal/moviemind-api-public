@@ -959,12 +959,12 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
      * If entity_id is null, snapshot will be saved and can be updated later when entity is created.
      *
      * @param  string  $entityType  MOVIE, PERSON, etc.
-     * @param  int|null  $entityId  Entity ID (null if entity doesn't exist yet)
+     * @param  string|null  $entityId  Entity ID (UUID, null if entity doesn't exist yet)
      * @param  int  $tmdbId  TMDb ID
      * @param  string  $tmdbType  movie, person, tv
      * @param  array  $rawData  Full TMDb response
      */
-    public function saveSnapshot(string $entityType, ?int $entityId, int $tmdbId, string $tmdbType, array $rawData): TmdbSnapshot
+    public function saveSnapshot(string $entityType, ?string $entityId, int $tmdbId, string $tmdbType, array $rawData): TmdbSnapshot
     {
         return TmdbSnapshot::updateOrCreate(
             [

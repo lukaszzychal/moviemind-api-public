@@ -38,8 +38,8 @@ class RealGenerateMovieJob implements ShouldQueue
     public function __construct(
         public string $slug,
         public string $jobId,
-        public ?int $existingMovieId = null,
-        public ?int $baselineDescriptionId = null,
+        public ?string $existingMovieId = null,
+        public ?string $baselineDescriptionId = null,
         public ?string $locale = null,
         public ?string $contextTag = null,
         public ?array $tmdbData = null
@@ -301,9 +301,9 @@ class RealGenerateMovieJob implements ShouldQueue
 
     private function updateCache(
         string $status,
-        ?int $id = null,
+        ?string $id = null,
         ?string $slug = null,
-        ?int $descriptionId = null,
+        ?string $descriptionId = null,
         ?string $locale = null,
         ?string $contextTag = null,
         ?array $error = null
@@ -1119,7 +1119,8 @@ class RealGenerateMovieJob implements ShouldQueue
 
                 $currentDefault = $movie->default_description_id;
                 if ($this->baselineDescriptionId !== null) {
-                    if ((int) $currentDefault !== $this->baselineDescriptionId) {
+                    // Compare UUID strings (not int)
+                    if ((string) $currentDefault !== (string) $this->baselineDescriptionId) {
                         return;
                     }
                 } elseif ($currentDefault !== null) {

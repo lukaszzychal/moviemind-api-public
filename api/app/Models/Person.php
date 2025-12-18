@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -13,11 +14,12 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Str;
 
 /**
+ * @property string $id UUIDv7 primary key
  * @property-read Pivot|null $pivot
  */
 class Person extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'name', 'slug', 'birth_date', 'birthplace', 'tmdb_id',
@@ -50,14 +52,14 @@ class Person extends Model
      * @param  string  $name  Person's full name
      * @param  string|null  $birthDate  Birth date (YYYY-MM-DD format)
      * @param  string|null  $birthplace  Birthplace
-     * @param  int|null  $excludeId  Person ID to exclude from duplicate check (for updates)
+     * @param  string|null  $excludeId  Person ID (UUID) to exclude from duplicate check (for updates)
      * @return string Generated unique slug
      */
     public static function generateSlug(
         string $name,
         ?string $birthDate = null,
         ?string $birthplace = null,
-        ?int $excludeId = null
+        ?string $excludeId = null
     ): string {
         $baseSlug = Str::slug($name);
 

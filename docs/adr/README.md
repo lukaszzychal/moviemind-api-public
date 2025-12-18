@@ -10,6 +10,7 @@
 5. [ADR-005: Git Trunk Flow](#adr-005-git-trunk-flow)
 6. [ADR-006: Feature Flags Strategy](#adr-006-feature-flags-strategy)
 7. [ADR-007: Blokady generowania opisów AI](#adr-007-blokady-generowania-opisów-ai)
+8. [ADR-008: Strategia UUID - v7, v4, v5](#adr-008-strategia-uuid---v7-v4-v5)
 
 ### 🇬🇧
 1. [ADR-001: Choosing Laravel over Symfony](#adr-001-choosing-laravel-over-symfony)
@@ -19,6 +20,7 @@
 5. [ADR-005: Git Trunk Flow](#adr-005-git-trunk-flow-en)
 6. [ADR-006: Feature Flags Strategy](#adr-006-feature-flags-strategy-en)
 7. [ADR-007: AI description generation locks](#adr-007-ai-description-generation-locks)
+8. [ADR-008: UUID Strategy - v7, v4, v5](#adr-008-uuid-strategy---v7-v4-v5)
 
 ---
 
@@ -629,7 +631,9 @@ We use a **two-level strategy** to prevent duplicates:
 
 ---
 
-*Dokument zaktualizowany: 2025-11-12*  
-*Document updated: 2025-11-12*  
-*Ostatnia aktualizacja: 2025-11-12 - Dodano opis dwupoziomowej strategii (Cache::add + unique index)*  
-*Last update: 2025-11-12 - Added description of two-level strategy (Cache::add + unique index)*
+---
+
+*Dokument zaktualizowany: 2025-12-18*  
+*Document updated: 2025-12-18*  
+*Ostatnia aktualizacja: 2025-12-18 - Dodano ADR-008: Strategia UUID (v7, v4, v5)*  
+*Last update: 2025-12-18 - Added ADR-008: UUID Strategy (v7, v4, v5)*
