@@ -39,8 +39,16 @@ class HtmlSanitizer
         // Remove null bytes
         $html = str_replace("\0", '', $html);
 
-        // Decode HTML entities first (to catch double-encoded attacks)
-        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Decode HTML entities multiple times to handle double/triple encoding
+        // This is important for security - attackers may use multiple layers of encoding
+        $previousHtml = '';
+        $maxDecodeIterations = 5;
+        $iteration = 0;
+        while ($html !== $previousHtml && $iteration < $maxDecodeIterations) {
+            $previousHtml = $html;
+            $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $iteration++;
+        }
 
         // Remove script tags and their content
         $html = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/is', '', $html);
@@ -59,7 +67,7 @@ class HtmlSanitizer
         // Remove all HTML tags
         $html = strip_tags($html);
 
-        // Decode remaining HTML entities
+        // Final decode of any remaining HTML entities
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         // Normalize whitespace
