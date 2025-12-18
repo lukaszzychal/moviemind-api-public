@@ -42,14 +42,19 @@ return new class extends Migration
         }
 
         // PostgreSQL/MySQL migration
-        Schema::table('movies', function (Blueprint $table) {
-            // Drop foreign key constraint on default_description_id if it exists
-            try {
-                $table->dropForeign(['default_description_id']);
-            } catch (\Exception $e) {
-                // Foreign key might not exist, ignore
-            }
-        });
+        // Drop foreign key constraint on default_description_id if it exists (PostgreSQL)
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE movies DROP CONSTRAINT IF EXISTS movies_default_description_id_foreign');
+        } else {
+            // MySQL - try to drop foreign key if it exists
+            Schema::table('movies', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['default_description_id']);
+                } catch (\Exception $e) {
+                    // Foreign key might not exist, ignore
+                }
+            });
+        }
 
         // Drop primary key constraint
         DB::statement('ALTER TABLE movies DROP CONSTRAINT IF EXISTS movies_pkey');
