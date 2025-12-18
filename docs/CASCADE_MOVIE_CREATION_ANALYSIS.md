@@ -14,6 +14,203 @@
 - **15,077 jobów** w kolejce (przed wyczyszczeniem)
 - **Efekt kaskadowy:** 1 film → 10-20 filmów → 100-200 filmów → ...
 
+<<<<<<< HEAD
+### Przykład: "The Matrix" (1999)
+
+Poniżej pokazujemy, jak działa efekt kaskadowy na konkretnym przykładzie filmu "The Matrix":
+
+#### Krok 1: Tworzenie głównego filmu
+```
+Użytkownik wyszukuje: "The Matrix"
+↓
+System tworzy film: "The Matrix" (1999, TMDB ID: 603)
+↓
+TmdbMovieCreationService::createFromTmdb() dispatchuje:
+  - SyncMovieMetadataJob (synchronizuje aktorów: Keanu Reeves, Laurence Fishburne, etc.)
+  - SyncMovieRelationshipsJob (synchronizuje relacje)
+```
+
+#### Krok 2: SyncMovieRelationshipsJob znajduje powiązane filmy
+
+**Collection (The Matrix Collection):**
+- The Matrix (1999) - już istnieje ✅
+- The Matrix Reloaded (2003, TMDB ID: 604) - **NIE ISTNIEJE** → tworzy
+- The Matrix Revolutions (2003, TMDB ID: 605) - **NIE ISTNIEJE** → tworzy
+- The Matrix Resurrections (2021, TMDB ID: 624860) - **NIE ISTNIEJE** → tworzy
+
+**Similar Movies (top 10):**
+- Inception (2010, TMDB ID: 27205) - **NIE ISTNIEJE** → tworzy
+- Blade Runner 2049 (2017, TMDB ID: 335984) - **NIE ISTNIEJE** → tworzy
+- Interstellar (2014, TMDB ID: 157336) - **NIE ISTNIEJE** → tworzy
+- ... (7 więcej filmów)
+
+**Wynik po kroku 2:**
+- Utworzono: **~13 nowych filmów** (3 z collection + 10 similar)
+- Każdy nowy film automatycznie dispatchuje kolejny `SyncMovieRelationshipsJob`!
+
+#### Krok 3: Kaskada dla "The Matrix Reloaded" (2003)
+
+```
+The Matrix Reloaded (2003) został utworzony
+↓
+SyncMovieRelationshipsJob dla "The Matrix Reloaded":
+  - Collection: The Matrix Collection
+    → The Matrix (1999) - już istnieje ✅
+    → The Matrix Revolutions (2003) - już istnieje ✅
+    → The Matrix Resurrections (2021) - już istnieje ✅
+    (Wszystkie filmy z kolekcji już istnieją, więc nie tworzy nowych)
+  
+  - Similar Movies (z TMDB API): nowe filmy sci-fi/action
+    → Blade Runner 2049 (2017) - już istnieje ✅ (utworzony w kroku 2)
+    → Dune (2021) - **NIE ISTNIEJE** → tworzy
+    → Edge of Tomorrow (2014) - **NIE ISTNIEJE** → tworzy
+    → ... (8 więcej podobnych filmów sci-fi)
+    → Tworzy kolejne ~10 filmów sci-fi/action
+```
+
+#### Krok 4: Kaskada dla "Inception" (2010)
+
+```
+Inception (2010) został utworzony
+↓
+SyncMovieRelationshipsJob dla "Inception":
+  - Collection: brak (Inception nie jest częścią kolekcji)
+  - Similar Movies (z TMDB API): nowe filmy thriller/sci-fi
+    → Shutter Island (2010) - **NIE ISTNIEJE** → tworzy
+    → The Prestige (2006) - **NIE ISTNIEJE** → tworzy
+    → Interstellar (2014) - już istnieje ✅ (utworzony w kroku 2)
+    → ... (8 więcej podobnych filmów thriller/sci-fi)
+    → Tworzy kolejne ~10 filmów thriller/sci-fi
+```
+
+#### Krok 5: Kaskada dla każdego nowo utworzonego filmu...
+
+Każdy z ~13 filmów z kroku 2 tworzy kolejne ~10 filmów:
+- **13 filmów × ~10 podobnych = ~130 nowych filmów**
+
+Każdy z tych ~130 filmów tworzy kolejne ~10 filmów:
+- **130 filmów × ~10 podobnych = ~1,300 nowych filmów**
+
+I tak dalej... **wykładniczy wzrost!**
+
+#### Wizualizacja kaskady:
+
+```
+The Matrix (1999) [depth=0]
+│
+├── Collection: The Matrix Collection
+│   ├── The Matrix Reloaded (2003) [depth=1] ✅
+│   │   ├── Similar Movies (sci-fi/action):
+│   │   │   ├── Dune (2021) [depth=2] ✅
+│   │   │   │   └── Similar Movies: ... (10+ podobnych sci-fi)
+│   │   │   ├── Edge of Tomorrow (2014) [depth=2] ✅
+│   │   │   │   └── Similar Movies: ... (10+ podobnych sci-fi)
+│   │   │   └── ... (8 więcej podobnych sci-fi/action)
+│   │   └── Collection: The Matrix Collection (już istniejące) ✅
+│   │
+│   ├── The Matrix Revolutions (2003) [depth=1] ✅
+│   │   ├── Similar Movies (sci-fi/action):
+│   │   │   └── ... (10+ podobnych sci-fi/action)
+│   │   └── Collection: The Matrix Collection (już istniejące) ✅
+│   │
+│   └── The Matrix Resurrections (2021) [depth=1] ✅
+│       ├── Similar Movies (sci-fi/action):
+│       │   └── ... (10+ podobnych sci-fi/action)
+│       └── Collection: The Matrix Collection (już istniejące) ✅
+│
+└── Similar Movies (sci-fi/action/thriller):
+    ├── Inception (2010) [depth=1] ✅
+    │   ├── Similar Movies (thriller/sci-fi):
+    │   │   ├── Shutter Island (2010) [depth=2] ✅
+    │   │   │   └── Similar Movies: ... (10+ podobnych thriller)
+    │   │   ├── The Prestige (2006) [depth=2] ✅
+    │   │   │   └── Similar Movies: ... (10+ podobnych thriller)
+    │   │   └── ... (8 więcej podobnych thriller/sci-fi)
+    │   └── Collection: brak
+    │
+    ├── Blade Runner 2049 (2017) [depth=1] ✅
+    │   ├── Similar Movies (sci-fi):
+    │   │   └── ... (10+ podobnych sci-fi)
+    │   └── Collection: brak
+    │
+    ├── Interstellar (2014) [depth=1] ✅
+    │   ├── Similar Movies (sci-fi):
+    │   │   └── ... (10+ podobnych sci-fi)
+    │   └── Collection: brak
+    │
+    └── ... (7 więcej podobnych filmów sci-fi/action)
+
+Poziom 0: 1 film (The Matrix)
+Poziom 1: ~13 filmów (3 z collection + ~10 similar)
+Poziom 2: ~130 filmów (13 × ~10 podobnych)
+Poziom 3: ~1,300 filmów (130 × ~10 podobnych)
+Poziom 4: ~13,000 filmów (1,300 × ~10 podobnych)
+...
+```
+
+**Uwaga:** Powiązania "Similar Movies" pochodzą z TMDB API i są oparte na algorytmach rekomendacji TMDB (podobne gatunki, aktorzy, reżyserzy, popularność). Nie są to bezpośrednie relacje fabularne, ale filmy, które TMDB uważa za podobne.
+
+#### Przykład z różnymi konfiguracjami:
+
+**Konfiguracja A: `AUTO_CREATE_RELATED_MOVIES=false`**
+```
+The Matrix (1999)
+↓
+SyncMovieRelationshipsJob: sprawdza powiązane filmy
+  - The Matrix Reloaded (2003) - NIE ISTNIEJE → POMIJA (tylko linkuje istniejące)
+  - Inception (2010) - NIE ISTNIEJE → POMIJA
+  - Wynik: 0 nowych filmów, 0 relacji (bo nie ma istniejących powiązanych filmów)
+```
+
+**Konfiguracja B: `AUTO_CREATE_RELATED_MOVIES=true, MAX_RELATIONSHIP_DEPTH=1`**
+```
+The Matrix (1999) [depth=0]
+├── The Matrix Reloaded (2003) [depth=1] ✅ TWORZY
+│   └── SyncMovieRelationshipsJob: depth=1 >= max_depth=1 → POMIJA
+├── The Matrix Revolutions (2003) [depth=1] ✅ TWORZY
+│   └── SyncMovieRelationshipsJob: depth=1 >= max_depth=1 → POMIJA
+├── Inception (2010) [depth=1] ✅ TWORZY
+│   └── SyncMovieRelationshipsJob: depth=1 >= max_depth=1 → POMIJA
+└── ... (10 więcej filmów na poziomie 1)
+
+Wynik: ~13 filmów (tylko poziom 1, brak kaskady dalej)
+```
+
+**Konfiguracja C: `AUTO_CREATE_RELATED_MOVIES=true, MAX_RELATIONSHIP_DEPTH=2`**
+```
+The Matrix (1999) [depth=0]
+├── Collection: The Matrix Collection
+│   ├── The Matrix Reloaded (2003) [depth=1] ✅ TWORZY
+│   │   ├── Similar Movies (sci-fi/action):
+│   │   │   ├── Dune (2021) [depth=2] ✅ TWORZY
+│   │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+│   │   │   ├── Edge of Tomorrow (2014) [depth=2] ✅ TWORZY
+│   │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+│   │   │   └── ... (8 więcej podobnych sci-fi/action na poziomie 2)
+│   │   └── Collection: The Matrix Collection (już istniejące) ✅
+│   └── ... (2 więcej filmów z kolekcji)
+└── Similar Movies:
+    ├── Inception (2010) [depth=1] ✅ TWORZY
+    │   ├── Similar Movies (thriller/sci-fi):
+    │   │   ├── Shutter Island (2010) [depth=2] ✅ TWORZY
+    │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+    │   │   ├── The Prestige (2006) [depth=2] ✅ TWORZY
+    │   │   │   └── SyncMovieRelationshipsJob: depth=2 >= max_depth=2 → POMIJA
+    │   │   └── ... (8 więcej podobnych thriller/sci-fi na poziomie 2)
+    │   └── Collection: brak
+    └── ... (10 więcej podobnych filmów na poziomie 1)
+
+Wynik: ~13 filmów (poziom 1) + ~130 filmów (poziom 2) = ~143 filmy
+```
+
+**Konfiguracja D: `AUTO_CREATE_RELATED_MOVIES=true, MAX_RELATIONSHIP_DEPTH=0` (lub brak konfiguracji)**
+```
+The Matrix (1999) [depth=0]
+└── SyncMovieRelationshipsJob: depth=0 >= max_depth=0 → POMIJA
+
+Wynik: 0 nowych filmów (tylko główny film)
+```
+
 ### Mechanizm kaskadowy:
 
 ```
