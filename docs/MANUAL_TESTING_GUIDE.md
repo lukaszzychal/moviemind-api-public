@@ -641,6 +641,38 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
 
 > **For detailed testing scenarios, see:** [Relationships Testing Guide](./MANUAL_TESTING_RELATIONSHIPS.md)
 
+### How It Works
+
+**Important:** Movie relationships are stored **locally in the database** (table `movie_relationships`), but they are **synchronized from TMDB** asynchronously.
+
+**Synchronization Flow:**
+1. When a movie is created from TMDB (via search or refresh), `SyncMovieRelationshipsJob` is dispatched
+2. The job fetches relationship data from TMDB:
+   - **Collections** (sequels, prequels) → Creates `SEQUEL`/`PREQUEL` relationships
+   - **Similar movies** → Creates `SAME_UNIVERSE` relationships
+3. Related movies are created in the database if they don't exist
+4. Relationships are stored in `movie_relationships` table
+5. The `/related` endpoint reads from the **local database** (not TMDB directly)
+
+**Why empty `related_movies`?**
+- Movie doesn't have `tmdb_id` or TMDB snapshot
+- `SyncMovieRelationshipsJob` hasn't run yet (check queue)
+- Movie has no relationships in TMDB (no collection, no similar movies)
+- Queue worker is not running
+
+**To check:**
+```bash
+# Check if movie has TMDB snapshot
+docker compose exec php php artisan tinker
+>>> \App\Models\Movie::where('slug', 'the-matrix-1999')->first()->tmdbSnapshot
+
+# Check if relationships exist
+>>> \App\Models\MovieRelationship::where('movie_id', 1)->count()
+
+# Manually trigger sync (if snapshot exists)
+>>> \App\Jobs\SyncMovieRelationshipsJob::dispatch(1);
+```
+
 ---
 
 ## 📺 TV Series API
@@ -687,6 +719,11 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 **Objective:** Verify retrieving related movies.
 
+**Prerequisites:**
+- Movie must have `tmdb_id` and TMDB snapshot
+- `SyncMovieRelationshipsJob` must have run (check queue)
+- Movie must have relationships in TMDB (collection or similar movies)
+
 **Steps:**
 
 1. **Get related movies:**
@@ -695,7 +732,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
      -H "Accept: application/json" | jq
    ```
 
-2. **Verify response:**
+2. **Verify response (if relationships exist):**
    ```json
    {
      "movie": {
@@ -730,11 +767,17 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    }
    ```
 
-3. **Verify:**
+3. **If `related_movies` is empty:**
+   - Check if movie has TMDB snapshot: `docker compose exec php php artisan tinker` → `Movie::where('slug', 'the-matrix-1999')->first()->tmdbSnapshot`
+   - Check if relationships exist: `MovieRelationship::where('movie_id', 1)->count()`
+   - Manually trigger sync: `SyncMovieRelationshipsJob::dispatch(1)`
+   - Check queue worker: `docker compose exec php php artisan horizon:status`
+
+4. **Verify:**
    - [ ] Status code: `200 OK`
    - [ ] `movie` object present
-   - [ ] `related_movies` array present
-   - [ ] Each related movie has `relationship_type`, `relationship_label`, `relationship_order`
+   - [ ] `related_movies` array present (may be empty if no relationships)
+   - [ ] If relationships exist: Each related movie has `relationship_type`, `relationship_label`, `relationship_order`
    - [ ] `count` matches array length
    - [ ] **Security:** `tmdb_id` is **NOT** present
 
