@@ -21,8 +21,6 @@ use Laravel\Pennant\Feature;
  */
 class MovieRetrievalService
 {
-    private const CACHE_TTL_SECONDS = 3600;
-
     public function __construct(
         private readonly MovieRepository $movieRepository,
         private readonly EntityVerificationServiceInterface $tmdbVerificationService,
@@ -377,26 +375,6 @@ class MovieRetrievalService
                 'select_url' => url("/api/v1/movies/{$suggestedSlug}"),
             ];
         }, $searchResults);
-    }
-
-    /**
-     * Build disambiguation options from local database movies.
-     *
-     * @param  \Illuminate\Support\Collection<int, Movie>  $movies
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildLocalDisambiguationOptions(string $slug, \Illuminate\Support\Collection $movies): array
-    {
-        return $movies->map(function (Movie $movie) {
-            return [
-                'slug' => $movie->slug,
-                'title' => $movie->title,
-                'release_year' => $movie->release_year,
-                'director' => $movie->director,
-                'has_description' => $movie->descriptions()->exists(),
-                'select_url' => url("/api/v1/movies/{$movie->slug}"),
-            ];
-        })->toArray();
     }
 
     /**
