@@ -943,7 +943,56 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ---
 
-### Scenario 2: Feature Flags (Admin)
+### Scenario 2: Health Check - TMDB
+
+**Objective:** Verify TMDB API connectivity.
+
+**Note:** There's no dedicated TMDB health endpoint, but connectivity can be verified indirectly.
+
+**Steps:**
+
+1. **Check TMDB via movie search (recommended):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `200 OK` or `202 Accepted`
+   - [ ] No TMDB-related errors in response
+   - [ ] Check logs for TMDB connectivity issues
+
+2. **Direct TMDB API test (requires API key):**
+   ```bash
+   # Get API key from .env
+   TMDB_API_KEY=$(grep TMDB_API_KEY api/.env | cut -d '=' -f2)
+   
+   # Test TMDB API directly
+   curl -X GET "https://api.themoviedb.org/3/movie/603?api_key=${TMDB_API_KEY}" \
+     -H "Accept: application/json" | jq '.id'
+   ```
+   - [ ] Should return: `603` (The Matrix movie ID)
+   - [ ] Status code: `200 OK`
+
+3. **Verify TMDB configuration:**
+   ```bash
+   # Check if TMDB_API_KEY is set
+   grep TMDB_API_KEY api/.env
+   # Should show: TMDB_API_KEY=your_key_here
+   ```
+
+4. **Check logs for TMDB errors:**
+   ```bash
+   tail -f api/storage/logs/laravel.log | grep -i tmdb
+   # Look for connection errors or rate limit warnings
+   ```
+
+5. **Verify:**
+   - [ ] TMDB API key is configured
+   - [ ] Direct API call succeeds
+   - [ ] No connection errors in logs
+
+---
+
+### Scenario 3: Feature Flags (Admin)
 
 **Objective:** Verify feature flag management.
 
@@ -981,7 +1030,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ---
 
-### Scenario 3: Debug Configuration (Admin)
+### Scenario 4: Debug Configuration (Admin)
 
 **Objective:** Verify debug configuration endpoint.
 
