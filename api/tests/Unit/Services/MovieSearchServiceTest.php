@@ -117,6 +117,102 @@ class MovieSearchServiceTest extends TestCase
         }
     }
 
+    public function test_search_filters_tmdb_results_by_year(): void
+    {
+        // Given: No local movies, but TMDB returns movies from different years
+        $movieRepository = $this->createMock(MovieRepository::class);
+        $movieRepository->expects($this->once())
+            ->method('searchMovies')
+            ->willReturn(Collection::make([]));
+
+        $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
+        $tmdbService->expects($this->once())
+            ->method('searchMovies')
+            ->willReturn([
+                [
+                    'title' => 'The Matrix',
+                    'release_date' => '1999-03-31',
+                    'overview' => 'A hacker discovers...',
+                    'id' => 603,
+                    'director' => 'Wachowski',
+                ],
+                [
+                    'title' => 'The Matrix Reloaded',
+                    'release_date' => '2003-05-15',
+                    'overview' => 'Neo continues...',
+                    'id' => 604,
+                    'director' => 'Wachowski',
+                ],
+                [
+                    'title' => 'The Matrix Revolutions',
+                    'release_date' => '2003-11-05',
+                    'overview' => 'The war ends...',
+                    'id' => 605,
+                    'director' => 'Wachowski',
+                ],
+            ]);
+
+        Feature::define('tmdb_verification', true);
+
+        $service = new MovieSearchService($movieRepository, $tmdbService);
+
+        // When: Searching with year=1999
+        $result = $service->search(['q' => 'Matrix', 'year' => 1999]);
+
+        // Then: Should only return 1999 movie from TMDB
+        $this->assertEquals(0, $result->localCount);
+        $this->assertEquals(1, $result->externalCount);
+        $this->assertEquals(1, $result->total);
+
+        foreach ($result->results as $resultItem) {
+            if ($resultItem['source'] === 'external' && isset($resultItem['release_year'])) {
+                $this->assertEquals(1999, $resultItem['release_year'], 'External result should be filtered by year');
+            }
+        }
+    }
+
+    public function test_search_filters_tmdb_results_by_year_returns_empty_when_no_match(): void
+    {
+        // Given: No local movies, TMDB returns movies but none match the year filter
+        $movieRepository = $this->createMock(MovieRepository::class);
+        $movieRepository->expects($this->once())
+            ->method('searchMovies')
+            ->willReturn(Collection::make([]));
+
+        $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
+        $tmdbService->expects($this->once())
+            ->method('searchMovies')
+            ->willReturn([
+                [
+                    'title' => 'The Matrix',
+                    'release_date' => '1999-03-31',
+                    'overview' => 'A hacker discovers...',
+                    'id' => 603,
+                    'director' => 'Wachowski',
+                ],
+                [
+                    'title' => 'The Matrix Reloaded',
+                    'release_date' => '2003-05-15',
+                    'overview' => 'Neo continues...',
+                    'id' => 604,
+                    'director' => 'Wachowski',
+                ],
+            ]);
+
+        Feature::define('tmdb_verification', true);
+
+        $service = new MovieSearchService($movieRepository, $tmdbService);
+
+        // When: Searching with year=1991 (no movies from this year)
+        $result = $service->search(['q' => 'Matrix', 'year' => 1991]);
+
+        // Then: Should return empty results
+        $this->assertEquals(0, $result->localCount);
+        $this->assertEquals(0, $result->externalCount);
+        $this->assertEquals(0, $result->total);
+        $this->assertEquals('none', $result->matchType);
+    }
+
     public function test_search_determines_exact_match(): void
     {
         $movie = Movie::create([
