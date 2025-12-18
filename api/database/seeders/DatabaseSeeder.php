@@ -14,9 +14,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             GenreSeeder::class,
             MovieSeeder::class,
-            ActorSeeder::class,
             PeopleSeeder::class,
-            ActorToPersonSyncSeeder::class,
+            ActorSeeder::class, // Creates Keanu Reeves and links to The Matrix
         ]);
     }
 }

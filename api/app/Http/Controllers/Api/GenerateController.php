@@ -24,15 +24,21 @@ class GenerateController extends Controller
         $validated = $request->validated();
         $entityType = $validated['entity_type'];
         $slug = (string) ($validated['slug'] ?? $validated['entity_id'] ?? '');
+        $contextTags = $validated['context_tag'] ?? null; // Can be array or null
 
         return match ($entityType) {
-            'MOVIE' => $this->handleMovieGeneration($slug, $validated['locale'] ?? null, $validated['context_tag'] ?? null),
-            'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug, $validated['locale'] ?? null, $validated['context_tag'] ?? null),
+            'MOVIE' => $this->handleMovieGeneration($slug, $validated['locale'] ?? null, $contextTags),
+            'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug, $validated['locale'] ?? null, $contextTags),
             default => response()->json(['error' => 'Invalid entity type'], 400),
         };
     }
 
-    private function handleMovieGeneration(string $slug, ?string $locale = null, ?string $contextTag = null): JsonResponse
+    /**
+     * Handle movie generation with support for multiple context tags.
+     *
+     * @param  array<string>|null  $contextTags  Array of context tags or null
+     */
+    private function handleMovieGeneration(string $slug, ?string $locale = null, ?array $contextTags = null): JsonResponse
     {
         if (! Feature::active('ai_description_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
@@ -50,6 +56,44 @@ class GenerateController extends Controller
 
         $existing = Movie::where('slug', $slug)->first();
 
+        // Handle multiple context tags: queue a job for each context tag
+        if (is_array($contextTags) && count($contextTags) > 1) {
+            $results = [];
+            foreach ($contextTags as $contextTag) {
+                $result = $this->queueMovieGenerationAction->handle(
+                    $slug,
+                    $validation['confidence'],
+                    $existing,
+                    $locale,
+                    $contextTag
+                );
+                $results[] = $result;
+            }
+
+            // Return first job_id and list of all queued jobs
+            return response()->json([
+                'job_ids' => array_column($results, 'job_id'),
+                'status' => 'PENDING',
+                'message' => 'Generation queued for multiple context tags',
+                'slug' => $slug,
+                'context_tags' => $contextTags,
+                'locale' => $locale ?? 'en-US',
+                'jobs' => $results,
+            ], 202);
+        }
+
+        // Single context tag (backward compatibility) or null
+        // If array with 1 element, extract it; if empty array, treat as null; otherwise use as-is
+        $contextTag = null;
+        if (is_array($contextTags)) {
+            if (count($contextTags) === 1) {
+                $contextTag = $contextTags[0];
+            } elseif (count($contextTags) === 0) {
+                $contextTag = null;
+            }
+        } else {
+            $contextTag = $contextTags;
+        }
         $result = $this->queueMovieGenerationAction->handle(
             $slug,
             $validation['confidence'],
@@ -71,7 +115,12 @@ class GenerateController extends Controller
         return response()->json($result, 202);
     }
 
-    private function handlePersonGeneration(string $slug, ?string $locale = null, ?string $contextTag = null): JsonResponse
+    /**
+     * Handle person generation with support for multiple context tags.
+     *
+     * @param  array<string>|null  $contextTags  Array of context tags or null
+     */
+    private function handlePersonGeneration(string $slug, ?string $locale = null, ?array $contextTags = null): JsonResponse
     {
         if (! Feature::active('ai_bio_generation')) {
             return response()->json(['error' => 'Feature not available'], 403);
@@ -89,6 +138,44 @@ class GenerateController extends Controller
 
         $existing = Person::where('slug', $slug)->first();
 
+        // Handle multiple context tags: queue a job for each context tag
+        if (is_array($contextTags) && count($contextTags) > 1) {
+            $results = [];
+            foreach ($contextTags as $contextTag) {
+                $result = $this->queuePersonGenerationAction->handle(
+                    $slug,
+                    $validation['confidence'],
+                    $existing,
+                    $locale,
+                    $contextTag
+                );
+                $results[] = $result;
+            }
+
+            // Return first job_id and list of all queued jobs
+            return response()->json([
+                'job_ids' => array_column($results, 'job_id'),
+                'status' => 'PENDING',
+                'message' => 'Generation queued for multiple context tags',
+                'slug' => $slug,
+                'context_tags' => $contextTags,
+                'locale' => $locale ?? 'en-US',
+                'jobs' => $results,
+            ], 202);
+        }
+
+        // Single context tag (backward compatibility) or null
+        // If array with 1 element, extract it; if empty array, treat as null; otherwise use as-is
+        $contextTag = null;
+        if (is_array($contextTags)) {
+            if (count($contextTags) === 1) {
+                $contextTag = $contextTags[0];
+            } elseif (count($contextTags) === 0) {
+                $contextTag = null;
+            }
+        } else {
+            $contextTag = $contextTags;
+        }
         $result = $this->queuePersonGenerationAction->handle(
             $slug,
             $validation['confidence'],

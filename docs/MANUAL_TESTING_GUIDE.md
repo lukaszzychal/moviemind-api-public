@@ -92,8 +92,17 @@ REDIS_PORT=6379
 # Use real OpenAI API (requires OPENAI_API_KEY in .env)
 ./scripts/setup-local-testing.sh --ai-service real
 
+# Load test fixtures (seeders) after migration
+./scripts/setup-local-testing.sh --seed
+
+# Combine options: real AI + test fixtures
+./scripts/setup-local-testing.sh --ai-service real --seed
+
 # Rebuild containers before starting
 ./scripts/setup-local-testing.sh --rebuild
+
+# Rebuild + load fixtures
+./scripts/setup-local-testing.sh --rebuild --seed
 
 # Skip container startup (assumes containers already running)
 ./scripts/setup-local-testing.sh --no-start
@@ -110,14 +119,21 @@ ADMIN_AUTH="admin:password" ./scripts/setup-local-testing.sh
 export API_BASE_URL=http://localhost:8000
 export ADMIN_AUTH="admin:password"
 export AI_SERVICE=mock  # or 'real'
+export LOAD_FIXTURES=true  # or 'false' (load test fixtures)
 export DOCKER_COMPOSE_CMD="docker compose"
 ```
 
 **After running the script:**
 - ✅ All Docker containers are running
 - ✅ Database is fresh and migrated
+- ✅ Test fixtures loaded (if `--seed` option used)
 - ✅ Feature flags are enabled
 - ✅ API is ready for testing
+
+**Test fixtures include:**
+- Movies: The Matrix (1999), Inception (2010)
+- People: Keanu Reeves, The Wachowskis, Christopher Nolan
+- Genres: Action, Sci-Fi, Thriller
 
 **For detailed script documentation, see:** `scripts/setup-local-testing.sh` (contains inline help)
 
@@ -904,7 +920,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 **Steps:**
 
-1. **Generate modern description:**
+1. **Generate modern description (single context tag):**
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -916,7 +932,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
      }' | jq
    ```
 
-2. **Generate critical description:**
+2. **Generate critical description (single context tag):**
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -928,20 +944,145 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
      }' | jq
    ```
 
-3. **Verify:**
+3. **Generate multiple context tags at once (NEW):**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "entity_type": "MOVIE",
+       "slug": "the-matrix-1999",
+       "locale": "en-US",
+       "context_tag": ["modern", "critical", "humorous"]
+     }' | jq
+   ```
+
+4. **Verify response for multiple context tags:**
+   ```json
+   {
+     "job_ids": [
+       "550e8400-e29b-41d4-a716-446655440000",
+       "660e8400-e29b-41d4-a716-446655440001",
+       "770e8400-e29b-41d4-a716-446655440002"
+     ],
+     "status": "PENDING",
+     "message": "Generation queued for multiple context tags",
+     "slug": "the-matrix-1999",
+     "context_tags": ["modern", "critical", "humorous"],
+     "locale": "en-US",
+     "jobs": [
+       {
+         "job_id": "550e8400-e29b-41d4-a716-446655440000",
+         "status": "PENDING",
+         "context_tag": "modern"
+       },
+       {
+         "job_id": "660e8400-e29b-41d4-a716-446655440001",
+         "status": "PENDING",
+         "context_tag": "critical"
+       },
+       {
+         "job_id": "770e8400-e29b-41d4-a716-446655440002",
+         "status": "PENDING",
+         "context_tag": "humorous"
+       }
+     ]
+   }
+   ```
+
+5. **Verify:**
+   - [ ] Single context tag creates one job (backward compatible)
+   - [ ] Multiple context tags create multiple jobs (one per tag)
    - [ ] Each context tag creates separate description
    - [ ] Multiple descriptions exist for same movie
    - [ ] Default description is not overwritten
+   - [ ] Response includes `job_ids` array when multiple tags provided
+   - [ ] Response includes `jobs` array with details for each queued job
 
 ---
 
-### Scenario 3: Generate Person Bio
+### Scenario 3: Generate Multiple Context Tags at Once
+
+**Objective:** Verify generating multiple descriptions with different context tags in a single request.
+
+**Steps:**
+
+1. **Generate multiple context tags for a movie:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "entity_type": "MOVIE",
+       "slug": "the-matrix-1999",
+       "locale": "en-US",
+       "context_tag": ["modern", "critical", "humorous"]
+     }' | jq
+   ```
+
+2. **Verify response:**
+   ```json
+   {
+     "job_ids": [
+       "550e8400-e29b-41d4-a716-446655440000",
+       "660e8400-e29b-41d4-a716-446655440001",
+       "770e8400-e29b-41d4-a716-446655440002"
+     ],
+     "status": "PENDING",
+     "message": "Generation queued for multiple context tags",
+     "slug": "the-matrix-1999",
+     "context_tags": ["modern", "critical", "humorous"],
+     "locale": "en-US",
+     "jobs": [...]
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `202 Accepted`
+   - [ ] Response contains `job_ids` array with multiple job IDs
+   - [ ] Response contains `context_tags` array matching input
+   - [ ] Response contains `jobs` array with details for each job
+   - [ ] Each job has unique `job_id`
+   - [ ] Each job has correct `context_tag`
+
+4. **Check individual job statuses:**
+   ```bash
+   # Check first job
+   curl -X GET "http://localhost:8000/api/v1/jobs/550e8400-e29b-41d4-a716-446655440000" | jq
+   
+   # Check second job
+   curl -X GET "http://localhost:8000/api/v1/jobs/660e8400-e29b-41d4-a716-446655440001" | jq
+   ```
+
+5. **After jobs complete, verify multiple descriptions exist:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq '.descriptions'
+   ```
+   - [ ] Multiple descriptions exist for the movie
+   - [ ] Each description has different `context_tag`
+   - [ ] Descriptions are not overwritten
+
+6. **Test backward compatibility (single string):**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "entity_type": "MOVIE",
+       "slug": "the-matrix-1999",
+       "locale": "en-US",
+       "context_tag": "modern"
+     }' | jq
+   ```
+   - [ ] Single string still works (backward compatible)
+   - [ ] Response format matches old format (single `job_id`, not `job_ids`)
+
+---
+
+### Scenario 4: Generate Person Bio
 
 **Objective:** Verify generating a person biography.
 
 **Steps:**
 
-1. **Generate bio:**
+1. **Generate bio (single context tag):**
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -953,10 +1094,23 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
      }' | jq
    ```
 
-2. **Verify:**
+2. **Generate multiple bios at once:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "entity_type": "PERSON",
+       "slug": "keanu-reeves",
+       "locale": "en-US",
+       "context_tag": ["modern", "critical"]
+     }' | jq
+   ```
+
+3. **Verify:**
    - [ ] Status code: `202 Accepted`
-   - [ ] Job created for person
-   - [ ] Bio generated after job completion
+   - [ ] Job(s) created for person
+   - [ ] Bio(s) generated after job completion
+   - [ ] Multiple bios exist for same person (if multiple context tags)
 
 ---
 

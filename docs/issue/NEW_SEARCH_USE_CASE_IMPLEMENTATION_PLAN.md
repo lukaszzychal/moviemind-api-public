@@ -165,52 +165,52 @@ main
 **Branch:** `feature/movie-relationships`  
 **Priorytet:** Średni  
 **Zależności:** Brak  
-**Szacowany czas:** 2-3 dni
+**Status:** ✅ **UKOŃCZONY**
 
 ### Zadania:
 
 1. **Migracja:**
-   - [ ] Utworzyć tabelę `movie_relationships`
-   - [ ] Kolumny: `id`, `movie_id`, `related_movie_id`, `relationship_type`, `order`, `timestamps`
-   - [ ] Foreign keys i indeksy
+   - [x] Utworzyć tabelę `movie_relationships` ✅
+   - [x] Kolumny: `id`, `movie_id`, `related_movie_id`, `relationship_type`, `order`, `timestamps` ✅
+   - [x] Foreign keys i indeksy ✅
 
 2. **Model:**
-   - [ ] Klasa `App\Models\MovieRelationship`
-   - [ ] Relacje: `movie()`, `relatedMovie()`
-   - [ ] Enum dla `relationship_type`: SEQUEL, PREQUEL, REMAKE, SERIES, SPINOFF, SAME_UNIVERSE
+   - [x] Klasa `App\Models\MovieRelationship` ✅
+   - [x] Relacje: `movie()`, `relatedMovie()` ✅
+   - [x] Enum dla `relationship_type`: SEQUEL, PREQUEL, REMAKE, SERIES, SPINOFF, SAME_UNIVERSE ✅
 
 3. **Rozszerzyć model `Movie`:**
-   - [ ] Relacja `relatedMovies()` (BelongsToMany)
-   - [ ] Metoda pomocnicza do pobierania powiązanych
+   - [x] Relacja `relatedMovies()` (BelongsToMany) ✅
+   - [x] Metoda pomocnicza do pobierania powiązanych ✅ (`getRelatedMovies()`)
 
 4. **Utworzyć `SyncMovieRelationshipsJob`:**
-   - [ ] Wykrywanie z TMDB (collection_id, related movies)
-   - [ ] Tworzenie relacji
-   - [ ] Obsługa różnych typów relacji
+   - [x] Wykrywanie z TMDB (collection_id, related movies) ✅
+   - [x] Tworzenie relacji ✅
+   - [x] Obsługa różnych typów relacji ✅
 
 5. **Endpoint:**
-   - [ ] Route: `GET /api/v1/movies/{slug}/related`
-   - [ ] Controller method: `MovieController::related()`
-   - [ ] Query param: `type[]` (filtrowanie)
-   - [ ] Domyślnie wszystkie typy
+   - [x] Route: `GET /api/v1/movies/{slug}/related` ✅
+   - [x] Controller method: `MovieController::related()` ✅
+   - [x] Query param: `type[]` (filtrowanie) ✅
+   - [x] Domyślnie wszystkie typy ✅
 
 6. **Integracja:**
-   - [ ] Wywołanie `SyncMovieRelationshipsJob` po utworzeniu filmu
-   - [ ] W `TmdbMovieCreationService` lub `SyncMovieMetadataJob`
+   - [x] Wywołanie `SyncMovieRelationshipsJob` po utworzeniu filmu ✅
+   - [x] W `TmdbMovieCreationService` ✅
 
 7. **Testy:**
-   - [ ] Feature test: `MovieRelationshipsTest`
-   - [ ] Test endpointu `/related` z filtrowaniem
-   - [ ] Unit test: `SyncMovieRelationshipsJobTest`
-   - [ ] Test wykrywania różnych typów relacji
+   - [x] Feature test: `MovieRelationshipsTest` ✅ (4 passed, 32 assertions)
+   - [x] Test endpointu `/related` z filtrowaniem ✅
+   - [x] Unit test: `SyncMovieRelationshipsJobTest` ✅
+   - [x] Test wykrywania różnych typów relacji ✅
 
 ### Akceptacja:
 - ✅ Tabela i model działają
 - ✅ Endpoint zwraca powiązane filmy
 - ✅ Filtrowanie po typie działa
-- ✅ Wszystkie testy przechodzą
+- ✅ Wszystkie testy przechodzą (4 passed, 32 assertions)
 
-### Merge do: `main`
+### Merge do: `main` ✅
 
 ---
 
@@ -219,41 +219,41 @@ main
 **Branch:** `feature/multiple-context-generation`  
 **Priorytet:** Średni  
 **Zależności:** Brak  
-**Szacowany czas:** 2-3 dni
+**Status:** 🔄 **W TRAKCIE** (częściowo ukończony)
 
 ### Zadania:
 
 1. **Rozszerzyć `QueueMovieGenerationAction`:**
-   - [ ] Obsługa wielu context_tag jednocześnie
-   - [ ] Queue wielu jobów dla różnych context_tag
-   - [ ] Walidacja dostępnych context_tag
+   - [x] Obsługa wielu context_tag jednocześnie ✅
+   - [x] Queue wielu jobów dla różnych context_tag ✅
+   - [x] Walidacja dostępnych context_tag ✅
 
 2. **Zaktualizować `GenerateController`:**
-   - [ ] Parametr `context_tag` może być array
-   - [ ] Obsługa pojedynczego i wielu context_tag
+   - [x] Parametr `context_tag` może być array ✅
+   - [x] Obsługa pojedynczego i wielu context_tag ✅
 
-3. **Zabezpieczenia AI:**
+3. **Zabezpieczenia AI:** (osobny branch: `feature/ai-security`)
    - [ ] Rozszerzyć `RealGenerateMovieJob` o walidację outputu
    - [ ] Sprawdzenie podobieństwa z oryginałem (anti-hallucination)
    - [ ] Wykrywanie AI injection
    - [ ] Sanityzacja HTML/XSS
 
-4. **System prompts:**
+4. **System prompts:** (osobny branch: `feature/ai-security`)
    - [ ] Zaktualizować prompty dla różnych context_tag
    - [ ] Dodanie zabezpieczeń w system promptach
 
 5. **Testy:**
-   - [ ] Feature test: generowanie wielu context_tag
-   - [ ] Test zabezpieczeń (AI injection, XSS)
-   - [ ] Test walidacji outputu
-   - [ ] Unit test: prompt generation
+   - [x] Feature test: generowanie wielu context_tag ✅ (18 passed, 88 assertions)
+   - [ ] Test zabezpieczeń (AI injection, XSS) (osobny branch)
+   - [ ] Test walidacji outputu (osobny branch)
+   - [ ] Unit test: prompt generation (osobny branch)
 
 ### Akceptacja:
 - ✅ Można generować wiele context_tag jednocześnie
-- ✅ Zabezpieczenia działają
-- ✅ Wszystkie testy przechodzą
+- ⏳ Zabezpieczenia działają (osobny branch)
+- ✅ Wszystkie testy przechodzą (18 passed, 88 assertions)
 
-### Merge do: `main`
+### Merge do: `main` (częściowy - podstawowa funkcjonalność)
 
 ---
 
@@ -466,7 +466,7 @@ Po zmergowaniu wszystkich branchy:
 
 ## 📊 Status Implementacji
 
-**Ostatnia aktualizacja:** 2025-12-17
+**Ostatnia aktualizacja:** 2025-12-18
 
 ### ✅ Ukończone Etapy
 
@@ -475,10 +475,10 @@ Po zmergowaniu wszystkich branchy:
 | **Etap 1:** Endpoint Wyszukiwania Filmów | ✅ UKOŃCZONY | ✅ SearchMoviesTest | ✅ OpenAPI |
 | **Etap 2:** Ukrycie TMDB ID w API | ✅ UKOŃCZONY | ✅ TmdbIdHiddenTest (7 passed) | ✅ OpenAPI |
 | **Etap 3:** Synchronizacja Metadanych | ✅ UKOŃCZONY | ✅ MovieMetadataSyncTest (9 passed) | ✅ OpenAPI + TEST_RESULTS_ETAP3.md |
+| **Etap 4:** Powiązane Filmy (Relationships) | ✅ UKOŃCZONY | ✅ MovieRelationshipsTest (4 passed) | ✅ OpenAPI + MANUAL_TESTING_RELATIONSHIPS.md |
 
 ### ⏳ Pozostałe Etapy
 
-- **Etap 4:** Powiązane Filmy (Relationships) - PENDING
 - **Etap 5:** Wielokrotne Generowanie Opisów - PENDING
 - **Etap 6:** Zgłaszanie Błędów (Movie Reports) - PENDING
 - **Etap 7:** Adaptive Rate Limiting - PENDING
@@ -486,9 +486,9 @@ Po zmergowaniu wszystkich branchy:
 
 ### 📈 Postęp
 
-- **Ukończone:** 3/8 etapów (37.5%)
+- **Ukończone:** 4/8 etapów (50%)
 - **W trakcie:** 0/8 etapów
-- **Oczekujące:** 5/8 etapów (62.5%)
+- **Oczekujące:** 4/8 etapów (50%)
 
 ---
 
