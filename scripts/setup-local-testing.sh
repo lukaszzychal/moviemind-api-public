@@ -319,7 +319,21 @@ reset_database() {
     print_info "Uruchamianie: docker compose exec php php artisan migrate:fresh"
     if $DOCKER_COMPOSE_CMD exec -T php php artisan migrate:fresh --force; then
         print_success "Baza danych wyczyszczona i migracje uruchomione"
-        return 0
+        
+        # Load test fixtures (seeders)
+        print_info "Ładowanie przykładowych danych testowych (seeders)..."
+        if $DOCKER_COMPOSE_CMD exec -T php php artisan db:seed --force; then
+            print_success "Przykładowe dane załadowane"
+            print_info "Załadowane dane:"
+            print_info "  • Filmy: The Matrix (1999), Inception (2010)"
+            print_info "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
+            print_info "  • Gatunki: Action, Sci-Fi, Thriller"
+            return 0
+        else
+            print_warning "Nie udało się załadować przykładowych danych (seeders)"
+            print_warning "Możesz załadować je ręcznie: docker compose exec php php artisan db:seed"
+            return 0  # Continue even if seeding fails
+        fi
     else
         print_error "Nie udało się wyczyścić bazy danych"
         print_warning "Sprawdź logi: $DOCKER_COMPOSE_CMD logs php"
