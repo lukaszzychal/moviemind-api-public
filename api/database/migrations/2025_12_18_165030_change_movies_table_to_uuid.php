@@ -42,11 +42,20 @@ return new class extends Migration
         }
 
         // PostgreSQL/MySQL migration
+        // IMPORTANT: Must drop all foreign keys that reference movies.id BEFORE changing the primary key
+
         // Drop foreign key constraint on default_description_id if it exists (PostgreSQL)
         if ($driver === 'pgsql') {
             DB::statement('ALTER TABLE movies DROP CONSTRAINT IF EXISTS movies_default_description_id_foreign');
+
+            // Drop all foreign keys that reference movies.id
+            DB::statement('ALTER TABLE movie_descriptions DROP CONSTRAINT IF EXISTS movie_descriptions_movie_id_foreign');
+            DB::statement('ALTER TABLE movie_genre DROP CONSTRAINT IF EXISTS movie_genre_movie_id_foreign');
+            DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_movie_id_foreign');
+            DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_movie_id_foreign');
+            DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_related_movie_id_foreign');
         } else {
-            // MySQL - try to drop foreign key if it exists
+            // MySQL - try to drop foreign keys if they exist
             Schema::table('movies', function (Blueprint $table) {
                 try {
                     $table->dropForeign(['default_description_id']);
@@ -54,9 +63,42 @@ return new class extends Migration
                     // Foreign key might not exist, ignore
                 }
             });
+
+            Schema::table('movie_descriptions', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['movie_id']);
+                } catch (\Exception $e) {
+                    // Foreign key might not exist, ignore
+                }
+            });
+
+            Schema::table('movie_genre', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['movie_id']);
+                } catch (\Exception $e) {
+                    // Foreign key might not exist, ignore
+                }
+            });
+
+            Schema::table('movie_person', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['movie_id']);
+                } catch (\Exception $e) {
+                    // Foreign key might not exist, ignore
+                }
+            });
+
+            Schema::table('movie_relationships', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['movie_id']);
+                    $table->dropForeign(['related_movie_id']);
+                } catch (\Exception $e) {
+                    // Foreign keys might not exist, ignore
+                }
+            });
         }
 
-        // Drop primary key constraint
+        // Now we can safely drop primary key constraint
         DB::statement('ALTER TABLE movies DROP CONSTRAINT IF EXISTS movies_pkey');
 
         // Change id column type from bigint to uuid
@@ -71,6 +113,34 @@ return new class extends Migration
             // Recreate index on default_description_id
             $table->index('default_description_id');
         });
+
+        // Recreate foreign keys that reference movies.id (now UUID)
+        if ($driver === 'pgsql') {
+            // Recreate foreign keys using raw SQL for PostgreSQL
+            DB::statement('ALTER TABLE movie_descriptions ADD CONSTRAINT movie_descriptions_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
+            DB::statement('ALTER TABLE movie_genre ADD CONSTRAINT movie_genre_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
+            DB::statement('ALTER TABLE movie_person ADD CONSTRAINT movie_person_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
+            DB::statement('ALTER TABLE movie_relationships ADD CONSTRAINT movie_relationships_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
+            DB::statement('ALTER TABLE movie_relationships ADD CONSTRAINT movie_relationships_related_movie_id_foreign FOREIGN KEY (related_movie_id) REFERENCES movies(id) ON DELETE CASCADE');
+        } else {
+            // MySQL - recreate foreign keys using Schema
+            Schema::table('movie_descriptions', function (Blueprint $table) {
+                $table->foreign('movie_id')->references('id')->on('movies')->cascadeOnDelete();
+            });
+
+            Schema::table('movie_genre', function (Blueprint $table) {
+                $table->foreign('movie_id')->references('id')->on('movies')->cascadeOnDelete();
+            });
+
+            Schema::table('movie_person', function (Blueprint $table) {
+                $table->foreign('movie_id')->references('id')->on('movies')->cascadeOnDelete();
+            });
+
+            Schema::table('movie_relationships', function (Blueprint $table) {
+                $table->foreign('movie_id')->references('id')->on('movies')->cascadeOnDelete();
+                $table->foreign('related_movie_id')->references('id')->on('movies')->cascadeOnDelete();
+            });
+        }
     }
 
     /**
