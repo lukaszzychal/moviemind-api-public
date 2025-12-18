@@ -17,25 +17,43 @@ alwaysApply: true
 
 **Exception:** Internal documentation files (`docs/pl/`) can remain in Polish, but all Git-related content (commits, PRs, issues) must be in English.
 
-## ⚠️ TDD BEFORE EVERYTHING
+## ⚠️ TDD BEFORE EVERYTHING (MANDATORY - NO EXCEPTIONS)
 
-**BEFORE starting implementation:**
+**BEFORE starting ANY implementation (controllers, actions, services, jobs, models, etc.):**
 
 1. **Check if this is a new feature or change to existing functionality**
 2. **If new feature:**
-   - Write test first (RED)
-   - Run test - it should FAIL
-   - Write code (GREEN)
-   - Run test - it should PASS
-   - Refactor (REFACTOR)
+   - ✅ Write test first (RED) - Define expected behavior
+   - ✅ Run test - it MUST FAIL (this proves functionality doesn't exist)
+   - ✅ Write minimal code needed to pass test (GREEN)
+   - ✅ Run test - it MUST PASS
+   - ✅ Refactor code (extract to Actions/Services if needed) (REFACTOR)
+   - ✅ Run all tests - all MUST PASS
 3. **If changing existing functionality:**
-   - Change tests first to expect new behavior (RED)
-   - Run tests - they should FAIL
-   - Change code (GREEN)
-   - Run tests - they should PASS
-   - Refactor (REFACTOR)
+   - ✅ Change tests first to expect new behavior (RED)
+   - ✅ Run tests - they MUST FAIL (this proves new behavior doesn't exist)
+   - ✅ Change code to implement new behavior (GREEN)
+   - ✅ Run tests - they MUST PASS
+   - ✅ Refactor code (REFACTOR)
+   - ✅ Run all tests - all MUST PASS
 
-**NEVER write code before tests!**
+**CRITICAL RULES:**
+
+- ❌ **NEVER write implementation code before tests** - This is a BLOCKER
+- ❌ **NEVER write controller methods before Feature Tests** - Even controllers need tests first
+- ❌ **NEVER write Actions/Services before Unit Tests** - TDD applies to ALL code
+- ❌ **NEVER skip tests "because it's quick"** - No exceptions
+- ✅ **ALWAYS write test first** - This defines requirements
+- ✅ **ALWAYS run test to verify it fails** - This proves functionality doesn't exist
+- ✅ **ALWAYS write minimal code** - Only what's needed to pass test
+- ✅ **ALWAYS refactor after GREEN** - Extract to Actions/Services if controller is too complex
+
+**If you wrote code before tests, you MUST:**
+1. **STOP** - Do not commit
+2. **Revert** - Undo implementation code
+3. **Write test first** - Define expected behavior
+4. **Then implement** - Write code to pass test
+5. **Refactor** - Extract to Actions/Services if needed
 
 ## Automatic Git Hooks Installation
 

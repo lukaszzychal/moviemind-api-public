@@ -8,9 +8,9 @@ alwaysApply: true
 
 **BEFORE starting implementation you MUST:**
 
-### 1. TDD Workflow Checklist (MANDATORY)
+### 1. TDD Workflow Checklist (MANDATORY - NO EXCEPTIONS)
 
-**BEFORE writing any implementation code:**
+**BEFORE writing ANY implementation code (including controllers, actions, services, jobs, etc.):**
 
 - [ ] **RED** - I wrote a test that defines expected behavior
 - [ ] **RED** - I ran the test - test FAILS (this is OK, this is the RED goal)
@@ -29,6 +29,16 @@ alwaysApply: true
 - [ ] First I wrote a test reproducing the bug (RED - test fails)
 - [ ] I fixed the bug in code (GREEN - test passes)
 - [ ] I refactored code (REFACTOR)
+
+**If adding new feature:**
+- [ ] First I wrote Feature Test for the endpoint/behavior (RED)
+- [ ] I ran test - test FAILS (expected)
+- [ ] I wrote minimal implementation (GREEN)
+- [ ] I ran test - test PASSES
+- [ ] I refactored (extracted to Actions/Services if needed) (REFACTOR)
+- [ ] I ran all tests - all PASS
+
+**CRITICAL: NEVER write implementation code before tests!**
 
 ## Basic principle
 
@@ -62,10 +72,14 @@ alwaysApply: true
 ## ❌ NEVER
 
 - ❌ **Do not write implementation code before writing tests** - this violates TDD principle
+- ❌ **Do not write controller methods before tests** - even controllers need tests first
+- ❌ **Do not write Actions/Services before tests** - TDD applies to ALL code
+- ❌ **Do not write "just a quick fix" without tests** - no exceptions
 - ❌ Do not commit code without tests
 - ❌ Do not skip tests "because it's a small change"
 - ❌ Do not ignore failing tests
 - ❌ Do not change code before changing tests (even if it's refactoring)
+- ❌ Do not write implementation and tests together - tests FIRST, then implementation
 
 ## Test types
 

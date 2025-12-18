@@ -1,0 +1,743 @@
+---
+alwaysApply: true
+---
+
+# Zasady Pisania Kodu
+
+## Filozofia: Pragmatyczne podejście
+
+- Zasady są narzędziami, nie celem samym w sobie
+- Czytelność > Zwięzłość
+- Prosty kod jest lepszy niż "idealny" kod zgodny ze wszystkimi zasadami
+- Nie stosuj zasad na siłę
+
+## KISS (Keep It Simple, Stupid)
+
+- **Prostota przed złożonością** - wybieraj prostsze rozwiązanie
+- **Nie przesadzaj z abstrakcją** - czasem prosty kod jest lepszy
+- **Unikaj przedwczesnej optymalizacji** - najpierw działający kod, potem optymalizacja
+- **Czytelność > Wydajność** (w większości przypadków)
+- **Najprostsze rozwiązanie które działa** jest najlepsze
+
+## SOLID (stosuj pragmatycznie)
+
+- **SRP**: Jedna klasa = jedna odpowiedzialność
+- **OCP**: Otwórz na rozszerzenia, zamknij na modyfikacje
+- **LSP**: Podklasy muszą być zastępowalne
+- **ISP**: Interfejsy specyficzne, nie ogólne
+- **DIP**: Zależność od abstrakcji, nie konkretnych implementacji
+
+## DRY (Don't Repeat Yourself)
+
+- Refaktoryzuj duplikację gdy występuje w 3+ miejscach
+- Nie przesadzaj z abstrakcją - czasem duplikacja jest czytelniejsza
+- Refaktoryzuj tylko gdy ma to praktyczny sens
+
+## CUPID
+
+- **C**omposable - łatwy do składania
+- **U**nix philosophy - robi jedną rzecz dobrze
+- **P**redictable - przewidywalny
+- **I**diomatic - zgodny z Laravel conventions
+- **D**omain-based - oparty na domenie
+
+## Wybór Architektury
+
+### Zasada: Start Simple, Scale When Needed
+
+**Zacznij od prostego rozwiązania, dodaj złożoność tylko gdy jest to uzasadnione.**
+
+### Proste rozwiązania (Skrypty Transakcji, Transaction Script)
+
+**Używaj gdy:**
+- ✅ Mały do średniego projektu (MVP, prototypy)
+- ✅ Prosta logika biznesowa (CRUD, proste operacje)
+- ✅ Mały zespół (1-3 osoby)
+- ✅ Szybki development i delivery
+- ✅ Niskie ryzyko zmian w wymaganiach
+- ✅ Prosta domena (nie wymaga złożonej logiki biznesowej)
+
+**Przykłady:**
+- Laravel Controllers z bezpośrednim dostępem do Models
+- Proste Services z logiką biznesową
+- Repository pattern (jeśli potrzebny)
+- Minimalna abstrakcja
+
+**Zalety:**
+- Szybki development
+- Łatwe do zrozumienia
+- Niskie koszty utrzymania (na początku)
+- Szybka iteracja
+
+### Zaawansowane architektury (DDD, Hexagonal, Clean Architecture)
+
+**Używaj gdy:**
+- ✅ Duży, złożony projekt
+- ✅ Złożona logika biznesowa (wiele reguł, stanów)
+- ✅ Wiele zespołów pracujących równolegle
+- ✅ Długa żywotność projektu (5+ lat)
+- ✅ Wysokie ryzyko zmian w wymaganiach
+- ✅ Złożona domena (domain experts, rich domain model)
+- ✅ Wymagana wysoka testowalność i izolacja
+- ✅ Potrzeba wielu portów (API, CLI, Web, Events)
+
+**Przykłady:**
+- Domain-Driven Design (DDD) - Entities, Value Objects, Domain Services
+- Hexagonal Architecture - Ports & Adapters
+- Clean Architecture - warstwy z dependency rules
+- CQRS + Event Sourcing (gdy potrzebne)
+
+**Zalety:**
+- Wysoka testowalność
+- Lepsza separacja odpowiedzialności
+- Łatwiejsze dodawanie nowych feature'ów
+- Niezależność od frameworka
+- Długoterminowa łatwość utrzymania
+
+**Wady:**
+- Więcej kodu (boilerplate)
+- Wolniejszy initial development
+- Więcej abstrakcji (może być trudniejsze do zrozumienia)
+- Wyższe koszty na początku
+
+### Migracja: Proste → Zaawansowane
+
+**Kiedy refaktoryzować do bardziej zaawansowanej architektury:**
+
+1. ✅ Kod staje się trudny do utrzymania
+2. ✅ Trudno dodać nowe feature'y bez zmiany istniejących
+3. ✅ Testy są trudne do napisania
+4. ✅ Dużo duplikacji logiki biznesowej
+5. ✅ Zespół rośnie i potrzebuje lepszej organizacji
+6. ✅ Domena staje się bardziej złożona
+7. ✅ Wymagana jest niezależność od frameworka
+
+**Kiedy NIE refaktoryzować:**
+- ❌ "Dla zasady" - bez konkretnego problemu
+- ❌ Gdy kod działa dobrze i jest łatwy w utrzymaniu
+- ❌ Gdy projekt jest mały i prosty
+- ❌ Gdy nie ma czasu/resources na refaktoryzację
+
+### Rekomendacje dla MovieMind API
+
+**Obecny stan:**
+- Prosta architektura z Services, Repositories, Controllers
+- Event-Driven dla asynchronicznych operacji (Jobs)
+- Laravel conventions
+
+**Kiedy rozważyć DDD/Hexagonal:**
+- Gdy logika biznesowa stanie się bardzo złożona
+- Gdy będzie potrzeba wielu różnych portów (Web, CLI, Queue, Events)
+- Gdy zespół urośnie i będzie potrzeba lepszej separacji
+- Gdy będzie potrzeba niezależności od Laravel (np. shared kernel)
+
+**Zasada:**
+**Zacznij prosto, refaktoryzuj gdy pojawią się konkretne problemy, nie "na zapas".**
+
+## GRASP (General Responsibility Assignment Software Patterns)
+
+Wzorce GRASP pomagają przypisywać odpowiedzialności w projektowaniu obiektowym:
+
+- **Information Expert** - przypisz odpowiedzialność klasie z informacją potrzebną do wykonania
+- **Creator** - przypisz odpowiedzialność tworzenia klasie która używa/zawiera obiekt
+- **Controller** - przypisz odpowiedzialność obsługi klasie reprezentującej system/fasadę
+- **Low Coupling** - minimalizuj zależności między klasami
+- **High Cohesion** - trzymaj powiązaną funkcjonalność razem
+- **Polymorphism** - używaj polimorfizmu dla wariacji w zachowaniu
+- **Pure Fabrication** - twórz klasy które nie reprezentują konceptów domenowych (np. Repository)
+- **Indirection** - używaj pośrednich obiektów do rozluźnienia zależności
+- **Protected Variations** - chroń przed wariacjami poprzez enkapsulację
+
+## YAGNI (You Aren't Gonna Need It)
+
+- **Nie dodawaj funkcjonalności dopóki nie jest potrzebna** - unikaj przedwczesnej abstrakcji
+- **Rozwiązuj dzisiejsze problemy, nie jutrzejsze** - skup się na obecnych wymaganiach
+- **Refaktoryzuj gdy potrzeba** - dodawaj złożoność tylko gdy jest konkretna potrzeba
+
+## Code Smells (naprawiaj gdy utrudniają pracę)
+
+### Smells strukturalne
+- **God Class/Method** - klasa/metoda robi za dużo → podziel na mniejsze klasy/metody
+- **Long Parameter List** - użyj DTO/Request object → utwórz obiekt parametrów
+- **Feature Envy** - metoda używa więcej danych z innej klasy → przenieś metodę do tej klasy
+- **Data Clumps** - grupy danych zawsze razem → użyj Value Object
+- **Primitive Obsession** - używanie prymitywów zamiast obiektów → użyj Value Objects
+- **Duplicate Code** - ten sam kod w wielu miejscach → wyciągnij do wspólnej metody/klasy
+- **Long Method** - metoda jest za długa → wyciągnij metody
+- **Large Class** - klasa ma za dużo odpowiedzialności → podziel na mniejsze klasy
+
+### Smells behawioralne
+- **Shotgun Surgery** - jedna zmiana wymaga wielu małych zmian → skonsoliduj powiązany kod
+- **Divergent Change** - klasa zmienia się z wielu powodów → podziel odpowiedzialności
+- **Parallel Inheritance Hierarchies** - podobne hierarchie dziedziczenia → połącz lub użyj kompozycji
+- **Lazy Class** - klasa nie robi wystarczająco → wbuduj lub połącz z inną klasą
+- **Speculative Generality** - kod na przyszłość który nie jest potrzebny → usuń (YAGNI)
+
+### Smells zależności
+- **Dependency Inversion Violation** - moduły wysokiego poziomu zależą od niskiego → użyj interfejsów/abstrakcji
+- **Tight Coupling** - klasy zależą za bardzo od siebie → wprowadź interfejsy/abstrakcje
+- **Circular Dependency** - klasy zależą od siebie → przerwij cykl
+
+## Wzorce Projektowe (używaj gdy odpowiednie)
+
+### Wzorce kreacyjne
+- **Factory** - tworzenie obiektów bez określania dokładnej klasy
+- **Builder** - konstruowanie złożonych obiektów krok po kroku
+- **Singleton** - zapewnij tylko jedną instancję (używaj oszczędnie, preferuj dependency injection)
+
+### Wzorce strukturalne
+- **Repository** - abstrakcja warstwy dostępu do danych
+- **Adapter** - spraw aby niekompatybilne interfejsy działały razem
+- **Decorator** - dodawanie zachowania do obiektów dynamicznie
+- **Facade** - uproszczony interfejs do złożonego podsystemu
+
+### Wzorce behawioralne
+- **Strategy** - zdefiniuj rodzinę algorytmów, uczyń je wymiennymi
+- **Observer** - powiadamiaj wiele obiektów o zmianach stanu (Laravel Events)
+- **Command** - enkapsuluj żądania jako obiekty (Laravel Jobs)
+- **Template Method** - zdefiniuj szkielet algorytmu, pozwól podklasom wypełnić szczegóły
+
+## Wzorce Architektoniczne
+
+- **Repository Pattern** - abstrakcja dostępu do danych (już używany w projekcie)
+- **Service Layer** - warstwa logiki biznesowej (już używana w projekcie)
+- **Event-Driven** - komunikacja przez eventy (Laravel Events/Listeners)
+- **CQRS** - oddzielenie modeli odczytu i zapisu (gdy potrzebne)
+- **Hexagonal Architecture** - porty i adaptery (gdy potrzebne)
+- **Clean Architecture** - reguła zależności z warstwami (gdy potrzebne)
+
+## Zasady Refaktoryzacji i Optymalizacji
+
+### Kiedy refaktoryzować
+1. ✅ **Duplikacja kodu** - ta sama logika w 3+ miejscach
+2. ✅ **Naruszenia zależności** - DIP, tight coupling
+3. ✅ **Code smells** - God Class, Long Method, etc.
+4. ✅ **Trudne do testowania** - trudno napisać testy jednostkowe
+5. ✅ **Trudne do rozszerzenia** - dodawanie feature'ów wymaga wielu zmian
+6. ✅ **Problemy z wydajnością** - zidentyfikowane wąskie gardła (najpierw zmierz!)
+
+### Refaktoryzacja podczas rozwoju feature'ów
+- **Zawsze refaktoryzuj dodając feature'y** - poprawiaj jakość kodu przyrostowo
+- **Naprawiaj code smells gdy je napotkasz** - nie kumuluj długu technicznego
+- **Stosuj SOLID/GRASP przy zmianach** - używaj zasad pragmatycznie
+- **Wyciągaj wspólną logikę** - używaj Repository, Service, lub Trait gdy odpowiednie
+
+### Wytyczne optymalizacji
+- **Najpierw zmierz** - profiluj przed optymalizacją
+- **Optymalizuj wąskie gardła** - skup się na rzeczywistych problemach wydajnościowych
+- **Nie optymalizuj przedwcześnie** - najpierw działający kod, potem optymalizacja
+- **Rozważ czytelność** - czytelny kod jest często wystarczająco szybki
+
+## Feature Flags
+
+### Typy flag
+
+W projekcie używamy dwóch typów feature flag:
+
+#### 1. Flagi produktowe (Product Flags)
+
+**Charakterystyka:**
+- Długoterminowe włączanie/wyłączanie funkcji w produkcji
+- Kategorie: `core_ai`, `moderation`, `public_api`, `billing`, `i18n`, `performance`, `analytics`, `recommendations`, `operations`
+- Mogą być `togglable: true` (zarządzane przez API admina)
+- Domyślna wartość zależy od funkcji (często `true` dla core features)
+
+**Przykłady:**
+- `ai_description_generation` - core_ai, default: true, togglable: true
+- `tmdb_verification` - moderation, default: true, togglable: true
+- `public_jobs_polling` - public_api, default: true, togglable: true
+
+**Kiedy używać:**
+- Funkcje które mogą być włączane/wyłączane w produkcji
+- Funkcje wymagające gradual rollout
+- Funkcje które mogą wymagać szybkiego rollbacku
+
+#### 2. Flagi developerskie (Developer Flags)
+
+**Charakterystyka:**
+- Tymczasowe flagi używane podczas developmentu
+- Kategoria: `experiments`
+- Zawsze `default: false` (domyślnie wyłączone)
+- Zawsze `togglable: false` (nie można toggleować przez API - bezpieczeństwo)
+- Opis zawiera słowa: "Experimental", "WIP", "Work in progress"
+
+**Przykłady:**
+- `generate_v2_pipeline` - experiments, default: false, togglable: false
+- `description_style_packs` - experiments, default: false, togglable: false
+
+**Kiedy używać:**
+- Każda nowa lub ryzykowna funkcja zaburzająca stabilność
+- Funkcje w trakcie developmentu (WIP)
+- Eksperymentalne funkcje testowane przed wdrożeniem
+- Funkcje które mogą powodować problemy w produkcji
+
+### Lifecycle flag developerskich
+
+1. **Tworzenie:**
+   - Twórz flagę developerską wraz z rozpoczęciem pracy nad funkcją
+   - Ustaw `category: 'experiments'`, `default: false`, `togglable: false`
+   - Dodaj opis z informacją że to eksperymentalna funkcja
+
+2. **Testowanie:**
+   - Testuj funkcję ręcznie włączając flagę w środowisku dev/staging
+   - NIE włączaj flag developerskich w produkcji
+   - Używaj flag developerskich do izolacji nowych funkcji
+
+3. **Wdrożenie:**
+   - Po wdrożeniu funkcji do produkcji, **obowiązkowo usuń flagę developerską**
+   - Usuń kod związany z flagą (warunki `Feature::active()`)
+   - Usuń definicję flagi z `config/pennant.php`
+   - Usuń klasę flagi z `app/Features/`
+   - Zaktualizuj testy (usuń testy związane z flagą)
+
+### Zasady nazewnictwa
+
+- **Flagi produktowe:** opisowe nazwy funkcji (np. `ai_description_generation`, `tmdb_verification`)
+- **Flagi developerskie:** nazwy z prefiksem eksperymentalnym lub sufiksem `_v2`, `_experimental` (np. `generate_v2_pipeline`)
+
+### Dokumentacja
+
+- Każda flaga musi mieć `description` w `config/pennant.php`
+- Flagi developerskie muszą mieć w opisie informację o tymczasowym charakterze
+- Po usunięciu flagi developerskiej, zaktualizuj dokumentację
+
+### Przykład konfiguracji
+
+```php
+// Flaga produktowa
+'ai_description_generation' => [
+    'class' => ai_description_generation::class,
+    'description' => 'Enables AI-generated movie/series descriptions.',
+    'category' => 'core_ai',
+    'default' => true,
+    'togglable' => true,
+],
+
+// Flaga developerska
+'generate_v2_pipeline' => [
+    'class' => generate_v2_pipeline::class,
+    'description' => 'Experimental v2 generation flow (WIP - remove after deployment).',
+    'category' => 'experiments',
+    'default' => false,
+    'togglable' => false,
+],
+```
+
+## Standardy kodowania
+
+- **PSR-12** - formatowanie (enforced przez Pint)
+- **Laravel Conventions** - konwencje Laravel
+- **Type hints** - zawsze używaj typów
+- **Strict types** - `declare(strict_types=1);` w plikach PHP
+- **Return types** - zawsze określaj zwracany typ
+- **Repository Pattern** - używaj Repository dla dostępu do danych, nie bezpośrednich zapytań Model w Jobach/Services
+- **Dependency Injection** - preferuj constructor injection, używaj service container
+
+## Czytelne nazwy metod (Readable Method Names)
+
+**Zasada:** Nazwy metod powinny być **samoopisujące się** - czytając nazwę metody, powinieneś od razu wiedzieć co robi.
+
+### ✅ DOBRE nazwy metod
+
+#### Controllers (RESTful, standardowe Laravel)
+- `index()` - lista zasobów
+- `show()` - pojedynczy zasób
+- `store()` - tworzenie nowego zasobu
+- `update()` - aktualizacja zasobu
+- `destroy()` - usuwanie zasobu
+- `search()` - wyszukiwanie z kryteriami
+- `related()` - powiązane zasoby
+- `refresh()` - odświeżenie danych
+
+#### Services (akcje biznesowe, czasowniki)
+- `retrieveMovie()` - pobieranie filmu
+- `searchMovies()` - wyszukiwanie filmów
+- `getSimilarMovies()` - pobieranie podobnych filmów
+- `createFromTmdb()` - tworzenie z danych TMDB
+- `verifyMovie()` - weryfikacja filmu
+- `formatMovieList()` - formatowanie listy filmów
+- `findBySlugWithRelations()` - znajdź po slug z relacjami
+- `normalizeDescriptionId()` - normalizacja ID opisu
+
+#### Actions (operacje biznesowe, czasowniki)
+- `handle()` - główna metoda akcji (standard dla Actions)
+- `queueMovieGeneration()` - kolejkowanie generowania
+- `getRelatedMovies()` - pobieranie powiązanych filmów
+- `buildDisambiguationOptions()` - budowanie opcji disambiguacji
+
+#### Response Formatters (formatowanie odpowiedzi)
+- `formatSuccess()` - formatowanie sukcesu
+- `formatError()` - formatowanie błędu
+- `formatNotFound()` - formatowanie "nie znaleziono"
+- `formatRelatedMovies()` - formatowanie powiązanych filmów
+- `formatGenerationQueued()` - formatowanie "generowanie w kolejce"
+- `formatDisambiguation()` - formatowanie disambiguacji
+
+#### Repositories (operacje na danych)
+- `findBySlug()` - znajdź po slug
+- `findBySlugWithRelations()` - znajdź po slug z relacjami
+- `searchMovies()` - wyszukaj filmy
+- `create()` - utwórz (z Model)
+- `update()` - aktualizuj (z Model)
+- `delete()` - usuń (z Model)
+
+### ❌ ZŁE nazwy metod (unikać)
+
+#### Zbyt ogólne / niejasne
+- ❌ `process()` - co przetwarza?
+- ❌ `do()` - co robi?
+- ❌ `handle()` - w kontrolerze (używaj tylko w Actions)
+- ❌ `execute()` - co wykonuje?
+- ❌ `run()` - co uruchamia?
+- ❌ `get()` - co pobiera? (używaj tylko w Repositories dla prostych operacji)
+
+#### Zbyt techniczne / implementacyjne
+- ❌ `getData()` - jakie dane?
+- ❌ `processArray()` - co robi z tablicą?
+- ❌ `buildResponse()` - jaki typ odpowiedzi?
+- ❌ `executeQuery()` - jakie zapytanie?
+
+#### Zbyt krótkie / skróty
+- ❌ `ret()` - co zwraca?
+- ❌ `proc()` - co przetwarza?
+- ❌ `fmt()` - co formatuje?
+- ❌ `norm()` - co normalizuje?
+
+#### Zbyt długie / redundantne
+- ❌ `getMovieFromDatabaseBySlug()` - "FromDatabase" jest redundantne (Repository już to implikuje)
+- ❌ `formatJsonResponseForMovieList()` - "JsonResponse" jest redundantne (Response Formatter już to implikuje)
+- ❌ `executeMovieSearchQueryInDatabase()` - zbyt szczegółowe
+
+### Zasady nazewnictwa
+
+#### 1. Używaj czasowników dla akcji
+- ✅ `retrieve`, `search`, `create`, `update`, `delete`, `format`, `normalize`
+- ❌ `movie`, `data`, `result`, `info`
+
+#### 2. Bądź konkretny, nie ogólny
+- ✅ `findBySlug()` zamiast `find()`
+- ✅ `formatMovieList()` zamiast `format()`
+- ✅ `getSimilarMovies()` zamiast `getMovies()`
+
+#### 3. Używaj kontekstu klasy
+- W `MovieRepository`: `findBySlug()` (nie `findMovieBySlug()` - klasa już mówi że to Movie)
+- W `MovieResponseFormatter`: `formatSuccess()` (nie `formatMovieSuccess()` - klasa już mówi że to Movie)
+- W `MovieService`: `retrieve()` (nie `retrieveMovie()` - klasa już mówi że to Movie)
+
+#### 4. Unikaj negacji w nazwach
+- ✅ `isValid()` zamiast `isNotValid()`
+- ✅ `hasDescription()` zamiast `doesNotHaveDescription()`
+- Jeśli potrzebujesz negacji, użyj `!` w kodzie, nie w nazwie
+
+#### 5. Używaj standardowych sufiksów/prefiksów
+- `get*()` - pobieranie danych (Services, Repositories)
+- `find*()` - wyszukiwanie (Repositories)
+- `create*()` - tworzenie (Services, Repositories)
+- `update*()` - aktualizacja (Services, Repositories)
+- `delete*()` - usuwanie (Services, Repositories)
+- `format*()` - formatowanie (Response Formatters)
+- `normalize*()` - normalizacja danych
+- `validate*()` - walidacja
+- `build*()` - budowanie struktur danych
+- `handle*()` - obsługa (tylko w Actions)
+
+#### 6. Nazwy metod powinny odpowiadać ich odpowiedzialności
+- **Controller:** `index()`, `show()`, `search()` - operacje HTTP
+- **Service:** `retrieveMovie()`, `getSimilarMovies()` - logika biznesowa
+- **Repository:** `findBySlug()`, `searchMovies()` - dostęp do danych
+- **Action:** `handle()` - główna operacja biznesowa
+- **Response Formatter:** `formatSuccess()`, `formatError()` - formatowanie odpowiedzi
+
+### Przykłady z projektu
+
+#### ✅ DOBRE przykłady z MovieController
+```php
+public function index(Request $request): JsonResponse
+public function search(SearchMovieRequest $request): JsonResponse
+public function show(Request $request, string $slug): JsonResponse
+public function related(Request $request, string $slug): JsonResponse
+public function refresh(string $slug): JsonResponse
+private function handleDisambiguationSelection(string $originalSlug, string $selectedSlug): JsonResponse
+private function cacheKey(string $slug, ?string $descriptionId = null): string
+private function normalizeDescriptionId(mixed $descriptionId): null|string|false
+```
+
+#### ✅ DOBRE przykłady z Services
+```php
+// MovieRetrievalService
+public function retrieveMovie(string $slug, ?string $descriptionId): MovieRetrievalResult
+private function handleMovieNotFound(string $slug, ?string $descriptionId): MovieRetrievalResult
+private function attemptToFindOrCreateMovieFromTmdb(string $slug, ?string $descriptionId, array $validation): MovieRetrievalResult
+private function findSelectedDescription(Movie $movie, ?string $descriptionId): MovieDescription|null|false
+
+// MovieSearchService
+public function search(array $criteria): SearchResult
+private function searchLocal(array $criteria): SearchResult
+private function searchExternal(array $criteria): SearchResult
+```
+
+#### ✅ DOBRE przykłady z Response Formatters
+```php
+// MovieResponseFormatter
+public function formatSuccess(Movie $movie, string $slug, ?MovieDescription $selectedDescription = null): JsonResponse
+public function formatError(string $errorMessage, int $statusCode, ?array $additionalData = null): JsonResponse
+public function formatNotFound(): JsonResponse
+public function formatRelatedMovies(Movie $movie, array $result): JsonResponse
+public function formatGenerationQueued(array $generationResult): JsonResponse
+```
+
+#### ✅ DOBRE przykłady z Actions
+```php
+// QueueMovieGenerationAction
+public function handle(string $slug, ?float $confidence = null, ?Movie $existingMovie = null, ...): array
+private function buildExistingJobResponse(string $slug, array $existingJob, ...): array
+private function normalizeLocale(?string $locale): ?string
+private function normalizeContextTag(?string $contextTag): ?string
+```
+
+### Checklist przed nazwaniem metody
+
+**Przed nazwaniem metody, zadaj sobie pytania:**
+
+- [ ] Czy nazwa jasno opisuje **co** metoda robi?
+- [ ] Czy nazwa używa **czasownika** (dla akcji)?
+- [ ] Czy nazwa jest **konkretna**, nie ogólna?
+- [ ] Czy nazwa nie jest **zbyt długa** (> 50 znaków)?
+- [ ] Czy nazwa nie jest **zbyt krótka** (< 5 znaków, chyba że standardowa jak `get()`)?
+- [ ] Czy nazwa **pasuje do kontekstu klasy** (nie powtarza nazwy klasy)?
+- [ ] Czy nazwa **nie używa negacji** (użyj `!` w kodzie)?
+- [ ] Czy nazwa **odpowiada odpowiedzialności** (Controller vs Service vs Repository)?
+
+**Jeśli odpowiedź na którekolwiek pytanie jest NIE, zmień nazwę!**
+
+## Czytelne warunki (Readable Conditions / Guard Clauses)
+
+**Zasada:** Zamiast długich warunków `if` z wieloma warunkami, wyciągnij logikę do metod pomocniczych z czytelnymi nazwami.
+
+### ❌ ZŁE: Długie warunki w if
+
+```php
+// ❌ ZŁE: Trudno zrozumieć co sprawdzamy
+if ($user->isActive() && $user->hasPermission('edit') && $movie->isPublished() && !$movie->isDeleted() && $movie->getOwnerId() === $user->getId()) {
+    // logika edycji
+}
+
+// ❌ ZŁE: Złożone warunki z negacjami
+if (!empty($criteria['q']) && ($typeFilter === 'all' || $typeFilter === 'collection') && $movie->hasRelationships()) {
+    // logika
+}
+
+// ❌ ZŁE: Warunki z wieloma sprawdzeniami
+if ($descriptionId !== null && $descriptionId !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $descriptionId)) {
+    // logika
+}
+```
+
+### ✅ DOBRE: Wyciągnięte do metod pomocniczych
+
+```php
+// ✅ DOBRE: Czytelny warunek z metodą pomocniczą
+if ($this->canEditMovie($user, $movie)) {
+    // logika edycji
+}
+
+private function canEditMovie(User $user, Movie $movie): bool
+{
+    return $user->isActive()
+        && $user->hasPermission('edit')
+        && $movie->isPublished()
+        && !$movie->isDeleted()
+        && $movie->getOwnerId() === $user->getId();
+}
+
+// ✅ DOBRE: Czytelne nazwy metod
+if ($this->shouldSearchCollection($criteria, $typeFilter, $movie)) {
+    // logika
+}
+
+private function shouldSearchCollection(array $criteria, string $typeFilter, Movie $movie): bool
+{
+    return !empty($criteria['q'])
+        && ($typeFilter === 'all' || $typeFilter === 'collection')
+        && $movie->hasRelationships();
+}
+
+// ✅ DOBRE: Metoda pomocnicza z czytelną nazwą
+if ($this->isValidDescriptionId($descriptionId)) {
+    // logika
+}
+
+private function isValidDescriptionId(?string $descriptionId): bool
+{
+    if ($descriptionId === null || $descriptionId === '') {
+        return false;
+    }
+
+    return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $descriptionId) === 1;
+}
+```
+
+### Zasady wyciągania warunków
+
+#### 1. Wyciągnij warunki gdy są 3+ warunki
+- ✅ `if ($this->isSomething())` - czytelne
+- ❌ `if ($a && $b && $c && $d)` - trudne do zrozumienia
+
+#### 2. Używaj czasowników dla metod sprawdzających
+- ✅ `isValid()`, `canEdit()`, `shouldProcess()`, `hasPermission()`, `isReady()`
+- ❌ `valid()`, `edit()`, `process()`, `permission()`
+
+#### 3. Używaj prefiksów dla typów sprawdzeń
+- `is*()` - sprawdzenie stanu/statusu (`isValid()`, `isPublished()`, `isActive()`)
+- `can*()` - sprawdzenie uprawnień/możliwości (`canEdit()`, `canDelete()`, `canAccess()`)
+- `has*()` - sprawdzenie posiadania (`hasPermission()`, `hasRelationships()`, `hasDescription()`)
+- `should*()` - sprawdzenie czy powinno się wykonać (`shouldProcess()`, `shouldCache()`, `shouldRetry()`)
+- `needs*()` - sprawdzenie czy potrzebuje (`needsRefresh()`, `needsUpdate()`)
+
+#### 4. Unikaj negacji w nazwach metod
+- ✅ `if (!$this->isValid())` - czytelne
+- ❌ `if ($this->isNotValid())` - mniej czytelne
+- ✅ `if ($this->isInvalid())` - akceptowalne (ale lepiej pozytywne)
+
+#### 5. Grupuj powiązane warunki
+- Jeśli warunki dotyczą tego samego konceptu, wyciągnij je razem
+- Przykład: wszystkie warunki dotyczące uprawnień użytkownika → `canEditMovie()`
+
+### Przykłady z projektu
+
+#### ✅ DOBRE: Guard clauses w kontrolerze
+
+```php
+public function show(Request $request, string $slug): JsonResponse
+{
+    $descriptionId = $this->normalizeDescriptionId($request->query('description_id'));
+    if ($descriptionId === false) {
+        return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
+    }
+
+    // Guard clause - wczesny return
+    if ($selectedSlug = $request->query('slug')) {
+        return $this->handleDisambiguationSelection($slug, (string) $selectedSlug);
+    }
+
+    // Reszta logiki...
+}
+```
+
+#### ✅ DOBRE: Wyciągnięte warunki w Service
+
+```php
+// MovieRetrievalService
+private function handleMovieNotFound(string $slug, ?string $descriptionId): MovieRetrievalResult
+{
+    if (!$this->isGenerationEnabled()) {
+        return MovieRetrievalResult::notFound();
+    }
+
+    $validation = SlugValidator::validateMovieSlug($slug);
+    if (!$this->isValidSlug($validation)) {
+        return MovieRetrievalResult::invalidSlug($slug, $validation);
+    }
+
+    return $this->attemptToFindOrCreateMovieFromTmdb($slug, $descriptionId, $validation);
+}
+
+private function isGenerationEnabled(): bool
+{
+    return Feature::active('ai_description_generation');
+}
+
+private function isValidSlug(array $validation): bool
+{
+    return $validation['valid'] === true;
+}
+```
+
+#### ✅ DOBRE: Czytelne warunki w metodzie pomocniczej
+
+```php
+// MovieController
+private function normalizeDescriptionId(mixed $descriptionId): null|string|false
+{
+    if ($this->isEmpty($descriptionId)) {
+        return null;
+    }
+
+    $descriptionId = (string) $descriptionId;
+
+    if (!$this->isValidUuid($descriptionId)) {
+        return false;
+    }
+
+    return $descriptionId;
+}
+
+private function isEmpty(mixed $value): bool
+{
+    return $value === null || $value === '';
+}
+
+private function isValidUuid(string $uuid): bool
+{
+    return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1;
+}
+```
+
+### Guard Clauses Pattern
+
+**Guard Clauses** - wczesne returny dla warunków błędów/nieprawidłowych stanów:
+
+```php
+// ❌ ZŁE: Zagnieżdżone if-else
+public function process(Request $request): JsonResponse
+{
+    if ($request->has('data')) {
+        $data = $request->input('data');
+        if (!empty($data)) {
+            if ($this->isValid($data)) {
+                // główna logika tutaj (zagnieżdżona głęboko)
+                return $this->handle($data);
+            } else {
+                return $this->formatError('Invalid data');
+            }
+        } else {
+            return $this->formatError('Empty data');
+        }
+    } else {
+        return $this->formatError('Missing data');
+    }
+}
+
+// ✅ DOBRE: Guard clauses - wczesne returny
+public function process(Request $request): JsonResponse
+{
+    if (!$request->has('data')) {
+        return $this->formatError('Missing data');
+    }
+
+    $data = $request->input('data');
+    if (empty($data)) {
+        return $this->formatError('Empty data');
+    }
+
+    if (!$this->isValid($data)) {
+        return $this->formatError('Invalid data');
+    }
+
+    // Główna logika na końcu (bez zagnieżdżenia)
+    return $this->handle($data);
+}
+```
+
+### Checklist przed napisaniem warunku
+
+**Przed napisaniem warunku `if`, zadaj sobie pytania:**
+
+- [ ] Czy warunek ma **3+ warunki** połączone `&&` lub `||`? → Wyciągnij do metody
+- [ ] Czy warunek jest **trudny do zrozumienia** na pierwszy rzut oka? → Wyciągnij do metody
+- [ ] Czy warunek **powtarza się** w kilku miejscach? → Wyciągnij do metody
+- [ ] Czy warunek zawiera **negacje** (`!`) które utrudniają czytelność? → Wyciągnij do metody
+- [ ] Czy warunek **miesza różne koncepty** (uprawnienia + stan + walidacja)? → Podziel na metody
+- [ ] Czy można użyć **guard clause** (wczesny return) zamiast zagnieżdżonych if-else? → Refaktoryzuj
+
+**Jeśli odpowiedź na którekolwiek pytanie jest TAK, wyciągnij warunek do metody pomocniczej!**

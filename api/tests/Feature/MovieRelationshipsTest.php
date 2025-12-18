@@ -132,14 +132,102 @@ class MovieRelationshipsTest extends TestCase
             'relationship_type' => RelationshipType::REMAKE,
         ]);
 
-        // When: A GET request is sent with type filter for SEQUEL only
-        $response = $this->getJson("/api/v1/movies/{$movie->slug}/related?type[]=SEQUEL");
+        // When: A GET request is sent with type filter for collection (SEQUEL is collection type)
+        $response = $this->getJson("/api/v1/movies/{$movie->slug}/related?type=collection");
 
-        // Then: Only sequel is returned
+        // Then: Both sequel and remake are returned (both are collection types)
+        $response->assertOk()
+            ->assertJsonCount(2, 'related_movies')
+            ->assertJsonPath('filters.type', 'collection')
+            ->assertJsonPath('filters.collection_count', 2)
+            ->assertJsonPath('filters.similar_count', 0);
+    }
+
+    /**
+     * Scenario: Filter related movies by new type filter (collection/similar/all)
+     *
+     * Given: A movie exists with collection relationships
+     * When: A GET request is sent with type=collection filter
+     * Then:
+     *   - Only collection relationships should be returned
+     *   - Response should include filters metadata
+     */
+    public function test_get_related_movies_filters_by_collection_type(): void
+    {
+        // Given: A movie with collection relationships
+        $movie = Movie::create([
+            'title' => 'The Matrix',
+            'slug' => 'the-matrix-1999',
+            'release_year' => 1999,
+        ]);
+
+        $sequel = Movie::create([
+            'title' => 'The Matrix Reloaded',
+            'slug' => 'the-matrix-reloaded-2003',
+            'release_year' => 2003,
+        ]);
+
+        MovieRelationship::create([
+            'movie_id' => $movie->id,
+            'related_movie_id' => $sequel->id,
+            'relationship_type' => RelationshipType::SEQUEL,
+        ]);
+
+        // When: A GET request is sent with type=collection filter
+        $response = $this->getJson("/api/v1/movies/{$movie->slug}/related?type=collection");
+
+        // Then: Only collection relationships are returned
         $response->assertOk()
             ->assertJsonCount(1, 'related_movies')
-            ->assertJsonPath('related_movies.0.relationship_type', 'SEQUEL')
-            ->assertJsonPath('related_movies.0.slug', $sequel->slug);
+            ->assertJsonPath('filters.type', 'collection')
+            ->assertJsonPath('filters.collection_count', 1)
+            ->assertJsonPath('filters.similar_count', 0)
+            ->assertJsonPath('related_movies.0.relationship_type', 'SEQUEL');
+    }
+
+    /**
+     * Scenario: Filter related movies by similar type
+     *
+     * Given: A movie exists with TMDB snapshot
+     * When: A GET request is sent with type=similar filter
+     * Then:
+     *   - Only similar movies from TMDB API should be returned (cached)
+     *   - Response should include filters metadata
+     */
+    public function test_get_related_movies_filters_by_similar_type(): void
+    {
+        // Given: A movie with TMDB snapshot (needed for similar movies)
+        $movie = Movie::create([
+            'title' => 'The Matrix',
+            'slug' => 'the-matrix-1999',
+            'release_year' => 1999,
+            'tmdb_id' => 603,
+        ]);
+
+        \App\Models\TmdbSnapshot::create([
+            'entity_type' => 'MOVIE',
+            'entity_id' => $movie->id,
+            'tmdb_id' => 603,
+            'tmdb_type' => 'movie',
+            'raw_data' => ['id' => 603],
+            'fetched_at' => now(),
+        ]);
+
+        // When: A GET request is sent with type=similar filter
+        // Note: This will return empty if TMDB API is not available in tests
+        $response = $this->getJson("/api/v1/movies/{$movie->slug}/related?type=similar");
+
+        // Then: Response structure is correct (may be empty if TMDB not available)
+        $response->assertOk()
+            ->assertJsonStructure([
+                'movie',
+                'related_movies',
+                'count',
+                'filters' => ['type', 'collection_count', 'similar_count'],
+                '_links',
+            ])
+            ->assertJsonPath('filters.type', 'similar')
+            ->assertJsonPath('filters.collection_count', 0);
     }
 
     /**

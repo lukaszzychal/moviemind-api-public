@@ -226,6 +226,15 @@ Before each commit you MUST run:
 - Use API Resources for responses
 - Use Events + Jobs for asynchronous operations
 
+### Controller Architecture (MANDATORY)
+- **Thin Controllers** - Controllers MUST be thin (max 20-30 lines per method)
+- **Delegate to Actions** - Use Actions (`App\Actions\*`) for business logic
+- **Delegate to Services** - Use Services (`App\Services\*`) for external dependencies, caching, complex operations
+- **Use Repositories** - Use Repositories (`App\Repositories\*`) for database access
+- **Use Response Formatters** - Use Response Formatters (`App\Http\Responses\*`) for consistent API responses
+- **NEVER** put business logic, database queries, external API calls, or complex transformations directly in controllers
+- See `docs/cursor-rules/pl/controller-architecture.mdc` for detailed patterns and examples
+
 ---
 
 ## 📚 Key Documentation Files
@@ -285,11 +294,18 @@ POST /api/v1/generate
 
 ## 💡 Important Notes
 
-1. **TDD** - Test before code, always
-2. **Tools** - Pint, PHPStan, tests before commit
-3. **Readability** - Code must be understandable to others
-4. **Pragmatism** - Principles are tools, not goals in themselves
-5. **Tasks** - Always start from `docs/issue/TASKS.md`
+1. **TDD** - Test before code, ALWAYS. NEVER write implementation code before tests. This is MANDATORY with NO EXCEPTIONS.
+   - Write test first (RED) → Run test (should FAIL) → Write code (GREEN) → Run test (should PASS) → Refactor
+   - See `docs/cursor-rules/pl/testing.mdc` for detailed TDD workflow
+2. **Thin Controllers** - Controllers MUST be thin (max 20-30 lines per method)
+   - Delegate business logic to Actions (`App\Actions\*`) or Services (`App\Services\*`)
+   - Controllers should ONLY: validate requests, delegate to Actions/Services, format responses
+   - NEVER put business logic, database queries, external API calls, or complex transformations in controllers
+   - See `docs/cursor-rules/pl/controller-architecture.mdc` for detailed patterns
+3. **Tools** - Pint, PHPStan, tests before commit
+4. **Readability** - Code must be understandable to others
+5. **Pragmatism** - Principles are tools, not goals in themselves
+6. **Tasks** - Always start from `docs/issue/TASKS.md`
 
 ---
 
