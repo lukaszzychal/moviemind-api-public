@@ -215,7 +215,7 @@ class MovieResponseFormatter
                 'match_type' => $searchResult->matchType,
                 'count' => $searchResult->total,
                 'results' => $searchResult->results,
-
+                'hint' => 'Use the slug from results to access specific movie (e.g., GET /api/v1/movies/{slug})',
             ], $statusCode);
         }
 
@@ -224,6 +224,7 @@ class MovieResponseFormatter
                 'error' => 'No movies found',
                 'message' => 'No movies match your search criteria.',
                 'match_type' => $searchResult->matchType,
+                'total' => $searchResult->total,
                 'results' => [],
             ], $statusCode);
         }
