@@ -226,6 +226,15 @@ Before each commit you MUST run:
 - Use API Resources for responses
 - Use Events + Jobs for asynchronous operations
 
+### Controller Architecture (MANDATORY)
+- **Thin Controllers** - Controllers MUST be thin (max 20-30 lines per method)
+- **Delegate to Actions** - Use Actions (`App\Actions\*`) for business logic
+- **Delegate to Services** - Use Services (`App\Services\*`) for external dependencies, caching, complex operations
+- **Use Repositories** - Use Repositories (`App\Repositories\*`) for database access
+- **Use Response Formatters** - Use Response Formatters (`App\Http\Responses\*`) for consistent API responses
+- **NEVER** put business logic, database queries, external API calls, or complex transformations directly in controllers
+- See `docs/cursor-rules/pl/controller-architecture.mdc` for detailed patterns and examples
+
 ---
 
 ## 📚 Key Documentation Files
