@@ -737,25 +737,61 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
 
     /**
      * Get collection details from TMDb.
+     * Uses direct HTTP call to /collection/{collection_id} endpoint since the library doesn't have a collections client.
      *
-     * @return array{id: int, name: string, parts?: array<int, array{id: int, title: string, release_date?: string}>}
+     * @return array<string, mixed>
      */
     public function getCollectionDetails(int $collectionId): array
     {
         try {
             $client = $this->getClient();
             if (! $client) {
+                Log::warning('TmdbVerificationService: No client available for collection details', [
+                    'collection_id' => $collectionId,
+                ]);
+
                 return [];
             }
 
-            $response = $client->collections()->getDetails($collectionId);
-            $data = json_decode($response->getBody()->getContents(), true);
+            // Use HTTP client directly since the library doesn't have a collections() client
+            // TMDB API endpoint: GET /collection/{collection_id}
+            $httpClient = $client->getHttpClient();
+            $response = $httpClient->get("collection/{$collectionId}");
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
 
-            return $data ?? [];
+            if ($statusCode !== 200) {
+                Log::warning('TmdbVerificationService: Non-200 status code for collection details', [
+                    'collection_id' => $collectionId,
+                    'status_code' => $statusCode,
+                    'response_body' => substr($body, 0, 500),
+                ]);
+
+                return [];
+            }
+
+            if (empty($data)) {
+                Log::warning('TmdbVerificationService: Empty response for collection details', [
+                    'collection_id' => $collectionId,
+                    'status_code' => $statusCode,
+                ]);
+
+                return [];
+            }
+
+            Log::debug('TmdbVerificationService: Collection details retrieved', [
+                'collection_id' => $collectionId,
+                'has_parts' => isset($data['parts']),
+                'parts_count' => isset($data['parts']) ? count($data['parts']) : 0,
+            ]);
+
+            return $data;
         } catch (\Throwable $e) {
             Log::warning('TmdbVerificationService: failed to get collection details', [
                 'collection_id' => $collectionId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [];

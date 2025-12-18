@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
  *
  * @author MovieMind API Team
  *
+ * @property int|null $tmdb_id
  * @property-read Pivot|null $pivot
  */
 class Movie extends Model
@@ -238,10 +239,13 @@ class Movie extends Model
 
         $relationships = $query->get();
 
-        return $relationships->map(function (MovieRelationship $relationship) {
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Movie> $relatedMovies */
+        $relatedMovies = $relationships->map(function (MovieRelationship $relationship) {
             return $relationship->movie_id === $this->id
                 ? $relationship->relatedMovie
                 : $relationship->movie;
         })->filter()->unique('id');
+
+        return $relatedMovies;
     }
 }

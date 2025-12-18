@@ -57,6 +57,92 @@ class MovieController extends Controller
         $criteria = $request->getSearchCriteria();
         $searchResult = $this->movieSearchService->search($criteria);
 
+        // If query looks like a slug, check if it matches exactly one result
+        if (! empty($criteria['q'])) {
+            $query = $criteria['q'];
+
+            // Check if query is already in slug format (contains hyphens, no spaces, lowercase)
+            // or try converting it to slug format
+            $potentialSlug = preg_match('/^[a-z0-9-]+$/', $query) ? $query : \Illuminate\Support\Str::slug($query);
+
+            $validation = SlugValidator::validateMovieSlug($potentialSlug);
+
+            if ($validation['valid']) {
+                // Check if potential slug matches exactly one result in search results
+                $matchingResults = array_filter($searchResult->results, function ($result) use ($potentialSlug) {
+                    $resultSlug = $result['slug'] ?? $result['suggested_slug'] ?? null;
+
+                    return $resultSlug === $potentialSlug;
+                });
+
+                // If exactly one match found, queue generation for that specific movie
+                if (count($matchingResults) === 1) {
+                    $matchedResult = reset($matchingResults);
+
+                    // If it's an external result (needs creation), queue generation
+                    if (($matchedResult['source'] ?? null) === 'external' && ($matchedResult['needs_creation'] ?? false)) {
+                        // Find the full TMDB data for this movie
+                        $parsed = Movie::parseSlug($potentialSlug);
+                        $title = $parsed['title'];
+                        $tmdbResults = $this->tmdbVerificationService->searchMovies($title, 10);
+
+                        foreach ($tmdbResults as $tmdbMovie) {
+                            $year = ! empty($tmdbMovie['release_date']) ? (int) substr($tmdbMovie['release_date'], 0, 4) : null;
+                            $director = $tmdbMovie['director'] ?? null;
+                            $generatedSlug = Movie::generateSlug($tmdbMovie['title'], $year, $director);
+
+                            if ($generatedSlug === $potentialSlug) {
+                                $generationResult = $this->queueMovieGenerationAction->handle(
+                                    $potentialSlug,
+                                    confidence: $validation['confidence'],
+                                    locale: \App\Enums\Locale::EN_US->value,
+                                    tmdbData: $tmdbMovie
+                                );
+
+                                return $this->responseFormatter->formatGenerationQueued($generationResult);
+                            }
+                        }
+                    }
+                }
+
+                // If no results found, try to verify it in TMDB and queue generation
+                if ($searchResult->isEmpty()) {
+                    // First try: use retrieveMovie (which uses verifyMovie - exact match)
+                    $result = $this->movieRetrievalService->retrieveMovie($potentialSlug, null);
+
+                    if ($result->isGenerationQueued()) {
+                        return $this->responseFormatter->formatGenerationQueued($result->getAdditionalData() ?? []);
+                    }
+
+                    // Second try: if verifyMovie didn't find it (e.g., wrong year in slug),
+                    // try searching TMDB and matching by generated slug
+                    $parsed = Movie::parseSlug($potentialSlug);
+                    $title = $parsed['title'];
+
+                    // Search TMDB with title (without year, as year in slug might be wrong)
+                    $tmdbResults = $this->tmdbVerificationService->searchMovies($title, 10);
+
+                    foreach ($tmdbResults as $tmdbMovie) {
+                        $year = ! empty($tmdbMovie['release_date']) ? (int) substr($tmdbMovie['release_date'], 0, 4) : null;
+                        $director = $tmdbMovie['director'] ?? null;
+                        $generatedSlug = Movie::generateSlug($tmdbMovie['title'], $year, $director);
+
+                        // If generated slug matches potential slug, queue generation
+                        if ($generatedSlug === $potentialSlug) {
+                            $generationResult = $this->queueMovieGenerationAction->handle(
+                                $potentialSlug,
+                                confidence: $validation['confidence'],
+                                locale: \App\Enums\Locale::EN_US->value,
+                                tmdbData: $tmdbMovie
+                            );
+
+                            return $this->responseFormatter->formatGenerationQueued($generationResult);
+                        }
+                    }
+                }
+            }
+        }
+
         return $this->responseFormatter->formatSearchResult($searchResult);
     }
 
@@ -231,8 +317,8 @@ class MovieController extends Controller
             ]);
 
             $movieData = $resource->resolve();
-            $movieData['relationship_type'] = $relationship?->relationship_type?->value ?? null;
-            $movieData['relationship_label'] = $relationship?->relationship_type?->label() ?? null;
+            $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
+            $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
             $movieData['relationship_order'] = $relationship?->order;
 
             return $movieData;

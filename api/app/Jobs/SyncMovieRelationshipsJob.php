@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Enums\RelationshipType;
 use App\Models\Movie;
 use App\Models\MovieRelationship;
+use App\Services\TmdbMovieCreationService;
 use App\Services\TmdbVerificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -36,8 +37,10 @@ class SyncMovieRelationshipsJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(TmdbVerificationService $tmdbVerificationService): void
-    {
+    public function handle(
+        TmdbVerificationService $tmdbVerificationService,
+        TmdbMovieCreationService $tmdbMovieCreationService
+    ): void {
         Log::info('SyncMovieRelationshipsJob started', [
             'movie_id' => $this->movieId,
             'attempt' => $this->attempts(),
@@ -52,6 +55,7 @@ class SyncMovieRelationshipsJob implements ShouldQueue
             return;
         }
 
+        /** @var \App\Models\TmdbSnapshot|null $snapshot */
         $snapshot = $movie->tmdbSnapshot;
         if (! $snapshot) {
             Log::warning('SyncMovieRelationshipsJob: No TMDb snapshot found for movie', [
@@ -62,6 +66,16 @@ class SyncMovieRelationshipsJob implements ShouldQueue
         }
 
         $tmdbId = $snapshot->tmdb_id;
+
+        // Ensure movie has tmdb_id set (for relationship matching)
+        if (! $movie->tmdb_id) {
+            $movie->update(['tmdb_id' => $tmdbId]);
+            Log::info('SyncMovieRelationshipsJob: Updated movie tmdb_id from snapshot', [
+                'movie_id' => $this->movieId,
+                'tmdb_id' => $tmdbId,
+            ]);
+        }
+
         $movieDetails = $tmdbVerificationService->getMovieDetails($tmdbId);
 
         if (empty($movieDetails)) {
@@ -75,12 +89,12 @@ class SyncMovieRelationshipsJob implements ShouldQueue
 
         // Sync relationships from collection (sequels, prequels, series)
         if (! empty($movieDetails['belongs_to_collection'])) {
-            $this->syncCollectionRelationships($movie, $movieDetails['belongs_to_collection'], $tmdbVerificationService);
+            $this->syncCollectionRelationships($movie, $snapshot, $movieDetails['belongs_to_collection'], $tmdbVerificationService, $tmdbMovieCreationService);
         }
 
         // Sync similar movies (SAME_UNIVERSE)
         if (! empty($movieDetails['similar']['results'])) {
-            $this->syncSimilarMovies($movie, $movieDetails['similar']['results'], $tmdbVerificationService);
+            $this->syncSimilarMovies($movie, $movieDetails['similar']['results'], $tmdbVerificationService, $tmdbMovieCreationService);
         }
 
         Log::info('SyncMovieRelationshipsJob finished', [
@@ -93,29 +107,41 @@ class SyncMovieRelationshipsJob implements ShouldQueue
      *
      * @param  array{id: int, name: string}  $collection
      */
+    /**
+     * @param  array<string, mixed>  $collection
+     */
     private function syncCollectionRelationships(
         Movie $movie,
+        \App\Models\TmdbSnapshot $snapshot,
         array $collection,
-        TmdbVerificationService $tmdbVerificationService
+        TmdbVerificationService $tmdbVerificationService,
+        TmdbMovieCreationService $tmdbMovieCreationService
     ): void {
-        $collectionId = $collection['id'] ?? null;
+        $collectionId = $collection['id'];
         if (! $collectionId) {
             return;
         }
 
         try {
             $collectionData = $tmdbVerificationService->getCollectionDetails($collectionId);
-            if (empty($collectionData) || empty($collectionData['parts'])) {
+            if (empty($collectionData) || ! isset($collectionData['parts']) || empty($collectionData['parts'])) {
+                Log::info('SyncMovieRelationshipsJob: Collection has no parts or empty', [
+                    'movie_id' => $movie->id,
+                    'collection_id' => $collectionId,
+                    'collection_data_keys' => array_keys($collectionData),
+                ]);
+
                 return;
             }
 
-            $currentTmdbId = $movie->tmdb_id;
+            // Use tmdb_id from snapshot (more reliable than movie->tmdb_id which may be NULL)
+            $currentTmdbId = $snapshot->tmdb_id;
             $parts = $collectionData['parts'];
             $currentIndex = null;
 
             // Find current movie's position in collection
             foreach ($parts as $index => $part) {
-                if (($part['id'] ?? null) === $currentTmdbId) {
+                if (isset($part['id']) && $part['id'] === $currentTmdbId) {
                     $currentIndex = $index;
                     break;
                 }
@@ -139,8 +165,37 @@ class SyncMovieRelationshipsJob implements ShouldQueue
                 // Find or create related movie
                 $relatedMovie = Movie::where('tmdb_id', $relatedTmdbId)->first();
                 if (! $relatedMovie) {
-                    // Movie doesn't exist yet - skip for now (will be created when accessed)
-                    continue;
+                    // Movie doesn't exist yet - create it from TMDB data
+                    $relatedTmdbData = [
+                        'id' => $relatedTmdbId,
+                        'title' => ($part['title'] ?? '') ?: 'Unknown',
+                        'release_date' => $part['release_date'] ?? null,
+                        'overview' => null, // Overview not available in collection parts
+                        'director' => null, // Director not available in collection parts
+                    ];
+
+                    // Generate slug for the related movie
+                    $releaseYear = ! empty($relatedTmdbData['release_date'])
+                        ? (int) substr($relatedTmdbData['release_date'], 0, 4)
+                        : null;
+                    $generatedSlug = Movie::generateSlug($relatedTmdbData['title'], $releaseYear, null);
+
+                    $relatedMovie = $tmdbMovieCreationService->createFromTmdb($relatedTmdbData, $generatedSlug);
+
+                    if (! $relatedMovie) {
+                        Log::warning('SyncMovieRelationshipsJob: Failed to create related movie', [
+                            'tmdb_id' => $relatedTmdbId,
+                            'title' => $relatedTmdbData['title'],
+                        ]);
+
+                        continue;
+                    }
+
+                    Log::info('SyncMovieRelationshipsJob: Created related movie from collection', [
+                        'movie_id' => $movie->id,
+                        'related_movie_id' => $relatedMovie->id,
+                        'related_tmdb_id' => $relatedTmdbId,
+                    ]);
                 }
 
                 // Determine relationship type based on position
@@ -170,12 +225,13 @@ class SyncMovieRelationshipsJob implements ShouldQueue
     /**
      * Sync similar movies (SAME_UNIVERSE relationship).
      *
-     * @param  array<int, array{id: int, title: string, release_date?: string}>  $similarMovies
+     * @param  array<int, array<string, mixed>>  $similarMovies
      */
     private function syncSimilarMovies(
         Movie $movie,
         array $similarMovies,
-        TmdbVerificationService $tmdbVerificationService
+        TmdbVerificationService $tmdbVerificationService,
+        TmdbMovieCreationService $tmdbMovieCreationService
     ): void {
         // Limit to top 10 similar movies
         $similarMovies = array_slice($similarMovies, 0, 10);
@@ -189,8 +245,37 @@ class SyncMovieRelationshipsJob implements ShouldQueue
             // Find or create related movie
             $relatedMovie = Movie::where('tmdb_id', $tmdbId)->first();
             if (! $relatedMovie) {
-                // Movie doesn't exist yet - skip for now
-                continue;
+                // Movie doesn't exist yet - create it from TMDB data
+                $relatedTmdbData = [
+                    'id' => $tmdbId,
+                    'title' => ($similarMovie['title'] ?? '') ?: 'Unknown',
+                    'release_date' => $similarMovie['release_date'] ?? null,
+                    'overview' => null, // Overview not available in similar movies list
+                    'director' => null, // Director not available in similar movies list
+                ];
+
+                // Generate slug for the related movie
+                $releaseYear = ! empty($relatedTmdbData['release_date'])
+                    ? (int) substr($relatedTmdbData['release_date'], 0, 4)
+                    : null;
+                $generatedSlug = Movie::generateSlug($relatedTmdbData['title'], $releaseYear, null);
+
+                $relatedMovie = $tmdbMovieCreationService->createFromTmdb($relatedTmdbData, $generatedSlug);
+
+                if (! $relatedMovie) {
+                    Log::warning('SyncMovieRelationshipsJob: Failed to create similar movie', [
+                        'tmdb_id' => $tmdbId,
+                        'title' => $relatedTmdbData['title'],
+                    ]);
+
+                    continue;
+                }
+
+                Log::info('SyncMovieRelationshipsJob: Created similar movie', [
+                    'movie_id' => $movie->id,
+                    'related_movie_id' => $relatedMovie->id,
+                    'related_tmdb_id' => $tmdbId,
+                ]);
             }
 
             // Create SAME_UNIVERSE relationship if it doesn't exist
