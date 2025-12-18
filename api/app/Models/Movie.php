@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RelationshipType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,6 +12,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Str;
 
 /**
+ * Movie model.
+ *
+ * @author MovieMind API Team
+ *
+ * @property int|null $tmdb_id
  * @property-read Pivot|null $pivot
  */
 class Movie extends Model
@@ -182,5 +188,64 @@ class Movie extends Model
     {
         return $this->belongsToMany(Person::class, 'movie_person')
             ->withPivot(['role', 'character_name', 'job', 'billing_order']);
+    }
+
+    /**
+     * Get movies related to this movie (sequels, prequels, remakes, etc.).
+     */
+    public function relatedMovies(): BelongsToMany
+    {
+        return $this->belongsToMany(Movie::class, 'movie_relationships', 'movie_id', 'related_movie_id')
+            ->withPivot(['relationship_type', 'order'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get movies that relate to this movie (reverse relationship).
+     */
+    public function relatedFromMovies(): BelongsToMany
+    {
+        return $this->belongsToMany(Movie::class, 'movie_relationships', 'related_movie_id', 'movie_id')
+            ->withPivot(['relationship_type', 'order'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the TMDb snapshot for this movie.
+     */
+    public function tmdbSnapshot(): HasOne
+    {
+        return $this->hasOne(TmdbSnapshot::class, 'entity_id')
+            ->where('entity_type', 'MOVIE');
+    }
+
+    /**
+     * Get all related movies (both directions) filtered by type.
+     *
+     * @param  array<string>|null  $types  Relationship types to filter by (null = all types)
+     * @return \Illuminate\Database\Eloquent\Collection<int, Movie>
+     */
+    public function getRelatedMovies(?array $types = null): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = MovieRelationship::where(function ($q) {
+            $q->where('movie_id', $this->id)
+                ->orWhere('related_movie_id', $this->id);
+        })->with(['movie', 'relatedMovie']);
+
+        if ($types !== null && count($types) > 0) {
+            $enumTypes = array_map(fn ($type) => RelationshipType::from(strtoupper($type)), $types);
+            $query->whereIn('relationship_type', $enumTypes);
+        }
+
+        $relationships = $query->get();
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Movie> $relatedMovies */
+        $relatedMovies = $relationships->map(function (MovieRelationship $relationship) {
+            return $relationship->movie_id === $this->id
+                ? $relationship->relatedMovie
+                : $relationship->movie;
+        })->filter()->unique('id');
+
+        return $relatedMovies;
     }
 }

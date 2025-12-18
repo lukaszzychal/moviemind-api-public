@@ -1,33 +1,33 @@
 ---
 alwaysApply: true
 ---
-# Filozofia i Kluczowe Zasady
+# Philosophy and Key Principles
 
-## 💡 Kluczowe zasady w pigułce
+## 💡 Key principles in a nutshell
 
-1. **TDD** - Test przed kodem, zawsze
-2. **Narzędzia** - Pint, PHPStan, testy przed commitem
-3. **SOLID** - Stosuj pragmatycznie, nie na siłę
-4. **DRY** - Usuwaj duplikację, ale nie przesadzaj
-5. **Czytelność** - Kod ma być zrozumiały dla innych
-6. **Refaktoryzacja** - Gdy kod jest trudny do utrzymania
-7. **Bezpieczeństwo** - Zawsze sprawdzaj sekrety przed commitem
+1. **TDD** - Test before code, always
+2. **Tools** - Pint, PHPStan, tests before commit
+3. **SOLID** - Apply pragmatically, not forcefully
+4. **DRY** - Remove duplication, but don't overdo it
+5. **Readability** - Code must be understandable to others
+6. **Refactoring** - When code is hard to maintain
+7. **Security** - Always check secrets before commit
 
-## Filozofia
+## Philosophy
 
-**Zasady są narzędziami, nie celem samym w sobie.**
+**Principles are tools, not goals in themselves.**
 
-- Kod ma być **czytelny** i **zrozumiały**
-- Stosuj zasady **pragmatycznie**, nie fanatycznie
-- **Prostota** jest lepsza niż nadmierna abstrakcja
-- **Czytelność** jest ważniejsza niż "idealna" architektura
+- Code should be **readable** and **understandable**
+- Apply principles **pragmatically**, not fanatically
+- **Simplicity** is better than excessive abstraction
+- **Readability** is more important than "perfect" architecture
 
-## 📚 Dodatkowe Zasoby
+## 📚 Additional Resources
 
-- **Zadania:** `docs/issue/TASKS.md` - ⭐ ZACZYNAJ OD TEGO
-- **Szczegółowe zasady:** `docs/AI_AGENT_CONTEXT_RULES.md`
-- **Testy:** `docs/TESTING_STRATEGY.md`
-- **Narzędzia jakości:** `docs/CODE_QUALITY_TOOLS.md`
-- **Architektura:** `docs/ARCHITECTURE_ANALYSIS.md`
-- **Kontekst projektu:** `CLAUDE.md`
-- **Wyjaśnienie Cursor:** `docs/CURSOR_RULES_EXPLANATION.md`
+- **Tasks:** `docs/issue/TASKS.md` - ⭐ START HERE
+- **Detailed rules:** `docs/AI_AGENT_CONTEXT_RULES.md`
+- **Tests:** `docs/TESTING_STRATEGY.md`
+- **Quality tools:** `docs/CODE_QUALITY_TOOLS.md`
+- **Architecture:** `docs/ARCHITECTURE_ANALYSIS.md`
+- **Project context:** `CLAUDE.md`
+- **Cursor explanation:** `docs/CURSOR_RULES_EXPLANATION.md`

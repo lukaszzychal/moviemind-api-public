@@ -10,6 +10,7 @@ use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
 use App\Http\Responses\MovieResponseFormatter;
 use App\Models\Movie;
+use App\Models\MovieRelationship;
 use App\Repositories\MovieRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
@@ -55,6 +56,62 @@ class MovieController extends Controller
     {
         $criteria = $request->getSearchCriteria();
         $searchResult = $this->movieSearchService->search($criteria);
+
+        // If searchResult has results (found, partial, or ambiguous), return it immediately
+        // For search endpoint, ambiguous results should return 200 (not 300) with normal structure
+        // Don't try fallback logic if we already have results
+        if (! $searchResult->isEmpty()) {
+            // For search endpoint, always return 200 with normal structure (even if ambiguous)
+            // Use toArray() directly to get consistent structure
+            return response()->json($searchResult->toArray(), 200);
+        }
+
+        // Fallback: If no results found and query looks like a slug, try to verify it in TMDB and queue generation
+        if (! empty($criteria['q'])) {
+            $query = $criteria['q'];
+
+            // Check if query is already in slug format (contains hyphens, no spaces, lowercase)
+            // or try converting it to slug format
+            $potentialSlug = preg_match('/^[a-z0-9-]+$/', $query) ? $query : \Illuminate\Support\Str::slug($query);
+
+            $validation = SlugValidator::validateMovieSlug($potentialSlug);
+
+            if ($validation['valid']) {
+                // First try: use retrieveMovie (which uses verifyMovie - exact match)
+                $result = $this->movieRetrievalService->retrieveMovie($potentialSlug, null);
+
+                // Only queue generation if it's a valid single match, not disambiguation
+                if ($result->isGenerationQueued() && ! $result->isDisambiguation()) {
+                    return $this->responseFormatter->formatGenerationQueued($result->getAdditionalData() ?? []);
+                }
+
+                // Second try: if verifyMovie didn't find it (e.g., wrong year in slug),
+                // try searching TMDB and matching by generated slug
+                $parsed = Movie::parseSlug($potentialSlug);
+                $title = $parsed['title'];
+
+                // Search TMDB with title (without year, as year in slug might be wrong)
+                $tmdbResults = $this->tmdbVerificationService->searchMovies($title, 10);
+
+                foreach ($tmdbResults as $tmdbMovie) {
+                    $year = ! empty($tmdbMovie['release_date']) ? (int) substr($tmdbMovie['release_date'], 0, 4) : null;
+                    $director = $tmdbMovie['director'] ?? null;
+                    $generatedSlug = Movie::generateSlug($tmdbMovie['title'], $year, $director);
+
+                    // If generated slug matches potential slug, queue generation
+                    if ($generatedSlug === $potentialSlug) {
+                        $generationResult = $this->queueMovieGenerationAction->handle(
+                            $potentialSlug,
+                            confidence: $validation['confidence'],
+                            locale: \App\Enums\Locale::EN_US->value,
+                            tmdbData: $tmdbMovie
+                        );
+
+                        return $this->responseFormatter->formatGenerationQueued($generationResult);
+                    }
+                }
+            }
+        }
 
         return $this->responseFormatter->formatSearchResult($searchResult);
     }
@@ -193,5 +250,66 @@ class MovieController extends Controller
         Cache::forget($this->cacheKey($slug, null));
 
         return $this->responseFormatter->formatRefreshSuccess($slug, $movie->id);
+    }
+
+    /**
+     * Get related movies for a given movie.
+     *
+     * @author MovieMind API Team
+     */
+    public function related(Request $request, string $slug): JsonResponse
+    {
+        $movie = $this->movieRepository->findBySlugWithRelations($slug);
+        if (! $movie) {
+            return $this->responseFormatter->formatNotFound();
+        }
+
+        $filterTypes = $request->query('type', []);
+        if (! is_array($filterTypes)) {
+            $filterTypes = [$filterTypes];
+        }
+        $filterTypes = array_filter($filterTypes, fn ($type) => ! empty($type));
+        $validTypes = array_map(fn ($type) => strtoupper((string) $type), $filterTypes);
+
+        $relatedMovies = $movie->getRelatedMovies(count($validTypes) > 0 ? $validTypes : null);
+
+        $data = $relatedMovies->map(function (Movie $relatedMovie) use ($movie) {
+            $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
+                $query->where('movie_id', $movie->id)
+                    ->where('related_movie_id', $relatedMovie->id);
+            })->orWhere(function ($query) use ($movie, $relatedMovie) {
+                $query->where('movie_id', $relatedMovie->id)
+                    ->where('related_movie_id', $movie->id);
+            })->first();
+
+            $resource = MovieResource::make($relatedMovie)->additional([
+                '_links' => $this->hateoas->movieLinks($relatedMovie),
+            ]);
+
+            $movieData = $resource->resolve();
+            $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
+            $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
+            $movieData['relationship_order'] = $relationship?->order;
+
+            return $movieData;
+        })->values()->toArray();
+
+        return response()->json([
+            'movie' => [
+                'id' => $movie->id,
+                'slug' => $movie->slug,
+                'title' => $movie->title,
+            ],
+            'related_movies' => $data,
+            'count' => count($data),
+            '_links' => [
+                'self' => [
+                    'href' => url("/api/v1/movies/{$slug}/related"),
+                ],
+                'movie' => [
+                    'href' => url("/api/v1/movies/{$slug}"),
+                ],
+            ],
+        ]);
     }
 }

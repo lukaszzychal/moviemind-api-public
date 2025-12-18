@@ -36,4 +36,11 @@ interface EntityVerificationServiceInterface
      * @return array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int, biography?: string}>
      */
     public function searchPeople(string $slug, int $limit = 5): array;
+
+    /**
+     * Perform a lightweight health check against the external API.
+     *
+     * @return array{success: bool, service: string, message?: string, status?: int, error?: string}
+     */
+    public function health(): array;
 }

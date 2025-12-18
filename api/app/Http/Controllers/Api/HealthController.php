@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\AiServiceSelector;
 use App\Http\Controllers\Controller;
+use App\Services\EntityVerificationServiceInterface;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,12 +13,32 @@ use Laravel\Pennant\Feature;
 class HealthController extends Controller
 {
     public function __construct(
-        private readonly OpenAiClientInterface $openAiClient
+        private readonly OpenAiClientInterface $openAiClient,
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService
     ) {}
 
     public function openAi(): JsonResponse
     {
         $result = $this->openAiClient->health();
+
+        $success = (bool) $result['success'];
+        $status = 200;
+
+        if (! $success) {
+            $status = array_key_exists('status', $result) ? (int) $result['status'] : 503;
+        }
+
+        return response()->json($result, $status);
+    }
+
+    /**
+     * Check TMDb API health.
+     *
+     * @author MovieMind API Team
+     */
+    public function tmdb(): JsonResponse
+    {
+        $result = $this->tmdbVerificationService->health();
 
         $success = (bool) $result['success'];
         $status = 200;

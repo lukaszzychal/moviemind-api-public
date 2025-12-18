@@ -707,9 +707,12 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
     }
 
     /**
-     * Get movie details from TMDb including credits.
+     * Get movie details from TMDb including credits, similar movies, and collection.
+     * This is a public method for use in jobs.
+     *
+     * @return array Movie details with credits, similar, and belongs_to_collection
      */
-    private function getMovieDetails(int $tmdbId): array
+    public function getMovieDetails(int $tmdbId): array
     {
         try {
             $client = $this->getClient();
@@ -717,8 +720,8 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
                 return [];
             }
 
-            // Get details with credits appended
-            $response = $client->movies()->getDetails($tmdbId, ['append_to_response' => 'credits']);
+            // Get details with credits, similar movies, and collection appended
+            $response = $client->movies()->getDetails($tmdbId, ['append_to_response' => 'credits,similar,belongs_to_collection']);
             $data = json_decode($response->getBody()->getContents(), true);
 
             return $data ?? [];
@@ -726,6 +729,69 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             Log::warning('TmdbVerificationService: failed to get movie details', [
                 'tmdb_id' => $tmdbId,
                 'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Get collection details from TMDb.
+     * Uses direct HTTP call to /collection/{collection_id} endpoint since the library doesn't have a collections client.
+     *
+     * @return array<string, mixed>
+     */
+    public function getCollectionDetails(int $collectionId): array
+    {
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                Log::warning('TmdbVerificationService: No client available for collection details', [
+                    'collection_id' => $collectionId,
+                ]);
+
+                return [];
+            }
+
+            // Use HTTP client directly since the library doesn't have a collections() client
+            // TMDB API endpoint: GET /collection/{collection_id}
+            $httpClient = $client->getHttpClient();
+            $response = $httpClient->get("collection/{$collectionId}");
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            if ($statusCode !== 200) {
+                Log::warning('TmdbVerificationService: Non-200 status code for collection details', [
+                    'collection_id' => $collectionId,
+                    'status_code' => $statusCode,
+                    'response_body' => substr($body, 0, 500),
+                ]);
+
+                return [];
+            }
+
+            if (empty($data)) {
+                Log::warning('TmdbVerificationService: Empty response for collection details', [
+                    'collection_id' => $collectionId,
+                    'status_code' => $statusCode,
+                ]);
+
+                return [];
+            }
+
+            Log::debug('TmdbVerificationService: Collection details retrieved', [
+                'collection_id' => $collectionId,
+                'has_parts' => isset($data['parts']),
+                'parts_count' => isset($data['parts']) ? count($data['parts']) : 0,
+            ]);
+
+            return $data;
+        } catch (\Throwable $e) {
+            Log::warning('TmdbVerificationService: failed to get collection details', [
+                'collection_id' => $collectionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [];
@@ -814,6 +880,63 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
     /**
      * Get or create TMDb client.
      */
+    /**
+     * Perform a lightweight health check against the TMDb API.
+     *
+     * @return array{success: bool, service: string, message?: string, status?: int, error?: string}
+     */
+    public function health(): array
+    {
+        $apiKey = $this->apiKey ?? config('services.tmdb.api_key');
+
+        if (empty($apiKey)) {
+            return [
+                'success' => false,
+                'service' => 'tmdb',
+                'error' => 'TMDb API key not configured. Set TMDB_API_KEY in .env',
+            ];
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                return [
+                    'success' => false,
+                    'service' => 'tmdb',
+                    'error' => 'TMDb API key not configured. Set TMDB_API_KEY in .env',
+                ];
+            }
+
+            // Perform a lightweight test request (get movie by ID 603 - The Matrix)
+            // This is a simple, fast endpoint that doesn't require complex parameters
+            $response = $client->movies()->getDetails(603);
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode >= 200 && $statusCode < 300) {
+                return [
+                    'success' => true,
+                    'service' => 'tmdb',
+                    'message' => 'TMDb API is accessible',
+                    'status' => $statusCode,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'service' => 'tmdb',
+                'error' => "TMDb API returned status {$statusCode}",
+                'status' => $statusCode,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'service' => 'tmdb',
+                'error' => 'TMDb API is not reachable: '.$e->getMessage(),
+                'status' => 503,
+            ];
+        }
+    }
+
     private function getClient(): ?TMDBClient
     {
         if ($this->client !== null) {

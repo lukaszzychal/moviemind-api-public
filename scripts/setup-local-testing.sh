@@ -319,7 +319,21 @@ reset_database() {
     print_info "Uruchamianie: docker compose exec php php artisan migrate:fresh"
     if $DOCKER_COMPOSE_CMD exec -T php php artisan migrate:fresh --force; then
         print_success "Baza danych wyczyszczona i migracje uruchomione"
-        return 0
+        
+        # Load test fixtures (seeders)
+        print_info "Ładowanie przykładowych danych testowych (seeders)..."
+        if $DOCKER_COMPOSE_CMD exec -T php php artisan db:seed --force; then
+            print_success "Przykładowe dane załadowane"
+            print_info "Załadowane dane:"
+            print_info "  • Filmy: The Matrix (1999), Inception (2010)"
+            print_info "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
+            print_info "  • Gatunki: Action, Sci-Fi, Thriller"
+            return 0
+        else
+            print_warning "Nie udało się załadować przykładowych danych (seeders)"
+            print_warning "Możesz załadować je ręcznie: docker compose exec php php artisan db:seed"
+            return 0  # Continue even if seeding fails
+        fi
     else
         print_error "Nie udało się wyczyścić bazy danych"
         print_warning "Sprawdź logi: $DOCKER_COMPOSE_CMD logs php"
@@ -622,6 +636,7 @@ main() {
     print_success "Kontenery Docker: uruchomione"
     print_success "Tryb AI: ${AI_SERVICE_MODE}"
     print_success "Baza danych: wyczyszczona i gotowa"
+    print_success "Przykładowe dane: załadowane (seeders)"
     print_info "Flagi włączone: ${success_count}"
     print_info "Flagi pominięte (tylko do odczytu): ${skip_count}"
     
@@ -635,7 +650,14 @@ main() {
     print_info "Możesz teraz testować API:"
     echo "  • GET  ${API_ENDPOINT}/movies"
     echo "  • GET  ${API_ENDPOINT}/movies/the-matrix-1999"
+    echo "  • GET  ${API_ENDPOINT}/movies/inception-2010"
+    echo "  • GET  ${API_ENDPOINT}/people/keanu-reeves"
     echo "  • POST ${API_ENDPOINT}/generate"
+    echo ""
+    print_info "Przykładowe dane dostępne w bazie:"
+    echo "  • Filmy: The Matrix (1999), Inception (2010)"
+    echo "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
+    echo "  • Gatunki: Action, Sci-Fi, Thriller"
     echo ""
     print_info "Sprawdź status flag:"
     echo "  • GET  ${ADMIN_ENDPOINT}/flags"
