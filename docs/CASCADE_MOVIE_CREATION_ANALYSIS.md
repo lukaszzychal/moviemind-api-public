@@ -14,6 +14,7 @@
 - **15,077 jobów** w kolejce (przed wyczyszczeniem)
 - **Efekt kaskadowy:** 1 film → 10-20 filmów → 100-200 filmów → ...
 
+<<<<<<< HEAD
 ### Przykład: "The Matrix" (1999)
 
 Poniżej pokazujemy, jak działa efekt kaskadowy na konkretnym przykładzie filmu "The Matrix":
