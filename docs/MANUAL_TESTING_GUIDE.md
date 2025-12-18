@@ -135,6 +135,8 @@ curl -X GET "http://localhost:8000/api/v1/health/openai"
 
 ## 🎬 Movies API
 
+> **For detailed testing scenarios, see:** [Movies Testing Guide](./MANUAL_TESTING_MOVIES.md)
+
 ### Endpoints Overview
 
 | Method | Endpoint | Description |
@@ -144,6 +146,28 @@ curl -X GET "http://localhost:8000/api/v1/health/openai"
 | `GET` | `/api/v1/movies/{slug}` | Get movie details |
 | `GET` | `/api/v1/movies/{slug}/related` | Get related movies |
 | `POST` | `/api/v1/movies/{slug}/refresh` | Refresh movie from TMDB |
+
+### Quick Test Examples
+
+**List movies:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" | jq
+```
+
+**Search movies:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" | jq
+```
+
+**Get movie details:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq
+```
+
+**Refresh movie:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" | jq
+```
 
 ### Scenario 1: List All Movies
 
@@ -384,6 +408,8 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ## 👥 People API
 
+> **For detailed testing scenarios, see:** [People Testing Guide](./MANUAL_TESTING_PEOPLE.md)
+
 ### Endpoints Overview
 
 | Method | Endpoint | Description |
@@ -391,6 +417,23 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 | `GET` | `/api/v1/people` | List all people (with pagination) |
 | `GET` | `/api/v1/people/{slug}` | Get person details |
 | `POST` | `/api/v1/people/{slug}/refresh` | Refresh person from TMDB |
+
+### Quick Test Examples
+
+**List people:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/people" | jq
+```
+
+**Get person details:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/people/keanu-reeves" | jq
+```
+
+**Refresh person:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" | jq
+```
 
 ### Scenario 1: List All People
 
@@ -505,11 +548,25 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ## 🔗 Movie Relationships
 
+> **For detailed testing scenarios, see:** [Relationships Testing Guide](./MANUAL_TESTING_RELATIONSHIPS.md)
+
 ### Endpoints Overview
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/v1/movies/{slug}/related` | Get related movies |
+
+### Quick Test Examples
+
+**Get related movies:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" | jq
+```
+
+**Filter by type:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL" | jq
+```
 
 ### Relationship Types
 
@@ -628,7 +685,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ---
 
-**For detailed relationship testing, see:** `docs/MANUAL_TESTING_ETAP4_RELATIONSHIPS.md`
+**For detailed relationship testing, see:** [Relationships Testing Guide](./MANUAL_TESTING_RELATIONSHIPS.md)
 
 ---
 
