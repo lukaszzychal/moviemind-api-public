@@ -4,96 +4,96 @@ alwaysApply: true
 
 # Test Driven Development (TDD)
 
-## ⚠️ WYMAGANE PRZED KAŻDĄ ZMIANĄ KODU
+## ⚠️ REQUIRED BEFORE EVERY CODE CHANGE
 
-**PRZED rozpoczęciem implementacji funkcjonalności MUSISZ wykonać:**
+**BEFORE starting implementation you MUST:**
 
-### 1. TDD Workflow Checklist (OBOWIĄZKOWY)
+### 1. TDD Workflow Checklist (MANDATORY)
 
-**PRZED napisaniem jakiegokolwiek kodu implementacyjnego:**
+**BEFORE writing any implementation code:**
 
-- [ ] **RED** - Napisałem test, który definiuje oczekiwane zachowanie
-- [ ] **RED** - Uruchomiłem test - test FAILUJE (to jest OK, to jest cel RED)
-- [ ] **GREEN** - Napisałem minimalny kod potrzebny do przejścia testu
-- [ ] **GREEN** - Uruchomiłem test - test PRZECHODZI
-- [ ] **REFACTOR** - Poprawiłem kod, zachowując przechodzące testy
-- [ ] **REFACTOR** - Uruchomiłem testy ponownie - wszystkie PRZECHODZĄ
+- [ ] **RED** - I wrote a test that defines expected behavior
+- [ ] **RED** - I ran the test - test FAILS (this is OK, this is the RED goal)
+- [ ] **GREEN** - I wrote minimal code needed to pass the test
+- [ ] **GREEN** - I ran the test - test PASSES
+- [ ] **REFACTOR** - I improved the code while keeping tests passing
+- [ ] **REFACTOR** - I ran tests again - all PASS
 
-**Jeśli zmieniasz istniejący kod:**
-- [ ] Najpierw zmieniłem testy, aby oczekiwały nowego zachowania (RED)
-- [ ] Uruchomiłem testy - testy FAILUJĄ (to jest OK)
-- [ ] Zmieniłem kod, aby testy przeszły (GREEN)
-- [ ] Zrefaktoryzowałem kod (REFACTOR)
+**If changing existing code:**
+- [ ] First I changed tests to expect new behavior (RED)
+- [ ] I ran tests - tests FAIL (this is OK)
+- [ ] I changed code so tests pass (GREEN)
+- [ ] I refactored code (REFACTOR)
 
-**Jeśli naprawiasz bug:**
-- [ ] Najpierw napisałem test reprodukujący bug (RED - test failuje)
-- [ ] Naprawiłem bug w kodzie (GREEN - test przechodzi)
-- [ ] Zrefaktoryzowałem kod (REFACTOR)
+**If fixing a bug:**
+- [ ] First I wrote a test reproducing the bug (RED - test fails)
+- [ ] I fixed the bug in code (GREEN - test passes)
+- [ ] I refactored code (REFACTOR)
 
-## Zasada podstawowa
+## Basic principle
 
-**Zawsze pisz testy przed implementacją. Cykl Red-Green-Refactor.**
+**Always write tests before implementation. Red-Green-Refactor cycle.**
 
-## Cykl TDD
+## TDD Cycle
 
-1. **RED** - Napisz test, który definiuje oczekiwane zachowanie
-   - Test powinien FAILOWAĆ (to jest cel - pokazujemy że funkcjonalność nie istnieje)
-   - Uruchom test: `php artisan test --filter=test_name`
-   - Sprawdź że test failuje z oczekiwanym błędem
+1. **RED** - Write a test that defines expected behavior
+   - Test should FAIL (this is the goal - we show that functionality doesn't exist)
+   - Run test: `php artisan test --filter=test_name`
+   - Verify that test fails with expected error
    
-2. **GREEN** - Napisz minimalny kod potrzebny do przejścia testu
-   - Napisz TYLKO tyle kodu, ile potrzeba do przejścia testu
-   - Uruchom test: `php artisan test --filter=test_name`
-   - Sprawdź że test przechodzi
+2. **GREEN** - Write minimal code needed to pass the test
+   - Write ONLY as much code as needed to pass the test
+   - Run test: `php artisan test --filter=test_name`
+   - Verify that test passes
    
-3. **REFACTOR** - Popraw kod, zachowując przechodzące testy
-   - Ulepsz kod (czytelność, wydajność, struktura)
-   - Uruchom testy ponownie: `php artisan test`
-   - Sprawdź że wszystkie testy nadal przechodzą
+3. **REFACTOR** - Improve code while keeping tests passing
+   - Improve code (readability, performance, structure)
+   - Run tests again: `php artisan test`
+   - Verify that all tests still pass
 
-## ✅ Zawsze
+## ✅ Always
 
-- **Pisz testy przed kodem** - najpierw test, potem implementacja
-- **Uruchamiaj testy po każdej zmianie** - `php artisan test`
-- **Nowy kod wymaga testów** - bez wyjątków
-- **Feature Tests** dla endpointów API (`tests/Feature/`)
-- **Unit Tests** dla logiki biznesowej (`tests/Unit/`)
+- **Write tests before code** - test first, then implementation
+- **Run tests after each change** - `php artisan test`
+- **New code requires tests** - no exceptions
+- **Feature Tests** for API endpoints (`tests/Feature/`)
+- **Unit Tests** for business logic (`tests/Unit/`)
 
-## ❌ NIGDY
+## ❌ NEVER
 
-- ❌ **Nie pisz kodu implementacyjnego przed napisaniem testów** - to narusza zasadę TDD
-- ❌ Nie commituj kodu bez testów
-- ❌ Nie pomijaj testów "bo to mała zmiana"
-- ❌ Nie ignoruj failujących testów
-- ❌ Nie zmieniaj kodu przed zmianą testów (nawet jeśli to refaktoryzacja)
+- ❌ **Do not write implementation code before writing tests** - this violates TDD principle
+- ❌ Do not commit code without tests
+- ❌ Do not skip tests "because it's a small change"
+- ❌ Do not ignore failing tests
+- ❌ Do not change code before changing tests (even if it's refactoring)
 
-## Rodzaje testów
+## Test types
 
-- **Feature Tests** (`tests/Feature/`) - endpointy API i integracja
-- **Unit Tests** (`tests/Unit/`) - logika biznesowa i serwisy
+- **Feature Tests** (`tests/Feature/`) - API endpoints and integration
+- **Unit Tests** (`tests/Unit/`) - business logic and services
 
-## Przykład poprawnego TDD workflow
+## Example of correct TDD workflow
 
 ```php
-// 1. RED - Test definiuje wymaganie (test FAILUJE)
+// 1. RED - Test defines requirement (test FAILS)
 public function test_movie_disambiguation_uses_slugs_instead_of_tmdb_id(): void
 {
     $response = $this->getJson('/api/v1/movies/bad-boys');
     
     $response->assertStatus(300)
-        ->assertJsonMissing(['options' => [['tmdb_id' => 9738]]]) // Oczekujemy że NIE MA tmdb_id
-        ->assertJsonStructure(['options' => [['slug']]]); // Oczekujemy że JEST slug
+        ->assertJsonMissing(['options' => [['tmdb_id' => 9738]]]) // We expect NO tmdb_id
+        ->assertJsonStructure(['options' => [['slug']]]); // We expect slug EXISTS
 }
-// Uruchom: php artisan test --filter=test_movie_disambiguation_uses_slugs
-// Wynik: FAIL (bo kod jeszcze używa tmdb_id) ✅ To jest OK!
+// Run: php artisan test --filter=test_movie_disambiguation_uses_slugs
+// Result: FAIL (because code still uses tmdb_id) ✅ This is OK!
 
-// 2. GREEN - Minimalna implementacja (test PRZECHODZI)
-// Zmień kod w MovieRetrievalService::buildDisambiguationOptions()
-// Uruchom: php artisan test --filter=test_movie_disambiguation_uses_slugs
-// Wynik: PASS ✅
+// 2. GREEN - Minimal implementation (test PASSES)
+// Change code in MovieRetrievalService::buildDisambiguationOptions()
+// Run: php artisan test --filter=test_movie_disambiguation_uses_slugs
+// Result: PASS ✅
 
-// 3. REFACTOR - Ulepsz kod (testy nadal PRZECHODZĄ)
-// Popraw czytelność, wydajność, etc.
-// Uruchom: php artisan test
-// Wynik: Wszystkie testy PASS ✅
+// 3. REFACTOR - Improve code (tests still PASS)
+// Improve readability, performance, etc.
+// Run: php artisan test
+// Result: All tests PASS ✅
 ```

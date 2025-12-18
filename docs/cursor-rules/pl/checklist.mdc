@@ -2,37 +2,37 @@
 alwaysApply: true
 ---
 
-# Checklist przed Commitem
+# Pre-Commit Checklist
 
-## Narzędzia
-- [ ] Kod sformatowany przez Pint
-- [ ] PHPStan bez błędów
-- [ ] Wszystkie testy przechodzą
-- [ ] GitLeaks nie wykrywa sekretów
-- [ ] Composer audit nie wykrywa krytycznych luk
+## Tools
+- [ ] Code formatted by Pint
+- [ ] PHPStan without errors
+- [ ] All tests pass
+- [ ] GitLeaks doesn't detect secrets
+- [ ] Composer audit doesn't detect critical vulnerabilities
 
-## Testy (TDD - OBOWIĄZKOWE)
-- [ ] **PRZED kodem:** Napisano test (RED) - test FAILUJE ✅
-- [ ] **Po kodzie:** Napisano kod (GREEN) - test PRZECHODZI ✅
-- [ ] **Po refaktoryzacji:** Zrefaktoryzowano (REFACTOR) - testy nadal PRZECHODZĄ ✅
-- [ ] Nowy kod ma testy (jeśli to nowa funkcjonalność)
-- [ ] Testy są czytelne
-- [ ] **Stosowano TDD w prawidłowej kolejności** (RED → GREEN → REFACTOR)
+## Tests (TDD - MANDATORY)
+- [ ] **BEFORE code:** Test written (RED) - test FAILS ✅
+- [ ] **AFTER code:** Code written (GREEN) - test PASSES ✅
+- [ ] **AFTER refactoring:** Refactored (REFACTOR) - tests still PASS ✅
+- [ ] New code has tests (if it's a new feature)
+- [ ] Tests are readable
+- [ ] **TDD was followed in correct order** (RED → GREEN → REFACTOR)
 
-## Jakość
-- [ ] Kod czytelny i zgodny z konwencjami
-- [ ] Zastosowano SOLID (gdy ma sens)
-- [ ] Usunięto duplikację (gdy potrzebne)
-- [ ] Type hints i `declare(strict_types=1)`
+## Quality
+- [ ] Code readable and follows conventions
+- [ ] SOLID applied (when it makes sense)
+- [ ] Duplication removed (when needed)
+- [ ] Type hints and `declare(strict_types=1)`
 
 ## Cleanup
-- [ ] Brak debugowego kodu
-- [ ] Brak nieużywanego kodu
-- [ ] Brak zakomentowanego kodu (chyba że wyjaśnia "dlaczego")
+- [ ] No debug code
+- [ ] No unused code
+- [ ] No commented code (unless it explains "why")
 
 ## Git
-- [ ] Commit message jest opisowy i zgodny z konwencją
-- [ ] Commit message jest w języku angielskim (REQUIRED)
-- [ ] PR title jest w języku angielskim (REQUIRED)
-- [ ] PR description jest w języku angielskim (REQUIRED)
-- [ ] Commit zawiera jedną logiczną zmianę
+- [ ] Commit message is descriptive and follows convention
+- [ ] Commit message is in English (REQUIRED)
+- [ ] PR title is in English (REQUIRED)
+- [ ] PR description is in English (REQUIRED)
+- [ ] Commit contains one logical change
