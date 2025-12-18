@@ -66,7 +66,68 @@ REDIS_PORT=6379
 
 ## 🔧 Environment Setup
 
-### Step 1: Start API Server
+### Option A: Automated Setup (Recommended for Local Testing)
+
+**For Docker-based local testing, use the automated setup script:**
+
+```bash
+# From project root directory
+./scripts/setup-local-testing.sh
+```
+
+**What the script does:**
+1. ✅ Checks Docker installation and status
+2. ✅ Starts Docker containers (if not running)
+3. ✅ Installs Composer dependencies
+4. ✅ Configures Laravel application
+5. ✅ Runs database migrations (`migrate:fresh`)
+6. ✅ Enables required feature flags
+7. ✅ Verifies API health
+
+**Script options:**
+```bash
+# Use mock AI (default, no OpenAI key needed)
+./scripts/setup-local-testing.sh
+
+# Use real OpenAI API (requires OPENAI_API_KEY in .env)
+./scripts/setup-local-testing.sh --ai-service real
+
+# Rebuild containers before starting
+./scripts/setup-local-testing.sh --rebuild
+
+# Skip container startup (assumes containers already running)
+./scripts/setup-local-testing.sh --no-start
+
+# Custom API URL
+./scripts/setup-local-testing.sh --api-url http://localhost:8000
+
+# With admin authentication
+ADMIN_AUTH="admin:password" ./scripts/setup-local-testing.sh
+```
+
+**Environment variables:**
+```bash
+export API_BASE_URL=http://localhost:8000
+export ADMIN_AUTH="admin:password"
+export AI_SERVICE=mock  # or 'real'
+export DOCKER_COMPOSE_CMD="docker compose"
+```
+
+**After running the script:**
+- ✅ All Docker containers are running
+- ✅ Database is fresh and migrated
+- ✅ Feature flags are enabled
+- ✅ API is ready for testing
+
+**For detailed script documentation, see:** `scripts/setup-local-testing.sh` (contains inline help)
+
+---
+
+### Option B: Manual Setup
+
+**If you prefer manual setup or are not using Docker:**
+
+#### Step 1: Start API Server
 
 ```bash
 cd api
@@ -92,7 +153,7 @@ curl -X GET "https://api.themoviedb.org/3/movie/603?api_key=${TMDB_API_KEY}" \
 # Should return: 603 (The Matrix movie ID)
 ```
 
-### Step 2: Run Migrations
+#### Step 2: Run Migrations
 
 ```bash
 cd api
@@ -111,7 +172,7 @@ php artisan tinker
 # Should return: true
 ```
 
-### Step 3: Start Queue Worker
+#### Step 3: Start Queue Worker
 
 **Option A: Laravel Horizon (Recommended)**
 ```bash
@@ -132,7 +193,7 @@ php artisan queue:work --tries=3 --timeout=120
 tail -f storage/logs/laravel.log | grep "Queue"
 ```
 
-### Step 4: Verify API Health
+#### Step 4: Verify API Health
 
 ```bash
 # Check OpenAI health (this verifies API connectivity)
