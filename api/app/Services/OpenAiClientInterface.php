@@ -14,6 +14,26 @@ interface OpenAiClientInterface
     public function generateMovie(string $slug, ?array $tmdbData = null): array;
 
     /**
+     * Generate movie description with specific context tag and locale.
+     *
+     * @param  string  $title  Movie title
+     * @param  int  $releaseYear  Release year
+     * @param  string  $director  Director name
+     * @param  string  $contextTag  Context tag (modern, critical, humorous, default)
+     * @param  string  $locale  Locale (pl-PL, en-US, etc.)
+     * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @return array{success: bool, description?: string, model?: string, error?: string}
+     */
+    public function generateMovieDescription(
+        string $title,
+        int $releaseYear,
+        string $director,
+        string $contextTag,
+        string $locale,
+        ?array $tmdbData = null
+    ): array;
+
+    /**
      * Generate person biography from a slug using AI.
      *
      * @param  string  $slug  Person slug
