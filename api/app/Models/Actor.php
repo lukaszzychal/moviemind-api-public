@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @deprecated This model is replaced by Person model.
  *
  * @todo REMOVE: This model and ActorBio should be removed after migration is complete.
- * Currently only used in ActorToPersonSyncSeeder for data migration.
  * All new code should use Person/PersonBio instead.
+ * Seeders now use Person/PersonBio directly (see ActorSeeder).
  */
 class Actor extends Model
 {
