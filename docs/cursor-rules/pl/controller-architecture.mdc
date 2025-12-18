@@ -1,0 +1,278 @@
+---
+alwaysApply: true
+---
+
+# Controller Architecture Rules
+
+## ⚠️ CRITICAL: Thin Controllers Pattern (REQUIRED)
+
+**Controllers MUST be thin and delegate business logic to Actions/Services.**
+
+### Controller Responsibilities (ONLY):
+
+1. **Request validation** - Use Form Requests (`App\Http\Requests\*`)
+2. **Delegation** - Call Actions or Services to handle business logic
+3. **Response formatting** - Use Response Formatters (`App\Http\Responses\*`) or Resources (`App\Http\Resources\*`)
+4. **HTTP concerns** - Status codes, headers, redirects
+
+### Controller MUST NOT:
+
+- ❌ **Contain business logic** - Move to Actions or Services
+- ❌ **Query database directly** - Use Repositories
+- ❌ **Transform data** - Use Resources or Response Formatters
+- ❌ **Handle caching** - Use Services with caching
+- ❌ **Call external APIs** - Use Services
+- ❌ **Have methods longer than 20-30 lines** - Extract to Actions/Services
+- ❌ **Have private methods with complex logic** - Extract to Actions/Services
+
+## Controller Structure Pattern
+
+### ✅ CORRECT Pattern:
+
+```php
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Actions\GetRelatedMoviesAction;
+use App\Http\Controllers\Controller;
+use App\Http\Responses\MovieResponseFormatter;
+use App\Repositories\MovieRepository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class MovieController extends Controller
+{
+    public function __construct(
+        private readonly MovieRepository $movieRepository,
+        private readonly GetRelatedMoviesAction $getRelatedMoviesAction,
+        private readonly MovieResponseFormatter $responseFormatter
+    ) {}
+
+    public function related(Request $request, string $slug): JsonResponse
+    {
+        // 1. Validate input (if needed, use Form Request)
+        $typeFilter = $request->query('type', 'all');
+        
+        // 2. Find entity (delegate to Repository)
+        $movie = $this->movieRepository->findBySlugWithRelations($slug);
+        if (! $movie) {
+            return $this->responseFormatter->formatNotFound();
+        }
+
+        // 3. Delegate business logic to Action
+        $result = $this->getRelatedMoviesAction->handle($movie, $typeFilter);
+
+        // 4. Format response (delegate to Response Formatter)
+        return $this->responseFormatter->formatRelatedMovies($movie, $result);
+    }
+}
+```
+
+### ❌ WRONG Pattern (what I did wrong):
+
+```php
+public function related(Request $request, string $slug): JsonResponse
+{
+    // ❌ WRONG: Too much logic in controller
+    $movie = $this->movieRepository->findBySlugWithRelations($slug);
+    if (! $movie) {
+        return $this->responseFormatter->formatNotFound();
+    }
+
+    $typeFilter = $request->query('type', 'all');
+    $typeFilter = strtolower((string) $typeFilter);
+
+    $collectionMovies = [];
+    $similarMovies = [];
+
+    // ❌ WRONG: Business logic in controller
+    if ($typeFilter === 'all' || $typeFilter === 'collection') {
+        $collectionTypes = [
+            RelationshipType::SEQUEL->value,
+            // ... more logic
+        ];
+        $collectionMovies = $movie->getRelatedMovies($collectionTypes)->map(function (Movie $relatedMovie) use ($movie) {
+            // ❌ WRONG: Complex transformation in controller
+            $relationship = MovieRelationship::where(...)->first();
+            // ... 50+ lines of logic
+        });
+    }
+
+    // ❌ WRONG: External API calls in controller
+    if ($typeFilter === 'all' || $typeFilter === 'similar') {
+        $similarMovies = $this->getSimilarMoviesFromTmdb($movie, limit: 10);
+    }
+
+    // ❌ WRONG: Response building in controller
+    return response()->json([
+        'movie' => [...],
+        'related_movies' => array_merge($collectionMovies, $similarMovies),
+        // ... more logic
+    ]);
+}
+
+// ❌ WRONG: Private methods with complex logic in controller
+private function getSimilarMoviesFromTmdb(Movie $movie, int $limit = 10): array
+{
+    // ❌ WRONG: 100+ lines of business logic in controller
+    // This should be in a Service or Action
+}
+```
+
+## Action Pattern (for Business Logic)
+
+### Create Actions for Complex Operations:
+
+```php
+<?php
+
+namespace App\Actions;
+
+use App\Models\Movie;
+use App\Services\SimilarMoviesService;
+
+class GetRelatedMoviesAction
+{
+    public function __construct(
+        private readonly SimilarMoviesService $similarMoviesService
+    ) {}
+
+    public function handle(Movie $movie, string $typeFilter): array
+    {
+        $result = [
+            'collection' => [],
+            'similar' => [],
+        ];
+
+        if ($typeFilter === 'all' || $typeFilter === 'collection') {
+            $result['collection'] = $this->getCollectionRelationships($movie);
+        }
+
+        if ($typeFilter === 'all' || $typeFilter === 'similar') {
+            $result['similar'] = $this->similarMoviesService->getSimilarMovies($movie);
+        }
+
+        return $result;
+    }
+
+    private function getCollectionRelationships(Movie $movie): array
+    {
+        // Business logic here
+    }
+}
+```
+
+## Service Pattern (for External Dependencies)
+
+### Create Services for External API Calls, Caching, etc.:
+
+```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Movie;
+use Illuminate\Support\Facades\Cache;
+
+class SimilarMoviesService
+{
+    public function __construct(
+        private readonly TmdbVerificationService $tmdbVerificationService
+    ) {}
+
+    public function getSimilarMovies(Movie $movie, int $limit = 10): array
+    {
+        return Cache::remember(
+            "movie_similar_{$movie->id}_{$limit}",
+            now()->addHours(24),
+            fn() => $this->fetchSimilarMoviesFromTmdb($movie, $limit)
+        );
+    }
+
+    private function fetchSimilarMoviesFromTmdb(Movie $movie, int $limit): array
+    {
+        // External API logic here
+    }
+}
+```
+
+## Response Formatter Pattern
+
+### Use Response Formatters for Consistent API Responses:
+
+```php
+<?php
+
+namespace App\Http\Responses;
+
+use App\Models\Movie;
+
+class MovieResponseFormatter
+{
+    public function formatRelatedMovies(Movie $movie, array $result): JsonResponse
+    {
+        return response()->json([
+            'movie' => [
+                'id' => $movie->id,
+                'slug' => $movie->slug,
+                'title' => $movie->title,
+            ],
+            'related_movies' => array_merge($result['collection'], $result['similar']),
+            'count' => count($result['collection']) + count($result['similar']),
+            'filters' => [
+                'type' => $typeFilter,
+                'collection_count' => count($result['collection']),
+                'similar_count' => count($result['similar']),
+            ],
+            '_links' => [
+                // HATEOAS links
+            ],
+        ]);
+    }
+}
+```
+
+## Checklist Before Writing Controller Code
+
+**BEFORE writing controller method, ask:**
+
+- [ ] Is this method longer than 20-30 lines? → Extract to Action/Service
+- [ ] Does it contain business logic? → Move to Action
+- [ ] Does it query database? → Use Repository
+- [ ] Does it call external APIs? → Use Service
+- [ ] Does it transform data? → Use Resource/Response Formatter
+- [ ] Does it handle caching? → Use Service
+- [ ] Does it have private methods? → Extract to Action/Service
+
+**If ANY answer is YES, refactor BEFORE committing!**
+
+## Refactoring Steps
+
+1. **Identify logic** - What business logic is in controller?
+2. **Create Action/Service** - Extract logic to appropriate class
+3. **Update controller** - Delegate to Action/Service
+4. **Update tests** - Test Action/Service separately
+5. **Verify** - Controller method should be < 30 lines
+
+## Examples of Good Controllers
+
+- `GenerateController` - Uses Actions (`QueueMovieGenerationAction`)
+- `PersonController` - Uses Repositories, Services, Actions
+- `MovieController::index()` - Uses Repository and Response Formatter
+- `MovieController::search()` - Uses Service and Response Formatter
+
+## Examples of Bad Controllers (to avoid)
+
+- ❌ `MovieController::related()` - Contains 200+ lines of business logic (CURRENT STATE - NEEDS REFACTORING)
+- ❌ Controller with direct `DB::` calls
+- ❌ Controller with `Cache::` calls for business logic
+- ❌ Controller with complex data transformation
+
+## Enforcement
+
+**If controller method exceeds 30 lines or contains business logic:**
+1. **STOP** - Do not commit
+2. **Refactor** - Extract to Action/Service
+3. **Test** - Write tests for Action/Service
+4. **Verify** - Controller should be thin
