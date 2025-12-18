@@ -6,6 +6,13 @@ info:
     Public REST API for movies and people with AI-powered descriptions and bios.
     Uses slug-based resource identifiers. When data is missing and the corresponding
     feature flag is enabled, endpoints return 202 Accepted and queue generation.
+    
+    **Request Tracing:**
+    All responses include `X-Request-ID` and `X-Correlation-ID` headers (UUIDv4).
+    - `X-Request-ID`: Unique identifier for each request (auto-generated)
+    - `X-Correlation-ID`: Identifier for tracking related requests (can be provided by client)
+    
+    See `docs/REQUEST_ID_CORRELATION_ID.md` for detailed documentation.
 servers:
   - url: http://localhost:8000/api
     description: Local
@@ -705,6 +712,20 @@ paths:
                         pattern: active
                         name: ai_description_generation
 components:
+  headers:
+    XRequestID:
+      description: Unique identifier for this HTTP request (UUIDv4). Use this ID to trace logs and debug issues.
+      schema:
+        type: string
+        format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+    XCorrelationID:
+      description: Identifier to track related requests across services or user sessions (UUIDv4). If provided by client in X-Correlation-ID header, the same value is returned. Otherwise, a new UUIDv4 is generated.
+      schema:
+        type: string
+        format: uuid
+        example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+  parameters:
   schemas:
     Genre:
       type: object

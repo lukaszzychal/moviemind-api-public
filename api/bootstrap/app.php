@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Add request-id and correlation-id middleware globally
+        $middleware->append(\App\Http\Middleware\RequestIdMiddleware::class);
+
         $middleware->alias([
             'horizon.basic' => \App\Http\Middleware\HorizonBasicAuth::class,
             'admin.basic' => \App\Http\Middleware\AdminBasicAuth::class,
