@@ -10,15 +10,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
-    Route::get('movies/search', [MovieController::class, 'search']);
+    Route::get('movies/search', [MovieController::class, 'search'])->middleware('adaptive.rate.limit:search');
     Route::get('movies/{slug}', [MovieController::class, 'show']);
     Route::get('movies/{slug}/related', [MovieController::class, 'related']);
     Route::post('movies/{slug}/refresh', [MovieController::class, 'refresh']);
-    Route::post('movies/{slug}/report', [MovieController::class, 'report']);
+    Route::post('movies/{slug}/report', [MovieController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::get('people', [PersonController::class, 'index']);
     Route::get('people/{slug}', [PersonController::class, 'show']);
     Route::post('people/{slug}/refresh', [PersonController::class, 'refresh']);
-    Route::post('generate', [GenerateController::class, 'generate']);
+    Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
     Route::get('health/tmdb', [HealthController::class, 'tmdb']);

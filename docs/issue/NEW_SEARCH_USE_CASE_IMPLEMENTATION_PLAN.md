@@ -337,49 +337,54 @@ main
 **Branch:** `feature/adaptive-rate-limiting`  
 **Priorytet:** Niski  
 **Zależności:** Brak  
-**Szacowany czas:** 2-3 dni
+**Szacowany czas:** 2-3 dni  
+**Status:** ✅ **ZAKOŃCZONE**
 
 ### Zadania:
 
 1. **Konfiguracja:**
-   - [ ] Utworzyć `config/rate-limiting.php`
-   - [ ] Domyślne wartości: SEARCH=100/min, GENERATE=10/min, REPORT=20/min
-   - [ ] Konfiguracja adaptive (min, max, thresholds)
+   - [x] Utworzyć `config/rate-limiting.php` ✅
+   - [x] Domyślne wartości: SEARCH=100/min, GENERATE=10/min, REPORT=20/min ✅
+   - [x] Konfiguracja adaptive (min, max, thresholds) ✅
 
 2. **Service:**
-   - [ ] Klasa `App\Services\AdaptiveRateLimiter`
-   - [ ] Metoda `getMaxAttempts(string $endpoint): int`
-   - [ ] Monitorowanie: CPU load, queue size, active jobs
-   - [ ] **Weryfikacja CPU load w Docker** (zobacz `docs/ADAPTIVE_RATE_LIMITING_METRICS.md`)
-   - [ ] Obliczanie load factor (auto-detection: CPU jeśli dostępne, w przeciwnym razie tylko Queue + Active Jobs)
-   - [ ] Zmniejszanie limitów przy obciążeniu > 70%
+   - [x] Klasa `App\Services\AdaptiveRateLimiter` ✅
+   - [x] Metoda `getMaxAttempts(string $endpoint): int` ✅
+   - [x] Monitorowanie: CPU load, queue size, active jobs ✅
+   - [x] **Weryfikacja CPU load w Docker** ✅ (patrz `docs/CPU_LOAD_VERIFICATION_RESULTS.md`)
+   - [x] Obliczanie load factor (auto-detection: CPU jeśli dostępne, w przeciwnym razie tylko Queue + Active Jobs) ✅
+   - [x] Zmniejszanie limitów przy obciążeniu > 70% ✅
 
 3. **Middleware:**
-   - [ ] Klasa `App\Http\Middleware\AdaptiveRateLimit`
-   - [ ] Zastosowanie dynamicznych limitów
-   - [ ] Response 429 z `retry_after`
+   - [x] Klasa `App\Http\Middleware\AdaptiveRateLimit` ✅
+   - [x] Zastosowanie dynamicznych limitów ✅
+   - [x] Response 429 z `retry_after` ✅
 
 4. **Zastosowanie:**
-   - [ ] Dodać middleware do routes
-   - [ ] `/api/v1/movies/search` - endpoint `search`
-   - [ ] `/api/v1/generate` - endpoint `generate`
-   - [ ] `/api/v1/movies/{slug}/report` - endpoint `report`
+   - [x] Dodać middleware do routes ✅
+   - [x] `/api/v1/movies/search` - endpoint `search` ✅
+   - [x] `/api/v1/generate` - endpoint `generate` ✅
+   - [x] `/api/v1/movies/{slug}/report` - endpoint `report` ✅
 
 5. **Monitoring:**
-   - [ ] Logowanie zmian limitów
-   - [ ] Metryki obciążenia (opcjonalnie)
-   - [ ] **Weryfikacja CPU load** - wykonaj testy z `docs/ADAPTIVE_RATE_LIMITING_METRICS.md` przed implementacją
+   - [x] Logowanie zmian limitów ✅
+   - [x] Metryki obciążenia (opcjonalnie) ✅
+   - [x] **Weryfikacja CPU load** ✅ (wykonano testy z `docs/ADAPTIVE_RATE_LIMITING_METRICS.md`)
 
 6. **Testy:**
-   - [ ] Feature test: rate limiting działa
-   - [ ] Test adaptive - zmniejszanie przy obciążeniu
-   - [ ] Unit test: `AdaptiveRateLimiterTest`
-   - [ ] Test różnych endpointów
+   - [x] Feature test: rate limiting działa ✅ (6 testów, 23 assertions)
+   - [x] Test adaptive - zmniejszanie przy obciążeniu ✅
+   - [x] Unit test: `AdaptiveRateLimiterTest` ✅ (6 testów, 21 assertions)
+   - [x] Test różnych endpointów ✅
 
 ### Akceptacja:
 - ✅ Rate limiting działa
 - ✅ Auto-dostosowanie do obciążenia
-- ✅ Wszystkie testy przechodzą
+- ✅ Wszystkie testy przechodzą (12 testów, 44 assertions)
+
+### Dokumentacja:
+- ✅ `docs/ADAPTIVE_RATE_LIMITING_METRICS.md` - szczegółowa dokumentacja metryk
+- ✅ `docs/CPU_LOAD_VERIFICATION_RESULTS.md` - wyniki weryfikacji CPU load w Docker
 
 ### Merge do: `main`
 
