@@ -350,7 +350,8 @@ main
    - [ ] Klasa `App\Services\AdaptiveRateLimiter`
    - [ ] Metoda `getMaxAttempts(string $endpoint): int`
    - [ ] Monitorowanie: CPU load, queue size, active jobs
-   - [ ] Obliczanie load factor
+   - [ ] **Weryfikacja CPU load w Docker** (zobacz `docs/ADAPTIVE_RATE_LIMITING_METRICS.md`)
+   - [ ] Obliczanie load factor (auto-detection: CPU jeśli dostępne, w przeciwnym razie tylko Queue + Active Jobs)
    - [ ] Zmniejszanie limitów przy obciążeniu > 70%
 
 3. **Middleware:**
@@ -367,6 +368,7 @@ main
 5. **Monitoring:**
    - [ ] Logowanie zmian limitów
    - [ ] Metryki obciążenia (opcjonalnie)
+   - [ ] **Weryfikacja CPU load** - wykonaj testy z `docs/ADAPTIVE_RATE_LIMITING_METRICS.md` przed implementacją
 
 6. **Testy:**
    - [ ] Feature test: rate limiting działa
