@@ -337,7 +337,7 @@ main
 **Branch:** `feature/adaptive-rate-limiting`  
 **Priorytet:** Niski  
 **Zależności:** Brak  
-**Szacowany czas:** 2-3 dni  
+**Szacowany czas:** 2-3 dni
 **Status:** ✅ **ZAKOŃCZONE**
 
 ### Zadania:
