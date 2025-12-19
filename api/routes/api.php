@@ -14,6 +14,7 @@ Route::prefix('v1')->group(function () {
     Route::get('movies/{slug}', [MovieController::class, 'show']);
     Route::get('movies/{slug}/related', [MovieController::class, 'related']);
     Route::post('movies/{slug}/refresh', [MovieController::class, 'refresh']);
+    Route::post('movies/{slug}/report', [MovieController::class, 'report']);
     Route::get('people', [PersonController::class, 'index']);
     Route::get('people/{slug}', [PersonController::class, 'show']);
     Route::post('people/{slug}/refresh', [PersonController::class, 'refresh']);
@@ -28,6 +29,10 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/', [FlagController::class, 'index']);
         Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
         Route::get('usage', [FlagController::class, 'usage']);
+    });
+    Route::prefix('reports')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index']);
+        Route::post('{id}/verify', [\App\Http\Controllers\Admin\ReportController::class, 'verify']);
     });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });

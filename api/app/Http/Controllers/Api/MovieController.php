@@ -7,14 +7,17 @@ use App\Enums\Locale;
 use App\Enums\RelationshipType;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReportMovieRequest;
 use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
 use App\Http\Responses\MovieResponseFormatter;
 use App\Models\Movie;
 use App\Models\MovieRelationship;
+use App\Models\MovieReport;
 use App\Repositories\MovieRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
+use App\Services\MovieReportService;
 use App\Services\MovieRetrievalService;
 use App\Services\MovieSearchService;
 use App\Services\TmdbVerificationService;
@@ -33,7 +36,8 @@ class MovieController extends Controller
         private readonly EntityVerificationServiceInterface $tmdbVerificationService,
         private readonly MovieSearchService $movieSearchService,
         private readonly MovieRetrievalService $movieRetrievalService,
-        private readonly MovieResponseFormatter $responseFormatter
+        private readonly MovieResponseFormatter $responseFormatter,
+        private readonly MovieReportService $movieReportService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -472,5 +476,55 @@ class MovieController extends Controller
                 }
             }
         );
+    }
+
+    /**
+     * Report an issue with a movie or its description.
+     */
+    public function report(ReportMovieRequest $request, string $slug): JsonResponse
+    {
+        $movie = $this->movieRepository->findBySlugWithRelations($slug);
+
+        if ($movie === null) {
+            return $this->responseFormatter->formatNotFound();
+        }
+
+        $validated = $request->validated();
+
+        // Create report
+        $report = MovieReport::create([
+            'movie_id' => $movie->id,
+            'description_id' => $validated['description_id'] ?? null,
+            'type' => $validated['type'],
+            'message' => $validated['message'],
+            'suggested_fix' => $validated['suggested_fix'] ?? null,
+            'status' => \App\Enums\ReportStatus::PENDING,
+            'priority_score' => 0.0, // Will be calculated below
+        ]);
+
+        // Calculate and update priority score
+        $priorityScore = $this->movieReportService->calculatePriorityScore($report);
+        $report->update(['priority_score' => $priorityScore]);
+
+        // Also update priority scores for other pending reports of same type
+        MovieReport::where('movie_id', $movie->id)
+            ->where('type', $report->type)
+            ->where('status', \App\Enums\ReportStatus::PENDING)
+            ->where('id', '!=', $report->id)
+            ->update(['priority_score' => $priorityScore]);
+
+        return response()->json([
+            'data' => [
+                'id' => $report->id,
+                'movie_id' => $report->movie_id,
+                'description_id' => $report->description_id,
+                'type' => $report->type->value,
+                'message' => $report->message,
+                'suggested_fix' => $report->suggested_fix,
+                'status' => $report->status->value,
+                'priority_score' => (float) $report->priority_score,
+                'created_at' => $report->created_at->toIso8601String(),
+            ],
+        ], 201);
     }
 }

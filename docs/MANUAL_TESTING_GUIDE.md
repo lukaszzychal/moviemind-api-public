@@ -15,11 +15,12 @@
 6. [Movie Relationships](#movie-relationships)
 7. [Generate API](#generate-api)
 8. [Jobs API](#jobs-api)
-9. [Health & Admin](#health--admin)
-10. [Security Verification](#security-verification)
-11. [Performance Testing](#performance-testing)
-12. [Troubleshooting](#troubleshooting)
-13. [Test Report Template](#test-report-template)
+9. [Movie Reports](#movie-reports)
+10. [Health & Admin](#health--admin)
+11. [Security Verification](#security-verification)
+12. [Performance Testing](#performance-testing)
+13. [Troubleshooting](#troubleshooting)
+14. [Test Report Template](#test-report-template)
 
 ---
 
@@ -31,6 +32,7 @@ This document provides comprehensive manual testing instructions for all MovieMi
 - **People:** Search, retrieve, refresh
 - **Generate:** AI description and bio generation
 - **Jobs:** Asynchronous job status tracking
+- **Movie Reports:** User error reporting and admin management
 - **Health:** System health checks
 - **Admin:** Feature flags and debug endpoints
 
@@ -1180,6 +1182,471 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ---
 
+## 📝 Movie Reports
+
+### Endpoints Overview
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/movies/{slug}/report` | Report an error in movie description | No |
+| `GET` | `/api/v1/admin/reports` | List all movie reports (with filtering) | Yes |
+| `POST` | `/api/v1/admin/reports/{id}/verify` | Verify report and trigger regeneration | Yes |
+
+### Report Types
+
+- `grammar` - Grammar or spelling errors (weight: 1)
+- `factual_error` - Factual inaccuracies (weight: 3)
+- `inappropriate` - Inappropriate content (weight: 5)
+- `hallucination` - AI hallucination (weight: 5)
+- `other` - Other issues (weight: 1)
+
+### Report Statuses
+
+- `pending` - Report submitted, awaiting verification
+- `verified` - Report verified by admin, regeneration queued
+- `resolved` - Description regenerated, issue resolved
+- `rejected` - Report rejected by admin
+
+### Priority Scoring
+
+Reports are automatically assigned a priority score based on:
+- Report type weight (see above)
+- Number of pending reports of the same type
+
+**Priority thresholds:**
+- **High:** `priority_score >= 3.0` (factual errors, inappropriate content, hallucinations)
+- **Medium:** `1.0 <= priority_score < 3.0` (grammar errors with multiple reports)
+- **Low:** `priority_score < 1.0` (single grammar/other reports)
+
+---
+
+### Scenario 1: User Reports an Error
+
+**Objective:** Verify that users can report errors in movie descriptions.
+
+**Steps:**
+
+1. **Report a grammar error:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -d '{
+       "type": "grammar",
+       "message": "There is a typo in the description: 'recieve' should be 'receive'",
+       "suggested_fix": "Change 'recieve' to 'receive'",
+       "description_id": "550e8400-e29b-41d4-a716-446655440000"
+     }' | jq
+   ```
+
+2. **Verify response:**
+   ```json
+   {
+     "report_id": "660e8400-e29b-41d4-a716-446655440001",
+     "priority_score": 1.0,
+     "status": "pending"
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `201 Created`
+   - [ ] `report_id` present (UUID)
+   - [ ] `priority_score` calculated automatically
+   - [ ] Status is `pending`
+
+4. **Report a factual error (higher priority):**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "factual_error",
+       "message": "The description incorrectly states the release year as 2000, but it was 1999",
+       "suggested_fix": "Update release year to 1999"
+     }' | jq
+   ```
+   - [ ] Priority score is `3.0` (higher than grammar)
+
+5. **Report without description_id (general movie issue):**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "inappropriate",
+       "message": "The description contains inappropriate language"
+     }' | jq
+   ```
+   - [ ] Report created successfully (description_id is optional)
+   - [ ] Priority score is `5.0` (highest)
+
+6. **Test validation errors:**
+   ```bash
+   # Missing required fields
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "grammar"
+     }' | jq
+   ```
+   - [ ] Status code: `422 Unprocessable Entity`
+   - [ ] Error message indicates missing `message`
+
+   ```bash
+   # Invalid report type
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "invalid_type",
+       "message": "Test message"
+     }' | jq
+   ```
+   - [ ] Status code: `422 Unprocessable Entity`
+   - [ ] Error message indicates invalid type
+
+7. **Test with non-existent movie:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/non-existent-movie/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "grammar",
+       "message": "Test message"
+     }' | jq
+   ```
+   - [ ] Status code: `404 Not Found`
+
+---
+
+### Scenario 2: Admin Lists Reports
+
+**Objective:** Verify that admins can list and filter reports.
+
+**Prerequisites:** Admin authentication required (Basic Auth)
+
+**Steps:**
+
+1. **List all reports:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response structure:**
+   ```json
+   {
+     "data": [
+       {
+         "id": "660e8400-e29b-41d4-a716-446655440001",
+         "movie_id": "550e8400-e29b-41d4-a716-446655440000",
+         "description_id": "770e8400-e29b-41d4-a716-446655440002",
+         "type": "factual_error",
+         "message": "The description incorrectly states the release year...",
+         "suggested_fix": "Update release year to 1999",
+         "status": "pending",
+         "priority_score": 3.0,
+         "verified_by": null,
+         "verified_at": null,
+         "resolved_at": null,
+         "created_at": "2025-12-18T13:24:00+00:00"
+       }
+     ],
+     "meta": {
+       "current_page": 1,
+       "per_page": 50,
+       "total": 1,
+       "last_page": 1
+     }
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] Reports sorted by `priority_score DESC, created_at DESC`
+   - [ ] High priority reports appear first
+   - [ ] Pagination metadata present
+
+4. **Filter by status:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?status=pending" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only pending reports returned
+   - [ ] Status code: `200 OK`
+
+5. **Filter by priority (high):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=high" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only reports with `priority_score >= 3.0` returned
+   - [ ] All returned reports have high priority
+
+6. **Filter by priority (medium):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=medium" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only reports with `1.0 <= priority_score < 3.0` returned
+
+7. **Filter by priority (low):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=low" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only reports with `priority_score < 1.0` returned
+
+8. **Combine filters:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?status=pending&priority=high" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only high-priority pending reports returned
+
+9. **Test pagination:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?per_page=10&page=1" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Maximum 10 reports per page
+   - [ ] Pagination metadata correct
+
+10. **Test without authentication:**
+    ```bash
+    curl -X GET "http://localhost:8000/api/v1/admin/reports" \
+      -H "Accept: application/json" | jq
+    ```
+    - [ ] Status code: `401 Unauthorized`
+
+---
+
+### Scenario 3: Admin Verifies Report
+
+**Objective:** Verify that admins can verify reports and trigger automatic regeneration.
+
+**Prerequisites:** 
+- Admin authentication required
+- Queue worker must be running (for regeneration job)
+
+**Steps:**
+
+1. **Verify a report:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/660e8400-e29b-41d4-a716-446655440001/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response:**
+   ```json
+   {
+     "id": "660e8400-e29b-41d4-a716-446655440001",
+     "movie_id": "550e8400-e29b-41d4-a716-446655440000",
+     "description_id": "770e8400-e29b-41d4-a716-446655440002",
+     "status": "verified",
+     "verified_at": "2025-12-18T13:25:00+00:00"
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] Status changed to `verified`
+   - [ ] `verified_at` timestamp present
+   - [ ] Regeneration job queued (check queue logs)
+
+4. **Check queue for regeneration job:**
+   ```bash
+   # Check Horizon dashboard or queue logs
+   tail -f storage/logs/laravel.log | grep "RegenerateMovieDescriptionJob"
+   ```
+   - [ ] `RegenerateMovieDescriptionJob` dispatched
+   - [ ] Job contains correct `movie_id` and `description_id`
+
+5. **Verify report after regeneration job completes:**
+   ```bash
+   # Wait for job to complete, then check report status
+   curl -X GET "http://localhost:8000/api/v1/admin/reports/660e8400-e29b-41d4-a716-446655440001" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status changed to `resolved` (after job completion)
+   - [ ] `resolved_at` timestamp present
+   - [ ] Description text updated (check movie endpoint)
+
+6. **Test with non-existent report:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/non-existent-id/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `404 Not Found`
+
+7. **Test without authentication:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/660e8400-e29b-41d4-a716-446655440001/verify" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `401 Unauthorized`
+
+8. **Test verification without description_id:**
+   ```bash
+   # Create report without description_id
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "other",
+       "message": "General movie issue"
+     }' | jq
+   
+   # Verify the report
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/{report_id}/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Report verified successfully
+   - [ ] No regeneration job queued (description_id is null)
+
+---
+
+### Scenario 4: End-to-End Report Flow
+
+**Objective:** Verify complete flow from user report to resolution.
+
+**Steps:**
+
+1. **User reports an error:**
+   ```bash
+   REPORT_RESPONSE=$(curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "factual_error",
+       "message": "The description contains incorrect information about the director",
+       "suggested_fix": "Update director information"
+     }' | jq -r '.report_id')
+   
+   echo "Report ID: $REPORT_RESPONSE"
+   ```
+
+2. **Admin lists reports and sees new report:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?status=pending&priority=high" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq '.data[] | select(.id == "'"$REPORT_RESPONSE"'")'
+   ```
+   - [ ] Report appears in high-priority pending reports
+   - [ ] Priority score is `3.0` (factual_error weight)
+
+3. **Admin verifies report:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/$REPORT_RESPONSE/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status changed to `verified`
+   - [ ] Regeneration job queued
+
+4. **Wait for regeneration job to complete:**
+   ```bash
+   # Check job status in Horizon or logs
+   # Wait for RegenerateMovieDescriptionJob to complete
+   ```
+
+5. **Verify report is resolved:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports/$REPORT_RESPONSE" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status is `resolved`
+   - [ ] `resolved_at` timestamp present
+
+6. **Verify description was regenerated:**
+   ```bash
+   # Get movie with updated description
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
+     -H "Accept: application/json" | jq '.descriptions[] | select(.id == "description_id_from_report")'
+   ```
+   - [ ] Description text updated
+   - [ ] New `ai_model` and `created_at` timestamp
+
+---
+
+### Scenario 5: Priority Score Calculation
+
+**Objective:** Verify that priority scores are calculated correctly.
+
+**Steps:**
+
+1. **Create multiple reports of different types:**
+   ```bash
+   # Grammar error (weight: 1)
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{"type": "grammar", "message": "Typo in description"}' | jq '.priority_score'
+   # Should return: 1.0
+   
+   # Factual error (weight: 3)
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{"type": "factual_error", "message": "Incorrect information"}' | jq '.priority_score'
+   # Should return: 3.0
+   
+   # Inappropriate content (weight: 5)
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{"type": "inappropriate", "message": "Inappropriate language"}' | jq '.priority_score'
+   # Should return: 5.0
+   ```
+
+2. **Verify priority filtering:**
+   ```bash
+   # High priority (>= 3.0)
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=high" \
+     -u "admin:password" | jq '.data[] | .priority_score'
+   # Should only show: 3.0, 5.0
+   
+   # Medium priority (1.0 <= score < 3.0)
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=medium" \
+     -u "admin:password" | jq '.data[] | .priority_score'
+   # Should only show: 1.0
+   
+   # Low priority (< 1.0)
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=low" \
+     -u "admin:password" | jq '.data[] | .priority_score'
+   # Should be empty (all reports have score >= 1.0)
+   ```
+
+---
+
+### Troubleshooting Movie Reports
+
+**Problem: Report not appearing in admin list**
+
+**Solution:**
+- Verify report was created: Check database `movie_reports` table
+- Check authentication: Admin endpoint requires Basic Auth
+- Verify status filter: Report might be filtered out
+
+**Problem: Regeneration job not queued after verification**
+
+**Solution:**
+- Check if `description_id` is null (no job queued for general movie reports)
+- Verify queue worker is running: `php artisan queue:work` or Horizon
+- Check logs for job dispatch errors
+
+**Problem: Priority score seems incorrect**
+
+**Solution:**
+- Verify report type weight in `ReportType` enum
+- Check if multiple reports of same type affect aggregation
+- Verify priority calculation logic in `MovieReportService`
+
+---
+
 ## 🏥 Health & Admin
 
 ### Endpoints Overview
@@ -1460,6 +1927,7 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 | Relationships | X | Y | Z |
 | Generate | X | Y | Z |
 | Jobs | X | Y | Z |
+| Movie Reports | X | Y | Z |
 | Health/Admin | X | Y | Z |
 
 ## Issues Found

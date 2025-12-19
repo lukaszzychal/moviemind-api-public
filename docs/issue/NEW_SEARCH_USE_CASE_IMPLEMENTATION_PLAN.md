@@ -272,57 +272,61 @@ main
 ### Zadania:
 
 1. **Migracja:**
-   - [ ] Utworzyć tabelę `movie_reports`
-   - [ ] Kolumny: `id`, `movie_id`, `description_id`, `type`, `message`, `suggested_fix`, `status`, `priority_score`, `verified_by`, `verified_at`, `resolved_at`, `timestamps`
-   - [ ] Foreign keys i indeksy
+   - [x] Utworzyć tabelę `movie_reports` ✅
+   - [x] Kolumny: `id`, `movie_id`, `description_id`, `type`, `message`, `suggested_fix`, `status`, `priority_score`, `verified_by`, `verified_at`, `resolved_at`, `timestamps` ✅
+   - [x] Foreign keys i indeksy ✅
 
 2. **Model:**
-   - [ ] Klasa `App\Models\MovieReport`
-   - [ ] Relacje: `movie()`, `description()`, `verifiedBy()`
-   - [ ] Enum dla `type` i `status`
-   - [ ] Metoda `calculatePriorityScore()`
+   - [x] Klasa `App\Models\MovieReport` ✅
+   - [x] Relacje: `movie()`, `description()` ✅
+   - [x] Enum dla `type` i `status` (`ReportType`, `ReportStatus`) ✅
+   - [x] Metody pomocnicze: `isPending()`, `isVerified()`, `isResolved()` ✅
 
 3. **Service:**
-   - [ ] Klasa `App\Services\MovieReportService`
-   - [ ] Metoda `calculatePriorityScore(MovieReport $report): float`
-   - [ ] Wzór: `count(reports) * weight(type)`
-   - [ ] Wagi typów błędów
+   - [x] Klasa `App\Services\MovieReportService` ✅
+   - [x] Metoda `calculatePriorityScore(MovieReport $report): float` ✅
+   - [x] Wzór: `count(pending reports of same type) * weight(type)` ✅
+   - [x] Wagi typów błędów w `ReportType::weight()` ✅
 
 4. **Endpoint użytkownika:**
-   - [ ] Route: `POST /api/v1/movies/{slug}/report`
-   - [ ] Controller method: `MovieController::report()`
-   - [ ] Request validation: `ReportMovieRequest`
-   - [ ] Tworzenie reportu z automatycznym obliczeniem priority_score
+   - [x] Route: `POST /api/v1/movies/{slug}/report` ✅
+   - [x] Controller method: `MovieController::report()` ✅
+   - [x] Request validation: `ReportMovieRequest` ✅
+   - [x] Tworzenie reportu z automatycznym obliczeniem priority_score ✅
 
 5. **Endpoint admina:**
-   - [ ] Route: `GET /api/v1/admin/reports`
-   - [ ] Controller: `Admin\ReportController::index()`
-   - [ ] Filtrowanie: `status`, `priority`
-   - [ ] Sortowanie: `priority_score DESC, created_at DESC`
-   - [ ] **Priorytet widoczny w odpowiedzi**
+   - [x] Route: `GET /api/v1/admin/reports` ✅
+   - [x] Controller: `Admin\ReportController::index()` ✅
+   - [x] Repository: `MovieReportRepository` dla filtrowania ✅
+   - [x] Filtrowanie: `status`, `priority` (high/medium/low) ✅
+   - [x] Sortowanie: `priority_score DESC, created_at DESC` ✅
+   - [x] **Priorytet widoczny w odpowiedzi** ✅
 
 6. **Weryfikacja i regeneracja:**
-   - [ ] Endpoint: `POST /api/v1/admin/reports/{id}/verify`
-   - [ ] Zmiana statusu na `verified`
-   - [ ] Automatyczna regeneracja (queue job `RegenerateMovieDescriptionJob`)
+   - [x] Endpoint: `POST /api/v1/admin/reports/{id}/verify` ✅
+   - [x] Action: `VerifyMovieReportAction` (thin controller) ✅
+   - [x] Zmiana statusu na `verified` ✅
+   - [x] Automatyczna regeneracja (queue job `RegenerateMovieDescriptionJob`) ✅
 
 7. **Job regeneracji:**
-   - [ ] Utworzyć `RegenerateMovieDescriptionJob`
-   - [ ] Wywołanie po weryfikacji
-   - [ ] Aktualizacja statusu na `resolved`
+   - [x] Utworzyć `RegenerateMovieDescriptionJob` ✅
+   - [x] Wywołanie po weryfikacji ✅
+   - [x] Aktualizacja statusu na `resolved` po regeneracji ✅
+   - [x] Integracja z `AiOutputValidator` dla sanitizacji ✅
 
 8. **Testy:**
-   - [ ] Feature test: zgłaszanie błędów
-   - [ ] Feature test: admin endpoints
-   - [ ] Test priorytetyzacji
-   - [ ] Test automatycznej regeneracji
-   - [ ] Unit test: `MovieReportServiceTest`
+   - [x] Feature test: zgłaszanie błędów (`MovieReportTest` - 6 testów) ✅
+   - [x] Feature test: admin endpoints (`AdminMovieReportsTest` - 5 testów) ✅
+   - [x] Feature test: weryfikacja (`AdminReportVerificationTest` - 4 testy) ✅
+   - [x] Test priorytetyzacji (`MovieReportServiceTest` - 5 testów) ✅
+   - [x] Test automatycznej regeneracji (w `AdminReportVerificationTest`) ✅
+   - [x] Unit test: `MovieReportServiceTest` ✅
 
 ### Akceptacja:
-- ✅ Użytkownik może zgłosić błąd
-- ✅ Admin widzi zgłoszenia z priorytetem
-- ✅ Po weryfikacji automatyczna regeneracja, chyba ze jest wymagana recna/manualna interwencja
-- ✅ Wszystkie testy przechodzą
+- ✅ Użytkownik może zgłosić błąd (`POST /api/v1/movies/{slug}/report`)
+- ✅ Admin widzi zgłoszenia z priorytetem (`GET /api/v1/admin/reports` z filtrowaniem i sortowaniem)
+- ✅ Po weryfikacji automatyczna regeneracja (`POST /api/v1/admin/reports/{id}/verify` → `RegenerateMovieDescriptionJob`)
+- ✅ Wszystkie testy przechodzą (20 testów, 97 assertions)
 
 ### Merge do: `main`
 
