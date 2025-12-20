@@ -32,12 +32,15 @@ POST /api/v1/people/{slug}/refresh  # Odświeżenie danych z TMDb
 ### Endpointy Movie (obecnie)
 
 ```
-GET  /api/v1/movies              # Lista filmów z prostym wyszukiwaniem (?q=)
-GET  /api/v1/movies/search       # Zaawansowane wyszukiwanie (local + external, paginacja, cache)
-GET  /api/v1/movies/{slug}       # Szczegóły filmu
-GET  /api/v1/movies/{slug}/related  # Powiązane filmy (sequels, prequels, similar)
-POST /api/v1/movies/{slug}/refresh  # Odświeżenie danych z TMDb
-POST /api/v1/movies/{slug}/report   # Zgłaszanie błędów w opisach
+GET  /api/v1/movies                  # Lista filmów z prostym wyszukiwaniem (?q=) lub bulk retrieve (?slugs=)
+GET  /api/v1/movies/search           # Zaawansowane wyszukiwanie (local + external, paginacja, cache, sort, local_limit, external_limit)
+POST /api/v1/movies/bulk             # Bulk retrieve multiple movies (POST)
+GET  /api/v1/movies/compare          # Porównanie dwóch filmów (?slug1=...&slug2=...)
+GET  /api/v1/movies/{slug}           # Szczegóły filmu (rate limited: show)
+GET  /api/v1/movies/{slug}/related   # Powiązane filmy (sequels, prequels, similar, genre filters)
+GET  /api/v1/movies/{slug}/collection # Kolekcja filmów (wszystkie filmy z tej samej kolekcji TMDb)
+POST /api/v1/movies/{slug}/refresh   # Odświeżenie danych z TMDb
+POST /api/v1/movies/{slug}/report    # Zgłaszanie błędów w opisach (rate limited: report)
 ```
 
 ### Architektura Movie
@@ -75,10 +78,13 @@ POST /api/v1/movies/{slug}/report   # Zgłaszanie błędów w opisach
 | **Wyszukiwanie external (TMDb)** | ✅ W `MovieSearchService` | ❌ Brak |
 | **Paginacja** | ✅ `?page=`, `?per_page=` | ❌ Brak |
 | **Zaawansowane filtry** | ✅ `?year=`, `?director=`, `?actor=` | ❌ Brak |
+| **Sortowanie** | ✅ `?sort=title|release_year|created_at`, `?order=asc|desc` | ❌ Brak (plan: Faza 4) |
+| **Limit per source** | ✅ `?local_limit=`, `?external_limit=` | ❌ Brak (plan: Faza 4) |
 | **Cache** | ✅ Tagged cache (`movie_search`) | ❌ Brak |
 | **Confidence scoring** | ✅ `matchType`, `confidence` | ❌ Brak |
 | **Walidacja parametrów** | ✅ `SearchMovieRequest` | ❌ Brak |
 | **Rate limiting** | ✅ `adaptive.rate.limit:search` | ❌ Brak |
+| **Bulk operations** | ✅ `GET /movies?slugs=...`, `POST /movies/bulk` | ❌ Brak (plan: Faza 4) |
 
 ### 2. Pobieranie pojedynczego zasobu
 
@@ -107,7 +113,9 @@ POST /api/v1/movies/{slug}/report   # Zgłaszanie błędów w opisach
 |--------|-------|--------|
 | **Endpoint** | ✅ `/movies/{slug}/related` | ❌ Brak |
 | **Typy relacji** | ✅ SEQUEL, PREQUEL, SERIES, SPINOFF, REMAKE, SIMILAR | ❌ Brak (ale istnieje relacja `movies()` w modelu) |
-| **Filtrowanie** | ✅ `?type=collection|similar|all` | ❌ Brak |
+| **Filtrowanie** | ✅ `?type=collection|similar|all`, `?genre=`, `?genres[]=` | ❌ Brak (plan: Related People w Faza 3) |
+| **Collections endpoint** | ✅ `/movies/{slug}/collection` (kolekcja TMDb) | ❌ Brak (nie dotyczy Person) |
+| **Comparison endpoint** | ✅ `/movies/compare?slug1=...&slug2=...` | ❌ Brak (plan: Faza 4) |
 
 ### 5. Architektura kodu
 
@@ -555,44 +563,235 @@ GET /api/v1/people/search?q=Christopher&roles[]=DIRECTOR&roles[]=WRITER
 
 ---
 
-## Dodatkowe Funkcjonalności dla Movie
+### 4. Rozszerzenie wyszukiwania Person o sortowanie i limit per source
 
-### 1. Rozszerzenie endpointu Related o filtry po gatunkach
+**Cel:** Umożliwienie sortowania wyników wyszukiwania oraz kontroli liczby wyników z każdego źródła (local vs external).
 
-**Cel:** Filtrowanie powiązanych filmów po gatunku.
+**Parametry sortowania:**
+- `?sort=name|birth_year|created_at` (default: relevance/confidence)
+- `?order=asc|desc` (default: `asc` dla `name`, `desc` dla `birth_year` i `created_at`)
 
-**Parametry:**
-- `?genre=slug` - gatunek (np. `science-fiction`)
-- `?genres[]=slug1&genres[]=slug2` - wiele gatunków
+**Parametry limit per source:**
+- `?local_limit=20` - limit wyników lokalnych (default: `per_page`)
+- `?external_limit=10` - limit wyników external (default: `per_page`)
 
 **Implementacja:**
-- Rozszerzenie `MovieController::related()` o filtrowanie po `genres`
+- Rozszerzenie `PersonSearchService::search()` o sortowanie (podobnie jak w `MovieSearchService`)
+- Rozszerzenie `PersonSearchService::search()` o osobne limity dla local i external wyników
+- Zaktualizowanie `generateCacheKey()` aby uwzględniał parametry sortowania i limitów
+
+**Uwaga:** Wymaga najpierw utworzenia `PersonSearchService` (Faza 1).
 
 ---
 
-### 2. Rozszerzenie wyszukiwania Movie o sortowanie
+### 5. Bulk Operations dla Person (consistency z Movie)
 
-**Cel:** Sortowanie wyników wyszukiwania.
+**Cel:** Umożliwienie pobrania wielu osób w jednym requestcie (consistency z Movie bulk operations).
+
+**Endpoints:**
+```
+GET /api/v1/people?slugs=slug1,slug2,slug3  # Bulk retrieve (RESTful, dla krótkich list)
+POST /api/v1/people/bulk                    # Bulk retrieve (POST, dla długich list)
+```
+
+**Request (POST):**
+```json
+{
+  "slugs": ["keanu-reeves-1964", "christopher-nolan-1970", "scarlett-johansson-1984"],
+  "include": ["bios", "movies"] // opcjonalne
+}
+```
+
+**Response:**
+```json
+{
+  "data": [
+    { /* person 1 */ },
+    { /* person 2 */ },
+    { /* person 3 */ }
+  ],
+  "not_found": ["non-existent-slug"],
+  "count": 3,
+  "requested_count": 3
+}
+```
+
+**Ograniczenia:**
+- Limit slugów na request (np. max 50) - consistency z Movie bulk
+- Rate limiting (może używać `adaptive.rate.limit:bulk` jak Movie)
+- Cache'owanie (może być trudne dla wielu slugów - podobnie jak Movie)
+
+**Implementacja:**
+- Nowa metoda `PersonController::bulk()` (wzorowana na `MovieController::bulk()`)
+- Request validator `BulkPeopleRequest` (wzorowany na `BulkMoviesRequest`)
+- Użycie `PersonRepository::findBySlugs()` (nowa metoda, podobna do `MovieRepository::findBySlugs()`)
+
+**Pliki do utworzenia:**
+- `api/app/Http/Requests/BulkPeopleRequest.php`
+- `api/app/Http/Controllers/Api/PersonController.php` - metoda `bulk()`
+- `api/tests/Feature/PersonBulkTest.php`
+
+**Modyfikacje:**
+- `api/routes/api.php` - dodanie routes:
+  - `GET /api/v1/people` - rozszerzenie o obsługę `?slugs=` (podobnie jak Movie)
+  - `POST /api/v1/people/bulk` - nowy route z rate limiting `adaptive.rate.limit:bulk`
+- `api/app/Repositories/PersonRepository.php` - metoda `findBySlugs(array $slugs)`
+- `api/app/Http/Controllers/Api/PersonController.php` - rozszerzenie `index()` o obsługę `?slugs=`
+
+**Priorytet:** Średni (consistency z Movie, może być przydatne)
+
+---
+
+### 6. Person Comparison Endpoint (podobnie jak Movie Comparison)
+
+**Cel:** Porównanie dwóch osób (wspólne filmy, różnica wieku, wspólne role, similarity score).
+
+**Endpoint:**
+```
+GET /api/v1/people/compare?slug1=keanu-reeves-1964&slug2=laurence-fishburne-1961
+```
+
+**Response:**
+```json
+{
+  "person1": {
+    "id": "...",
+    "slug": "keanu-reeves-1964",
+    "name": "Keanu Reeves",
+    "birth_year": 1964
+  },
+  "person2": {
+    "id": "...",
+    "slug": "laurence-fishburne-1961",
+    "name": "Laurence Fishburne",
+    "birth_year": 1961
+  },
+  "comparison": {
+    "common_movies": [
+      {
+        "movie_id": "...",
+        "movie_slug": "the-matrix-1999",
+        "movie_title": "The Matrix",
+        "person1_role": "ACTOR",
+        "person2_role": "ACTOR",
+        "person1_character": "Neo",
+        "person2_character": "Morpheus"
+      }
+    ],
+    "common_roles": ["ACTOR"],
+    "age_difference": 3,
+    "collaborations_count": 3,
+    "similarity_score": 0.85
+  }
+}
+```
+
+**Funkcjonalności porównania:**
+- **Wspólne filmy** - filmy, w których obie osoby brały udział (z rolami i character_name)
+- **Wspólne role** - role, które obie osoby pełniły (ACTOR, DIRECTOR, WRITER, PRODUCER)
+- **Różnica wieku** - różnica w latach między datami urodzenia
+- **Liczba współpracy** - liczba wspólnych filmów
+- **Similarity score** - wskaźnik podobieństwa (0.0-1.0) bazujący na:
+  - Liczbie wspólnych filmów (waga: 0.5)
+  - Wspólnych rolach (waga: 0.2)
+  - Różnicy wieku (waga: 0.1, im mniejsza różnica tym wyższy score)
+  - Wspólnych gatunkach filmów (waga: 0.2)
+
+**Implementacja:**
+- Nowa metoda `PersonController::compare()`
+- Service `PersonComparisonService` (wzorowany na `MovieComparisonService`)
+- Request validator `ComparePeopleRequest` (wzorowany na `CompareMoviesRequest`)
+- Algorytm similarity score podobny do `MovieComparisonService`
+
+**Pliki do utworzenia:**
+- `api/app/Services/PersonComparisonService.php`
+- `api/app/Http/Requests/ComparePeopleRequest.php`
+- `api/app/Http/Controllers/Api/PersonController.php` - metoda `compare()`
+- `api/tests/Feature/PersonComparisonTest.php`
+
+**Modyfikacje:**
+- `api/routes/api.php` - dodanie route `GET /api/v1/people/compare`
+
+**Priorytet:** Niski (może być nisza, podobnie jak Movie Comparison, ale consistency z Movie)
+
+---
+
+## Dodatkowe Funkcjonalności dla Movie
+
+> **Uwaga:** Wszystkie poniższe funkcjonalności zostały już zrealizowane w ramach `MOVIE_ENDPOINTS_IMPROVEMENTS_PLAN.md` (status: ✅ COMPLETED).
+
+### ✅ 1. Rozszerzenie endpointu Related o filtry po gatunkach (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 3.2  
+**PR:** #162
+
+**Parametry:**
+- `?genre=slug` - gatunek (np. `science-fiction`)
+- `?genres[]=slug1&genres[]=slug2` - wiele gatunków (AND logic)
+
+**Implementacja:**
+- Rozszerzono `MovieController::related()` o filtrowanie po `genres`
+- Dodano metody pomocnicze `parseGenreFilters()` i `matchesGenreFilter()`
+
+---
+
+### ✅ 2. Rozszerzenie wyszukiwania Movie o sortowanie (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 2  
+**PR:** #157
 
 **Parametry:**
 - `?sort=title|release_year|created_at` (default: relevance/confidence)
 - `?order=asc|desc` (default: `desc` dla `release_year`, `asc` dla `title`)
 
 **Implementacja:**
-- Rozszerzenie `MovieSearchService::search()` o sortowanie
+- Rozszerzono `MovieSearchService::search()` o sortowanie
 
 ---
 
-### 3. Rozszerzenie wyszukiwania Movie o limit per source
+### ✅ 3. Rozszerzenie wyszukiwania Movie o limit per source (ZREALIZOWANE)
 
-**Cel:** Kontrola liczby wyników z każdego źródła (local vs external).
+**Status:** ✅ Zrealizowane w Faza 3.3  
+**PR:** #163
 
 **Parametry:**
 - `?local_limit=20` - limit wyników lokalnych (default: `per_page`)
 - `?external_limit=10` - limit wyników external (default: `per_page`)
 
 **Implementacja:**
-- Rozszerzenie `MovieSearchService::search()` o osobne limity
+- Rozszerzono `MovieSearchService::search()` o osobne limity
+- Zaktualizowano `generateCacheKey()` aby uwzględniał limity
+
+---
+
+### ✅ 4. Collections Endpoint (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 3.1  
+**PR:** #161
+
+**Endpoint:** `GET /api/v1/movies/{slug}/collection`  
+**Opis:** Zwraca wszystkie filmy należące do tej samej kolekcji TMDb (np. "The Matrix Collection")
+
+---
+
+### ✅ 5. Bulk Operations (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 2  
+**PR:** #157, #160
+
+**Endpoints:**
+- `GET /api/v1/movies?slugs=slug1,slug2,slug3` - bulk retrieve (RESTful)
+- `POST /api/v1/movies/bulk` - bulk retrieve (POST dla długich list)
+
+---
+
+### ✅ 6. Movie Comparison Endpoint (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 8  
+**PR:** #164
+
+**Endpoint:** `GET /api/v1/movies/compare?slug1=...&slug2=...`  
+**Opis:** Porównanie dwóch filmów (wspólne gatunki, wspólne osoby, różnica lat, similarity score)
 
 ---
 
@@ -667,7 +866,7 @@ GET /api/v1/people/search?q=Christopher&roles[]=DIRECTOR&roles[]=WRITER
 ### Faza 4: Rozszerzenia wyszukiwania (UX improvements)
 
 **Priorytet:** Średni/Niski  
-**Szacowany czas:** 1-2 tygodnie
+**Szacowany czas:** 2-3 tygodnie
 
 9. ✅ **Filtry wyszukiwania Person**
    - `?role=`, `?roles[]=`
@@ -675,10 +874,25 @@ GET /api/v1/people/search?q=Christopher&roles[]=DIRECTOR&roles[]=WRITER
    - `?birth_year=`, `?birthplace=`
    - Testy (Feature)
 
-10. ✅ **Rozszerzenia Movie (opcjonalne)**
-    - Sortowanie w wyszukiwaniu
-    - Filtry po gatunkach w Related
-    - Limit per source
+10. ✅ **Rozszerzenie wyszukiwania Person o sortowanie i limit per source**
+    - `?sort=name|birth_year|created_at`, `?order=asc|desc`
+    - `?local_limit=`, `?external_limit=`
+    - Zaktualizowanie cache key generation
+    - Testy (Feature)
+
+11. ✅ **Bulk Operations dla Person**
+    - `GET /api/v1/people?slugs=...` (rozszerzenie `index()`)
+    - `POST /api/v1/people/bulk`
+    - `PersonRepository::findBySlugs()`
+    - Request validator `BulkPeopleRequest`
+    - Testy (Feature)
+
+12. ✅ **Person Comparison Endpoint**
+    - `GET /api/v1/people/compare?slug1=...&slug2=...`
+    - Service `PersonComparisonService`
+    - Request validator `ComparePeopleRequest`
+    - Algorytm similarity score
+    - Testy (Feature)
 
 ---
 
@@ -843,5 +1057,7 @@ Użytkownik wspomniał o dodatkowych rolach/relacjach:
 ---
 
 **Autor:** AI Assistant  
-**Data ostatniej aktualizacji:** 2025-01-XX
+**Data ostatniej aktualizacji:** 2025-12-20
+
+**Uwaga:** Plan został zaktualizowany po zrealizowaniu wszystkich funkcjonalności z `MOVIE_ENDPOINTS_IMPROVEMENTS_PLAN.md` (status: ✅ COMPLETED). Sekcja "Dodatkowe Funkcjonalności dla Movie" zawiera informacje o zrealizowanych funkcjonalnościach.
 
