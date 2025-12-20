@@ -32,12 +32,15 @@ POST /api/v1/people/{slug}/refresh  # Odświeżenie danych z TMDb
 ### Endpointy Movie (obecnie)
 
 ```
-GET  /api/v1/movies              # Lista filmów z prostym wyszukiwaniem (?q=)
-GET  /api/v1/movies/search       # Zaawansowane wyszukiwanie (local + external, paginacja, cache)
-GET  /api/v1/movies/{slug}       # Szczegóły filmu
-GET  /api/v1/movies/{slug}/related  # Powiązane filmy (sequels, prequels, similar)
-POST /api/v1/movies/{slug}/refresh  # Odświeżenie danych z TMDb
-POST /api/v1/movies/{slug}/report   # Zgłaszanie błędów w opisach
+GET  /api/v1/movies                  # Lista filmów z prostym wyszukiwaniem (?q=) lub bulk retrieve (?slugs=)
+GET  /api/v1/movies/search           # Zaawansowane wyszukiwanie (local + external, paginacja, cache, sort, local_limit, external_limit)
+POST /api/v1/movies/bulk             # Bulk retrieve multiple movies (POST)
+GET  /api/v1/movies/compare          # Porównanie dwóch filmów (?slug1=...&slug2=...)
+GET  /api/v1/movies/{slug}           # Szczegóły filmu (rate limited: show)
+GET  /api/v1/movies/{slug}/related   # Powiązane filmy (sequels, prequels, similar, genre filters)
+GET  /api/v1/movies/{slug}/collection # Kolekcja filmów (wszystkie filmy z tej samej kolekcji TMDb)
+POST /api/v1/movies/{slug}/refresh   # Odświeżenie danych z TMDb
+POST /api/v1/movies/{slug}/report    # Zgłaszanie błędów w opisach (rate limited: report)
 ```
 
 ### Architektura Movie
@@ -75,10 +78,13 @@ POST /api/v1/movies/{slug}/report   # Zgłaszanie błędów w opisach
 | **Wyszukiwanie external (TMDb)** | ✅ W `MovieSearchService` | ❌ Brak |
 | **Paginacja** | ✅ `?page=`, `?per_page=` | ❌ Brak |
 | **Zaawansowane filtry** | ✅ `?year=`, `?director=`, `?actor=` | ❌ Brak |
+| **Sortowanie** | ✅ `?sort=title|release_year|created_at`, `?order=asc|desc` | ❌ Brak |
+| **Limit per source** | ✅ `?local_limit=`, `?external_limit=` | ❌ Brak |
 | **Cache** | ✅ Tagged cache (`movie_search`) | ❌ Brak |
 | **Confidence scoring** | ✅ `matchType`, `confidence` | ❌ Brak |
 | **Walidacja parametrów** | ✅ `SearchMovieRequest` | ❌ Brak |
 | **Rate limiting** | ✅ `adaptive.rate.limit:search` | ❌ Brak |
+| **Bulk operations** | ✅ `GET /movies?slugs=...`, `POST /movies/bulk` | ❌ Brak |
 
 ### 2. Pobieranie pojedynczego zasobu
 
@@ -107,7 +113,9 @@ POST /api/v1/movies/{slug}/report   # Zgłaszanie błędów w opisach
 |--------|-------|--------|
 | **Endpoint** | ✅ `/movies/{slug}/related` | ❌ Brak |
 | **Typy relacji** | ✅ SEQUEL, PREQUEL, SERIES, SPINOFF, REMAKE, SIMILAR | ❌ Brak (ale istnieje relacja `movies()` w modelu) |
-| **Filtrowanie** | ✅ `?type=collection|similar|all` | ❌ Brak |
+| **Filtrowanie** | ✅ `?type=collection|similar|all`, `?genre=`, `?genres[]=` | ❌ Brak |
+| **Collections endpoint** | ✅ `/movies/{slug}/collection` (kolekcja TMDb) | ❌ Brak |
+| **Comparison endpoint** | ✅ `/movies/compare?slug1=...&slug2=...` | ❌ Brak |
 
 ### 5. Architektura kodu
 
@@ -557,42 +565,80 @@ GET /api/v1/people/search?q=Christopher&roles[]=DIRECTOR&roles[]=WRITER
 
 ## Dodatkowe Funkcjonalności dla Movie
 
-### 1. Rozszerzenie endpointu Related o filtry po gatunkach
+> **Uwaga:** Wszystkie poniższe funkcjonalności zostały już zrealizowane w ramach `MOVIE_ENDPOINTS_IMPROVEMENTS_PLAN.md` (status: ✅ COMPLETED).
 
-**Cel:** Filtrowanie powiązanych filmów po gatunku.
+### ✅ 1. Rozszerzenie endpointu Related o filtry po gatunkach (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 3.2  
+**PR:** #162
 
 **Parametry:**
 - `?genre=slug` - gatunek (np. `science-fiction`)
-- `?genres[]=slug1&genres[]=slug2` - wiele gatunków
+- `?genres[]=slug1&genres[]=slug2` - wiele gatunków (AND logic)
 
 **Implementacja:**
-- Rozszerzenie `MovieController::related()` o filtrowanie po `genres`
+- Rozszerzono `MovieController::related()` o filtrowanie po `genres`
+- Dodano metody pomocnicze `parseGenreFilters()` i `matchesGenreFilter()`
 
 ---
 
-### 2. Rozszerzenie wyszukiwania Movie o sortowanie
+### ✅ 2. Rozszerzenie wyszukiwania Movie o sortowanie (ZREALIZOWANE)
 
-**Cel:** Sortowanie wyników wyszukiwania.
+**Status:** ✅ Zrealizowane w Faza 2  
+**PR:** #157
 
 **Parametry:**
 - `?sort=title|release_year|created_at` (default: relevance/confidence)
 - `?order=asc|desc` (default: `desc` dla `release_year`, `asc` dla `title`)
 
 **Implementacja:**
-- Rozszerzenie `MovieSearchService::search()` o sortowanie
+- Rozszerzono `MovieSearchService::search()` o sortowanie
 
 ---
 
-### 3. Rozszerzenie wyszukiwania Movie o limit per source
+### ✅ 3. Rozszerzenie wyszukiwania Movie o limit per source (ZREALIZOWANE)
 
-**Cel:** Kontrola liczby wyników z każdego źródła (local vs external).
+**Status:** ✅ Zrealizowane w Faza 3.3  
+**PR:** #163
 
 **Parametry:**
 - `?local_limit=20` - limit wyników lokalnych (default: `per_page`)
 - `?external_limit=10` - limit wyników external (default: `per_page`)
 
 **Implementacja:**
-- Rozszerzenie `MovieSearchService::search()` o osobne limity
+- Rozszerzono `MovieSearchService::search()` o osobne limity
+- Zaktualizowano `generateCacheKey()` aby uwzględniał limity
+
+---
+
+### ✅ 4. Collections Endpoint (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 3.1  
+**PR:** #161
+
+**Endpoint:** `GET /api/v1/movies/{slug}/collection`  
+**Opis:** Zwraca wszystkie filmy należące do tej samej kolekcji TMDb (np. "The Matrix Collection")
+
+---
+
+### ✅ 5. Bulk Operations (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 2  
+**PR:** #157, #160
+
+**Endpoints:**
+- `GET /api/v1/movies?slugs=slug1,slug2,slug3` - bulk retrieve (RESTful)
+- `POST /api/v1/movies/bulk` - bulk retrieve (POST dla długich list)
+
+---
+
+### ✅ 6. Movie Comparison Endpoint (ZREALIZOWANE)
+
+**Status:** ✅ Zrealizowane w Faza 8  
+**PR:** #164
+
+**Endpoint:** `GET /api/v1/movies/compare?slug1=...&slug2=...`  
+**Opis:** Porównanie dwóch filmów (wspólne gatunki, wspólne osoby, różnica lat, similarity score)
 
 ---
 
@@ -843,5 +889,7 @@ Użytkownik wspomniał o dodatkowych rolach/relacjach:
 ---
 
 **Autor:** AI Assistant  
-**Data ostatniej aktualizacji:** 2025-01-XX
+**Data ostatniej aktualizacji:** 2025-12-20
+
+**Uwaga:** Plan został zaktualizowany po zrealizowaniu wszystkich funkcjonalności z `MOVIE_ENDPOINTS_IMPROVEMENTS_PLAN.md` (status: ✅ COMPLETED). Sekcja "Dodatkowe Funkcjonalności dla Movie" zawiera informacje o zrealizowanych funkcjonalnościach.
 
