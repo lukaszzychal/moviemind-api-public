@@ -12,6 +12,7 @@ Route::prefix('v1')->group(function () {
     Route::get('movies', [MovieController::class, 'index']);
     Route::get('movies/search', [MovieController::class, 'search'])->middleware('adaptive.rate.limit:search');
     Route::post('movies/bulk', [MovieController::class, 'bulk'])->middleware('adaptive.rate.limit:bulk');
+    Route::get('movies/compare', [MovieController::class, 'compare']);
     Route::get('movies/{slug}', [MovieController::class, 'show'])->middleware('adaptive.rate.limit:show');
     Route::get('movies/{slug}/related', [MovieController::class, 'related']);
     Route::get('movies/{slug}/collection', [MovieController::class, 'collection']);
