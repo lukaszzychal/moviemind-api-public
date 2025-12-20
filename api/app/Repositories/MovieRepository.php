@@ -131,4 +131,54 @@ class MovieRepository
 
         return null;
     }
+
+    /**
+     * Find multiple movies by slugs.
+     * Returns movies in the same order as requested slugs.
+     * Handles duplicate slugs by deduplicating them.
+     *
+     * @param  array<int, string>  $slugs
+     * @param  array<int, string>  $include  Relations to include (descriptions, people, genres)
+     * @return Collection<int, Movie>
+     */
+    public function findBySlugs(array $slugs, array $include = []): Collection
+    {
+        // Deduplicate slugs while preserving order
+        $uniqueSlugs = array_values(array_unique($slugs));
+
+        if (empty($uniqueSlugs)) {
+            return collect();
+        }
+
+        // Build relations array based on include parameter
+        $relations = ['defaultDescription'];
+        if (in_array('descriptions', $include, true)) {
+            $relations[] = 'descriptions';
+        }
+        if (in_array('people', $include, true)) {
+            $relations[] = 'people';
+        }
+        if (in_array('genres', $include, true)) {
+            $relations[] = 'genres';
+        }
+
+        // Fetch movies
+        $movies = Movie::with($relations)
+            ->withCount('descriptions')
+            ->whereIn('slug', $uniqueSlugs)
+            ->get();
+
+        // Create a map for quick lookup
+        $moviesBySlug = $movies->keyBy('slug');
+
+        // Return movies in the same order as requested slugs
+        $orderedMovies = collect();
+        foreach ($uniqueSlugs as $slug) {
+            if ($moviesBySlug->has($slug)) {
+                $orderedMovies->push($moviesBySlug->get($slug));
+            }
+        }
+
+        return $orderedMovies;
+    }
 }

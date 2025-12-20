@@ -7,6 +7,7 @@ use App\Enums\Locale;
 use App\Enums\RelationshipType;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkMoviesRequest;
 use App\Http\Requests\ReportMovieRequest;
 use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
@@ -42,6 +43,13 @@ class MovieController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        // Check if slugs parameter is provided (bulk retrieve)
+        $slugsParam = $request->query('slugs');
+        if ($slugsParam !== null) {
+            return $this->handleBulkRetrieve($request);
+        }
+
+        // Normal search
         $q = $request->query('q');
         $movies = $this->movieRepository->searchMovies($q, 50);
         $data = $movies->map(function (Movie $movie) {
@@ -53,6 +61,97 @@ class MovieController extends Controller
         });
 
         return $this->responseFormatter->formatMovieList($data->toArray());
+    }
+
+    /**
+     * Handle bulk retrieve via GET /movies?slugs=...
+     */
+    private function handleBulkRetrieve(Request $request): JsonResponse
+    {
+        // Parse slugs from query parameter (comma-separated string or array)
+        $slugsParam = $request->query('slugs');
+
+        // Handle empty or null slugs parameter
+        if ($slugsParam === null || $slugsParam === '') {
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                ],
+            ], 422);
+        }
+
+        $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
+        $slugs = array_map('trim', $slugs);
+        $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
+
+        // Validate slugs after filtering
+        if (empty($slugs)) {
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                ],
+            ], 422);
+        }
+
+        if (count($slugs) > 50) {
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field must not have more than 50 items.'],
+                ],
+            ], 422);
+        }
+
+        // Validate slug format
+        foreach ($slugs as $slug) {
+            if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
+                return response()->json([
+                    'errors' => [
+                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        // Parse include parameter
+        $includeParam = $request->query('include');
+        $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
+        $include = array_map('trim', $include);
+        $include = array_filter($include, fn ($item) => $item !== '');
+
+        // Validate include values
+        $allowedInclude = ['descriptions', 'people', 'genres'];
+        foreach ($include as $item) {
+            if (! in_array($item, $allowedInclude, true)) {
+                return response()->json([
+                    'errors' => [
+                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        // Find movies
+        $movies = $this->movieRepository->findBySlugs($slugs, $include);
+
+        // Format movies as resources
+        $data = $movies->map(function (Movie $movie) {
+            $resource = MovieResource::make($movie)->additional([
+                '_links' => $this->hateoas->movieLinks($movie),
+            ]);
+
+            return $resource->resolve();
+        })->toArray();
+
+        // Find which slugs were not found
+        $foundSlugs = $movies->pluck('slug')->toArray();
+        $notFound = array_values(array_diff($slugs, $foundSlugs));
+
+        return response()->json([
+            'data' => $data,
+            'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => count($slugs),
+        ], 200);
     }
 
     /**
@@ -526,5 +625,37 @@ class MovieController extends Controller
                 'created_at' => $report->created_at->toIso8601String(),
             ],
         ], 201);
+    }
+
+    /**
+     * Bulk retrieve multiple movies by slugs.
+     */
+    public function bulk(BulkMoviesRequest $request): JsonResponse
+    {
+        $slugs = $request->getSlugs();
+        $include = $request->getInclude();
+
+        // Find movies
+        $movies = $this->movieRepository->findBySlugs($slugs, $include);
+
+        // Format movies as resources
+        $data = $movies->map(function (Movie $movie) {
+            $resource = MovieResource::make($movie)->additional([
+                '_links' => $this->hateoas->movieLinks($movie),
+            ]);
+
+            return $resource->resolve();
+        })->toArray();
+
+        // Find which slugs were not found
+        $foundSlugs = $movies->pluck('slug')->toArray();
+        $notFound = array_values(array_diff($slugs, $foundSlugs));
+
+        return response()->json([
+            'data' => $data,
+            'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => count($slugs),
+        ], 200);
     }
 }

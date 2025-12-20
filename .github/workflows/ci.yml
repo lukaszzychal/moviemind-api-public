@@ -80,6 +80,80 @@ jobs:
           DB_DATABASE: ":memory:"
         run: composer test
 
+  test-postgresql:
+    name: Test PostgreSQL-specific features
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    # Generate unique password for test database (not a real secret, just for CI isolation)
+    env:
+      POSTGRES_TEST_PASSWORD: test_pg_${{ github.run_id }}_${{ github.run_number }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_PASSWORD }}
+          POSTGRES_DB: moviemind_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: api/vendor
+          key: ${{ runner.os }}-php-8.3-postgresql-${{ hashFiles('api/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.3-
+
+      - name: Install dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Prepare environment
+        working-directory: api
+        run: |
+          # Create .env if it doesn't exist
+          if [ ! -f .env ]; then
+            cp .env.example .env || touch .env
+          fi
+          # Generate APP_KEY and ensure it's set
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: Setup PHPUnit configuration
+        working-directory: api
+        run: |
+          # phpunit.xml is in .gitignore, so copy from .dist template in CI
+          cp phpunit.xml.dist phpunit.xml || true
+
+      - name: Run PostgreSQL-specific tests
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_PASSWORD }}
+        run: php artisan test --filter=PostgreSQLSpecificTest
+
   security:
     name: Security & Lint
     runs-on: ubuntu-latest

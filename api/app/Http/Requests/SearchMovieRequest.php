@@ -32,6 +32,8 @@ class SearchMovieRequest extends FormRequest
             'limit' => 'nullable|integer|min:1|max:100', // Deprecated: use per_page instead
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
+            'sort' => 'nullable|string|in:title,release_year,created_at',
+            'order' => 'nullable|string|in:asc,desc',
         ];
     }
 
@@ -54,7 +56,7 @@ class SearchMovieRequest extends FormRequest
     /**
      * Get validated search criteria.
      *
-     * @return array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int}
+     * @return array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int, sort?: string, order?: string}
      */
     public function getSearchCriteria(): array
     {
@@ -96,6 +98,15 @@ class SearchMovieRequest extends FormRequest
         // Keep limit for backward compatibility (if not using pagination)
         if (isset($validated['limit']) && ! isset($validated['page'])) {
             $criteria['limit'] = (int) $validated['limit'];
+        }
+
+        // Sorting
+        if (isset($validated['sort'])) {
+            $criteria['sort'] = $validated['sort'];
+        }
+
+        if (isset($validated['order'])) {
+            $criteria['order'] = $validated['order'];
         }
 
         return $criteria;

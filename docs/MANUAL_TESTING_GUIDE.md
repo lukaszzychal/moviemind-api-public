@@ -251,10 +251,12 @@ curl -X GET "http://localhost:8000/api/v1/health/tmdb"
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/movies` | List all movies (with pagination) |
+| `GET` | `/api/v1/movies` | List all movies (with pagination) or bulk retrieve by slugs |
+| `GET` | `/api/v1/movies?slugs=...` | Bulk retrieve multiple movies by slugs (RESTful) |
 | `GET` | `/api/v1/movies/search` | Advanced movie search |
 | `GET` | `/api/v1/movies/{slug}` | Get movie details |
 | `GET` | `/api/v1/movies/{slug}/related` | Get related movies |
+| `POST` | `/api/v1/movies/bulk` | Bulk retrieve multiple movies (fallback for long lists) |
 | `POST` | `/api/v1/movies/{slug}/refresh` | Refresh movie from TMDB |
 
 ### Quick Test Examples
@@ -275,6 +277,20 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" | jq
 
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq
+```
+
+**Bulk retrieve movies (RESTful - recommended):**
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,inception-2010&include=descriptions,people" | jq
+```
+
+**Bulk retrieve movies (POST fallback for long lists):**
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
+  -H "Content-Type: application/json" \
+  -d '{"slugs": ["the-matrix-1999", "inception-2010"], "include": ["descriptions", "people"]}' | jq
 ```
 
 **Refresh movie (⚠️ requires POST method):**
@@ -443,7 +459,110 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 
 ---
 
-### Scenario 4: Movie Disambiguation
+### Scenario 4: Bulk Retrieve Movies (RESTful)
+
+**Objective:** Verify bulk retrieval of multiple movies using GET endpoint.
+
+**Steps:**
+
+1. **Bulk retrieve by slugs (GET - RESTful, recommended):**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,inception-2010" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response format:**
+
+   ```json
+   {
+     "data": [
+       {
+         "id": 1,
+         "slug": "the-matrix-1999",
+         "title": "The Matrix",
+         "release_year": 1999,
+         "_links": {...}
+       },
+       {
+         "id": 2,
+         "slug": "inception-2010",
+         "title": "Inception",
+         "release_year": 2010,
+         "_links": {...}
+       }
+     ],
+     "not_found": [],
+     "count": 2,
+     "requested_count": 2
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `data` array contains requested movies
+   - [ ] Movies are returned in the same order as requested slugs
+   - [ ] `not_found` array lists slugs that don't exist
+   - [ ] `count` matches number of found movies
+   - [ ] `requested_count` matches number of requested slugs
+
+4. **Test with include parameter:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999&include=descriptions,people,genres" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] `descriptions` array included when requested
+   - [ ] `people` array included when requested
+   - [ ] `genres` array included when requested
+
+5. **Test with non-existent slugs:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,non-existent-12345" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `200 OK`
+   - [ ] `data` contains only found movies
+   - [ ] `not_found` contains `["non-existent-12345"]`
+   - [ ] `count` is 1 (only one movie found)
+   - [ ] `requested_count` is 2
+
+6. **Test validation (max 50 slugs):**
+
+   ```bash
+   # Create a comma-separated list of 51 slugs (over limit)
+   slugs=$(printf "slug-%d," {1..51} | sed 's/,$//')
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=$slugs" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `422 Unprocessable Entity`
+   - [ ] Error message indicates max 50 slugs allowed
+
+7. **Test with POST fallback (for long lists):**
+
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -d '{
+       "slugs": ["the-matrix-1999", "inception-2010"],
+       "include": ["descriptions", "people"]
+     }' | jq
+   ```
+
+   - [ ] Status code: `200 OK`
+   - [ ] Same response format as GET endpoint
+   - [ ] Useful for lists > 50 slugs (URL length limit)
+
+**Note:** GET endpoint is RESTful and recommended. POST endpoint is available as fallback for very long lists (>50 slugs) where URL length may be an issue.
+
+---
+
+### Scenario 5: Movie Disambiguation
 
 **Objective:** Verify handling of ambiguous movie slugs.
 
@@ -491,7 +610,108 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 
 ---
 
-### Scenario 5: Refresh Movie from TMDB
+**Objective:** Verify bulk retrieval of multiple movies using GET endpoint.
+
+**Steps:**
+
+1. **Bulk retrieve by slugs (GET - RESTful, recommended):**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,inception-2010" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response format:**
+
+   ```json
+   {
+     "data": [
+       {
+         "id": 1,
+         "slug": "the-matrix-1999",
+         "title": "The Matrix",
+         "release_year": 1999,
+         "_links": {...}
+       },
+       {
+         "id": 2,
+         "slug": "inception-2010",
+         "title": "Inception",
+         "release_year": 2010,
+         "_links": {...}
+       }
+     ],
+     "not_found": [],
+     "count": 2,
+     "requested_count": 2
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `data` array contains requested movies
+   - [ ] Movies are returned in the same order as requested slugs
+   - [ ] `not_found` array lists slugs that don't exist
+   - [ ] `count` matches number of found movies
+   - [ ] `requested_count` matches number of requested slugs
+
+4. **Test with include parameter:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999&include=descriptions,people,genres" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] `descriptions` array included when requested
+   - [ ] `people` array included when requested
+   - [ ] `genres` array included when requested
+
+5. **Test with non-existent slugs:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,non-existent-12345" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `200 OK`
+   - [ ] `data` contains only found movies
+   - [ ] `not_found` contains `["non-existent-12345"]`
+   - [ ] `count` is 1 (only one movie found)
+   - [ ] `requested_count` is 2
+
+6. **Test validation (max 50 slugs):**
+
+   ```bash
+   # Create a comma-separated list of 51 slugs (over limit)
+   slugs=$(printf "slug-%d," {1..51} | sed 's/,$//')
+   curl -X GET "http://localhost:8000/api/v1/movies?slugs=$slugs" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `422 Unprocessable Entity`
+   - [ ] Error message indicates max 50 slugs allowed
+
+7. **Test with POST fallback (for long lists):**
+
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -d '{
+       "slugs": ["the-matrix-1999", "inception-2010"],
+       "include": ["descriptions", "people"]
+     }' | jq
+   ```
+
+   - [ ] Status code: `200 OK`
+   - [ ] Same response format as GET endpoint
+   - [ ] Useful for lists > 50 slugs (URL length limit)
+
+**Note:** GET endpoint is RESTful and recommended. POST endpoint is available as fallback for very long lists (>50 slugs) where URL length may be an issue.
+
+---
+
+### Scenario 6: Refresh Movie from TMDB
 
 **Objective:** Verify refreshing movie metadata from TMDB.
 
@@ -537,7 +757,7 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 
 ---
 
-### Scenario 6: Movie Relationships
+### Scenario 7: Movie Relationships
 
 **See detailed section:** [Movie Relationships](#movie-relationships)
 
