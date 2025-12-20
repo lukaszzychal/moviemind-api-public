@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'horizon.basic' => \App\Http\Middleware\HorizonBasicAuth::class,
             'admin.basic' => \App\Http\Middleware\AdminBasicAuth::class,
+            'adaptive.rate.limit' => \App\Http\Middleware\AdaptiveRateLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
