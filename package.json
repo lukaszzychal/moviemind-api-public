@@ -9,6 +9,7 @@
     "markdownlint:check": "markdownlint-cli2 '**/*.md'"
   },
   "devDependencies": {
+    "@playwright/mcp": "^0.0.53",
     "markdownlint-cli2": "^0.20.0"
   },
   "engines": {
@@ -16,4 +17,3 @@
     "npm": ">=9.0.0"
   }
 }
-

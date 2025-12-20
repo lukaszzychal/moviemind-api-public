@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server_filesystem",
+        "--project-dir",
+        "/Users/lukaszzychal/PhpstormProjects/moviemind-api-public"
+      ]
+    }
+  }
+}
+
