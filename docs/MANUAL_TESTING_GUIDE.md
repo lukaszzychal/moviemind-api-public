@@ -256,6 +256,7 @@ curl -X GET "http://localhost:8000/api/v1/health/tmdb"
 | `GET` | `/api/v1/movies/search` | Advanced movie search |
 | `GET` | `/api/v1/movies/{slug}` | Get movie details |
 | `GET` | `/api/v1/movies/{slug}/related` | Get related movies |
+| `GET` | `/api/v1/movies/{slug}/collection` | Get collection (all movies in same TMDb collection) |
 | `POST` | `/api/v1/movies/bulk` | Bulk retrieve multiple movies (fallback for long lists) |
 | `POST` | `/api/v1/movies/{slug}/refresh` | Refresh movie from TMDB |
 
@@ -757,7 +758,105 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 
 ---
 
-### Scenario 7: Movie Relationships
+### Scenario 7: Movie Collections
+
+**Objective:** Verify collection endpoint returns all movies in the same TMDb collection.
+
+**Prerequisites:**
+- Movies must have TMDb snapshots with `belongs_to_collection` data
+- At least 2 movies in the same collection
+
+**Steps:**
+
+1. **Get collection for a movie:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/collection" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response format:**
+
+   ```json
+   {
+     "collection": {
+       "name": "The Matrix Collection",
+       "tmdb_collection_id": 234,
+       "count": 3
+     },
+     "movies": [
+       {
+         "id": "...",
+         "slug": "the-matrix-1999",
+         "title": "The Matrix",
+         "release_year": 1999,
+         "_links": {...}
+       },
+       {
+         "id": "...",
+         "slug": "the-matrix-reloaded-2003",
+         "title": "The Matrix Reloaded",
+         "release_year": 2003,
+         "_links": {...}
+       },
+       {
+         "id": "...",
+         "slug": "the-matrix-revolutions-2003",
+         "title": "The Matrix Revolutions",
+         "release_year": 2003,
+         "_links": {...}
+       }
+     ],
+     "_links": {
+       "self": "http://localhost:8000/api/v1/movies/the-matrix-1999/collection"
+     }
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `collection.name` matches TMDb collection name
+   - [ ] `collection.tmdb_collection_id` is a valid TMDb collection ID
+   - [ ] `collection.count` matches number of movies in collection
+   - [ ] `movies` array contains all movies from the same collection
+   - [ ] Each movie has complete data (slug, title, release_year, etc.)
+   - [ ] `_links.self` is present and correct
+
+4. **Test with movie without collection:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/standalone-movie-2020/collection" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `404 Not Found`
+   - [ ] Error message indicates collection not found
+
+5. **Test with movie without TMDb snapshot:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/movie-without-snapshot-2020/collection" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `404 Not Found`
+   - [ ] Error message indicates snapshot not found
+
+6. **Test with non-existent movie:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/non-existent-movie-2020/collection" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `404 Not Found`
+   - [ ] Error message indicates movie not found
+
+**Note:** Collections are retrieved from TMDb snapshots. If a movie doesn't have a snapshot or the snapshot doesn't contain `belongs_to_collection` data, the endpoint returns 404.
+
+---
+
+### Scenario 8: Movie Relationships
 
 **See detailed section:** [Movie Relationships](#movie-relationships)
 
