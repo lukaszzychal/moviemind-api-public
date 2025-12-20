@@ -34,6 +34,8 @@ class SearchMovieRequest extends FormRequest
             'per_page' => 'nullable|integer|min:1|max:100',
             'sort' => 'nullable|string|in:title,release_year,created_at',
             'order' => 'nullable|string|in:asc,desc',
+            'local_limit' => 'nullable|integer|min:1|max:100',
+            'external_limit' => 'nullable|integer|min:1|max:100',
         ];
     }
 
@@ -56,7 +58,7 @@ class SearchMovieRequest extends FormRequest
     /**
      * Get validated search criteria.
      *
-     * @return array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int, sort?: string, order?: string}
+     * @return array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int, sort?: string, order?: string, local_limit?: int, external_limit?: int}
      */
     public function getSearchCriteria(): array
     {
@@ -107,6 +109,15 @@ class SearchMovieRequest extends FormRequest
 
         if (isset($validated['order'])) {
             $criteria['order'] = $validated['order'];
+        }
+
+        // Limit per source
+        if (isset($validated['local_limit'])) {
+            $criteria['local_limit'] = (int) $validated['local_limit'];
+        }
+
+        if (isset($validated['external_limit'])) {
+            $criteria['external_limit'] = (int) $validated['external_limit'];
         }
 
         return $criteria;
