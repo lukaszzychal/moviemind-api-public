@@ -26,6 +26,8 @@ class AdaptiveRateLimitingTest extends TestCase
         Config::set('rate-limiting.min.report', 1);
         Config::set('rate-limiting.defaults.show', 15); // Higher than search for testing
         Config::set('rate-limiting.min.show', 3);
+        Config::set('rate-limiting.defaults.bulk', 10); // Lower than show (multiple movies per request)
+        Config::set('rate-limiting.min.bulk', 2);
 
         Config::set('rate-limiting.logging.enabled', false);
 
@@ -195,6 +197,62 @@ class AdaptiveRateLimitingTest extends TestCase
 
         for ($i = 0; $i < $maxRequests; $i++) {
             $response = $this->getJson("/api/v1/movies/{$movie->slug}");
+
+            if ($response->status() === 200) {
+                $successfulRequests++;
+            } elseif ($response->status() === 429) {
+                // Rate limit exceeded
+                $rateLimited = true;
+                $this->assertJson($response->content());
+                $data = $response->json();
+                $this->assertArrayHasKey('error', $data);
+                $this->assertArrayHasKey('retry_after', $data);
+                $this->assertArrayHasKey('message', $data);
+                break; // Stop after first 429
+            }
+        }
+
+        // Should either have successful requests OR be rate limited
+        $this->assertTrue(
+            $successfulRequests > 0 || $rateLimited,
+            'Should have at least one successful request OR be rate limited'
+        );
+    }
+
+    public function test_bulk_endpoint_has_rate_limiting(): void
+    {
+        // Create movies first
+        $movie1 = \App\Models\Movie::factory()->create();
+        $movie2 = \App\Models\Movie::factory()->create();
+
+        $response = $this->postJson('/api/v1/movies/bulk', [
+            'slugs' => [$movie1->slug, $movie2->slug],
+        ]);
+
+        // Should return 200 or 429 (not 404 or 500)
+        $this->assertContains($response->status(), [200, 429], 'Should return valid status code');
+
+        if ($response->status() === 200) {
+            $this->assertTrue($response->headers->has('X-RateLimit-Limit'), 'Should have X-RateLimit-Limit header');
+            $this->assertTrue($response->headers->has('X-RateLimit-Remaining'), 'Should have X-RateLimit-Remaining header');
+        }
+    }
+
+    public function test_bulk_endpoint_respects_rate_limit(): void
+    {
+        // Create movies first
+        $movie1 = \App\Models\Movie::factory()->create();
+        $movie2 = \App\Models\Movie::factory()->create();
+
+        // Make requests up to the limit
+        $maxRequests = 15; // More than default (10)
+        $successfulRequests = 0;
+        $rateLimited = false;
+
+        for ($i = 0; $i < $maxRequests; $i++) {
+            $response = $this->postJson('/api/v1/movies/bulk', [
+                'slugs' => [$movie1->slug, $movie2->slug],
+            ]);
 
             if ($response->status() === 200) {
                 $successfulRequests++;

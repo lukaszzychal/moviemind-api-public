@@ -40,7 +40,7 @@ class MovieSearchService
     /**
      * Search for movies using various criteria.
      *
-     * @param  array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int}  $criteria
+     * @param  array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int, sort?: string, order?: string}  $criteria
      */
     public function search(array $criteria): SearchResult
     {
@@ -73,6 +73,14 @@ class MovieSearchService
         }
 
         $allMovies = $this->mergeResults($localMovies, $externalMovies);
+
+        // Apply sorting if specified
+        $sortField = $criteria['sort'] ?? null;
+        $sortOrder = $criteria['order'] ?? null;
+        if ($sortField !== null) {
+            $allMovies = $this->sortResults($allMovies, $sortField, $sortOrder);
+        }
+
         $totalMoviesCount = count($allMovies);
 
         $paginatedMovies = $this->applyPagination($allMovies, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
@@ -611,6 +619,63 @@ class MovieSearchService
     }
 
     /**
+     * Sort search results by specified field and order.
+     *
+     * @param  array<int, array<string, mixed>>  $results
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortResults(array $results, string $sortField, ?string $order): array
+    {
+        if (empty($results)) {
+            return $results;
+        }
+
+        $sortOrder = $order ?? $this->getDefaultSortOrder($sortField);
+
+        usort($results, function (array $a, array $b) use ($sortField, $sortOrder) {
+            $valueA = $this->getSortValue($a, $sortField);
+            $valueB = $this->getSortValue($b, $sortField);
+
+            $comparison = match ($sortField) {
+                'title' => strcasecmp((string) $valueA, (string) $valueB),
+                'release_year', 'created_at' => $valueA <=> $valueB,
+                default => 0,
+            };
+
+            return $sortOrder === 'desc' ? -$comparison : $comparison;
+        });
+
+        return $results;
+    }
+
+    /**
+     * Get sort value from result array for specified field.
+     *
+     * @param  array<string, mixed>  $result
+     */
+    private function getSortValue(array $result, string $sortField): mixed
+    {
+        return match ($sortField) {
+            'title' => $result['title'] ?? '',
+            'release_year' => $result['release_year'] ?? 0,
+            'created_at' => isset($result['created_at']) ? strtotime($result['created_at']) : 0,
+            default => null,
+        };
+    }
+
+    /**
+     * Get default sort order for field.
+     */
+    private function getDefaultSortOrder(string $sortField): string
+    {
+        return match ($sortField) {
+            'title' => 'asc',
+            'release_year', 'created_at' => 'desc',
+            default => 'asc',
+        };
+    }
+
+    /**
      * Generate cache key from search criteria.
      * Note: Cache key does NOT include page number - we cache all results and paginate in memory.
      *
@@ -625,6 +690,8 @@ class MovieSearchService
             : ($criteria['actor'] ?? '');
         $actorHash = md5($actorString);
         $itemsPerPage = $criteria['per_page'] ?? $criteria['limit'] ?? 20;
+        $sortField = $criteria['sort'] ?? '';
+        $sortOrder = $criteria['order'] ?? '';
 
         $cacheKeyParts = [
             'movie:search',
@@ -633,6 +700,8 @@ class MovieSearchService
             $directorHash,
             $actorHash,
             $itemsPerPage,
+            $sortField,
+            $sortOrder,
         ];
 
         return implode(':', $cacheKeyParts);
