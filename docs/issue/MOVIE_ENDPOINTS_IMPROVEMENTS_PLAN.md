@@ -619,9 +619,12 @@ GET /api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010
    - Aktualizacja `generateCacheKey()` aby uwzględniał limity
    - Testy (8 testów feature - wszystkie przechodzą)
 
-8. ❓ **Porównywanie Filmów**
-   - Tylko jeśli jest zapotrzebowanie
-   - Niski priorytet
+8. ✅ **Porównywanie Filmów (Compare Endpoint)**
+   - Endpoint `GET /api/v1/movies/compare?slug1=...&slug2=...`
+   - Service `MovieComparisonService` z algorytmem podobieństwa
+   - Request validator `CompareMoviesRequest`
+   - Testy (8 testów feature - wszystkie przechodzą)
+   - Dokumentacja w MANUAL_TESTING_GUIDE.md
 
 ---
 
