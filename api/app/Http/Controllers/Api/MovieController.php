@@ -18,6 +18,7 @@ use App\Models\MovieReport;
 use App\Repositories\MovieRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
+use App\Services\MovieCollectionService;
 use App\Services\MovieReportService;
 use App\Services\MovieRetrievalService;
 use App\Services\MovieSearchService;
@@ -38,7 +39,8 @@ class MovieController extends Controller
         private readonly MovieSearchService $movieSearchService,
         private readonly MovieRetrievalService $movieRetrievalService,
         private readonly MovieResponseFormatter $responseFormatter,
-        private readonly MovieReportService $movieReportService
+        private readonly MovieReportService $movieReportService,
+        private readonly MovieCollectionService $movieCollectionService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -575,6 +577,31 @@ class MovieController extends Controller
                 }
             }
         );
+    }
+
+    /**
+     * Get collection for a movie (all movies in the same TMDb collection).
+     *
+     * @return JsonResponse Collection data with movies or 404 if not found
+     */
+    public function collection(string $slug): JsonResponse
+    {
+        $collectionData = $this->movieCollectionService->getCollectionByMovieSlug($slug);
+
+        if (! $collectionData) {
+            return $this->responseFormatter->formatNotFound();
+        }
+
+        // Format response with HATEOAS links
+        $response = response()->json([
+            'collection' => $collectionData['collection'],
+            'movies' => $collectionData['movies'],
+            '_links' => [
+                'self' => url('/api/v1/movies/'.$slug.'/collection'),
+            ],
+        ], 200);
+
+        return $response;
     }
 
     /**

@@ -578,10 +578,12 @@ GET /api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010
    - Testy
 
 4. ✅ **Bulk Operations**
-   - Endpoint `POST /movies/bulk`
+   - Endpoint `POST /movies/bulk` (fallback dla długich list)
+   - Endpoint `GET /movies?slugs=...` (RESTful, główny)
    - Request validator
-   - Repository method
-   - Testy
+   - Repository method `findBySlugs()`
+   - Testy (9 testów dla GET, 10 testów dla POST)
+   - Rate limiting dla obu endpointów
 
 ---
 
@@ -592,8 +594,10 @@ GET /api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010
 
 5. ✅ **Collections Endpoint (Opcja C: przez TMDb Snapshot)**
    - Endpoint `GET /movies/{slug}/collection`
-   - Service (opcjonalnie)
-   - Testy
+   - Service `MovieCollectionService`
+   - Controller method `collection()`
+   - Testy (5 testów feature)
+   - Dokumentacja w MANUAL_TESTING_GUIDE.md
 
 6. ✅ **Filtry po Gatunkach w Related**
    - Rozszerzenie `related()`

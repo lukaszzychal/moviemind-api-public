@@ -14,6 +14,7 @@ Route::prefix('v1')->group(function () {
     Route::post('movies/bulk', [MovieController::class, 'bulk'])->middleware('adaptive.rate.limit:bulk');
     Route::get('movies/{slug}', [MovieController::class, 'show'])->middleware('adaptive.rate.limit:show');
     Route::get('movies/{slug}/related', [MovieController::class, 'related']);
+    Route::get('movies/{slug}/collection', [MovieController::class, 'collection']);
     Route::post('movies/{slug}/refresh', [MovieController::class, 'refresh']);
     Route::post('movies/{slug}/report', [MovieController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::get('people', [PersonController::class, 'index']);
