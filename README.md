@@ -250,6 +250,7 @@ When you need to preview authenticated flows locally, set up the demo users and 
 - **Architecture Diagrams**: `docs/c4/` (C4 model diagrams)
 - **GitHub Projects Setup**: [`docs/GITHUB_PROJECTS_SETUP.md`](docs/GITHUB_PROJECTS_SETUP.md) - Przewodnik zarządzania zadaniami
 - **Portfolio Recommendations**: [`docs/PUBLIC_REPO_PORTFOLIO_RECOMMENDATIONS.md`](docs/PUBLIC_REPO_PORTFOLIO_RECOMMENDATIONS.md) - Funkcje do dodania dla portfolio
+- **MCP File System Server**: [`docs/en/MCP_FILESYSTEM_SERVER_SETUP.md`](docs/en/MCP_FILESYSTEM_SERVER_SETUP.md) - Konfiguracja MCP File System Server dla Cursor/Claude Desktop
 
 ## 🧪 Testing
 
