@@ -102,15 +102,38 @@ class RegenerateMovieDescriptionJob implements ShouldQueue
             return;
         }
 
-        // Update description
+        // Archive old description (versioning)
         $description->update([
-            'text' => $validation['sanitized'],
-            'ai_model' => $result['model'] ?? 'gpt-4o-mini',
+            'archived_at' => now(),
         ]);
 
-        // Update all related reports to RESOLVED
+        // Find max version number for this (movie_id, locale, context_tag) combination
+        $maxVersion = MovieDescription::where('movie_id', $movie->id)
+            ->where('locale', $description->locale)
+            ->where('context_tag', $description->context_tag)
+            ->max('version_number') ?? 0;
+
+        // Create new description with incremented version number
+        $newDescription = MovieDescription::create([
+            'movie_id' => $movie->id,
+            'locale' => $description->locale,
+            'text' => $validation['sanitized'],
+            'context_tag' => $description->context_tag,
+            'origin' => $description->origin,
+            'ai_model' => $result['model'] ?? 'gpt-4o-mini',
+            'version_number' => $maxVersion + 1,
+            'archived_at' => null,
+        ]);
+
+        // Update movie's default_description_id to point to new description
+        $newDescriptionId = $newDescription->id;
+        $movie->update([
+            'default_description_id' => $newDescriptionId,
+        ]);
+
+        // Update all related reports to RESOLVED (both old and new description IDs)
         \App\Models\MovieReport::where('movie_id', $this->movieId)
-            ->where('description_id', $this->descriptionId)
+            ->whereIn('description_id', [$this->descriptionId, $newDescriptionId])
             ->where('status', ReportStatus::VERIFIED)
             ->update([
                 'status' => ReportStatus::RESOLVED,
@@ -119,7 +142,9 @@ class RegenerateMovieDescriptionJob implements ShouldQueue
 
         Log::info('Movie description regenerated successfully', [
             'movie_id' => $this->movieId,
-            'description_id' => $this->descriptionId,
+            'old_description_id' => $this->descriptionId,
+            'new_description_id' => $newDescriptionId,
+            'version_number' => $newDescription->version_number,
         ]);
     }
 }

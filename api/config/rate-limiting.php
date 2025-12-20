@@ -14,6 +14,7 @@ return [
     */
     'defaults' => [
         'search' => 100,      // /api/v1/movies/search
+        'show' => 120,        // /api/v1/movies/{slug} - Higher limit (simpler query)
         'generate' => 10,     // /api/v1/generate
         'report' => 20,       // /api/v1/movies/{slug}/report
     ],
@@ -29,6 +30,7 @@ return [
     */
     'min' => [
         'search' => 20,       // Minimum 20 req/min even under heavy load
+        'show' => 30,         // Minimum 30 req/min even under heavy load
         'generate' => 2,      // Minimum 2 req/min even under heavy load
         'report' => 5,        // Minimum 5 req/min even under heavy load
     ],

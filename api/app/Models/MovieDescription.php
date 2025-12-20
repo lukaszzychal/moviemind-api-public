@@ -25,12 +25,16 @@ class MovieDescription extends Model
         'context_tag',
         'origin',
         'ai_model',
+        'version_number',
+        'archived_at',
     ];
 
     protected $casts = [
         'locale' => LocaleEnum::class,
         // context_tag is handled by getter to allow fallback for invalid values
         'origin' => DescriptionOrigin::class,
+        'archived_at' => 'datetime',
+        'version_number' => 'integer',
     ];
 
     /**

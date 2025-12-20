@@ -28,6 +28,8 @@ class MovieSeeder extends Seeder
             'context_tag' => ContextTag::MODERN,
             'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => 'mock',
+            'version_number' => 1,
+            'archived_at' => null,
         ]);
 
         $matrix->update(['default_description_id' => $desc->id]);
@@ -46,6 +48,8 @@ class MovieSeeder extends Seeder
             'context_tag' => ContextTag::MODERN,
             'origin' => DescriptionOrigin::GENERATED,
             'ai_model' => 'mock',
+            'version_number' => 1,
+            'archived_at' => null,
         ]);
 
         $inception->update(['default_description_id' => $desc2->id]);
