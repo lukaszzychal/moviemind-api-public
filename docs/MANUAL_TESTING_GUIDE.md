@@ -16,11 +16,12 @@
 7. [Generate API](#generate-api)
 8. [Jobs API](#jobs-api)
 9. [Movie Reports](#movie-reports)
-10. [Health & Admin](#health--admin)
-11. [Security Verification](#security-verification)
-12. [Performance Testing](#performance-testing)
-13. [Troubleshooting](#troubleshooting)
-14. [Test Report Template](#test-report-template)
+10. [Adaptive Rate Limiting](#adaptive-rate-limiting)
+11. [Health & Admin](#health--admin)
+12. [Security Verification](#security-verification)
+13. [Performance Testing](#performance-testing)
+14. [Troubleshooting](#troubleshooting)
+15. [Test Report Template](#test-report-template)
 
 ---
 
@@ -33,6 +34,7 @@ This document provides comprehensive manual testing instructions for all MovieMi
 - **Generate:** AI description and bio generation
 - **Jobs:** Asynchronous job status tracking
 - **Movie Reports:** User error reporting and admin management
+- **Adaptive Rate Limiting:** Dynamic rate limits based on system load
 - **Health:** System health checks
 - **Admin:** Feature flags and debug endpoints
 
@@ -41,6 +43,7 @@ This document provides comprehensive manual testing instructions for all MovieMi
 ## 📋 Prerequisites
 
 ### Required Tools
+
 - **API Server:** Laravel application running (`php artisan serve` or Docker)
 - **Database:** PostgreSQL (production) or SQLite (testing) with migrations applied
 - **Queue Worker:** Laravel Horizon or `php artisan queue:work` running
@@ -49,13 +52,16 @@ This document provides comprehensive manual testing instructions for all MovieMi
 - **Log Access:** Access to `storage/logs/laravel.log` or Horizon dashboard
 
 ### Required Knowledge
+
 - Basic understanding of REST APIs
 - Basic SQL queries (for database verification)
 - Understanding of HTTP status codes
 - Basic command line usage
 
 ### Environment Variables
+
 Ensure these are configured in `.env`:
+
 ```bash
 TMDB_API_KEY=your_tmdb_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
@@ -78,6 +84,7 @@ REDIS_PORT=6379
 ```
 
 **What the script does:**
+
 1. ✅ Checks Docker installation and status
 2. ✅ Starts Docker containers (if not running)
 3. ✅ Installs Composer dependencies
@@ -87,6 +94,7 @@ REDIS_PORT=6379
 7. ✅ Verifies API health
 
 **Script options:**
+
 ```bash
 # Use mock AI (default, no OpenAI key needed)
 ./scripts/setup-local-testing.sh
@@ -117,6 +125,7 @@ ADMIN_AUTH="admin:password" ./scripts/setup-local-testing.sh
 ```
 
 **Environment variables:**
+
 ```bash
 export API_BASE_URL=http://localhost:8000
 export ADMIN_AUTH="admin:password"
@@ -126,6 +135,7 @@ export DOCKER_COMPOSE_CMD="docker compose"
 ```
 
 **After running the script:**
+
 - ✅ All Docker containers are running
 - ✅ Database is fresh and migrated
 - ✅ Test fixtures loaded (if `--seed` option used)
@@ -133,6 +143,7 @@ export DOCKER_COMPOSE_CMD="docker compose"
 - ✅ API is ready for testing
 
 **Test fixtures include:**
+
 - Movies: The Matrix (1999), Inception (2010)
 - People: Keanu Reeves, The Wachowskis, Christopher Nolan
 - Genres: Action, Sci-Fi, Thriller
@@ -154,6 +165,7 @@ php artisan serve
 ```
 
 **Verify API health:**
+
 ```bash
 # Check OpenAI health
 curl http://localhost:8000/api/v1/health/openai
@@ -180,6 +192,7 @@ php artisan migrate
 ```
 
 **Verify migration:**
+
 ```bash
 # Check if tables exist (PostgreSQL)
 psql -d moviemind -c "\dt"
@@ -193,6 +206,7 @@ php artisan tinker
 #### Step 3: Start Queue Worker
 
 **Option A: Laravel Horizon (Recommended)**
+
 ```bash
 cd api
 php artisan horizon
@@ -200,12 +214,14 @@ php artisan horizon
 ```
 
 **Option B: Standard Queue Worker**
+
 ```bash
 cd api
 php artisan queue:work --tries=3 --timeout=120
 ```
 
 **Verify queue is working:**
+
 ```bash
 # Check Horizon dashboard or queue logs
 tail -f storage/logs/laravel.log | grep "Queue"
@@ -244,25 +260,30 @@ curl -X GET "http://localhost:8000/api/v1/health/tmdb"
 ### Quick Test Examples
 
 **List movies:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies" | jq
 ```
 
 **Search movies:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" | jq
 ```
 
 **Get movie details:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq
 ```
 
 **Refresh movie (⚠️ requires POST method):**
+
 ```bash
 curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
   -H "Accept: application/json" | jq
 ```
+
 **Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
 
 ### Scenario 1: List All Movies
@@ -272,6 +293,7 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 **Steps:**
 
 1. **Send GET request:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies" \
      -H "Accept: application/json" | jq
@@ -285,10 +307,12 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
    - [ ] `_links` present for HATEOAS
 
 3. **Test with query parameter:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies?q=matrix" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only movies matching "matrix" are returned
 
 ---
@@ -300,24 +324,28 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 **Steps:**
 
 1. **Search by title:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Search by title and year:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" \
      -H "Accept: application/json" | jq
    ```
 
 3. **Search by title and director:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&director=Wachowski" \
      -H "Accept: application/json" | jq
    ```
 
 4. **Search with pagination:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&page=1&per_page=5" \
      -H "Accept: application/json" | jq
@@ -338,12 +366,14 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 **Steps:**
 
 1. **Get movie by slug:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Verify response structure:**
+
    ```json
    {
      "id": 1,
@@ -387,8 +417,10 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
      }
    }
    ```
-   
-   **Note:** The `people` array is **not included** in the response for `GET /api/v1/movies/{slug}` endpoint by default. The `people` relation is only loaded when explicitly requested (e.g., in list endpoints). To get people data, use the `people` link in `_links` or access individual person endpoints.
+
+   **Note:** The `people` array is **not included** in the response for `GET /api/v1/movies/{slug}` endpoint by default.
+   The `people` relation is only loaded when explicitly requested (e.g., in list endpoints).
+   To get people data, use the `people` link in `_links` or access individual person endpoints.
 
 3. **Verify:**
    - [ ] Status code: `200 OK`
@@ -401,10 +433,12 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
    - [ ] `_links` present with `self` and `generate` links
 
 4. **Test with description_id parameter:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999?description_id=2" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Specific description is returned in `default_description`
 
 ---
@@ -416,12 +450,14 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 **Steps:**
 
 1. **Search for ambiguous title (e.g., "Bad Boys"):**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=bad+boys" \
      -H "Accept: application/json" | jq
    ```
 
 2. **If disambiguation occurs (300 status):**
+
    ```json
    {
      "error": "Multiple movies found",
@@ -445,10 +481,12 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
    ```
 
 3. **Select specific movie:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/bad-boys?slug=bad-boys-ii-2003" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Selected movie is returned
 
 ---
@@ -462,14 +500,17 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 **Steps:**
 
 1. **Refresh movie (must use POST):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
      -H "Accept: application/json" | jq
    ```
-   
-   **Common mistake:** Opening this URL in a browser (which uses GET) will fail. Always use `curl -X POST` or a tool like Postman/Insomnia.
+
+   **Common mistake:** Opening this URL in a browser (which uses GET) will fail.
+   Always use `curl -X POST` or a tool like Postman/Insomnia.
 
 2. **Verify response:**
+
    ```json
    {
      "message": "Movie data refreshed from TMDb",
@@ -486,10 +527,12 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
    - [ ] `SyncMovieMetadataJob` is **NOT** dispatched
 
 4. **Verify movie was updated:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Updated fields reflect latest TMDB data
 
 ---
@@ -499,6 +542,7 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 **See detailed section:** [Movie Relationships](#movie-relationships)
 
 **Quick test:**
+
 ```bash
 # Get related movies
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" | jq
@@ -524,20 +568,24 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 ### Quick Test Examples
 
 **List people:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/people" | jq
 ```
 
 **Get person details:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/people/keanu-reeves" | jq
 ```
 
 **Refresh person (⚠️ requires POST method):**
+
 ```bash
 curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
   -H "Accept: application/json" | jq
 ```
+
 **Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
 
 ### Scenario 1: List All People
@@ -547,6 +595,7 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
 **Steps:**
 
 1. **Send GET request:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/people" \
      -H "Accept: application/json" | jq
@@ -559,10 +608,12 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
    - [ ] Pagination metadata present (if applicable)
 
 3. **Test with query parameter:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/people?q=keanu" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only people matching "keanu" are returned
 
 ---
@@ -574,12 +625,14 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
 **Steps:**
 
 1. **Get person by slug:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/people/keanu-reeves" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Verify response structure:**
+
    ```json
    {
      "id": 1,
@@ -631,14 +684,17 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
 **Steps:**
 
 1. **Refresh person (must use POST):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
      -H "Accept: application/json" | jq
    ```
-   
-   **Common mistake:** Opening this URL in a browser (which uses GET) will fail. Always use `curl -X POST` or a tool like Postman/Insomnia.
+
+   **Common mistake:** Opening this URL in a browser (which uses GET) will fail.
+   Always use `curl -X POST` or a tool like Postman/Insomnia.
 
 2. **Verify response:**
+
    ```json
    {
      "message": "Person data refreshed from TMDb",
@@ -661,9 +717,11 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
 
 ### How It Works
 
-**Important:** Movie relationships are stored **locally in the database** (table `movie_relationships`), but they are **synchronized from TMDB** asynchronously.
+**Important:** Movie relationships are stored **locally in the database** (table `movie_relationships`),
+but they are **synchronized from TMDB** asynchronously.
 
 **Synchronization Flow:**
+
 1. When a movie is created from TMDB (via search or refresh), `SyncMovieRelationshipsJob` is dispatched
 2. The job fetches relationship data from TMDB:
    - **Collections** (sequels, prequels) → Creates `SEQUEL`/`PREQUEL` relationships
@@ -673,12 +731,14 @@ curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves/refresh" \
 5. The `/related` endpoint reads from the **local database** (not TMDB directly)
 
 **Why empty `related_movies`?**
+
 - Movie doesn't have `tmdb_id` or TMDB snapshot
 - `SyncMovieRelationshipsJob` hasn't run yet (check queue)
 - Movie has no relationships in TMDB (no collection, no similar movies)
 - Queue worker is not running
 
 **To check:**
+
 ```bash
 # Check if movie has TMDB snapshot
 docker compose exec php php artisan tinker
@@ -701,6 +761,7 @@ docker compose exec php php artisan tinker
 **Note:** TV Series endpoints are planned but not yet implemented. This section will be updated when the feature is available.
 
 **Planned Endpoints:**
+
 - `GET /api/v1/series` - List all TV series
 - `GET /api/v1/series/{slug}` - Get series details
 - `GET /api/v1/series/{slug}/seasons` - Get seasons
@@ -715,11 +776,13 @@ docker compose exec php php artisan tinker
 ### Quick Test Examples
 
 **Get related movies:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" | jq
 ```
 
 **Filter by type:**
+
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL" | jq
 ```
@@ -738,6 +801,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Objective:** Verify retrieving related movies.
 
 **Prerequisites:**
+
 - Movie must have `tmdb_id` and TMDB snapshot
 - `SyncMovieRelationshipsJob` must have run (check queue)
 - Movie must have relationships in TMDB (collection or similar movies)
@@ -745,12 +809,14 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Get related movies:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Verify response (if relationships exist):**
+
    ```json
    {
      "movie": {
@@ -808,12 +874,14 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Filter by single type:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Filter by multiple types:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL&type[]=PREQUEL" \
      -H "Accept: application/json" | jq
@@ -832,12 +900,14 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Get related movies for standalone movie:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/standalone-movie-2020/related" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "movie": {...},
@@ -846,6 +916,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
      "_links": {...}
    }
    ```
+
    - [ ] Status code: `200 OK`
    - [ ] Empty array returned
    - [ ] `count` is `0`
@@ -871,6 +942,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Generate description:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -884,6 +956,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "job_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -903,6 +976,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    - [ ] Job appears in queue
 
 4. **Check job status:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
      -H "Accept: application/json" | jq
@@ -915,6 +989,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Objective:** Verify generating descriptions with different context tags.
 
 **Context Tags:**
+
 - `DEFAULT` - Standard description
 - `modern` - Modern perspective
 - `critical` - Critical analysis
@@ -923,6 +998,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Generate modern description (single context tag):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -935,6 +1011,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 2. **Generate critical description (single context tag):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -947,6 +1024,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 3. **Generate multiple context tags at once (NEW):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -959,6 +1037,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 4. **Verify response for multiple context tags:**
+
    ```json
    {
      "job_ids": [
@@ -1009,6 +1088,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Generate multiple context tags for a movie:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -1021,6 +1101,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "job_ids": [
@@ -1046,6 +1127,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    - [ ] Each job has correct `context_tag`
 
 4. **Check individual job statuses:**
+
    ```bash
    # Check first job
    curl -X GET "http://localhost:8000/api/v1/jobs/550e8400-e29b-41d4-a716-446655440000" | jq
@@ -1055,14 +1137,17 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 5. **After jobs complete, verify multiple descriptions exist:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq '.descriptions'
    ```
+
    - [ ] Multiple descriptions exist for the movie
    - [ ] Each description has different `context_tag`
    - [ ] Descriptions are not overwritten
 
 6. **Test backward compatibility (single string):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -1073,6 +1158,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
        "context_tag": "modern"
      }' | jq
    ```
+
    - [ ] Single string still works (backward compatible)
    - [ ] Response format matches old format (single `job_id`, not `job_ids`)
 
@@ -1085,6 +1171,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Generate bio (single context tag):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -1097,6 +1184,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 2. **Generate multiple bios at once:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
@@ -1131,12 +1219,14 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 **Steps:**
 
 1. **Get job status:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/jobs/550e8400-e29b-41d4-a716-446655440000" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Verify response (PENDING):**
+
    ```json
    {
      "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -1149,6 +1239,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 3. **Verify response (DONE):**
+
    ```json
    {
      "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -1162,6 +1253,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
    ```
 
 4. **Verify response (FAILED):**
+
    ```json
    {
      "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -1210,10 +1302,12 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 ### Priority Scoring
 
 Reports are automatically assigned a priority score based on:
+
 - Report type weight (see above)
 - Number of pending reports of the same type
 
 **Priority thresholds:**
+
 - **High:** `priority_score >= 3.0` (factual errors, inappropriate content, hallucinations)
 - **Medium:** `1.0 <= priority_score < 3.0` (grammar errors with multiple reports)
 - **Low:** `priority_score < 1.0` (single grammar/other reports)
@@ -1227,6 +1321,7 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **Report a grammar error:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
      -H "Content-Type: application/json" \
@@ -1240,6 +1335,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "report_id": "660e8400-e29b-41d4-a716-446655440001",
@@ -1255,6 +1351,7 @@ Reports are automatically assigned a priority score based on:
    - [ ] Status is `pending`
 
 4. **Report a factual error (higher priority):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
      -H "Content-Type: application/json" \
@@ -1264,9 +1361,11 @@ Reports are automatically assigned a priority score based on:
        "suggested_fix": "Update release year to 1999"
      }' | jq
    ```
+
    - [ ] Priority score is `3.0` (higher than grammar)
 
 5. **Report without description_id (general movie issue):**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
      -H "Content-Type: application/json" \
@@ -1275,10 +1374,12 @@ Reports are automatically assigned a priority score based on:
        "message": "The description contains inappropriate language"
      }' | jq
    ```
+
    - [ ] Report created successfully (description_id is optional)
    - [ ] Priority score is `5.0` (highest)
 
 6. **Test validation errors:**
+
    ```bash
    # Missing required fields
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
@@ -1287,6 +1388,7 @@ Reports are automatically assigned a priority score based on:
        "type": "grammar"
      }' | jq
    ```
+
    - [ ] Status code: `422 Unprocessable Entity`
    - [ ] Error message indicates missing `message`
 
@@ -1299,10 +1401,12 @@ Reports are automatically assigned a priority score based on:
        "message": "Test message"
      }' | jq
    ```
+
    - [ ] Status code: `422 Unprocessable Entity`
    - [ ] Error message indicates invalid type
 
 7. **Test with non-existent movie:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/movies/non-existent-movie/report" \
      -H "Content-Type: application/json" \
@@ -1311,6 +1415,7 @@ Reports are automatically assigned a priority score based on:
        "message": "Test message"
      }' | jq
    ```
+
    - [ ] Status code: `404 Not Found`
 
 ---
@@ -1324,6 +1429,7 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **List all reports:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports" \
      -u "admin:password" \
@@ -1331,6 +1437,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Verify response structure:**
+
    ```json
    {
      "data": [
@@ -1365,61 +1472,75 @@ Reports are automatically assigned a priority score based on:
    - [ ] Pagination metadata present
 
 4. **Filter by status:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?status=pending" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only pending reports returned
    - [ ] Status code: `200 OK`
 
 5. **Filter by priority (high):**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=high" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only reports with `priority_score >= 3.0` returned
    - [ ] All returned reports have high priority
 
 6. **Filter by priority (medium):**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=medium" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only reports with `1.0 <= priority_score < 3.0` returned
 
 7. **Filter by priority (low):**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=low" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only reports with `priority_score < 1.0` returned
 
 8. **Combine filters:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?status=pending&priority=high" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Only high-priority pending reports returned
 
 9. **Test pagination:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?per_page=10&page=1" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Maximum 10 reports per page
    - [ ] Pagination metadata correct
 
 10. **Test without authentication:**
+
     ```bash
     curl -X GET "http://localhost:8000/api/v1/admin/reports" \
       -H "Accept: application/json" | jq
     ```
+
     - [ ] Status code: `401 Unauthorized`
 
 ---
@@ -1428,13 +1549,15 @@ Reports are automatically assigned a priority score based on:
 
 **Objective:** Verify that admins can verify reports and trigger automatic regeneration.
 
-**Prerequisites:** 
+**Prerequisites:**
+
 - Admin authentication required
 - Queue worker must be running (for regeneration job)
 
 **Steps:**
 
 1. **Verify a report:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/admin/reports/660e8400-e29b-41d4-a716-446655440001/verify" \
      -u "admin:password" \
@@ -1442,6 +1565,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "id": "660e8400-e29b-41d4-a716-446655440001",
@@ -1459,40 +1583,49 @@ Reports are automatically assigned a priority score based on:
    - [ ] Regeneration job queued (check queue logs)
 
 4. **Check queue for regeneration job:**
+
    ```bash
    # Check Horizon dashboard or queue logs
    tail -f storage/logs/laravel.log | grep "RegenerateMovieDescriptionJob"
    ```
+
    - [ ] `RegenerateMovieDescriptionJob` dispatched
    - [ ] Job contains correct `movie_id` and `description_id`
 
 5. **Verify report after regeneration job completes:**
+
    ```bash
    # Wait for job to complete, then check report status
    curl -X GET "http://localhost:8000/api/v1/admin/reports/660e8400-e29b-41d4-a716-446655440001" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status changed to `resolved` (after job completion)
    - [ ] `resolved_at` timestamp present
    - [ ] Description text updated (check movie endpoint)
 
 6. **Test with non-existent report:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/admin/reports/non-existent-id/verify" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status code: `404 Not Found`
 
 7. **Test without authentication:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/admin/reports/660e8400-e29b-41d4-a716-446655440001/verify" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status code: `401 Unauthorized`
 
 8. **Test verification without description_id:**
+
    ```bash
    # Create report without description_id
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
@@ -1507,6 +1640,7 @@ Reports are automatically assigned a priority score based on:
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Report verified successfully
    - [ ] No regeneration job queued (description_id is null)
 
@@ -1519,6 +1653,7 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **User reports an error:**
+
    ```bash
    REPORT_RESPONSE=$(curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
      -H "Content-Type: application/json" \
@@ -1532,44 +1667,53 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Admin lists reports and sees new report:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports?status=pending&priority=high" \
      -u "admin:password" \
      -H "Accept: application/json" | jq '.data[] | select(.id == "'"$REPORT_RESPONSE"'")'
    ```
+
    - [ ] Report appears in high-priority pending reports
    - [ ] Priority score is `3.0` (factual_error weight)
 
 3. **Admin verifies report:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/admin/reports/$REPORT_RESPONSE/verify" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status changed to `verified`
    - [ ] Regeneration job queued
 
 4. **Wait for regeneration job to complete:**
+
    ```bash
    # Check job status in Horizon or logs
    # Wait for RegenerateMovieDescriptionJob to complete
    ```
 
 5. **Verify report is resolved:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/reports/$REPORT_RESPONSE" \
      -u "admin:password" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status is `resolved`
    - [ ] `resolved_at` timestamp present
 
 6. **Verify description was regenerated:**
+
    ```bash
    # Get movie with updated description
    curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
      -H "Accept: application/json" | jq '.descriptions[] | select(.id == "description_id_from_report")'
    ```
+
    - [ ] Description text updated
    - [ ] New `ai_model` and `created_at` timestamp
 
@@ -1582,6 +1726,7 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **Create multiple reports of different types:**
+
    ```bash
    # Grammar error (weight: 1)
    curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
@@ -1603,6 +1748,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Verify priority filtering:**
+
    ```bash
    # High priority (>= 3.0)
    curl -X GET "http://localhost:8000/api/v1/admin/reports?priority=high" \
@@ -1627,6 +1773,7 @@ Reports are automatically assigned a priority score based on:
 **Problem: Report not appearing in admin list**
 
 **Solution:**
+
 - Verify report was created: Check database `movie_reports` table
 - Check authentication: Admin endpoint requires Basic Auth
 - Verify status filter: Report might be filtered out
@@ -1634,6 +1781,7 @@ Reports are automatically assigned a priority score based on:
 **Problem: Regeneration job not queued after verification**
 
 **Solution:**
+
 - Check if `description_id` is null (no job queued for general movie reports)
 - Verify queue worker is running: `php artisan queue:work` or Horizon
 - Check logs for job dispatch errors
@@ -1641,9 +1789,390 @@ Reports are automatically assigned a priority score based on:
 **Problem: Priority score seems incorrect**
 
 **Solution:**
+
 - Verify report type weight in `ReportType` enum
 - Check if multiple reports of same type affect aggregation
 - Verify priority calculation logic in `MovieReportService`
+
+---
+
+## ⚡ Adaptive Rate Limiting
+
+### Overview
+
+Adaptive Rate Limiting dynamically adjusts API rate limits based on real-time system load.
+Instead of fixed limits, the system monitors CPU load, queue size, and active jobs,
+then automatically adjusts rate limits to maintain stability.
+
+**Protected Endpoints:**
+
+- `GET /api/v1/movies/search` - Search endpoint (default: 100 req/min)
+- `POST /api/v1/generate` - AI generation endpoint (default: 10 req/min)
+- `POST /api/v1/movies/{slug}/report` - Report endpoint (default: 20 req/min)
+
+**Load Monitoring:**
+
+- **CPU Load** (40% weight) - System CPU utilization
+- **Queue Size** (40% weight) - Number of pending jobs in Redis queue
+- **Active Jobs** (20% weight) - Number of currently processing jobs
+
+**Load Levels:**
+
+- **Low** (<30%) - Default limits applied (100/10/20 req/min)
+- **Medium** (30-50%) - 20% reduction (80/8/16 req/min)
+- **High** (50-70%) - 50% reduction (50/5/10 req/min)
+- **Critical** (>70%) - Minimum limits (20/2/5 req/min)
+
+---
+
+### Scenario 1: Verify Rate Limit Headers
+
+**Objective:** Verify that rate limit headers are included in responses.
+
+**Steps:**
+
+1. **Send a request to protected endpoint:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -v 2>&1 | grep -i "rate"
+   ```
+
+2. **Verify response headers:**
+   - [ ] `X-RateLimit-Limit` header present (e.g., `100`)
+   - [ ] `X-RateLimit-Remaining` header present (e.g., `99`)
+   - [ ] Headers reflect current dynamic limit (not always default)
+
+3. **Test all protected endpoints:**
+
+   ```bash
+   # Search endpoint
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -i | grep -i "rate"
+   
+   # Generate endpoint
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' \
+     -i | grep -i "rate"
+   
+   # Report endpoint
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{"type": "grammar", "message": "Test"}' \
+     -i | grep -i "rate"
+   ```
+
+   - [ ] All endpoints return rate limit headers
+   - [ ] Limits differ per endpoint (search > report > generate)
+
+---
+
+### Scenario 2: Test Rate Limit Enforcement
+
+**Objective:** Verify that rate limits are enforced and 429 responses are returned when exceeded.
+
+**Steps:**
+
+1. **Send multiple requests quickly:**
+
+   ```bash
+   # Send 150 requests to search endpoint (limit: 100/min)
+   for i in {1..150}; do
+     curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+       -H "Accept: application/json" -w "\nStatus: %{http_code}\n" \
+       -o /dev/null -s
+     sleep 0.1
+   done
+   ```
+
+2. **Verify rate limiting:**
+   - [ ] First ~100 requests return `200 OK`
+   - [ ] Remaining requests return `429 Too Many Requests`
+   - [ ] `429` response includes `Retry-After` header
+   - [ ] `X-RateLimit-Remaining` shows `0` when limit exceeded
+
+3. **Check 429 response structure:**
+
+   ```bash
+   # Trigger rate limit
+   for i in {1..105}; do
+     curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+       -H "Accept: application/json" -s
+   done | jq '.'
+   ```
+
+   **Expected 429 response:**
+
+   ```json
+   {
+     "error": "Too many requests",
+     "message": "Rate limit exceeded. Please try again later.",
+     "retry_after": 45
+   }
+   ```
+
+   - [ ] Status code: `429 Too Many Requests`
+   - [ ] Error message present
+   - [ ] `retry_after` seconds indicated
+
+---
+
+### Scenario 3: Test Dynamic Limit Adjustment
+
+**Objective:** Verify that rate limits adjust based on system load.
+
+**Prerequisites:** Ability to simulate system load (CPU, queue, active jobs)
+
+**Steps:**
+
+1. **Check default limits under normal load:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -i | grep "X-RateLimit-Limit"
+   # Should show: X-RateLimit-Limit: 100
+   ```
+
+2. **Generate system load:**
+
+   ```bash
+   # Option A: Fill queue with jobs
+   for i in {1..1000}; do
+     curl -X POST "http://localhost:8000/api/v1/generate" \
+       -H "Content-Type: application/json" \
+       -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' -s > /dev/null
+   done
+   
+   # Option B: Generate CPU load (Docker)
+   docker compose exec php sh -c 'for i in $(seq 1 4); do while true; do :; done & done'
+   ```
+
+3. **Wait for load to register (5-10 seconds):**
+
+   ```bash
+   sleep 10
+   ```
+
+4. **Check adjusted limits:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -i | grep "X-RateLimit-Limit"
+   # Should show reduced limit (e.g., 50, 20, etc.)
+   ```
+
+5. **Verify:**
+   - [ ] Limit reduced under high load
+   - [ ] Limit never goes below minimum (20 for search, 2 for generate, 5 for report)
+   - [ ] After load decreases, limit returns to normal
+
+6. **Check logs for rate limit changes:**
+
+   ```bash
+   tail -f api/storage/logs/laravel.log | grep -i "rate limit"
+   ```
+
+   - [ ] Logs show load factor and adjusted limits
+   - [ ] Logs indicate when limits change
+
+7. **Cleanup (stop CPU load):**
+
+   ```bash
+   # Kill CPU load processes
+   docker compose exec php sh -c 'pkill -f "while true"'
+   ```
+
+---
+
+### Scenario 4: Test Per-Endpoint Limits
+
+**Objective:** Verify that each endpoint has independent rate limits.
+
+**Steps:**
+
+1. **Exhaust search endpoint limit:**
+
+   ```bash
+   # Send 105 requests to search (exceed 100/min limit)
+   for i in {1..105}; do
+     curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+       -H "Accept: application/json" -w "%{http_code}\n" -o /dev/null -s
+   done
+   ```
+
+2. **Test generate endpoint (should still work):**
+
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' \
+     -w "%{http_code}\n" -o /dev/null -s
+   # Should return: 202 (or 429 only if generate limit also exceeded)
+   ```
+
+3. **Test report endpoint (should still work):**
+
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{"type": "grammar", "message": "Test"}' \
+     -w "%{http_code}\n" -o /dev/null -s
+   # Should return: 201 (or 429 only if report limit also exceeded)
+   ```
+
+4. **Verify:**
+   - [ ] Search endpoint rate-limited (429)
+   - [ ] Generate endpoint still accessible (different limit)
+   - [ ] Report endpoint still accessible (different limit)
+   - [ ] Each endpoint has independent counter
+
+---
+
+### Scenario 5: Test Minimum Limits
+
+**Objective:** Verify that rate limits never go below minimum values even under critical load.
+
+**Steps:**
+
+1. **Simulate critical system load:**
+
+   ```bash
+   # Fill queue to maximum
+   for i in {1..2000}; do
+     curl -X POST "http://localhost:8000/api/v1/generate" \
+       -H "Content-Type: application/json" \
+       -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' -s > /dev/null
+   done
+   
+   # Generate CPU load
+   docker compose exec php sh -c 'for i in $(seq 1 4); do while true; do :; done & done'
+   ```
+
+2. **Wait for load to register:**
+
+   ```bash
+   sleep 15
+   ```
+
+3. **Check minimum limits:**
+
+   ```bash
+   # Search endpoint (minimum: 20 req/min)
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -i | grep "X-RateLimit-Limit"
+   # Should show: X-RateLimit-Limit: 20 (minimum)
+   
+   # Generate endpoint (minimum: 2 req/min)
+   curl -X POST "http://localhost:8000/api/v1/generate" \
+     -H "Content-Type: application/json" \
+     -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' \
+     -i | grep "X-RateLimit-Limit"
+   # Should show: X-RateLimit-Limit: 2 (minimum)
+   
+   # Report endpoint (minimum: 5 req/min)
+   curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/report" \
+     -H "Content-Type: application/json" \
+     -d '{"type": "grammar", "message": "Test"}' \
+     -i | grep "X-RateLimit-Limit"
+   # Should show: X-RateLimit-Limit: 5 (minimum)
+   ```
+
+4. **Verify:**
+   - [ ] Limits never go below minimum values
+   - [ ] API remains accessible even under critical load
+   - [ ] Minimum limits are endpoint-specific
+
+5. **Cleanup:**
+
+   ```bash
+   # Stop CPU load
+   docker compose exec php sh -c 'pkill -f "while true"'
+   ```
+
+---
+
+### Scenario 6: Test Load Recovery
+
+**Objective:** Verify that rate limits return to normal after load decreases.
+
+**Steps:**
+
+1. **Generate load and verify reduction:**
+
+   ```bash
+   # Generate load
+   for i in {1..1000}; do
+     curl -X POST "http://localhost:8000/api/v1/generate" \
+       -H "Content-Type: application/json" \
+       -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' -s > /dev/null
+   done
+   
+   # Wait and check reduced limit
+   sleep 10
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -i | grep "X-RateLimit-Limit"
+   # Should show reduced limit
+   ```
+
+2. **Wait for load to decrease:**
+
+   ```bash
+   # Let queue process (wait 30-60 seconds)
+   echo "Waiting for load to decrease..."
+   sleep 60
+   ```
+
+3. **Check if limits returned to normal:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+     -H "Accept: application/json" -i | grep "X-RateLimit-Limit"
+   # Should show: X-RateLimit-Limit: 100 (or close to default)
+   ```
+
+4. **Verify:**
+   - [ ] Limits increase as load decreases
+   - [ ] Limits eventually return to default values
+   - [ ] System recovers gracefully
+
+---
+
+### Troubleshooting Adaptive Rate Limiting
+
+**Problem: Rate limits seem too restrictive**
+
+**Solution:**
+
+- Check system load: High CPU/queue/active jobs → lower limits
+- Verify configuration: `api/config/rate-limiting.php`
+- Check logs for load factor calculations: `tail -f api/storage/logs/laravel.log | grep "rate limit"`
+
+**Problem: Rate limits not adjusting with load**
+
+**Solution:**
+
+- Verify CPU load monitoring is enabled: Check `sys_getloadavg()` availability
+- Check queue size monitoring: Verify Redis connection
+- Check active jobs monitoring: Verify Horizon is running
+- Review logs for errors in load calculation
+
+**Problem: Getting 429 even with low system load**
+
+**Solution:**
+
+- Check if you've exceeded the rate limit in the current window (1 minute)
+- Wait for the `Retry-After` period before retrying
+- Verify rate limit key (should be per IP address)
+- Check logs for rate limit violations
+
+**Problem: CPU load shows 0.0 or not available**
+
+**Solution:**
+
+- This is normal in Docker containers where `sys_getloadavg()` may not reflect container CPU
+- System falls back to queue and active jobs monitoring
+- Check `docs/CPU_LOAD_VERIFICATION_RESULTS.md` for Docker-specific notes
 
 ---
 
@@ -1667,12 +2196,14 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **Check health:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/health/openai" \
      -H "Accept: application/json" | jq
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "status": "ok",
@@ -1694,15 +2225,18 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **Check TMDB health endpoint (recommended):**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/health/tmdb" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status code: `200 OK` (if API is accessible)
    - [ ] Response contains `success: true` and `message: "TMDb API is accessible"`
    - [ ] If `503`, check `error` field for details
 
 2. **Verify response structure (success):**
+
    ```json
    {
      "success": true,
@@ -1713,6 +2247,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 3. **Verify response structure (error - no API key):**
+
    ```json
    {
      "success": false,
@@ -1722,15 +2257,18 @@ Reports are automatically assigned a priority score based on:
    ```
 
 4. **Alternative: Check TMDB via movie search (indirect verification):**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" \
      -H "Accept: application/json" | jq
    ```
+
    - [ ] Status code: `200 OK` or `202 Accepted`
    - [ ] No TMDB-related errors in response
    - [ ] Check logs for TMDB connectivity issues
 
 5. **Direct TMDB API test (requires API key):**
+
    ```bash
    # Get API key from .env
    TMDB_API_KEY=$(grep TMDB_API_KEY api/.env | cut -d '=' -f2)
@@ -1739,10 +2277,12 @@ Reports are automatically assigned a priority score based on:
    curl -X GET "https://api.themoviedb.org/3/movie/603?api_key=${TMDB_API_KEY}" \
      -H "Accept: application/json" | jq '.id'
    ```
+
    - [ ] Should return: `603` (The Matrix movie ID)
    - [ ] Status code: `200 OK`
 
 6. **Verify TMDB configuration:**
+
    ```bash
    # Check if TMDB_API_KEY is set
    grep TMDB_API_KEY api/.env
@@ -1750,6 +2290,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 7. **Check logs for TMDB errors:**
+
    ```bash
    tail -f api/storage/logs/laravel.log | grep -i tmdb
    # Look for connection errors or rate limit warnings
@@ -1772,6 +2313,7 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **List all flags:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/flags" \
      -u "admin:password" \
@@ -1779,6 +2321,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Set a flag:**
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/admin/flags/ai_description_generation" \
      -u "admin:password" \
@@ -1787,6 +2330,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 3. **Get flag usage:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/flags/usage" \
      -u "admin:password" \
@@ -1808,6 +2352,7 @@ Reports are automatically assigned a priority score based on:
 **Steps:**
 
 1. **Get debug config:**
+
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/debug/config" \
      -u "admin:password" \
@@ -1815,6 +2360,7 @@ Reports are automatically assigned a priority score based on:
    ```
 
 2. **Verify response:**
+
    ```json
    {
      "ai_service": "real",
@@ -1836,6 +2382,7 @@ Reports are automatically assigned a priority score based on:
 ### Verify tmdb_id is Hidden
 
 **Test all endpoints:**
+
 ```bash
 # Movies
 curl "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq 'has("tmdb_id")'
@@ -1877,6 +2424,7 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 ```
 
 **Expected Results:**
+
 - Single request: < 200ms
 - Average (10 requests): < 300ms
 - 95th percentile: < 500ms
@@ -1888,6 +2436,7 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 ### Problem: 404 for existing entity
 
 **Solution:**
+
 - Check slug format (exact match required)
 - Verify entity exists in database
 - Clear cache: `php artisan cache:clear`
@@ -1895,6 +2444,7 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 ### Problem: Queue jobs not processing
 
 **Solution:**
+
 - Check queue worker is running: `php artisan queue:work`
 - Check Horizon dashboard: `http://localhost:8000/horizon`
 - Check logs: `tail -f storage/logs/laravel.log`
@@ -1902,6 +2452,7 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 ### Problem: TMDB sync not working
 
 **Solution:**
+
 - Verify `TMDB_API_KEY` in `.env`
 - Check TMDB API rate limits
 - Verify movie has `tmdb_id` and snapshot
@@ -1928,6 +2479,7 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 | Generate | X | Y | Z |
 | Jobs | X | Y | Z |
 | Movie Reports | X | Y | Z |
+| Adaptive Rate Limiting | X | Y | Z |
 | Health/Admin | X | Y | Z |
 
 ## Issues Found
@@ -1943,4 +2495,3 @@ done | awk '{sum+=$1; count++} END {print "Average:", sum/count, "seconds"}'
 
 **Last updated:** 2025-12-18  
 **Version:** 1.0
-
