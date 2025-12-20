@@ -232,7 +232,7 @@ class Movie extends Model
         $query = MovieRelationship::where(function ($q) {
             $q->where('movie_id', $this->id)
                 ->orWhere('related_movie_id', $this->id);
-        })->with(['movie', 'relatedMovie']);
+        })->with(['movie.genres', 'relatedMovie.genres']);
 
         if ($types !== null && count($types) > 0) {
             $enumTypes = array_map(fn ($type) => RelationshipType::from(strtoupper($type)), $types);
@@ -246,7 +246,9 @@ class Movie extends Model
             return $relationship->movie_id === $this->id
                 ? $relationship->relatedMovie
                 : $relationship->movie;
-        })->filter()->unique('id');
+        })->filter(function ($movie) {
+            return $movie !== null;
+        })->unique('id')->values();
 
         return $relatedMovies;
     }

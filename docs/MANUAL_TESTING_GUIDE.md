@@ -1103,7 +1103,17 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" | jq
 **Filter by type:**
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL" | jq
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type=collection" | jq
+```
+
+**Filter by genre:**
+
+```bash
+# Single genre
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genre=science-fiction" | jq
+
+# Multiple genres (AND logic)
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genres[]=science-fiction&genres[]=action" | jq
 ```
 
 ### Relationship Types
@@ -1212,7 +1222,58 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=
 
 ---
 
-### Scenario 3: Empty Relationships
+### Scenario 3: Filter Related Movies by Genre
+
+**Objective:** Verify filtering related movies by genre.
+
+**Prerequisites:**
+- Movie must have related movies
+- Related movies must have genres assigned
+
+**Steps:**
+
+1. **Filter by single genre:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genre=science-fiction" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Filter by multiple genres (AND logic - movie must have ALL genres):**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genres[]=science-fiction&genres[]=action" \
+     -H "Accept: application/json" | jq
+   ```
+
+3. **Filter by genre with type filter:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type=collection&genre=science-fiction" \
+     -H "Accept: application/json" | jq
+   ```
+
+4. **Verify:**
+   - [ ] Only movies with specified genre(s) are returned
+   - [ ] When multiple genres specified, only movies with ALL genres are returned (AND logic)
+   - [ ] Genre filter is case-insensitive (e.g., `SCIENCE-FICTION` works the same as `science-fiction`)
+   - [ ] `count` matches filtered results
+   - [ ] Empty result when no movies match genre filter
+
+5. **Test case-insensitive filtering:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genre=SCIENCE-FICTION" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Should return same results as lowercase `science-fiction`
+
+**Note:** Genre filtering works with both `collection` and `similar` types. If a movie doesn't have genres assigned, it won't match any genre filter.
+
+---
+
+### Scenario 4: Empty Relationships
 
 **Objective:** Verify handling of movies without relationships.
 

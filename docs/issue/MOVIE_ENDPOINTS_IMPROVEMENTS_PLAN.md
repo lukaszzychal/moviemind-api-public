@@ -403,9 +403,13 @@ GET /api/v1/movies/{slug}/collection
 
 **Pliki do modyfikacji:**
 - `api/app/Http/Controllers/Api/MovieController.php` - metoda `related()`
-- `api/tests/Feature/MovieRelatedFilteringTest.php`
+- `api/tests/Feature/MovieRelatedGenreFilteringTest.php` - 5 testów feature
+- `api/database/factories/GenreFactory.php` - factory dla testów
+- `api/app/Models/Movie.php` - metoda `getRelatedMovies()` z eager loading `genres`
 
 **Priorytet:** Niski (nice to have)
+
+**Status:** ✅ Ukończone
 
 ---
 
@@ -600,8 +604,10 @@ GET /api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010
    - Dokumentacja w MANUAL_TESTING_GUIDE.md
 
 6. ✅ **Filtry po Gatunkach w Related**
-   - Rozszerzenie `related()`
-   - Testy
+   - Rozszerzenie `related()` o filtrowanie po `genre` i `genres[]`
+   - Metody pomocnicze `parseGenreFilters()` i `matchesGenreFilter()`
+   - Ładowanie relacji `genres` w `getRelatedMovies()`
+   - Testy (5 testów feature - wszystkie przechodzą)
 
 7. ✅ **Limit per Source w Search**
    - Rozszerzenie `MovieSearchService`

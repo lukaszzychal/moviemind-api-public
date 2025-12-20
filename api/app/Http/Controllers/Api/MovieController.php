@@ -396,6 +396,9 @@ class MovieController extends Controller
         $typeFilter = $request->query('type', 'all');
         $typeFilter = strtolower((string) $typeFilter);
 
+        // Parse genre filters: single genre or multiple genres (AND logic)
+        $genreSlugs = $this->parseGenreFilters($request);
+
         $collectionMovies = [];
         $similarMovies = [];
 
@@ -408,31 +411,60 @@ class MovieController extends Controller
                 RelationshipType::SPINOFF->value,
                 RelationshipType::REMAKE->value,
             ];
-            $collectionMovies = $movie->getRelatedMovies($collectionTypes)->map(function (Movie $relatedMovie) use ($movie) {
-                $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
-                    $query->where('movie_id', $movie->id)
-                        ->where('related_movie_id', $relatedMovie->id);
-                })->orWhere(function ($query) use ($movie, $relatedMovie) {
-                    $query->where('movie_id', $relatedMovie->id)
-                        ->where('related_movie_id', $movie->id);
-                })->first();
+            $relatedMoviesCollection = $movie->getRelatedMovies($collectionTypes);
 
-                $resource = MovieResource::make($relatedMovie)->additional([
-                    '_links' => $this->hateoas->movieLinks($relatedMovie),
-                ]);
+            // Ensure genres are loaded for all related movies before filtering
+            // Use loadMissing to avoid N+1 queries
+            if ($relatedMoviesCollection->isNotEmpty()) {
+                $relatedMoviesCollection->loadMissing('genres');
+            }
 
-                $movieData = $resource->resolve();
-                $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
-                $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
-                $movieData['relationship_order'] = $relationship?->order;
+            $collectionMovies = $relatedMoviesCollection
+                ->filter(function (Movie $relatedMovie) use ($genreSlugs) {
+                    // Ensure genres are loaded for this specific movie
+                    if (! $relatedMovie->relationLoaded('genres')) {
+                        $relatedMovie->load('genres');
+                    }
 
-                return $movieData;
-            })->values()->toArray();
+                    return $this->matchesGenreFilter($relatedMovie, $genreSlugs);
+                })
+                ->map(function (Movie $relatedMovie) use ($movie) {
+                    $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
+                        $query->where('movie_id', $movie->id)
+                            ->where('related_movie_id', $relatedMovie->id);
+                    })->orWhere(function ($query) use ($movie, $relatedMovie) {
+                        $query->where('movie_id', $relatedMovie->id)
+                            ->where('related_movie_id', $movie->id);
+                    })->first();
+
+                    $resource = MovieResource::make($relatedMovie)->additional([
+                        '_links' => $this->hateoas->movieLinks($relatedMovie),
+                    ]);
+
+                    $movieData = $resource->resolve();
+                    $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
+                    $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
+                    $movieData['relationship_order'] = $relationship?->order;
+
+                    return $movieData;
+                })->values()->toArray();
         }
 
         // Similar movies - from TMDB API (cached, not stored in database)
         if ($typeFilter === 'all' || $typeFilter === 'similar') {
             $similarMovies = $this->getSimilarMoviesFromTmdb($movie, limit: 10);
+            // Filter similar movies by genre if filter is applied
+            if (! empty($genreSlugs)) {
+                $similarMovies = array_filter($similarMovies, function ($movieData) use ($genreSlugs) {
+                    // Similar movies come from TMDb API, so we need to check if they exist in our DB
+                    $movie = Movie::where('slug', $movieData['slug'] ?? null)->first();
+                    if (! $movie) {
+                        return false; // Skip movies not in our DB (can't check genres)
+                    }
+
+                    return $this->matchesGenreFilter($movie, $genreSlugs);
+                });
+            }
         }
 
         // Combine results
@@ -684,5 +716,75 @@ class MovieController extends Controller
             'count' => count($data),
             'requested_count' => count($slugs),
         ], 200);
+    }
+
+    /**
+     * Parse genre filters from request.
+     * Supports both single genre (?genre=slug) and multiple genres (?genres[]=slug1&genres[]=slug2).
+     *
+     * @return array<string> Array of genre slugs (lowercase)
+     */
+    private function parseGenreFilters(Request $request): array
+    {
+        $genreSlugs = [];
+
+        // Check for single genre parameter
+        $singleGenre = $request->query('genre');
+        if ($singleGenre !== null) {
+            $genreSlugs[] = strtolower((string) $singleGenre);
+        }
+
+        // Check for multiple genres parameter
+        $multipleGenres = $request->query('genres', []);
+        if (is_array($multipleGenres)) {
+            foreach ($multipleGenres as $genre) {
+                if (is_string($genre) && ! empty($genre)) {
+                    $genreSlugs[] = strtolower($genre);
+                }
+            }
+        }
+
+        // Remove duplicates and return
+        return array_values(array_unique($genreSlugs));
+    }
+
+    /**
+     * Check if a movie matches the genre filter.
+     * If multiple genres are provided, movie must have ALL of them (AND logic).
+     *
+     * @param  array<string>  $genreSlugs
+     */
+    private function matchesGenreFilter(Movie $movie, array $genreSlugs): bool
+    {
+        // If no genre filter, all movies match
+        if (empty($genreSlugs)) {
+            return true;
+        }
+
+        // Load genres if not already loaded
+        if (! $movie->relationLoaded('genres')) {
+            $movie->load('genres');
+        }
+
+        // Get movie's genre slugs (lowercase for case-insensitive comparison)
+        // Use getRelation() to get the relation, not the casted property
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Genre>|null $genres */
+        $genres = $movie->getRelation('genres');
+
+        // If genres relation is not loaded or is empty, movie doesn't match
+        if (! $genres || $genres->isEmpty()) {
+            return false;
+        }
+
+        $movieGenreSlugs = $genres->pluck('slug')->map(fn ($slug) => strtolower((string) $slug))->toArray();
+
+        // Movie must have ALL requested genres (AND logic)
+        foreach ($genreSlugs as $requestedSlug) {
+            if (! in_array($requestedSlug, $movieGenreSlugs, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
