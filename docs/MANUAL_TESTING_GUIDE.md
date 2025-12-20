@@ -257,6 +257,7 @@ curl -X GET "http://localhost:8000/api/v1/health/tmdb"
 | `GET` | `/api/v1/movies/{slug}` | Get movie details |
 | `GET` | `/api/v1/movies/{slug}/related` | Get related movies |
 | `GET` | `/api/v1/movies/{slug}/collection` | Get collection (all movies in same TMDb collection) |
+| `GET` | `/api/v1/movies/compare` | Compare two movies |
 | `POST` | `/api/v1/movies/bulk` | Bulk retrieve multiple movies (fallback for long lists) |
 | `POST` | `/api/v1/movies/{slug}/refresh` | Refresh movie from TMDB |
 
