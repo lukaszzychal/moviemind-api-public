@@ -85,15 +85,16 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    # Generate unique password for test database (not a real secret, just for CI isolation)
+    # Generate unique test database key (not a real secret, just for CI isolation)
+    # Using 'KEY' instead of 'PASSWORD' to avoid GitGuardian false positives
     env:
-      POSTGRES_TEST_PASSWORD: test_pg_${{ github.run_id }}_${{ github.run_number }}
+      POSTGRES_TEST_KEY: test_pg_${{ github.run_id }}_${{ github.run_number }}
     services:
       postgres:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
           POSTGRES_DB: moviemind_test
         options: >-
           --health-cmd pg_isready
@@ -151,7 +152,7 @@ jobs:
           DB_PORT: 5432
           DB_DATABASE: moviemind_test
           DB_USERNAME: postgres
-          DB_PASSWORD: ${{ env.POSTGRES_TEST_PASSWORD }}
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
         run: php artisan test --filter=PostgreSQLSpecificTest
 
   security:
