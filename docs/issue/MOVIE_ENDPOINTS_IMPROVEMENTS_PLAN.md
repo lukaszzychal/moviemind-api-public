@@ -474,6 +474,8 @@ GET /api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010
 
 **Priorytet:** Niski (może być nisza, małe zapotrzebowanie)
 
+**Status:** ✅ Ukończone
+
 ---
 
 ## Pytania do Rozstrzygnięcia

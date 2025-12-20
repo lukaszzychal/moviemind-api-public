@@ -8,6 +8,7 @@ use App\Enums\RelationshipType;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkMoviesRequest;
+use App\Http\Requests\CompareMoviesRequest;
 use App\Http\Requests\ReportMovieRequest;
 use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
@@ -19,6 +20,7 @@ use App\Repositories\MovieRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
 use App\Services\MovieCollectionService;
+use App\Services\MovieComparisonService;
 use App\Services\MovieReportService;
 use App\Services\MovieRetrievalService;
 use App\Services\MovieSearchService;
@@ -40,7 +42,8 @@ class MovieController extends Controller
         private readonly MovieRetrievalService $movieRetrievalService,
         private readonly MovieResponseFormatter $responseFormatter,
         private readonly MovieReportService $movieReportService,
-        private readonly MovieCollectionService $movieCollectionService
+        private readonly MovieCollectionService $movieCollectionService,
+        private readonly MovieComparisonService $movieComparisonService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -786,5 +789,22 @@ class MovieController extends Controller
         }
 
         return true;
+    }
+
+    /**
+     * Compare two movies.
+     */
+    public function compare(CompareMoviesRequest $request): JsonResponse
+    {
+        $slug1 = $request->validated()['slug1'];
+        $slug2 = $request->validated()['slug2'];
+
+        try {
+            $comparison = $this->movieComparisonService->compare($slug1, $slug2);
+
+            return response()->json($comparison);
+        } catch (\InvalidArgumentException $e) {
+            return $this->responseFormatter->formatNotFound();
+        }
     }
 }

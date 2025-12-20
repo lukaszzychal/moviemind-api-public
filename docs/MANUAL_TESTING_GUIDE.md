@@ -1286,7 +1286,110 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genres[
 
 ---
 
-### Scenario 4: Empty Relationships
+### Scenario 4: Compare Two Movies
+
+**Objective:** Verify comparing two movies to find common elements and differences.
+
+**Prerequisites:**
+- Two movies must exist in the database
+- Movies should have genres and people assigned (optional, for richer comparison)
+
+**Steps:**
+
+1. **Compare two movies:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response structure:**
+
+   ```json
+   {
+     "movie1": {
+       "id": "...",
+       "slug": "the-matrix-1999",
+       "title": "The Matrix",
+       "release_year": 1999,
+       "director": "..."
+     },
+     "movie2": {
+       "id": "...",
+       "slug": "inception-2010",
+       "title": "Inception",
+       "release_year": 2010,
+       "director": "..."
+     },
+     "comparison": {
+       "common_genres": ["Science Fiction", "Action"],
+       "common_people": [
+         {
+           "person": {
+             "id": "...",
+             "slug": "keanu-reeves",
+             "name": "Keanu Reeves"
+           },
+           "roles_in_movie1": ["ACTOR"],
+           "roles_in_movie2": ["ACTOR"]
+         }
+       ],
+       "year_difference": 11,
+       "similarity_score": 0.75
+     }
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `movie1` and `movie2` contain basic movie information
+   - [ ] `common_genres` array lists genres present in both movies
+   - [ ] `common_people` array lists people who worked on both movies with their roles
+   - [ ] `year_difference` is the absolute difference in release years
+   - [ ] `similarity_score` is a float between 0.0 and 1.0
+
+4. **Test with movies that have no common elements:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/compare?slug1=movie1&slug2=movie2" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] `common_genres` is an empty array
+   - [ ] `common_people` is an empty array
+   - [ ] `similarity_score` is low (close to 0.0)
+
+5. **Test validation (missing parameters):**
+
+   ```bash
+   # Missing slug1
+   curl -X GET "http://localhost:8000/api/v1/movies/compare?slug2=test" \
+     -H "Accept: application/json" | jq
+   # Should return 422 Unprocessable Entity
+
+   # Missing slug2
+   curl -X GET "http://localhost:8000/api/v1/movies/compare?slug1=test" \
+     -H "Accept: application/json" | jq
+   # Should return 422 Unprocessable Entity
+   ```
+
+6. **Test with non-existent movies:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/compare?slug1=non-existent-123&slug2=also-non-existent-456" \
+     -H "Accept: application/json" | jq
+   ```
+
+   - [ ] Status code: `404 Not Found`
+
+**Note:** Similarity score is calculated based on:
+- Common genres (40% weight)
+- Common people (40% weight)
+- Year proximity (20% weight)
+
+---
+
+### Scenario 5: Empty Relationships
 
 **Objective:** Verify handling of movies without relationships.
 
