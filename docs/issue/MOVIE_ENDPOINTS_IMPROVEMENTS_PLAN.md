@@ -426,11 +426,13 @@ GET /api/v1/movies/{slug}/collection
 - Przekazanie limitów do `searchLocal()` i `searchTmdbIfEnabled()`
 
 **Pliki do modyfikacji:**
-- `api/app/Services/MovieSearchService.php`
-- `api/app/Http/Requests/SearchMovieRequest.php`
-- `api/tests/Unit/Services/MovieSearchServiceLimitTest.php`
+- `api/app/Services/MovieSearchService.php` - metoda `search()` z osobnymi limitami
+- `api/app/Http/Requests/SearchMovieRequest.php` - walidacja `local_limit` i `external_limit`
+- `api/tests/Feature/MovieSearchLimitPerSourceTest.php` - 8 testów feature
 
 **Priorytet:** Niski (nice to have)
+
+**Status:** ✅ Ukończone
 
 ---
 
@@ -610,8 +612,10 @@ GET /api/v1/movies/compare?slug1=the-matrix-1999&slug2=inception-2010
    - Testy (5 testów feature - wszystkie przechodzą)
 
 7. ✅ **Limit per Source w Search**
-   - Rozszerzenie `MovieSearchService`
-   - Testy
+   - Rozszerzenie `MovieSearchService::search()` o osobne limity dla local i external
+   - Parametry `local_limit` i `external_limit` w `SearchMovieRequest`
+   - Aktualizacja `generateCacheKey()` aby uwzględniał limity
+   - Testy (8 testów feature - wszystkie przechodzą)
 
 8. ❓ **Porównywanie Filmów**
    - Tylko jeśli jest zapotrzebowanie

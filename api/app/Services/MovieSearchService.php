@@ -40,7 +40,7 @@ class MovieSearchService
     /**
      * Search for movies using various criteria.
      *
-     * @param  array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int, sort?: string, order?: string}  $criteria
+     * @param  array{q?: string, year?: int, director?: string, actor?: string|array, limit?: int, page?: int, per_page?: int, sort?: string, order?: string, local_limit?: int, external_limit?: int}  $criteria
      */
     public function search(array $criteria): SearchResult
     {
@@ -54,6 +54,10 @@ class MovieSearchService
         $currentPageNumber = $paginationInfo['current_page'];
         $isPaginationRequested = $paginationInfo['is_pagination_requested'];
 
+        // Determine limits for each source
+        $localLimit = $criteria['local_limit'] ?? $itemsPerPage;
+        $externalLimit = $criteria['external_limit'] ?? $itemsPerPage;
+
         $cacheKey = $this->generateCacheKey($criteria);
 
         // Try to get from tagged cache first (for Redis/Memcached)
@@ -64,8 +68,8 @@ class MovieSearchService
             return $cachedResult;
         }
 
-        $localMovies = $this->searchLocal($searchQuery, $searchYear, $searchDirector, $searchActor, $itemsPerPage);
-        $externalMovies = $this->searchTmdbIfEnabled($searchQuery, $searchYear, $searchDirector, $itemsPerPage);
+        $localMovies = $this->searchLocal($searchQuery, $searchYear, $searchDirector, $searchActor, $localLimit);
+        $externalMovies = $this->searchTmdbIfEnabled($searchQuery, $searchYear, $searchDirector, $externalLimit);
 
         // Generate unique slugs for external results, considering local results context
         if (! empty($externalMovies)) {
@@ -692,6 +696,8 @@ class MovieSearchService
         $itemsPerPage = $criteria['per_page'] ?? $criteria['limit'] ?? 20;
         $sortField = $criteria['sort'] ?? '';
         $sortOrder = $criteria['order'] ?? '';
+        $localLimit = $criteria['local_limit'] ?? '';
+        $externalLimit = $criteria['external_limit'] ?? '';
 
         $cacheKeyParts = [
             'movie:search',
@@ -702,6 +708,8 @@ class MovieSearchService
             $itemsPerPage,
             $sortField,
             $sortOrder,
+            $localLimit,
+            $externalLimit,
         ];
 
         return implode(':', $cacheKeyParts);
