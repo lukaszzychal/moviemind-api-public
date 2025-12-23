@@ -7,19 +7,20 @@ use App\Enums\Locale;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportPersonRequest;
+use App\Http\Requests\SearchPersonRequest;
 use App\Http\Resources\PersonResource;
+use App\Http\Responses\PersonResponseFormatter;
 use App\Models\Person;
-use App\Models\PersonBio;
 use App\Models\PersonReport;
 use App\Repositories\PersonRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
-use App\Services\PersonDisambiguationService;
 use App\Services\PersonReportService;
+use App\Services\PersonRetrievalService;
+use App\Services\PersonSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Laravel\Pennant\Feature;
 
 class PersonController extends Controller
 {
@@ -29,8 +30,10 @@ class PersonController extends Controller
         private readonly PersonRepository $personRepository,
         private readonly HateoasService $hateoas,
         private readonly QueuePersonGenerationAction $queuePersonGenerationAction,
-        private readonly PersonDisambiguationService $disambiguationService,
         private readonly EntityVerificationServiceInterface $tmdbVerificationService,
+        private readonly PersonSearchService $personSearchService,
+        private readonly PersonRetrievalService $personRetrievalService,
+        private readonly PersonResponseFormatter $responseFormatter,
         private readonly PersonReportService $personReportService
     ) {}
 
@@ -43,123 +46,41 @@ class PersonController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    public function search(SearchPersonRequest $request): JsonResponse
+    {
+        $criteria = $request->getSearchCriteria();
+        $searchResult = $this->personSearchService->search($criteria);
+
+        // For search endpoint, always return 200 with normal structure (even if ambiguous)
+        return response()->json($searchResult->toArray(), 200);
+    }
+
     public function show(Request $request, string $slug): JsonResponse
     {
         $bioId = $this->normalizeBioId($request->query('bio_id'));
         if ($bioId === false) {
-            return response()->json([
-                'error' => 'Invalid bio_id parameter',
-            ], 422);
+            return $this->responseFormatter->formatError('Invalid bio_id parameter', 422);
         }
 
-        $cacheKey = $this->cacheKey($slug, $bioId);
-
-        if ($cached = Cache::get($cacheKey)) {
-            return response()->json($cached);
-        }
-
-        $person = $this->personRepository->findBySlugWithRelations($slug);
-        if ($person) {
-            $selectedBio = null;
-            if ($bioId !== null) {
-                $candidate = $person->bios->firstWhere('id', $bioId);
-                if ($candidate instanceof PersonBio) {
-                    $selectedBio = $candidate;
-                }
-
-                if ($selectedBio === null) {
-                    return response()->json(['error' => 'Bio not found for person'], 404);
-                }
-            }
-
-            $resource = PersonResource::make($person)
-                ->additional(['_links' => $this->hateoas->personLinks($person)]);
-
-            $payload = $resource->resolve($request);
-
-            if ($selectedBio) {
-                $payload['selected_bio'] = $selectedBio->toArray();
-            }
-
-            // Add disambiguation metadata if ambiguous slug
-            $meta = $this->disambiguationService->determineMeta($person, $slug);
-            if ($meta !== null) {
-                $payload['_meta'] = $meta;
-            }
-
-            Cache::put($cacheKey, $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));
-
-            return response()->json($payload);
-        }
-
-        if (! Feature::active('ai_bio_generation')) {
-            return response()->json(['error' => 'Person not found'], 404);
-        }
-
-        // Validate slug format and check for prompt injection
-        $validation = SlugValidator::validatePersonSlug($slug);
-        if (! $validation['valid']) {
-            return response()->json([
-                'error' => 'Invalid slug format',
-                'message' => $validation['reason'],
-                'confidence' => $validation['confidence'],
-                'slug' => $slug,
-            ], 400);
-        }
-
-        // Check for disambiguation selection (user selects specific slug from disambiguation)
+        // Handle disambiguation selection (special case - user selects specific slug from disambiguation)
         // Note: Disambiguation now uses slugs instead of tmdb_id
         $selectedSlug = $request->query('slug');
         if ($selectedSlug !== null) {
             return $this->handleDisambiguationSelection($slug, (string) $selectedSlug);
         }
 
-        // Verify person exists in TMDb before queueing job (if feature flag enabled)
-        $tmdbData = $this->tmdbVerificationService->verifyPerson($slug);
-        if (! $tmdbData) {
-            // If TMDb verification is disabled (feature flag off), allow generation without TMDb data
-            if (! Feature::active('tmdb_verification')) {
-                $result = $this->queuePersonGenerationAction->handle(
-                    $slug,
-                    confidence: $validation['confidence'],
-                    locale: Locale::EN_US->value,
-                    tmdbData: null
-                );
+        $result = $this->personRetrievalService->retrievePerson($slug, $bioId);
 
-                return response()->json($result, 202);
-            }
+        $response = $this->responseFormatter->formatFromResult($result, $slug);
 
-            // Check if there are multiple matches (disambiguation needed)
-            $searchResults = $this->tmdbVerificationService->searchPeople($slug, 5);
-            if (count($searchResults) > 1) {
-                return $this->respondWithDisambiguation($slug, $searchResults);
-            }
-
-            // If search found results but verifyPerson didn't, return suggested slugs
-            if (count($searchResults) === 1) {
-                $suggestedSlugs = $this->generateSuggestedSlugsFromSearchResults($searchResults);
-                $result = $this->queuePersonGenerationAction->handle(
-                    $slug,
-                    confidence: $validation['confidence'],
-                    locale: Locale::EN_US->value,
-                    tmdbData: null
-                );
-                $result['suggested_slugs'] = $suggestedSlugs;
-
-                return response()->json($result, 202);
-            }
-
-            return response()->json(['error' => 'Person not found'], 404);
+        // Cache successful responses (but not disambiguation - they should be fresh)
+        if ($result->isFound() && ! $result->isCached() && ! $result->isDisambiguation()) {
+            $cacheKey = $this->cacheKey($slug, $bioId);
+            $responseData = json_decode($response->getContent(), true);
+            Cache::put($cacheKey, $responseData, now()->addSeconds(self::CACHE_TTL_SECONDS));
         }
 
-        $result = $this->queuePersonGenerationAction->handle(
-            $slug,
-            confidence: $validation['confidence'],
-            locale: Locale::EN_US->value,
-            tmdbData: $tmdbData
-        );
-
-        return response()->json($result, 202);
+        return $response;
     }
 
     private function transformPerson(Person $person): array
@@ -235,7 +156,7 @@ class PersonController extends Controller
             }
 
             if (! $selectedPerson) {
-                return response()->json(['error' => 'Selected person not found in search results'], 404);
+                return $this->responseFormatter->formatDisambiguationSelectionNotFound();
             }
 
             // Re-validate slug for confidence score
@@ -247,7 +168,7 @@ class PersonController extends Controller
                 tmdbData: $selectedPerson
             );
 
-            return response()->json($result, 202);
+            return $this->responseFormatter->formatGenerationQueued($result);
         }
 
         // Person exists - return it directly by calling show method with a new request
@@ -258,6 +179,8 @@ class PersonController extends Controller
 
     /**
      * Respond with disambiguation options when multiple people match the slug.
+     *
+     * @phpstan-ignore-next-line
      */
     private function respondWithDisambiguation(string $slug, array $searchResults): JsonResponse
     {
@@ -292,6 +215,8 @@ class PersonController extends Controller
      *
      * @param  array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int}>  $searchResults
      * @return array<int, array{slug: string, name: string, birth_year: int|null, birthplace: string|null}>
+     *
+     * @phpstan-ignore-next-line
      */
     private function generateSuggestedSlugsFromSearchResults(array $searchResults): array
     {
@@ -373,7 +298,7 @@ class PersonController extends Controller
     {
         $person = $this->personRepository->findBySlugWithRelations($slug);
         if (! $person) {
-            return response()->json(['error' => 'Person not found'], 404);
+            return $this->responseFormatter->formatNotFound();
         }
 
         // Find existing snapshot
@@ -382,7 +307,7 @@ class PersonController extends Controller
             ->first();
 
         if (! $snapshot) {
-            return response()->json(['error' => 'No TMDb snapshot found for this person'], 404);
+            return $this->responseFormatter->formatRefreshNoSnapshot();
         }
 
         // Refresh person details from TMDb
@@ -390,7 +315,7 @@ class PersonController extends Controller
         $tmdbService = $this->tmdbVerificationService;
         $freshData = $tmdbService->refreshPersonDetails($snapshot->tmdb_id);
         if (! $freshData) {
-            return response()->json(['error' => 'Failed to refresh person data from TMDb'], 500);
+            return $this->responseFormatter->formatRefreshFailed();
         }
 
         // Update snapshot with fresh data
@@ -402,11 +327,6 @@ class PersonController extends Controller
         // Invalidate cache
         Cache::forget($this->cacheKey($slug, null));
 
-        return response()->json([
-            'message' => 'Person data refreshed from TMDb',
-            'slug' => $slug,
-            'person_id' => $person->id,
-            'refreshed_at' => now()->toIso8601String(),
-        ]);
+        return $this->responseFormatter->formatRefreshSuccess($slug, $person->id);
     }
 }

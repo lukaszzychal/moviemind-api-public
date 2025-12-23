@@ -81,6 +81,17 @@ class HateoasTest extends TestCase
         }
         $this->assertNotNull($slug, 'Expected at least one linked person');
 
+        // Ensure person has at least one bio (person without bio returns 202, not 200)
+        $person = \App\Models\Person::where('slug', $slug)->first();
+        if ($person && ! $person->bios()->exists()) {
+            $person->bios()->create([
+                'locale' => \App\Enums\Locale::EN_US,
+                'text' => 'Test bio for HATEOAS',
+                'context_tag' => \App\Enums\ContextTag::DEFAULT,
+                'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+            ]);
+        }
+
         $res = $this->getJson('/api/v1/people/'.$slug);
         $res->assertOk();
         $body = $res->json();

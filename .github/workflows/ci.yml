@@ -44,7 +44,7 @@ jobs:
 
       - name: Cache Composer packages
         id: composer-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: api/vendor
           key: ${{ runner.os }}-php-${{ matrix.php-versions }}-${{ hashFiles('api/composer.lock') }}
@@ -115,7 +115,7 @@ jobs:
           extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
 
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: api/vendor
           key: ${{ runner.os }}-php-8.3-postgresql-${{ hashFiles('api/composer.lock') }}
@@ -171,7 +171,7 @@ jobs:
           extensions: mbstring, dom, curl, libxml, zip
 
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: api/vendor
           key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
