@@ -1073,6 +1073,43 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
+#### `TASK-051` - Implementacja TV Series i TV Show
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 30-40 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** --
+- **Realizacja:** Do ustalenia
+- **Opis:** Implementacja obsługi seriali telewizyjnych (TV Series) i programów telewizyjnych (TV Show) jako nowych typów encji w MovieMind API.
+- **Szczegóły:**
+  - **TV Series (seriale fabularne):**
+    - Dodanie modelu `TvSeries` i `TvSeriesDescription` (analogicznie do Movie)
+    - Migracje bazy danych dla tabel `tv_series` i `tv_series_descriptions`
+    - Endpointy API: `GET /v1/tv-series`, `GET /v1/tv-series/{slug}`, `POST /v1/generate` (entity_type: TV_SERIES)
+  - **TV Show (programy telewizyjne):**
+    - Dodanie modelu `TvShow` i `TvShowDescription` (analogicznie do Movie)
+    - Migracje bazy danych dla tabel `tv_shows` i `tv_show_descriptions`
+    - Endpointy API: `GET /v1/tv-shows`, `GET /v1/tv-shows/{slug}`, `POST /v1/generate` (entity_type: TV_SHOW)
+  - Integracja z TMDb API dla weryfikacji i pobierania danych (endpoint `/tv`)
+  - Logika rozróżniania między serialami a programami na podstawie gatunków TMDb
+  - Generowanie AI-opisów dla obu typów (analogicznie do filmów)
+  - Testy jednostkowe i feature tests dla obu typów
+  - Aktualizacja OpenAPI spec
+  - Dokumentacja
+- **Zależności:** 
+  - TASK-015 (testy Newman) - zalecane przed rozpoczęciem
+  - Stabilizacja funkcji MOVIE i PERSON
+- **Uwagi:** 
+  - **TV Series** = seriale telewizyjne (produkcje fabularne z sezonami/odcinkami)
+  - **TV Show** = programy telewizyjne (talk-show, reality, news, dokumenty)
+  - Oba modele powinny być implementowane razem dla spójności (podobna struktura, ten sam endpoint TMDb)
+  - Naturalne rozszerzenie MVP po stabilizacji filmów i osób
+  - Szczegóły propozycji: `docs/knowledge/ENTITY_TYPES_PROPOSALS.md`
+- **Utworzone:** 2025-01-27
+
+---
+
 
 ---
 
@@ -1487,7 +1524,7 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 18
+- **Aktywne:** 19
 - **Zakończone:** 28
 - **Anulowane:** 1
 - **W trakcie:** 0
