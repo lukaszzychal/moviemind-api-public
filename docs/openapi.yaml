@@ -183,8 +183,8 @@ paths:
       summary: Refresh movie metadata from TMDb
       description: |
         Refreshes movie metadata (title, release_year, director, genres) from TMDb.
-        **Important:** This endpoint does NOT synchronize actors/crew. Actor and crew
-        synchronization happens automatically when a movie is first created from TMDb data.
+        **Important:** This endpoint does NOT synchronize people (cast/crew). People synchronization
+        happens automatically when a movie is first created from TMDb data or when AI generates cast information.
         Use this endpoint only to update core movie metadata.
       parameters:
         - in: path
@@ -1086,8 +1086,10 @@ components:
       properties:
         entity_type:
           type: string
-          enum: [MOVIE, ACTOR, PERSON]
-          description: Entity type to generate content for.
+          enum: [MOVIE, PERSON]
+          description: |
+            Entity type to generate content for.
+            Use `PERSON` for all person-related entities (actors, directors, writers, producers).
         slug:
           type: string
           description: Preferred identifier for the entity (e.g. `the-matrix-1999`). Required when `entity_id` is omitted.

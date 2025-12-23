@@ -52,7 +52,7 @@ class GenerateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'entity_type' => 'required|in:MOVIE,ACTOR,PERSON',
+            'entity_type' => ['required', Rule::in(['MOVIE', 'PERSON'])],
             'slug' => 'required_without:entity_id|string|max:255',
             'entity_id' => 'required_without:slug|string|max:255',
             'locale' => ['nullable', 'string', 'max:10', Rule::in(Locale::values())],
@@ -85,7 +85,7 @@ class GenerateRequest extends FormRequest
     {
         return [
             'entity_type.required' => 'The entity type field is required.',
-            'entity_type.in' => 'The entity type must be one of: MOVIE, ACTOR, or PERSON.',
+            'entity_type.in' => 'The entity type must be one of: MOVIE or PERSON.',
             'entity_id.required' => 'The entity ID field is required.',
             'entity_id.string' => 'The entity ID must be a string.',
             'entity_id.max' => 'The entity ID may not be greater than 255 characters.',

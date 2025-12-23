@@ -12,7 +12,6 @@ servers:
 tags:
   - name: Movies
   - name: People
-  - name: Actors
   - name: Generation
   - name: Jobs
   - name: Admin
@@ -528,7 +527,10 @@ components:
       properties:
         entity_type:
           type: string
-          enum: [MOVIE, ACTOR, PERSON]
+          enum: [MOVIE, PERSON]
+          description: |
+            Entity type to generate content for.
+            Use `PERSON` for all person-related entities (actors, directors, writers, producers).
         entity_id:
           type: integer
         locale:

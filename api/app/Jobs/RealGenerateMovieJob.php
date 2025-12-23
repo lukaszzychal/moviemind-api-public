@@ -5,9 +5,12 @@ namespace App\Jobs;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
+use App\Enums\RoleType;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Models\Person;
 use App\Repositories\MovieRepository;
+use App\Repositories\PersonRepository;
 use App\Services\AiOutputValidator;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\JobErrorFormatter;
@@ -330,6 +333,14 @@ class RealGenerateMovieJob implements ShouldQueue
                 'locale' => $locale->value,
                 'context_tag' => $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag,
             ]);
+        }
+
+        // Create cast and crew from AI response (if available)
+        // @phpstan-ignore-next-line - cast is optional in AI response
+        $cast = isset($aiResponse['cast']) && is_array($aiResponse['cast']) ? $aiResponse['cast'] : [];
+        // @phpstan-ignore-next-line - empty() check is valid for runtime validation
+        if (! empty($cast)) {
+            $this->createCastAndCrew($movie, $cast);
         }
 
         $this->promoteDefaultIfEligible($movie, $description);
@@ -1181,7 +1192,179 @@ class RealGenerateMovieJob implements ShouldQueue
 
         $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
 
+        // Create cast and crew from AI response
+        // @phpstan-ignore-next-line - cast is optional in AI response
+        $cast = isset($aiResponse['cast']) && is_array($aiResponse['cast']) ? $aiResponse['cast'] : [];
+        // @phpstan-ignore-next-line - empty() check is valid for runtime validation
+        if (! empty($cast)) {
+            $this->createCastAndCrew($movie, $cast);
+        }
+
         return [$movie->fresh(['descriptions']), $description, $locale->value, $contextForCache];
+    }
+
+    /**
+     * Create Person records and movie_person relationships from cast data.
+     *
+     * @param  array<int, array<string, mixed>>  $cast
+     */
+    private function createCastAndCrew(Movie $movie, array $cast): void
+    {
+        /** @var PersonRepository $personRepository */
+        $personRepository = app(PersonRepository::class);
+
+        $syncData = [];
+
+        foreach ($cast as $member) {
+            // @phpstan-ignore-next-line - member is already typed as array<string, mixed> in PHPDoc
+            if (! is_array($member)) {
+                continue;
+            }
+
+            $name = isset($member['name']) && is_string($member['name']) ? $member['name'] : null;
+            $role = isset($member['role']) && is_string($member['role']) ? $member['role'] : null;
+
+            if (empty($name) || empty($role)) {
+                Log::warning('Invalid cast member data in AI response', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'member' => $member,
+                ]);
+
+                continue;
+            }
+
+            // Validate role
+            $roleType = RoleType::tryFrom(strtoupper($role));
+            if ($roleType === null) {
+                Log::warning('Invalid role in cast member data', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'role' => $role,
+                    'member' => $member,
+                ]);
+
+                continue;
+            }
+
+            // Find or create person
+            $person = $this->findOrCreatePerson($name, $personRepository);
+
+            if ($person === null) {
+                Log::warning('Failed to find or create person for cast member', [
+                    'slug' => $this->slug,
+                    'job_id' => $this->jobId,
+                    'name' => $name,
+                ]);
+
+                continue;
+            }
+
+            // Build pivot data
+            $pivotData = [
+                'role' => $roleType->value,
+            ];
+
+            // Add character_name for ACTOR role
+            if ($roleType === RoleType::ACTOR && ! empty($member['character_name'])) {
+                $pivotData['character_name'] = $member['character_name'];
+            }
+
+            // Add billing_order for ACTOR role
+            if ($roleType === RoleType::ACTOR && isset($member['billing_order'])) {
+                $pivotData['billing_order'] = (int) $member['billing_order'];
+            }
+
+            // Use composite key: movie_id, person_id, role
+            $syncKey = $person->id.'|'.$roleType->value;
+            $syncData[$syncKey] = $pivotData;
+        }
+
+        // Attach relationships (check for duplicates first due to composite key)
+        if (! empty($syncData)) {
+            foreach ($syncData as $key => $pivotData) {
+                [$personId, $role] = explode('|', $key);
+
+                // Check if relationship already exists (composite key: movie_id, person_id, role)
+                $exists = \DB::table('movie_person')
+                    ->where('movie_id', $movie->id)
+                    ->where('person_id', $personId)
+                    ->where('role', $role)
+                    ->exists();
+
+                if (! $exists) {
+                    $movie->people()->attach($personId, $pivotData);
+                } else {
+                    // Update existing relationship
+                    \DB::table('movie_person')
+                        ->where('movie_id', $movie->id)
+                        ->where('person_id', $personId)
+                        ->where('role', $role)
+                        ->update($pivotData);
+                }
+            }
+
+            Log::info('Created cast and crew for movie', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'movie_id' => $movie->id,
+                'cast_count' => count($syncData),
+            ]);
+        }
+    }
+
+    /**
+     * Find or create a Person record.
+     */
+    private function findOrCreatePerson(string $name, PersonRepository $personRepository): ?Person
+    {
+        // Try to find by name (exact match first) - case-insensitive
+        $person = Person::whereRaw('LOWER(name) = LOWER(?)', [$name])->first();
+
+        if ($person !== null) {
+            return $person;
+        }
+
+        // Try to find by slug (name slug) - check if slug matches or starts with name slug
+        $nameSlug = \Illuminate\Support\Str::slug($name);
+        $person = Person::where('slug', $nameSlug)->first();
+
+        if ($person === null) {
+            // Try to find by slug pattern (name slug with suffix)
+            $person = Person::where('slug', 'like', $nameSlug.'%')->first();
+        }
+
+        if ($person !== null) {
+            return $person;
+        }
+
+        // Create new person
+        try {
+            $slug = Person::generateSlug($name);
+            $person = Person::create([
+                'name' => $name,
+                'slug' => $slug,
+            ]);
+
+            Log::info('Created new person for cast', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'person_name' => $name,
+                'person_slug' => $slug,
+                'person_id' => $person->id,
+            ]);
+
+            return $person;
+        } catch (\Exception $e) {
+            Log::error('Failed to create person for cast', [
+                'slug' => $this->slug,
+                'job_id' => $this->jobId,
+                'person_name' => $name,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     private function promoteDefaultIfEligible(Movie $movie, MovieDescription $description): void
