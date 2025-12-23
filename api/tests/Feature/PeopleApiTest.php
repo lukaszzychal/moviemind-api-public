@@ -64,6 +64,17 @@ class PeopleApiTest extends TestCase
         }
         $this->assertNotNull($personSlug, 'Expected at least one person linked to movies');
 
+        // Ensure person has at least one bio (person without bio returns 202, not 200)
+        $person = Person::where('slug', $personSlug)->first();
+        if ($person && ! $person->bios()->exists()) {
+            $person->bios()->create([
+                'locale' => \App\Enums\Locale::EN_US,
+                'text' => 'Test bio for payload',
+                'context_tag' => \App\Enums\ContextTag::DEFAULT,
+                'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+            ]);
+        }
+
         $res = $this->getJson('/api/v1/people/'.$personSlug);
         $res->assertOk()->assertJsonStructure(['id', 'slug', 'name', 'bios_count']);
 
@@ -92,6 +103,18 @@ class PeopleApiTest extends TestCase
         }
 
         $this->assertNotNull($personSlug, 'Expected at least one person linked to movies');
+
+        // Ensure person has at least one bio (person without bio returns 202, not 200)
+        $person = Person::where('slug', $personSlug)->first();
+        if ($person && ! $person->bios()->exists()) {
+            $person->bios()->create([
+                'locale' => \App\Enums\Locale::EN_US,
+                'text' => 'Test bio for caching',
+                'context_tag' => \App\Enums\ContextTag::DEFAULT,
+                'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+            ]);
+        }
+
         $this->assertFalse(Cache::has('person:'.$personSlug.':bio:default'));
 
         $first = $this->getJson('/api/v1/people/'.$personSlug);

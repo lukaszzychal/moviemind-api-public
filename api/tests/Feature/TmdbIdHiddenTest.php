@@ -70,6 +70,14 @@ class TmdbIdHiddenTest extends TestCase
             'tmdb_id' => 67890,
         ]);
 
+        // Create bio for person (person without bio returns 202, not 200)
+        $person->bios()->create([
+            'locale' => \App\Enums\Locale::EN_US,
+            'text' => 'Test bio',
+            'context_tag' => \App\Enums\ContextTag::DEFAULT,
+            'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+        ]);
+
         // Act: Get person via API
         $response = $this->getJson("/api/v1/people/{$person->slug}");
 

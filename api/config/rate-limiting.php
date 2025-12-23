@@ -13,11 +13,11 @@ return [
     |
     */
     'defaults' => [
-        'search' => 100,      // /api/v1/movies/search
-        'show' => 120,        // /api/v1/movies/{slug} - Higher limit (simpler query)
+        'search' => 100,      // /api/v1/movies/search, /api/v1/people/search
+        'show' => 120,        // /api/v1/movies/{slug}, /api/v1/people/{slug} - Higher limit (simpler query)
         'bulk' => 30,         // /api/v1/movies/bulk - Lower limit (multiple movies per request)
         'generate' => 10,     // /api/v1/generate
-        'report' => 20,       // /api/v1/movies/{slug}/report
+        'report' => 20,       // /api/v1/movies/{slug}/report, /api/v1/people/{slug}/report (when implemented)
     ],
 
     /*
@@ -30,11 +30,11 @@ return [
     |
     */
     'min' => [
-        'search' => 20,       // Minimum 20 req/min even under heavy load
-        'show' => 30,         // Minimum 30 req/min even under heavy load
-        'bulk' => 5,          // Minimum 5 req/min even under heavy load
-        'generate' => 2,      // Minimum 2 req/min even under heavy load
-        'report' => 5,        // Minimum 5 req/min even under heavy load
+        'search' => 20,       // Minimum 20 req/min even under heavy load (movies/search, people/search)
+        'show' => 30,         // Minimum 30 req/min even under heavy load (movies/{slug}, people/{slug})
+        'bulk' => 5,          // Minimum 5 req/min even under heavy load (movies/bulk)
+        'generate' => 2,      // Minimum 2 req/min even under heavy load (generate)
+        'report' => 5,        // Minimum 5 req/min even under heavy load (movies/{slug}/report, people/{slug}/report)
     ],
 
     /*
