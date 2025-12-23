@@ -29,7 +29,7 @@ jobs:
           extensions: mbstring, dom, curl, libxml, zip, sqlite3, pdo_sqlite
       
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: api/vendor
           key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
@@ -70,7 +70,7 @@ jobs:
           coverage: xdebug
       
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: api/vendor
           key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
@@ -116,7 +116,7 @@ jobs:
           extensions: mbstring, dom, curl, libxml, zip, sqlite3, pdo_sqlite
       
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: api/vendor
           key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
