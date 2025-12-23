@@ -527,10 +527,9 @@ components:
       properties:
         entity_type:
           type: string
-          enum: [MOVIE, PERSON, ACTOR]
+          enum: [MOVIE, PERSON]
           description: |
             Entity type to generate content for.
-            **Note:** `ACTOR` is deprecated and will be converted to `PERSON` automatically.
             Use `PERSON` for all person-related entities (actors, directors, writers, producers).
         entity_id:
           type: integer

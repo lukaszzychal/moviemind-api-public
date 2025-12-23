@@ -218,38 +218,15 @@ class GenerateApiTest extends TestCase
         });
     }
 
-    public function test_generate_actor_allowed_when_flag_on(): void
+    public function test_generate_rejects_actor_entity_type(): void
     {
-        Feature::activate('ai_bio_generation');
-
-        // Use a slug that doesn't exist in seeders
-        // Note: ACTOR is deprecated, but still supported for backward compatibility
         $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'ACTOR', // Deprecated, but still supported
-            'entity_id' => 'new-actor-slug',
+            'entity_type' => 'ACTOR',
+            'entity_id' => 'test-actor',
         ]);
 
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_id',
-                'status',
-                'message',
-                'slug',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'new-actor-slug',
-                'locale' => 'en-US',
-            ]);
-
-        // Verify Event was dispatched (ACTOR treated same as PERSON)
-        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'new-actor-slug'
-                && $event->locale === 'en-US';
-        });
-
-        // Note: Queue::fake() prevents Listener from executing, so we only check Event
-        // If Event is dispatched and Listener is registered, Job will be queued
+        $resp->assertStatus(422)
+            ->assertJsonValidationErrors(['entity_type']);
     }
 
     public function test_generate_requires_string_entity_id(): void
