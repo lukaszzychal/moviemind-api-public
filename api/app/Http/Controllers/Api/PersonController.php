@@ -292,6 +292,286 @@ class PersonController extends Controller
     }
 
     /**
+     * Get related people for a given person.
+     *
+     * Supports filtering by relationship type:
+     * - ?type=collaborators - Only collaborators (people who worked together in same movies, different roles)
+     * - ?type=same_name - Only people with same name (disambiguation)
+     * - ?type=all or no filter - Both collaborators and same name
+     *
+     * Additional filters:
+     * - ?collaborator_role=ACTOR|DIRECTOR|WRITER|PRODUCER - Filter collaborators by role
+     * - ?limit=10 - Limit results (default: 20)
+     */
+    public function related(Request $request, string $slug): JsonResponse
+    {
+        $person = $this->personRepository->findBySlugWithRelations($slug);
+        if (! $person) {
+            return $this->responseFormatter->formatNotFound();
+        }
+
+        // Parse type filter: collaborators, same_name, or all (default)
+        $typeFilter = $request->query('type', 'all');
+        $typeFilter = strtolower((string) $typeFilter);
+
+        // Parse collaborator role filter
+        $collaboratorRole = $request->query('collaborator_role');
+        if ($collaboratorRole !== null) {
+            $collaboratorRole = strtoupper((string) $collaboratorRole);
+            // Validate role
+            if (! in_array($collaboratorRole, ['ACTOR', 'DIRECTOR', 'WRITER', 'PRODUCER'], true)) {
+                return $this->responseFormatter->formatError('Invalid collaborator_role. Must be one of: ACTOR, DIRECTOR, WRITER, PRODUCER', 422);
+            }
+        }
+
+        // Parse limit
+        $limit = (int) $request->query('limit', 20);
+        $limit = max(1, min(100, $limit)); // Clamp between 1 and 100
+
+        // Build cache key
+        $cacheKey = $this->buildRelatedCacheKey($slug, $typeFilter, $collaboratorRole, $limit);
+
+        // Try to get from cache
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return response()->json($cached);
+        }
+
+        $collaborators = [];
+        $sameName = [];
+
+        // Collaborators - people who worked together in same movies, different roles
+        if ($typeFilter === 'all' || $typeFilter === 'collaborators') {
+            $collaborators = $this->getCollaborators($person, $collaboratorRole, $limit);
+        }
+
+        // Same Name - people with same name (disambiguation)
+        if ($typeFilter === 'all' || $typeFilter === 'same_name') {
+            $sameName = $this->getSameNamePeople($person, $limit);
+        }
+
+        // Combine results
+        $allRelatedPeople = array_merge($collaborators, $sameName);
+
+        // Build response
+        $response = [
+            'person' => [
+                'id' => $person->id,
+                'slug' => $person->slug,
+                'name' => $person->name,
+            ],
+            'related_people' => $allRelatedPeople,
+            'count' => count($allRelatedPeople),
+            'filters' => [
+                'type' => $typeFilter,
+                'collaborator_role' => $collaboratorRole,
+                'collaborators_count' => count($collaborators),
+                'same_name_count' => count($sameName),
+            ],
+            '_links' => [
+                'self' => [
+                    'href' => url("/api/v1/people/{$slug}/related"),
+                ],
+                'person' => [
+                    'href' => url("/api/v1/people/{$slug}"),
+                ],
+                'collaborators' => [
+                    'href' => url("/api/v1/people/{$slug}/related?type=collaborators"),
+                ],
+                'same_name' => [
+                    'href' => url("/api/v1/people/{$slug}/related?type=same_name"),
+                ],
+            ],
+        ];
+
+        // Cache response (TTL: 1 hour)
+        Cache::put($cacheKey, $response, now()->addHour());
+
+        return response()->json($response);
+    }
+
+    /**
+     * Get collaborators for a person (people who worked together in same movies, different roles).
+     *
+     * @param  Person  $person  The person to find collaborators for
+     * @param  string|null  $collaboratorRole  Optional role filter (ACTOR, DIRECTOR, WRITER, PRODUCER)
+     * @param  int  $limit  Maximum number of collaborators to return
+     * @return array<int, array<string, mixed>>
+     */
+    private function getCollaborators(Person $person, ?string $collaboratorRole, int $limit): array
+    {
+        // Get all movies this person worked on
+        $personMovies = $person->movies()->pluck('movies.id');
+
+        if ($personMovies->isEmpty()) {
+            return [];
+        }
+
+        // Find other people who worked on the same movies, but in different roles
+        /** @var \Illuminate\Database\Eloquent\Builder<Person> $queryBuilder */
+        $queryBuilder = Person::whereHas('movies', function ($q) use ($personMovies, $person, $collaboratorRole) {
+            $q->whereIn('movies.id', $personMovies)
+                ->where('movie_person.person_id', '!=', $person->id);
+
+            // Filter by collaborator role if specified
+            if ($collaboratorRole !== null) {
+                $q->where('movie_person.role', $collaboratorRole);
+            }
+        })
+            ->with(['movies' => function ($query) use ($personMovies) {
+                $query->whereIn('movies.id', $personMovies)
+                    ->withPivot(['role', 'character_name', 'job']);
+            }]);
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Person> $query */
+        $query = $queryBuilder->get();
+
+        // Group by person and count collaborations
+        /** @var array<string, array{person: Person, collaborations: array<int, array<string, mixed>>, collaborations_count: int, person_role: string|null}> $collaboratorsMap */
+        $collaboratorsMap = [];
+        foreach ($query as $collaborator) {
+            $collaborations = [];
+            $personRole = null;
+
+            foreach ($collaborator->movies as $movie) {
+                /** @var \App\Models\Movie $movie */
+                /** @var \Illuminate\Database\Eloquent\Relations\Pivot|null $moviePivot */
+                $moviePivot = $movie->pivot;
+
+                // Get person's role in this movie
+                $personMoviePivot = $person->movies()->where('movies.id', $movie->id)->first()?->pivot;
+                /** @var \Illuminate\Database\Eloquent\Relations\Pivot|null $personMoviePivot */
+                /** @phpstan-ignore-next-line */
+                $personRoleInMovie = $personMoviePivot !== null ? $personMoviePivot->role : null;
+
+                // Get collaborator's role in this movie
+                /** @phpstan-ignore-next-line */
+                $collaboratorRoleInMovie = $moviePivot !== null ? $moviePivot->role : null;
+
+                // Only include if roles are different
+                if ($personRoleInMovie !== $collaboratorRoleInMovie) {
+                    $collaborations[] = [
+                        'movie_id' => $movie->id,
+                        'movie_slug' => $movie->slug,
+                        'movie_title' => $movie->title ?? '',
+                        'person_role' => $personRoleInMovie,
+                        'collaborator_role' => $collaboratorRoleInMovie,
+                    ];
+
+                    if ($personRole === null) {
+                        $personRole = $personRoleInMovie;
+                    }
+                }
+            }
+
+            if (! empty($collaborations)) {
+                $collaboratorsMap[$collaborator->id] = [
+                    'person' => $collaborator,
+                    'collaborations' => $collaborations,
+                    'collaborations_count' => count($collaborations),
+                    'person_role' => $personRole,
+                ];
+            }
+        }
+
+        // Sort by collaborations count (desc) and limit
+        /** @phpstan-ignore-next-line */
+        uasort($collaboratorsMap, function (array $a, array $b): int {
+            return $b['collaborations_count'] <=> $a['collaborations_count'];
+        });
+
+        $collaboratorsMap = array_slice($collaboratorsMap, 0, $limit, true);
+
+        // Format response
+        $result = [];
+        foreach ($collaboratorsMap as $data) {
+            /** @var Person $collaborator */
+            $collaborator = $data['person'];
+            $collaborations = $data['collaborations'];
+            $personRole = $data['person_role'];
+            $collaboratorRoleInFirst = $collaborations[0]['collaborator_role'] ?? null;
+
+            $result[] = [
+                'id' => $collaborator->id,
+                'slug' => $collaborator->slug,
+                'name' => $collaborator->name,
+                'relationship_type' => 'COLLABORATOR',
+                'relationship_label' => $collaboratorRoleInFirst !== null
+                    ? "Collaborator ({$collaboratorRoleInFirst})"
+                    : 'Collaborator',
+                'collaborations' => $collaborations,
+                'collaborations_count' => count($collaborations),
+                '_links' => [
+                    'self' => [
+                        'href' => url("/api/v1/people/{$collaborator->slug}"),
+                    ],
+                ],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get people with same name (disambiguation).
+     *
+     * @param  Person  $person  The person to find same name people for
+     * @param  int  $limit  Maximum number of people to return
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSameNamePeople(Person $person, int $limit): array
+    {
+        // Extract base slug (name part without year/suffix)
+        $parsed = Person::parseSlug($person->slug);
+        $baseSlug = \Illuminate\Support\Str::slug($parsed['name']);
+
+        // Find all people with same name slug
+        $sameNamePeople = $this->personRepository->findAllByNameSlug($baseSlug)
+            ->where('id', '!=', $person->id) // Exclude current person
+            ->take($limit);
+
+        $result = [];
+        foreach ($sameNamePeople as $sameNamePerson) {
+            $result[] = [
+                'id' => $sameNamePerson->id,
+                'slug' => $sameNamePerson->slug,
+                'name' => $sameNamePerson->name,
+                'birth_date' => $sameNamePerson->birth_date?->format('Y-m-d'),
+                'birthplace' => $sameNamePerson->birthplace,
+                'relationship_type' => 'SAME_NAME',
+                'relationship_label' => 'Same Name',
+                '_links' => [
+                    'self' => [
+                        'href' => url("/api/v1/people/{$sameNamePerson->slug}"),
+                    ],
+                ],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Build cache key for related people endpoint.
+     *
+     * @param  string  $slug  Person slug
+     * @param  string  $typeFilter  Type filter (collaborators, same_name, all)
+     * @param  string|null  $collaboratorRole  Optional collaborator role filter
+     * @param  int  $limit  Result limit
+     * @return string Cache key
+     */
+    private function buildRelatedCacheKey(string $slug, string $typeFilter, ?string $collaboratorRole, int $limit): string
+    {
+        $parts = ['person_related', $slug, $typeFilter];
+        if ($collaboratorRole !== null) {
+            $parts[] = $collaboratorRole;
+        }
+        $parts[] = "limit_{$limit}";
+
+        return implode(':', $parts);
+    }
+
+    /**
      * Refresh person data from TMDb.
      */
     public function refresh(string $slug): JsonResponse
