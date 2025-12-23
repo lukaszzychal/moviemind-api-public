@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\Locale;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class GenerateRequest extends FormRequest
@@ -18,6 +19,16 @@ class GenerateRequest extends FormRequest
         if ($this->has('entity_id') && ! $this->has('slug')) {
             $this->merge([
                 'slug' => $this->input('entity_id'),
+            ]);
+        }
+
+        // Convert deprecated ACTOR to PERSON for backward compatibility
+        if ($this->has('entity_type') && $this->input('entity_type') === 'ACTOR') {
+            Log::warning('Deprecated entity_type ACTOR used, converting to PERSON', [
+                'slug' => $this->input('slug') ?? $this->input('entity_id'),
+            ]);
+            $this->merge([
+                'entity_type' => 'PERSON',
             ]);
         }
 
@@ -52,7 +63,7 @@ class GenerateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'entity_type' => 'required|in:MOVIE,ACTOR,PERSON',
+            'entity_type' => ['required', Rule::in(['MOVIE', 'PERSON', 'ACTOR'])], // ACTOR is deprecated, use PERSON instead
             'slug' => 'required_without:entity_id|string|max:255',
             'entity_id' => 'required_without:slug|string|max:255',
             'locale' => ['nullable', 'string', 'max:10', Rule::in(Locale::values())],
@@ -85,7 +96,7 @@ class GenerateRequest extends FormRequest
     {
         return [
             'entity_type.required' => 'The entity type field is required.',
-            'entity_type.in' => 'The entity type must be one of: MOVIE, ACTOR, or PERSON.',
+            'entity_type.in' => 'The entity type must be one of: MOVIE or PERSON. (Note: ACTOR is deprecated, use PERSON instead)',
             'entity_id.required' => 'The entity ID field is required.',
             'entity_id.string' => 'The entity ID must be a string.',
             'entity_id.max' => 'The entity ID may not be greater than 255 characters.',

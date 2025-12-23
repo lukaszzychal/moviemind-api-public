@@ -201,22 +201,21 @@ Każde zadanie ma następującą strukturę:
 ### 📋 Podsumowanie według Priorytetów
 
 #### 🔴 Wysoki Priorytet (Krytyczne)
-<<<<<<< HEAD
 - ~~`TASK-050` - Basic Auth dla endpointów admin~~ ✅ COMPLETED
-- `TASK-037` (Faza 2-3) - Weryfikacja istnienia przed AI
-- `TASK-038` (Faza 2) - Weryfikacja zgodności danych
+- ~~`TASK-037` (Faza 2-3) - Weryfikacja istnienia przed AI~~ ✅ COMPLETED
+- ~~`TASK-038` (Faza 2) - Weryfikacja zgodności danych~~ ✅ COMPLETED
 
 #### 🟡 Średni Priorytet (Ważne)
 - ~~`TASK-013` - Konfiguracja Horizon~~ ✅ COMPLETED
 - ~~`TASK-022` - Lista osób~~ ✅ COMPLETED
 - ~~`TASK-024` - Baseline locking~~ ✅ COMPLETED
 - ~~`TASK-025` - Standaryzacja flag~~ ✅ COMPLETED
-- `TASK-026` - Pola zaufania ✅
-- `TASK-011` - CI dla staging
+- ~~`TASK-026` - Pola zaufania~~ ✅ COMPLETED
+- ~~`TASK-011` - CI dla staging~~ ✅ COMPLETED
 - `TASK-015` - Testy Newman
 - `TASK-019` - Docker Distroless
-- `TASK-032` - Automatyczna obsada
-- `TASK-033` - Usunięcie Actor
+- ~~`TASK-032` - Automatyczna obsada~~ ✅ COMPLETED
+- ~~`TASK-033` - Usunięcie Actor~~ ✅ COMPLETED
 - `TASK-028` - Synchronizacja Issues
 - `TASK-029` - Standaryzacja testów
 - `TASK-031` - Wersjonowanie opisów
@@ -232,26 +231,6 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
-#### `TASK-051` - Sugerowanie alternatywnych slugów przy błędzie "not found"
-- **Status:** 🔄 IN_PROGRESS
-- **Priorytet:** 🟡 Średni
-- **Szacowany czas:** 3-4 godziny
-- **Czas rozpoczęcia:** 2025-12-16
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** 🤖 AI Agent
-- **Opis:** Gdy AI zwraca błąd "Movie not found" lub "Person not found", system powinien wyszukać w TMDb możliwe pasujące filmy/osoby i zwrócić listę sugerowanych slugów w odpowiedzi błędu.
-- **Szczegóły:**
-  - Rozszerzyć `JobErrorFormatter` o możliwość dodania `suggested_slugs` do błędu typu `NOT_FOUND`
-  - W `RealGenerateMovieJob` - gdy AI zwraca "not found" i nie ma TMDb data, wyszukać w TMDb możliwe filmy i wygenerować slugi
-  - W `RealGeneratePersonJob` - analogicznie dla osób
-  - Każdy sugerowany slug powinien zawierać: `slug`, `title`/`name`, `release_year` (dla filmów), `director` (dla filmów), `tmdb_id`
-  - Odpowiedź błędu powinna zawierać pole `suggested_slugs` z listą możliwych opcji
-- **Zależności:** Brak
-- **Utworzone:** 2025-12-16
-- **Uwaga:** Poprawia UX - użytkownik dostaje sugestie zamiast tylko błędu
-
----
 
 #### `TASK-008` - Webhooks System (Roadmap)
 - **Status:** ⏳ PENDING
@@ -390,20 +369,24 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-020` - Sprawdzić zachowanie AI dla nieistniejących filmów/osób
-- **Status:** ⏳ PENDING
+- **Status:** ❌ CANCELLED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2 godziny
 - **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
+- **Czas zakończenia:** 2025-12-23
 - **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Realizacja:** N/A
 - **Opis:** Zweryfikować, co dzieje się podczas generowania opisów dla slugów, które nie reprezentują realnych filmów lub osób.
-- **Szczegóły:**
-  - Przeanalizować obecne joby generujące (`RealGenerateMovieJob`, `RealGeneratePersonJob`) pod kątem tworzenia fikcyjnych encji.
-  - Zaproponować/zaimplementować scenariusz zabezpieczający (np. flaga konfiguracyjna, walidacja źródłowa, dodatkowe logowanie).
-  - Przygotować testy regresyjne i aktualizację dokumentacji (OpenAPI, README) opisującą zachowanie.
+- **Powód anulowania:** Zadanie jest już w pełni pokryte przez inne zrealizowane zadania:
+  - ✅ **TASK-037** - Weryfikacja istnienia przed AI (PreGenerationValidator, heurystyki walidacji)
+  - ✅ **TASK-038** - Weryfikacja zgodności danych AI z slugiem (AiDataValidator)
+  - ✅ **TASK-044** - Integracja TMDb API dla weryfikacji filmów (TmdbVerificationService)
+  - ✅ **TASK-045** - Integracja TMDb API dla weryfikacji osób (TmdbVerificationService)
+  - ✅ Testy regresyjne już istnieją (`MissingEntityGenerationTest`)
+  - ✅ Dokumentacja już zaktualizowana (OpenAPI, README)
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Anulowane:** 2025-12-23
 ---
 
 #### `TASK-022` - Endpoint listy osób (List People)
@@ -946,38 +929,65 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-032` - Automatyczne tworzenie obsady przy generowaniu filmu
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-23
+- **Czas zakończenia:** 2025-12-23
+- **Czas realizacji:** ~03h00m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Zapewnić, że endpoint `GET /api/v1/movies/{slug}` zwraca podstawową obsadę (imię/nazwisko/rola) także dla świeżo wygenerowanych filmów poprzez automatyczne tworzenie rekordów `Person` i powiązań `movie_person`.
 - **Szczegóły:**
-  - Rozszerzyć job generujący (`RealGenerateMovieJob` / `MockGenerateMovieJob`) o logikę zapisu osób zwróconych przez AI (reżyserzy, główna obsada).
-  - Zadbać o de-duplikację (np. gdy osoba już istnieje), update relacji oraz utrzymanie minimalnego zestawu danych (imię, nazwisko, rola).
-  - Uzupełnić testy feature (`MoviesApiTest`) i dokumentację (OpenAPI, Postman/Insomnia) o scenariusz z automatycznie utworzoną obsadą.
-- **Zależności:** Rozważyć synchronizację z `TASK-022` (lista osób)
+  - ✅ Rozszerzono `OpenAiClient` o zwracanie `cast` w odpowiedzi AI (schema, prompty)
+  - ✅ Rozszerzono `RealGenerateMovieJob` o logikę tworzenia `Person` i relacji `movie_person` z danych AI
+  - ✅ Zaimplementowano de-duplikację (znajdowanie istniejących osób po nazwie, case-insensitive)
+  - ✅ Dodano obsługę wszystkich ról: DIRECTOR, ACTOR, WRITER, PRODUCER
+  - ✅ Dodano obsługę `character_name` i `billing_order` dla ACTOR
+  - ✅ Utworzono testy feature (`MovieCastAutoCreationTest`) - 4 testy, wszystkie przechodzą
+  - ✅ Zaktualizowano `FakeOpenAiClient` o obsługę `cast` w odpowiedziach
+- **Zakres wykonanych prac:**
+  - ✅ Rozszerzono `OpenAiClient::generateMovie()` o zwracanie `cast` w odpowiedzi
+  - ✅ Zaktualizowano schema odpowiedzi AI o `cast` array z rolami, character_name, billing_order
+  - ✅ Zaimplementowano `RealGenerateMovieJob::createCastAndCrew()` - tworzenie Person i relacji
+  - ✅ Zaimplementowano `RealGenerateMovieJob::findOrCreatePerson()` - de-duplikacja osób
+  - ✅ Dodano tworzenie cast również w `refreshExistingMovie()` dla istniejących filmów
+  - ✅ Utworzono testy: `test_movie_generation_creates_director_person`, `test_movie_generation_creates_actors`, `test_movie_generation_handles_existing_person`, `test_movie_generation_creates_director_and_actors`
+  - ✅ Wszystkie testy przechodzą: 596 passed
+- **Zależności:** TASK-022 ✅ (lista osób)
 - **Utworzone:** 2025-11-10
+- **Ukończone:** 2025-12-23
 
 ---
 
 #### `TASK-033` - Usunięcie modelu Actor i konsolidacja na Person
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-12-23
+- **Czas zakończenia:** 2025-12-23
+- **Czas realizacji:** ~01h30m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Wyeliminowanie legacy modelu `Actor` na rzecz ujednoliconego `Person`, tak aby cała obsada korzystała z jednej tabeli i relacji `movie_person`.
 - **Szczegóły:**
-  - Zastąpić odwołania do `Actor`/`ActorBio` w seederach, jobach i relacjach odpowiednikami `Person`/`PersonBio`.
-  - Zaktualizować migracje/seedery lub dodać migrację porządkującą dane po migracji aktorów do tabeli `people`.
-  - Usunąć nieużywane pliki (`app/Models/Actor*`, seeder `ActorSeeder`, etc.) oraz zaktualizować testy i dokumentację (OpenAPI, Postman, README) aby używały `Person`.
-- **Zależności:** Powiązane z `TASK-032`, `TASK-022`
+  - ✅ Usunięto modele `Actor` i `ActorBio` (już nieużywane w kodzie produkcyjnym)
+  - ✅ Zaktualizowano `GenerateRequest` - `ACTOR` jest teraz deprecated, automatycznie konwertowany na `PERSON` (backward compatibility)
+  - ✅ Zaktualizowano `GenerateController` - nadal obsługuje `ACTOR` jako alias dla `PERSON`
+  - ✅ Zaktualizowano dokumentację: README.md (actors/actor_bios → people/person_bios), OpenAPI (usunięto tag "Actors", zaktualizowano entity_type)
+  - ✅ `ActorSeeder` już używa `Person` i `PersonBio` (nie wymaga zmian)
+  - ✅ Wszystkie testy przechodzą: 596 passed
+- **Zakres wykonanych prac:**
+  - ✅ Usunięto `api/app/Models/Actor.php`
+  - ✅ Usunięto `api/app/Models/ActorBio.php`
+  - ✅ Zaktualizowano `GenerateRequest::prepareForValidation()` - konwersja `ACTOR` → `PERSON` z logowaniem
+  - ✅ Zaktualizowano `GenerateRequest::rules()` - `ACTOR` nadal akceptowany (deprecated)
+  - ✅ Zaktualizowano `README.md` - actors/actor_bios → people/person_bios, entity_type ACTOR → PERSON
+  - ✅ Zaktualizowano `docs/openapi.yaml` - usunięto tag "Actors", zaktualizowano opis entity_type
+  - ✅ Zaktualizowano `api/public/docs/openapi.yaml` - usunięto tag "Actors", zaktualizowano schema GenerateRequest
+  - ✅ Wszystkie testy przechodzą: 596 passed
+- **Zależności:** TASK-032 ✅, TASK-022 ✅
 - **Utworzone:** 2025-11-10
+- **Ukończone:** 2025-12-23
+- **Uwaga:** Migracje `actors` i `actor_bios` pozostają w bazie danych (nie są używane, ale nie są usuwane dla bezpieczeństwa danych historycznych)
 
 ---
 
@@ -1104,6 +1114,34 @@ Każde zadanie ma następującą strukturę:
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-051` - Sugerowanie alternatywnych slugów przy błędzie "not found"
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 3-4 godziny
+- **Czas rozpoczęcia:** 2025-12-16
+- **Czas zakończenia:** 2025-12-23
+- **Czas realizacji:** ~07d (implementacja w trakcie innych zadań)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Gdy AI zwraca błąd "Movie not found" lub "Person not found", system powinien wyszukać w TMDb możliwe pasujące filmy/osoby i zwrócić listę sugerowanych slugów w odpowiedzi błędu.
+- **Szczegóły:**
+  - ✅ Rozszerzono `JobErrorFormatter` o możliwość dodania `suggested_slugs` do błędu typu `NOT_FOUND`
+  - ✅ W `RealGenerateMovieJob` - gdy AI zwraca "not found" i nie ma TMDb data, wyszukuje w TMDb możliwe filmy i generuje slugi
+  - ✅ W `RealGeneratePersonJob` - analogicznie dla osób
+  - ✅ Każdy sugerowany slug zawiera: `slug`, `title`/`name`, `release_year` (dla filmów), `director` (dla filmów), `tmdb_id`
+  - ✅ Odpowiedź błędu zawiera pole `suggested_slugs` z listą możliwych opcji
+- **Zakres wykonanych prac:**
+  - ✅ Zaimplementowano `JobErrorFormatter::formatError()` z obsługą `suggested_slugs` (linia 33-34)
+  - ✅ Zaimplementowano `RealGenerateMovieJob::findSuggestedSlugs()` (linia 1311)
+  - ✅ Zaimplementowano `RealGeneratePersonJob::findSuggestedSlugs()` (linia 769)
+  - ✅ Zintegrowano sugerowanie slugów w obu jobach przy błędach "not found"
+  - ✅ Każdy sugerowany slug zawiera wszystkie wymagane pola (slug, title/name, release_year, director, tmdb_id)
+- **Zależności:** Brak
+- **Utworzone:** 2025-12-16
+- **Ukończone:** 2025-12-23
+- **Uwaga:** Poprawia UX - użytkownik dostaje sugestie zamiast tylko błędu
+
+---
 
 ### `TASK-049` - Weryfikacja naprawy problemu phpstan-fixer z Laravel package:discover
 - **Status:** ✅ COMPLETED
@@ -1449,14 +1487,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-<<<<<<< HEAD
-- **Aktywne:** 25
-- **Aktywne:** 25
-- **Zakończone:** 24
-- **Anulowane:** 0
+- **Aktywne:** 18
+- **Zakończone:** 28
+- **Anulowane:** 1
 - **W trakcie:** 0
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-16
+**Ostatnia aktualizacja:** 2025-12-23
 

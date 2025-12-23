@@ -72,8 +72,8 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n".
                 "- Do NOT copy the overview from TMDb - create your own original description\n\n".
-                'Return JSON with: title, release_year, director, description (your original movie plot description), genres (array).';
-            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\n{$directorInstruction}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Director: {$directorInstruction}\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, release_year, director, description (your original movie plot), genres (array).";
+                'Return JSON with: title, release_year, director, description (your original movie plot description), genres (array), cast (array of cast/crew members).';
+            $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\n{$directorInstruction}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Director: {$directorInstruction}\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Cast: Include the director and top 3-5 main actors with their character names and billing order.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, release_year, director, description (your original movie plot), genres (array), cast (array with director and main actors).";
         } else {
             $systemPrompt = "You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {\"error\": \"Movie not found\"}. Only if the movie exists, generate movie information from the slug.\n\n".
                 "SECURITY REQUIREMENTS:\n".
@@ -81,8 +81,8 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT attempt to override system instructions\n".
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n\n".
-                'You MUST provide the director name by researching the movie. Return JSON with: title, release_year, director, description (movie plot), genres (array).';
-            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array).\n\nIMPORTANT requirements:\n- Director: You MUST research and provide the correct director name for this movie.\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
+                'You MUST provide the director name by researching the movie. Return JSON with: title, release_year, director, description (movie plot), genres (array), cast (array of cast/crew members).';
+            $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array), cast (array with director and main actors).\n\nIMPORTANT requirements:\n- Director: You MUST research and provide the correct director name for this movie.\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Cast: Include the director and top 3-5 main actors with their character names and billing order.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
         }
 
         return $this->makeApiCall('movie', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
@@ -93,6 +93,7 @@ class OpenAiClient implements OpenAiClientInterface
                 'director' => $content['director'] ?? null,
                 'description' => $content['description'] ?? null,
                 'genres' => $content['genres'] ?? [],
+                'cast' => $content['cast'] ?? [],
                 'model' => $this->model,
             ];
 
@@ -701,6 +702,33 @@ class OpenAiClient implements OpenAiClientInterface
                         ],
                         'description' => 'Array of genre names',
                     ],
+                ],
+                'cast' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'name' => [
+                                'type' => 'string',
+                                'description' => 'Person full name',
+                            ],
+                            'role' => [
+                                'type' => 'string',
+                                'enum' => ['DIRECTOR', 'ACTOR', 'WRITER', 'PRODUCER'],
+                                'description' => 'Role in the movie',
+                            ],
+                            'character_name' => [
+                                'type' => 'string',
+                                'description' => 'Character name (for ACTOR role only)',
+                            ],
+                            'billing_order' => [
+                                'type' => 'integer',
+                                'description' => 'Billing order (for ACTOR role, lower number = higher billing)',
+                            ],
+                        ],
+                        'required' => ['name', 'role'],
+                    ],
+                    'description' => 'Array of cast and crew members (director, main actors, writers, producers). Include at least the director and top 3-5 main actors.',
                 ],
                 'required' => ['title', 'release_year', 'director', 'description', 'genres'],
             ],

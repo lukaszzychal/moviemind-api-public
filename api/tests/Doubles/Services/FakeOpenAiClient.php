@@ -15,7 +15,7 @@ use App\Services\OpenAiClientInterface;
 class FakeOpenAiClient implements OpenAiClientInterface
 {
     /**
-     * @var array<string, array{success: bool, title?: string, release_year?: int, director?: string, description?: string, genres?: array, model?: string, error?: string}>
+     * @var array<string, array{success: bool, title?: string, release_year?: int, director?: string, description?: string, genres?: array, cast?: array, model?: string, error?: string}>
      */
     private array $movieResponses = [];
 
@@ -84,6 +84,25 @@ class FakeOpenAiClient implements OpenAiClientInterface
         return [
             'success' => false,
             'error' => 'Movie response not configured in fake',
+        ];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function generateMovieDescription(
+        string $title,
+        int $releaseYear,
+        string $director,
+        string $contextTag,
+        string $locale,
+        ?array $tmdbData = null
+    ): array {
+        // For fake, return a simple description
+        return [
+            'success' => true,
+            'description' => "Generated description for {$title} ({$contextTag}, {$locale})",
+            'model' => 'fake-model',
         ];
     }
 

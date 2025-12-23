@@ -223,8 +223,9 @@ class GenerateApiTest extends TestCase
         Feature::activate('ai_bio_generation');
 
         // Use a slug that doesn't exist in seeders
+        // Note: ACTOR is deprecated, but still supported for backward compatibility
         $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'ACTOR',
+            'entity_type' => 'ACTOR', // Deprecated, but still supported
             'entity_id' => 'new-actor-slug',
         ]);
 

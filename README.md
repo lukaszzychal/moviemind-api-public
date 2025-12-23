@@ -66,18 +66,20 @@ movie_descriptions
 └── created_at
 ```
 
-**Actors & Bios**
+**People & Bios**
 ```sql
-actors
-├── id (PK)
+people
+├── id (PK, UUIDv7)
 ├── name
+├── slug
 ├── birth_date
 ├── birthplace
-└── default_bio_id (FK)
+├── tmdb_id
+└── default_bio_id (FK, UUIDv7)
 
-actor_bios
-├── id (PK)
-├── actor_id (FK)
+person_bios
+├── id (PK, UUIDv7)
+├── person_id (FK, UUIDv7)
 ├── locale
 ├── text
 ├── context_tag
@@ -90,7 +92,7 @@ actor_bios
 ```sql
 jobs
 ├── id (PK)
-├── entity_type (MOVIE, ACTOR)
+├── entity_type (MOVIE, PERSON)
 ├── entity_id
 ├── locale
 ├── status (PENDING, DONE, FAILED)
