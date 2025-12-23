@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
     Route::get('people', [PersonController::class, 'index']);
     Route::get('people/search', [PersonController::class, 'search'])->middleware('adaptive.rate.limit:search');
     Route::get('people/{slug}', [PersonController::class, 'show'])->middleware('adaptive.rate.limit:show');
+    Route::get('people/{slug}/related', [PersonController::class, 'related']);
     Route::post('people/{slug}/refresh', [PersonController::class, 'refresh']);
     Route::post('people/{slug}/report', [PersonController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
