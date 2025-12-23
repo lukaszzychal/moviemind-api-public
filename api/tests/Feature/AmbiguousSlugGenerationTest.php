@@ -272,6 +272,20 @@ class AmbiguousSlugGenerationTest extends TestCase
             'birthplace' => 'Los Angeles',
         ]);
 
+        // Create bios for both people (person without bio returns 202, not 200)
+        $person1->bios()->create([
+            'locale' => \App\Enums\Locale::EN_US,
+            'text' => 'Bio for person 1',
+            'context_tag' => \App\Enums\ContextTag::DEFAULT,
+            'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+        ]);
+        $person2->bios()->create([
+            'locale' => \App\Enums\Locale::EN_US,
+            'text' => 'Bio for person 2',
+            'context_tag' => \App\Enums\ContextTag::DEFAULT,
+            'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+        ]);
+
         Feature::activate('ai_bio_generation');
 
         // Act: Try to get person with ambiguous slug (base name only)
