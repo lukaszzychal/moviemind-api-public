@@ -27,7 +27,9 @@ class PersonRepository
     public function findBySlugWithRelations(string $slug): ?Person
     {
         // Try exact match first
-        $person = Person::with(['bios', 'defaultBio', 'movies'])
+        $person = Person::with(['bios', 'defaultBio', 'movies' => function ($query) {
+            $query->withPivot('role');
+        }])
             ->withCount('bios')
             ->where('slug', $slug)
             ->first();
@@ -124,5 +126,50 @@ class PersonRepository
         }
 
         return null;
+    }
+
+    /**
+     * Find multiple people by slugs.
+     *
+     * @param  array<int, string>  $slugs  Array of person slugs
+     * @param  array<int, string>  $include  Optional relations to include (bios, movies)
+     * @return \Illuminate\Support\Collection<int, Person>
+     */
+    public function findBySlugs(array $slugs, array $include = []): Collection
+    {
+        // Deduplicate slugs while preserving order
+        $uniqueSlugs = array_values(array_unique($slugs));
+
+        if (empty($uniqueSlugs)) {
+            return collect();
+        }
+
+        // Build relations array based on include parameter
+        $relations = ['defaultBio'];
+        if (in_array('bios', $include, true)) {
+            $relations[] = 'bios';
+        }
+        if (in_array('movies', $include, true)) {
+            $relations[] = 'movies';
+        }
+
+        // Fetch people
+        $people = Person::with($relations)
+            ->withCount('bios')
+            ->whereIn('slug', $uniqueSlugs)
+            ->get();
+
+        // Create a map for quick lookup
+        $peopleBySlug = $people->keyBy('slug');
+
+        // Return people in the same order as requested slugs
+        $orderedPeople = collect();
+        foreach ($uniqueSlugs as $slug) {
+            if ($peopleBySlug->has($slug)) {
+                $orderedPeople->push($peopleBySlug->get($slug));
+            }
+        }
+
+        return $orderedPeople;
     }
 }
