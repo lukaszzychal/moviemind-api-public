@@ -6,13 +6,16 @@ use App\Actions\QueuePersonGenerationAction;
 use App\Enums\Locale;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReportPersonRequest;
 use App\Http\Requests\SearchPersonRequest;
 use App\Http\Resources\PersonResource;
 use App\Http\Responses\PersonResponseFormatter;
 use App\Models\Person;
+use App\Models\PersonReport;
 use App\Repositories\PersonRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
+use App\Services\PersonReportService;
 use App\Services\PersonRetrievalService;
 use App\Services\PersonSearchService;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +33,8 @@ class PersonController extends Controller
         private readonly EntityVerificationServiceInterface $tmdbVerificationService,
         private readonly PersonSearchService $personSearchService,
         private readonly PersonRetrievalService $personRetrievalService,
-        private readonly PersonResponseFormatter $responseFormatter
+        private readonly PersonResponseFormatter $responseFormatter,
+        private readonly PersonReportService $personReportService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -235,6 +239,56 @@ class PersonController extends Controller
         }
 
         return $suggestedSlugs;
+    }
+
+    /**
+     * Report an issue with a person or their bio.
+     */
+    public function report(ReportPersonRequest $request, string $slug): JsonResponse
+    {
+        $person = $this->personRepository->findBySlugWithRelations($slug);
+
+        if ($person === null) {
+            return response()->json(['error' => 'Person not found'], 404);
+        }
+
+        $validated = $request->validated();
+
+        // Create report
+        $report = PersonReport::create([
+            'person_id' => $person->id,
+            'bio_id' => $validated['bio_id'] ?? null,
+            'type' => $validated['type'],
+            'message' => $validated['message'],
+            'suggested_fix' => $validated['suggested_fix'] ?? null,
+            'status' => \App\Enums\ReportStatus::PENDING,
+            'priority_score' => 0.0, // Will be calculated below
+        ]);
+
+        // Calculate and update priority score
+        $priorityScore = $this->personReportService->calculatePriorityScore($report);
+        $report->update(['priority_score' => $priorityScore]);
+
+        // Also update priority scores for other pending reports of same type
+        PersonReport::where('person_id', $person->id)
+            ->where('type', $report->type)
+            ->where('status', \App\Enums\ReportStatus::PENDING)
+            ->where('id', '!=', $report->id)
+            ->update(['priority_score' => $priorityScore]);
+
+        return response()->json([
+            'data' => [
+                'id' => $report->id,
+                'person_id' => $report->person_id,
+                'bio_id' => $report->bio_id,
+                'type' => $report->type->value,
+                'message' => $report->message,
+                'suggested_fix' => $report->suggested_fix,
+                'status' => $report->status->value,
+                'priority_score' => (float) $report->priority_score,
+                'created_at' => $report->created_at->toIso8601String(),
+            ],
+        ], 201);
     }
 
     /**
