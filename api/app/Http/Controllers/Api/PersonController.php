@@ -6,6 +6,8 @@ use App\Actions\QueuePersonGenerationAction;
 use App\Enums\Locale;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkPeopleRequest;
+use App\Http\Requests\ComparePeopleRequest;
 use App\Http\Requests\ReportPersonRequest;
 use App\Http\Requests\SearchPersonRequest;
 use App\Http\Resources\PersonResource;
@@ -15,6 +17,7 @@ use App\Models\PersonReport;
 use App\Repositories\PersonRepository;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
+use App\Services\PersonComparisonService;
 use App\Services\PersonReportService;
 use App\Services\PersonRetrievalService;
 use App\Services\PersonSearchService;
@@ -34,16 +37,149 @@ class PersonController extends Controller
         private readonly PersonSearchService $personSearchService,
         private readonly PersonRetrievalService $personRetrievalService,
         private readonly PersonResponseFormatter $responseFormatter,
-        private readonly PersonReportService $personReportService
+        private readonly PersonReportService $personReportService,
+        private readonly PersonComparisonService $personComparisonService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
+        // Check if slugs parameter is provided (bulk retrieve)
+        // Use has() to check if parameter exists, even if empty
+        if ($request->has('slugs')) {
+            return $this->handleBulkRetrieve($request);
+        }
+
+        // Normal search
         $q = $request->query('q');
         $people = $this->personRepository->searchPeople($q, 50);
         $data = $people->map(fn ($person) => $this->transformPerson($person));
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Handle bulk retrieve via GET /people?slugs=...
+     */
+    private function handleBulkRetrieve(Request $request): JsonResponse
+    {
+        // Parse slugs from query parameter (comma-separated string or array)
+        $slugsParam = $request->query('slugs');
+
+        // Handle null slugs parameter
+        if ($slugsParam === null) {
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                ],
+            ], 422);
+        }
+
+        // Parse slugs (handle both array and comma-separated string)
+        // Empty string will result in array with one empty element after explode
+        $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
+        $slugs = array_map('trim', $slugs);
+        $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
+
+        // Validate slugs after filtering (empty string or empty array after filtering)
+        if (empty($slugs)) {
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                ],
+            ], 422);
+        }
+
+        if (count($slugs) > 50) {
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field must not have more than 50 items.'],
+                ],
+            ], 422);
+        }
+
+        // Validate slug format
+        foreach ($slugs as $slug) {
+            if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
+                return response()->json([
+                    'errors' => [
+                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        // Parse include parameter
+        $includeParam = $request->query('include');
+        $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
+        $include = array_map('trim', $include);
+        $include = array_filter($include, fn ($item) => $item !== '');
+
+        // Validate include values
+        $allowedInclude = ['bios', 'movies'];
+        foreach ($include as $item) {
+            if (! in_array($item, $allowedInclude, true)) {
+                return response()->json([
+                    'errors' => [
+                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        // Find people
+        $people = $this->personRepository->findBySlugs($slugs, $include);
+
+        // Format people as resources
+        $data = $people->map(function (Person $person) {
+            $resource = PersonResource::make($person)->additional([
+                '_links' => $this->hateoas->personLinks($person),
+            ]);
+
+            return $resource->resolve();
+        })->toArray();
+
+        // Find which slugs were not found
+        $foundSlugs = $people->pluck('slug')->toArray();
+        $notFound = array_values(array_diff($slugs, $foundSlugs));
+
+        return response()->json([
+            'data' => $data,
+            'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => count($slugs),
+        ], 200);
+    }
+
+    /**
+     * Bulk retrieve multiple people by slugs.
+     */
+    public function bulk(BulkPeopleRequest $request): JsonResponse
+    {
+        $slugs = $request->getSlugs();
+        $include = $request->getInclude();
+
+        // Find people
+        $people = $this->personRepository->findBySlugs($slugs, $include);
+
+        // Format people as resources
+        $data = $people->map(function (Person $person) {
+            $resource = PersonResource::make($person)->additional([
+                '_links' => $this->hateoas->personLinks($person),
+            ]);
+
+            return $resource->resolve();
+        })->toArray();
+
+        // Find which slugs were not found
+        $foundSlugs = $people->pluck('slug')->toArray();
+        $notFound = array_values(array_diff($slugs, $foundSlugs));
+
+        return response()->json([
+            'data' => $data,
+            'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => count($slugs),
+        ], 200);
     }
 
     public function search(SearchPersonRequest $request): JsonResponse
@@ -608,5 +744,22 @@ class PersonController extends Controller
         Cache::forget($this->cacheKey($slug, null));
 
         return $this->responseFormatter->formatRefreshSuccess($slug, $person->id);
+    }
+
+    /**
+     * Compare two people.
+     */
+    public function compare(ComparePeopleRequest $request): JsonResponse
+    {
+        $slug1 = $request->validated()['slug1'];
+        $slug2 = $request->validated()['slug2'];
+
+        try {
+            $comparison = $this->personComparisonService->compare($slug1, $slug2);
+
+            return response()->json($comparison);
+        } catch (\InvalidArgumentException $e) {
+            return $this->responseFormatter->formatNotFound();
+        }
     }
 }

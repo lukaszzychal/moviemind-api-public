@@ -20,6 +20,8 @@ Route::prefix('v1')->group(function () {
     Route::post('movies/{slug}/report', [MovieController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::get('people', [PersonController::class, 'index']);
     Route::get('people/search', [PersonController::class, 'search'])->middleware('adaptive.rate.limit:search');
+    Route::post('people/bulk', [PersonController::class, 'bulk'])->middleware('adaptive.rate.limit:bulk');
+    Route::get('people/compare', [PersonController::class, 'compare']);
     Route::get('people/{slug}', [PersonController::class, 'show'])->middleware('adaptive.rate.limit:show');
     Route::get('people/{slug}/related', [PersonController::class, 'related']);
     Route::post('people/{slug}/refresh', [PersonController::class, 'refresh']);
