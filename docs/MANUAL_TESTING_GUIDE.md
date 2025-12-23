@@ -16,6 +16,7 @@
 7. [Generate API](#generate-api)
 8. [Jobs API](#jobs-api)
 9. [Movie Reports](#movie-reports)
+10. [Person Reports](#person-reports)
 10. [Adaptive Rate Limiting](#adaptive-rate-limiting)
 11. [Health & Admin](#health--admin)
 12. [Security Verification](#security-verification)
@@ -34,6 +35,7 @@ This document provides comprehensive manual testing instructions for all MovieMi
 - **Generate:** AI description and bio generation
 - **Jobs:** Asynchronous job status tracking
 - **Movie Reports:** User error reporting and admin management
+- **Person Reports:** User error reporting for person biographies and admin management
 - **Adaptive Rate Limiting:** Dynamic rate limits based on system load
 - **Health:** System health checks
 - **Admin:** Feature flags and debug endpoints
@@ -2293,6 +2295,328 @@ Reports are automatically assigned a priority score based on:
 
 ---
 
+## 📝 Person Reports
+
+### Endpoints Overview
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/people/{slug}/report` | Report an error in person biography | No |
+| `GET` | `/api/v1/admin/reports?type=person` | List person reports (with filtering) | Yes |
+| `POST` | `/api/v1/admin/reports/{id}/verify` | Verify report and trigger bio regeneration | Yes |
+
+**Note:** Admin endpoints support both movie and person reports. Use `?type=person` to filter only person reports, or `?type=all` to see both types.
+
+### Report Types
+
+Same as Movie Reports:
+- `FACTUAL_ERROR` - Factual inaccuracies (weight: 3.0)
+- `GRAMMAR_ERROR` - Grammar or spelling errors (weight: 1.0)
+- `INAPPROPRIATE_CONTENT` - Inappropriate content (weight: 5.0)
+- `OTHER` - Other issues (weight: 1.0)
+
+### Priority Scoring
+
+Same logic as Movie Reports:
+- Report type weight × number of pending reports of same type
+- **High:** `priority_score >= 3.0`
+- **Medium:** `1.0 <= priority_score < 3.0`
+- **Low:** `priority_score < 1.0`
+
+---
+
+### Scenario 1: User Reports Person Biography Error
+
+**Objective:** Verify that users can report errors in person biographies.
+
+**Steps:**
+
+1. **Report a factual error:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves-1964/report" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -d '{
+       "type": "FACTUAL_ERROR",
+       "message": "Birth date is incorrect. Should be 1964-09-02, not 1964-09-03.",
+       "suggested_fix": "Update birth_date to 1964-09-02"
+     }' | jq
+   ```
+
+2. **Verify response:**
+   ```json
+   {
+     "data": {
+       "id": "550e8400-e29b-41d4-a716-446655440000",
+       "person_id": "123e4567-e89b-12d3-a456-426614174000",
+       "bio_id": null,
+       "type": "FACTUAL_ERROR",
+       "message": "Birth date is incorrect...",
+       "suggested_fix": "Update birth_date to 1964-09-02",
+       "status": "pending",
+       "priority_score": 3.0,
+       "created_at": "2025-12-23T10:30:00+00:00"
+     }
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `201 Created`
+   - [ ] Report ID is returned (UUID)
+   - [ ] `person_id` matches the person
+   - [ ] `type` is valid enum value
+   - [ ] `status` is `pending`
+   - [ ] `priority_score` is calculated
+
+4. **Test with bio_id (specific bio report):**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves-1964/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "GRAMMAR_ERROR",
+       "message": "There is a grammatical error in the biography text.",
+       "bio_id": "550e8400-e29b-41d4-a716-446655440001"
+     }' | jq
+   ```
+   - [ ] `bio_id` is included in response
+   - [ ] Report is linked to specific bio
+
+5. **Test validation errors:**
+   ```bash
+   # Missing required field
+   curl -X POST "http://localhost:8000/api/v1/people/keanu-reeves-1964/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "FACTUAL_ERROR"
+     }' | jq
+   ```
+   - [ ] Status code: `422 Unprocessable Entity`
+   - [ ] Error message indicates missing `message` field
+
+6. **Test non-existent person:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/people/non-existent-person-9999/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "FACTUAL_ERROR",
+       "message": "This person does not exist"
+     }' | jq
+   ```
+   - [ ] Status code: `404 Not Found`
+
+---
+
+### Scenario 2: Admin Lists Person Reports
+
+**Objective:** Verify that admins can list and filter person reports.
+
+**Steps:**
+
+1. **List all reports (including person reports):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=all" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **List only person reports:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=person" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+3. **Verify response structure:**
+   ```json
+   {
+     "data": [
+       {
+         "id": "550e8400-e29b-41d4-a716-446655440000",
+         "entity_type": "person",
+         "person_id": "123e4567-e89b-12d3-a456-426614174000",
+         "bio_id": "550e8400-e29b-41d4-a716-446655440001",
+         "type": "FACTUAL_ERROR",
+         "message": "Birth date is incorrect...",
+         "status": "pending",
+         "priority_score": 3.0,
+         "created_at": "2025-12-23T10:30:00+00:00"
+       }
+     ],
+     "meta": {
+       "current_page": 1,
+       "per_page": 50,
+       "total": 1,
+       "last_page": 1
+     }
+   }
+   ```
+
+4. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `entity_type` is `"person"` for person reports
+   - [ ] `person_id` and `bio_id` are present
+   - [ ] Reports are sorted by `priority_score` desc, then `created_at` desc
+
+5. **Filter by status:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=person&status=pending" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only pending reports returned
+
+6. **Filter by priority:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=person&priority=high" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Only reports with `priority_score >= 3.0` returned
+
+---
+
+### Scenario 3: Admin Verifies Person Report
+
+**Objective:** Verify that admins can verify person reports and trigger bio regeneration.
+
+**Prerequisites:**
+- Queue worker must be running: `php artisan queue:work` or Laravel Horizon
+- Person must have a bio (for regeneration to work)
+
+**Steps:**
+
+1. **Verify a person report:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/{report_id}/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response:**
+   ```json
+   {
+     "id": "550e8400-e29b-41d4-a716-446655440000",
+     "entity_type": "person",
+     "person_id": "123e4567-e89b-12d3-a456-426614174000",
+     "bio_id": "550e8400-e29b-41d4-a716-446655440001",
+     "status": "verified",
+     "verified_at": "2025-12-23T11:00:00+00:00"
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `status` changed to `verified`
+   - [ ] `verified_at` timestamp is set
+   - [ ] `entity_type` is `"person"`
+
+4. **Check queue for regeneration job:**
+   - [ ] `RegeneratePersonBioJob` is queued (if `bio_id` is present)
+   - [ ] Job parameters: `person_id` and `bio_id` match the report
+
+5. **Test verification without bio_id:**
+   ```bash
+   # Verify a report that has bio_id = null
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/{report_id}/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `200 OK`
+   - [ ] Report is verified
+   - [ ] No regeneration job is queued (bio_id is null)
+
+6. **Test non-existent report:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/00000000-0000-0000-0000-000000000000/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `404 Not Found`
+
+---
+
+### Scenario 4: Bio Regeneration After Verification
+
+**Objective:** Verify that bio regeneration works after report verification.
+
+**Prerequisites:**
+- Report must be verified (use Scenario 3)
+- Queue worker must process the job
+- OpenAI API key must be configured (or use mock mode)
+
+**Steps:**
+
+1. **Verify the report (see Scenario 3)**
+
+2. **Wait for job to process (or manually trigger)**
+
+3. **Verify old bio is deleted:**
+   ```sql
+   -- Check that old bio no longer exists (due to unique constraint)
+   SELECT * FROM person_bios WHERE id = '{old_bio_id}';
+   ```
+   - [ ] Old bio is deleted (or text prefixed with `[ARCHIVED]`)
+
+4. **Verify new bio is created:**
+   ```sql
+   -- Check new bio exists
+   SELECT * FROM person_bios WHERE person_id = '{person_id}' ORDER BY created_at DESC LIMIT 1;
+   ```
+   - [ ] New bio exists with same `locale` and `context_tag`
+   - [ ] New bio has updated `text` (regenerated by AI)
+
+5. **Verify person's default_bio_id is updated (if old bio was default):**
+   ```sql
+   SELECT default_bio_id FROM people WHERE id = '{person_id}';
+   ```
+   - [ ] `default_bio_id` points to new bio (if old bio was default)
+
+6. **Verify reports are marked as resolved:**
+   ```sql
+   SELECT * FROM person_reports 
+   WHERE person_id = '{person_id}' 
+   AND bio_id IN ('{old_bio_id}', '{new_bio_id}')
+   AND status = 'resolved';
+   ```
+   - [ ] Related reports are marked as `resolved`
+   - [ ] `resolved_at` timestamp is set
+
+---
+
+### Troubleshooting Person Reports
+
+**Problem: Report not appearing in admin list**
+
+**Solution:**
+- Verify report was created: Check database `person_reports` table
+- Check authentication: Admin endpoint requires Basic Auth
+- Verify type filter: Use `?type=person` to see only person reports
+- Verify status filter: Report might be filtered out
+
+**Problem: Regeneration job not queued after verification**
+
+**Solution:**
+- Check if `bio_id` is null (no job queued for general person reports)
+- Verify queue worker is running: `php artisan queue:work` or Horizon
+- Check logs for job dispatch errors
+
+**Problem: Priority score seems incorrect**
+
+**Solution:**
+- Verify report type weight in `ReportType` enum
+- Check if multiple reports of same type affect aggregation
+- Verify priority calculation logic in `PersonReportService`
+
+**Problem: Bio regeneration fails**
+
+**Solution:**
+- Verify OpenAI API key is configured (or mock mode is enabled)
+- Check queue worker logs: `tail -f storage/logs/laravel.log`
+- Verify person exists and has valid slug
+- Check unique constraint on `person_bios` table (person_id, locale, context_tag)
+
+---
+
 ## ⚡ Adaptive Rate Limiting
 
 ### Overview
@@ -2305,7 +2629,8 @@ then automatically adjusts rate limits to maintain stability.
 
 - `GET /api/v1/movies/search` - Search endpoint (default: 100 req/min)
 - `POST /api/v1/generate` - AI generation endpoint (default: 10 req/min)
-- `POST /api/v1/movies/{slug}/report` - Report endpoint (default: 20 req/min)
+- `POST /api/v1/movies/{slug}/report` - Movie report endpoint (default: 20 req/min)
+- `POST /api/v1/people/{slug}/report` - Person report endpoint (default: 20 req/min)
 
 **Load Monitoring:**
 

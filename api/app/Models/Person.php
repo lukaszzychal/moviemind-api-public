@@ -46,6 +46,14 @@ class Person extends Model
     }
 
     /**
+     * Get all reports for this person.
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(PersonReport::class);
+    }
+
+    /**
      * Generate a unique slug from person data.
      * Handles ambiguous names (same name, different people) by adding birth year or birthplace.
      *
