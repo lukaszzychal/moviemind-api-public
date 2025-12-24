@@ -32,6 +32,7 @@ This document provides comprehensive manual testing instructions for all MovieMi
 
 - **Movies:** Search, retrieve, refresh, and relationships
 - **People:** Search, retrieve, refresh
+- **TV Series & TV Shows:** Search, retrieve, TMDb verification (see [dedicated guide](./TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md))
 - **Generate:** AI description and bio generation
 - **Jobs:** Asynchronous job status tracking
 - **Movie Reports:** User error reporting and admin management
@@ -1088,19 +1089,21 @@ docker compose exec php php artisan tinker
 
 ---
 
-## 📺 TV Series API
+## 📺 TV Series & TV Shows API
 
-> **Status:** ⏸️ **Not yet implemented**  
-> **Planned:** Future feature
+> **Status:** ✅ **Implemented**  
+> **Related Guide:** [TMDb Verification Testing for TV Series & TV Shows](./TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md)
 
-**Note:** TV Series endpoints are planned but not yet implemented. This section will be updated when the feature is available.
+**Note:** TV Series and TV Shows endpoints are now implemented with TMDb verification. For detailed testing instructions, see the dedicated guide above.
 
-**Planned Endpoints:**
+**Available Endpoints:**
 
-- `GET /api/v1/series` - List all TV series
-- `GET /api/v1/series/{slug}` - Get series details
-- `GET /api/v1/series/{slug}/seasons` - Get seasons
-- `GET /api/v1/series/{slug}/episodes` - Get episodes
+- `GET /api/v1/tv-series` - List all TV series
+- `GET /api/v1/tv-series/{slug}` - Get TV series details (with TMDb verification)
+- `GET /api/v1/tv-series/search` - Search TV series
+- `GET /api/v1/tv-shows` - List all TV shows
+- `GET /api/v1/tv-shows/{slug}` - Get TV show details (with TMDb verification)
+- `GET /api/v1/tv-shows/search` - Search TV shows
 
 ### Endpoints Overview
 

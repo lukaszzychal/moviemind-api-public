@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Movie;
 use App\Models\Person;
+use App\Models\TvSeries;
+use App\Models\TvShow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
@@ -132,6 +134,142 @@ class HateoasService
             // If relation is not loaded, return empty array to indicate no movies links available
             // This prevents lazy loading which would cause N+1 query problem
             $links['movies'] = [];
+        }
+
+        return $links;
+    }
+
+    public function tvSeriesLinks(TvSeries $tvSeries): array
+    {
+        $links = [
+            'self' => [
+                'href' => url("/api/v1/tv-series/{$tvSeries->slug}"),
+            ],
+            'generate' => [
+                'href' => url('/api/v1/generate'),
+                'method' => 'POST',
+                'body' => [
+                    'entity_type' => 'TV_SERIES',
+                    'entity_id' => $tvSeries->id,
+                ],
+            ],
+        ];
+
+        // Only load people links if the relation is already loaded (avoid lazy loading)
+        if ($tvSeries->relationLoaded('people')) {
+            /** @var \Illuminate\Support\Collection<int, Person> $people */
+            $people = $tvSeries->people
+                ->sortBy(function (Model $related, int $index): int {
+                    /** @var Person $person */
+                    $person = $related;
+
+                    return $person->pivot?->getAttribute('billing_order') ?? PHP_INT_MAX;
+                });
+
+            $links['people'] = $people
+                ->map(function (Person $person): array {
+                    /** @var Pivot|null $pivot */
+                    $pivot = $person->pivot;
+
+                    $link = [
+                        'href' => url("/api/v1/people/{$person->slug}"),
+                        'title' => $person->name,
+                    ];
+
+                    $role = $pivot?->getAttribute('role');
+                    if ($role) {
+                        $link['role'] = $role;
+                    }
+
+                    $characterName = $pivot?->getAttribute('character_name');
+                    if ($characterName) {
+                        $link['character_name'] = $characterName;
+                    }
+
+                    $job = $pivot?->getAttribute('job');
+                    if ($job) {
+                        $link['job'] = $job;
+                    }
+
+                    $billingOrder = $pivot?->getAttribute('billing_order');
+                    if ($billingOrder !== null) {
+                        $link['billing_order'] = $billingOrder;
+                    }
+
+                    return $link;
+                })
+                ->values()
+                ->all();
+        } else {
+            $links['people'] = [];
+        }
+
+        return $links;
+    }
+
+    public function tvShowLinks(TvShow $tvShow): array
+    {
+        $links = [
+            'self' => [
+                'href' => url("/api/v1/tv-shows/{$tvShow->slug}"),
+            ],
+            'generate' => [
+                'href' => url('/api/v1/generate'),
+                'method' => 'POST',
+                'body' => [
+                    'entity_type' => 'TV_SHOW',
+                    'entity_id' => $tvShow->id,
+                ],
+            ],
+        ];
+
+        // Only load people links if the relation is already loaded (avoid lazy loading)
+        if ($tvShow->relationLoaded('people')) {
+            /** @var \Illuminate\Support\Collection<int, Person> $people */
+            $people = $tvShow->people
+                ->sortBy(function (Model $related, int $index): int {
+                    /** @var Person $person */
+                    $person = $related;
+
+                    return $person->pivot?->getAttribute('billing_order') ?? PHP_INT_MAX;
+                });
+
+            $links['people'] = $people
+                ->map(function (Person $person): array {
+                    /** @var Pivot|null $pivot */
+                    $pivot = $person->pivot;
+
+                    $link = [
+                        'href' => url("/api/v1/people/{$person->slug}"),
+                        'title' => $person->name,
+                    ];
+
+                    $role = $pivot?->getAttribute('role');
+                    if ($role) {
+                        $link['role'] = $role;
+                    }
+
+                    $characterName = $pivot?->getAttribute('character_name');
+                    if ($characterName) {
+                        $link['character_name'] = $characterName;
+                    }
+
+                    $job = $pivot?->getAttribute('job');
+                    if ($job) {
+                        $link['job'] = $job;
+                    }
+
+                    $billingOrder = $pivot?->getAttribute('billing_order');
+                    if ($billingOrder !== null) {
+                        $link['billing_order'] = $billingOrder;
+                    }
+
+                    return $link;
+                })
+                ->values()
+                ->all();
+        } else {
+            $links['people'] = [];
         }
 
         return $links;

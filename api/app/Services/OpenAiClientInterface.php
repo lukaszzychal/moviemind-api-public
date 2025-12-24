@@ -43,6 +43,24 @@ interface OpenAiClientInterface
     public function generatePerson(string $slug, ?array $tmdbData = null): array;
 
     /**
+     * Generate TV series information from a slug using AI.
+     *
+     * @param  string  $slug  TV Series slug
+     * @param  array{name: string, first_air_date: string, overview: string, id: int}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @return array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, model?: string, error?: string}
+     */
+    public function generateTvSeries(string $slug, ?array $tmdbData = null): array;
+
+    /**
+     * Generate TV show information from a slug using AI.
+     *
+     * @param  string  $slug  TV Show slug
+     * @param  array{name: string, first_air_date: string, overview: string, id: int}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @return array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, show_type?: string, model?: string, error?: string}
+     */
+    public function generateTvShow(string $slug, ?array $tmdbData = null): array;
+
+    /**
      * Perform a lightweight health check against the OpenAI API.
      *
      * @return array{success: bool, message?: string, status?: int, model?: string, rate_limit?: array<string, int|string|null>, error?: string}

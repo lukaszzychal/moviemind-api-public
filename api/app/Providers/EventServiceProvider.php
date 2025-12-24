@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
+use App\Events\TvSeriesGenerationRequested;
+use App\Events\TvShowGenerationRequested;
 use App\Listeners\QueueMovieGenerationJob;
 use App\Listeners\QueuePersonGenerationJob;
+use App\Listeners\QueueTvSeriesGenerationJob;
+use App\Listeners\QueueTvShowGenerationJob;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -21,6 +25,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         PersonGenerationRequested::class => [
             QueuePersonGenerationJob::class,
+        ],
+        TvSeriesGenerationRequested::class => [
+            QueueTvSeriesGenerationJob::class,
+        ],
+        TvShowGenerationRequested::class => [
+            QueueTvShowGenerationJob::class,
         ],
     ];
 

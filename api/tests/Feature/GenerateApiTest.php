@@ -4,8 +4,12 @@ namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
+use App\Events\TvSeriesGenerationRequested;
+use App\Events\TvShowGenerationRequested;
 use App\Models\Movie;
 use App\Models\Person;
+use App\Models\TvSeries;
+use App\Models\TvShow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -452,6 +456,148 @@ class GenerateApiTest extends TestCase
         Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
             return $event->slug === 'empty-context-movie'
                 && ($event->contextTag === null || $event->contextTag === 'DEFAULT');
+        });
+    }
+
+    public function test_generate_tv_series_blocked_when_flag_off(): void
+    {
+        Feature::deactivate('ai_description_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'TV_SERIES',
+            'entity_id' => 'breaking-bad-2008',
+        ]);
+
+        $resp->assertStatus(403)
+            ->assertJson(['error' => 'Feature not available']);
+    }
+
+    public function test_generate_tv_series_allowed_when_flag_on(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'TV_SERIES',
+            'entity_id' => 'breaking-bad-2008',
+        ]);
+
+        if ($resp->status() !== 202) {
+            dump($resp->json());
+        }
+
+        $resp->assertStatus(202)
+            ->assertJsonStructure([
+                'job_id',
+                'status',
+                'message',
+                'slug',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'breaking-bad-2008',
+                'locale' => 'en-US',
+            ]);
+
+        Event::assertDispatched(TvSeriesGenerationRequested::class, function ($event) {
+            return $event->slug === 'breaking-bad-2008'
+                && $event->locale === 'en-US';
+        });
+    }
+
+    public function test_generate_tv_series_existing_slug_triggers_regeneration_flow(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        $tvSeries = TvSeries::factory()->create([
+            'title' => 'Breaking Bad',
+            'slug' => 'breaking-bad-2008',
+        ]);
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'TV_SERIES',
+            'entity_id' => $tvSeries->slug,
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => $tvSeries->slug,
+                'existing_id' => $tvSeries->id,
+                'locale' => 'en-US',
+            ]);
+
+        Event::assertDispatched(TvSeriesGenerationRequested::class, function ($event) use ($tvSeries) {
+            return $event->slug === $tvSeries->slug
+                && $event->locale === 'en-US';
+        });
+    }
+
+    public function test_generate_tv_show_blocked_when_flag_off(): void
+    {
+        Feature::deactivate('ai_description_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'TV_SHOW',
+            'entity_id' => 'the-tonight-show-1954',
+        ]);
+
+        $resp->assertStatus(403)
+            ->assertJson(['error' => 'Feature not available']);
+    }
+
+    public function test_generate_tv_show_allowed_when_flag_on(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'TV_SHOW',
+            'entity_id' => 'the-tonight-show-1954',
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJsonStructure([
+                'job_id',
+                'status',
+                'message',
+                'slug',
+            ])
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => 'the-tonight-show-1954',
+                'locale' => 'en-US',
+            ]);
+
+        Event::assertDispatched(TvShowGenerationRequested::class, function ($event) {
+            return $event->slug === 'the-tonight-show-1954'
+                && $event->locale === 'en-US';
+        });
+    }
+
+    public function test_generate_tv_show_existing_slug_triggers_regeneration_flow(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        $tvShow = TvShow::factory()->create([
+            'title' => 'The Tonight Show',
+            'slug' => 'the-tonight-show-1954',
+        ]);
+
+        $resp = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'TV_SHOW',
+            'entity_id' => $tvShow->slug,
+        ]);
+
+        $resp->assertStatus(202)
+            ->assertJson([
+                'status' => 'PENDING',
+                'slug' => $tvShow->slug,
+                'existing_id' => $tvShow->id,
+                'locale' => 'en-US',
+            ]);
+
+        Event::assertDispatched(TvShowGenerationRequested::class, function ($event) use ($tvShow) {
+            return $event->slug === $tvShow->slug
+                && $event->locale === 'en-US';
         });
     }
 }

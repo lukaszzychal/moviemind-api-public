@@ -3,9 +3,15 @@ info:
   title: MovieMind API
   version: 1.0.0
   description: |
-    Public REST API for movies and people with AI-powered descriptions and bios.
+    Public REST API for movies, people, TV series, and TV shows with AI-powered descriptions and bios.
     Uses slug-based resource identifiers. When data is missing and the corresponding
     feature flag is enabled, endpoints return 202 Accepted and queue generation.
+    
+    **Entity Types:**
+    - **MOVIE**: Feature films and movies
+    - **PERSON**: Actors, directors, writers, producers, and other people
+    - **TV_SERIES**: Scripted TV series (drama, comedy, sci-fi, etc.)
+    - **TV_SHOW**: Unscripted TV shows (talk shows, reality, news, documentaries)
     
     **Request Tracing:**
     All responses include `X-Request-ID` and `X-Correlation-ID` headers (UUIDv4).
@@ -21,6 +27,8 @@ servers:
 tags:
   - name: Movies
   - name: People
+  - name: TV Series
+  - name: TV Shows
   - name: Generation
   - name: Jobs
   - name: Admin
@@ -366,6 +374,311 @@ paths:
                 properties:
                   error:
                     type: string
+  /v1/tv-series:
+    get:
+      tags: [TV Series]
+      summary: List TV series
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (title)
+        - in: query
+          name: slugs
+          schema:
+            type: string
+          description: Comma-separated list of slugs for bulk retrieval
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvSeries'
+                  count:
+                    type: integer
+              examples:
+                default:
+                  value:
+                    data:
+                      - id: 1
+                        slug: breaking-bad-2008
+                        title: Breaking Bad
+                        first_air_date: '2008-01-20'
+                        number_of_seasons: 5
+                        number_of_episodes: 62
+                        genres: ['Crime', 'Drama', 'Thriller']
+                        default_description:
+                          id: 10
+                          locale: en-US
+                          text: 'A high school chemistry teacher turned methamphetamine manufacturer partners with a former student.'
+                          context_tag: modern
+                          origin: GENERATED
+                          ai_model: gpt-4o-mini
+                        descriptions_count: 1
+                        _links:
+                          self:
+                            href: /api/v1/tv-series/breaking-bad-2008
+                    count: 1
+  /v1/tv-series/{slug}:
+    get:
+      tags: [TV Series]
+      summary: Get TV series by slug
+      description: |
+        Returns TV series details including all descriptions and synchronized people (actors, directors, writers, producers).
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: description_id
+          schema:
+            type: string
+            format: uuid
+          description: Select specific description by ID
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TvSeriesFull'
+              examples:
+                default:
+                  value:
+                    id: 1
+                    slug: breaking-bad-2008
+                    title: Breaking Bad
+                    first_air_date: '2008-01-20'
+                    last_air_date: '2013-09-29'
+                    number_of_seasons: 5
+                    number_of_episodes: 62
+                    genres: ['Crime', 'Drama', 'Thriller']
+                    default_description:
+                      id: 10
+                      locale: en-US
+                      text: 'A high school chemistry teacher turned methamphetamine manufacturer partners with a former student.'
+                      context_tag: modern
+                      origin: GENERATED
+                      ai_model: gpt-4o-mini
+                    descriptions:
+                      - id: 10
+                        locale: en-US
+                        text: 'A high school chemistry teacher turned methamphetamine manufacturer partners with a former student.'
+                        context_tag: modern
+                        origin: GENERATED
+                        ai_model: gpt-4o-mini
+                    people:
+                      - id: 5
+                        slug: bryan-cranston-1956
+                        name: Bryan Cranston
+                        role: ACTOR
+                        character_name: Walter White
+                    _links:
+                      self:
+                        href: /api/v1/tv-series/breaking-bad-2008
+                      people:
+                        - href: /api/v1/people/bryan-cranston-1956
+                          title: Bryan Cranston
+                          role: ACTOR
+                          character_name: Walter White
+        '202':
+          description: Accepted - generation queued (feature flag on)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationQueued'
+        '404':
+          description: Not Found (feature flag off)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /v1/tv-series/search:
+    get:
+      tags: [TV Series]
+      summary: Search TV series
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Maximum number of results
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+  /v1/tv-shows:
+    get:
+      tags: [TV Shows]
+      summary: List TV shows
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (title)
+        - in: query
+          name: slugs
+          schema:
+            type: string
+          description: Comma-separated list of slugs for bulk retrieval
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvShow'
+                  count:
+                    type: integer
+              examples:
+                default:
+                  value:
+                    data:
+                      - id: 1
+                        slug: the-tonight-show-1954
+                        title: The Tonight Show
+                        first_air_date: '1954-09-27'
+                        number_of_seasons: 60
+                        number_of_episodes: 10000
+                        genres: ['Talk Show', 'Comedy']
+                        default_description:
+                          id: 10
+                          locale: en-US
+                          text: 'Long-running late-night talk show featuring celebrity interviews, comedy, and musical performances.'
+                          context_tag: modern
+                          origin: GENERATED
+                          ai_model: gpt-4o-mini
+                        descriptions_count: 1
+                        _links:
+                          self:
+                            href: /api/v1/tv-shows/the-tonight-show-1954
+                    count: 1
+  /v1/tv-shows/{slug}:
+    get:
+      tags: [TV Shows]
+      summary: Get TV show by slug
+      description: |
+        Returns TV show details including all descriptions and synchronized people (hosts, producers, etc.).
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: description_id
+          schema:
+            type: string
+            format: uuid
+          description: Select specific description by ID
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TvShowFull'
+              examples:
+                default:
+                  value:
+                    id: 1
+                    slug: the-tonight-show-1954
+                    title: The Tonight Show
+                    first_air_date: '1954-09-27'
+                    number_of_seasons: 60
+                    number_of_episodes: 10000
+                    genres: ['Talk Show', 'Comedy']
+                    default_description:
+                      id: 10
+                      locale: en-US
+                      text: 'Long-running late-night talk show featuring celebrity interviews, comedy, and musical performances.'
+                      context_tag: modern
+                      origin: GENERATED
+                      ai_model: gpt-4o-mini
+                    descriptions:
+                      - id: 10
+                        locale: en-US
+                        text: 'Long-running late-night talk show featuring celebrity interviews, comedy, and musical performances.'
+                        context_tag: modern
+                        origin: GENERATED
+                        ai_model: gpt-4o-mini
+                    people:
+                      - id: 5
+                        slug: jimmy-fallon-1974
+                        name: Jimmy Fallon
+                        role: HOST
+                    _links:
+                      self:
+                        href: /api/v1/tv-shows/the-tonight-show-1954
+                      people:
+                        - href: /api/v1/people/jimmy-fallon-1974
+                          title: Jimmy Fallon
+                          role: HOST
+        '202':
+          description: Accepted - generation queued (feature flag on)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationQueued'
+        '404':
+          description: Not Found (feature flag off)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /v1/tv-shows/search:
+    get:
+      tags: [TV Shows]
+      summary: Search TV shows
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Maximum number of results
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
   /v1/generate:
     post:
       tags: [Generation]
@@ -382,6 +695,20 @@ paths:
                 value:
                   entity_type: MOVIE
                   entity_id: annihilation-2018
+                  locale: en-US
+                  context_tag: modern
+              tv_series:
+                summary: Queue TV series generation
+                value:
+                  entity_type: TV_SERIES
+                  entity_id: breaking-bad-2008
+                  locale: en-US
+                  context_tag: modern
+              tv_show:
+                summary: Queue TV show generation
+                value:
+                  entity_type: TV_SHOW
+                  entity_id: the-tonight-show-1954
                   locale: en-US
                   context_tag: modern
       responses:
@@ -410,6 +737,22 @@ paths:
                     slug: annihilation
                     confidence: 0.74
                     confidence_level: medium
+                tv_series:
+                  value:
+                    job_id: 7e1e6e2d-5b5d-4c83-8f6d-83c21c53e4c2
+                    status: PENDING
+                    message: Generation queued for TV series slug
+                    slug: breaking-bad-2008
+                    confidence: 0.92
+                    confidence_level: high
+                tv_show:
+                  value:
+                    job_id: 0d3f1976-b7d0-4d18-90d3-ef5d547d9300
+                    status: PENDING
+                    message: Generation queued for TV show slug
+                    slug: the-tonight-show-1954
+                    confidence: 0.88
+                    confidence_level: high
         '400':
           description: Invalid payload (slug validation failed)
           content:
@@ -873,6 +1216,142 @@ components:
         character_name:
           type: string
           nullable: true
+    TvSeries:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        first_air_date:
+          type: string
+          format: date
+          nullable: true
+        last_air_date:
+          type: string
+          format: date
+          nullable: true
+        number_of_seasons:
+          type: integer
+          nullable: true
+        number_of_episodes:
+          type: integer
+          nullable: true
+        genres:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+          nullable: true
+        default_description:
+          $ref: '#/components/schemas/TvSeriesDescription'
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonContribution'
+        _links:
+          type: object
+          additionalProperties: true
+    TvSeriesDescription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        locale:
+          type: string
+        text:
+          type: string
+        context_tag:
+          type: string
+        origin:
+          type: string
+        ai_model:
+          type: string
+    TvSeriesFull:
+      allOf:
+        - $ref: '#/components/schemas/TvSeries'
+        - type: object
+          properties:
+            descriptions:
+              type: array
+              items:
+                $ref: '#/components/schemas/TvSeriesDescription'
+            _meta:
+              type: object
+              additionalProperties: true
+    TvShow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        first_air_date:
+          type: string
+          format: date
+          nullable: true
+        last_air_date:
+          type: string
+          format: date
+          nullable: true
+        number_of_seasons:
+          type: integer
+          nullable: true
+        number_of_episodes:
+          type: integer
+          nullable: true
+        genres:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+          nullable: true
+        default_description:
+          $ref: '#/components/schemas/TvShowDescription'
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonContribution'
+        _links:
+          type: object
+          additionalProperties: true
+    TvShowDescription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        locale:
+          type: string
+        text:
+          type: string
+        context_tag:
+          type: string
+        origin:
+          type: string
+        ai_model:
+          type: string
+    TvShowFull:
+      allOf:
+        - $ref: '#/components/schemas/TvShow'
+        - type: object
+          properties:
+            descriptions:
+              type: array
+              items:
+                $ref: '#/components/schemas/TvShowDescription'
+            _meta:
+              type: object
+              additionalProperties: true
     FeatureFlag:
       type: object
       properties:
@@ -919,7 +1398,7 @@ components:
           enum: [PENDING, DONE, FAILED, UNKNOWN]
         entity:
           type: string
-          enum: [MOVIE, PERSON]
+          enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW]
         entity_id:
           type: integer
           nullable: true
@@ -952,6 +1431,45 @@ components:
         bio_id:
           type: integer
           nullable: true
+    SearchResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum: [local, external]
+              slug:
+                type: string
+              title:
+                type: string
+              first_air_date:
+                type: string
+                format: date
+                nullable: true
+              has_description:
+                type: boolean
+        total:
+          type: integer
+        local_count:
+          type: integer
+        external_count:
+          type: integer
+        match_type:
+          type: string
+          enum: [exact, partial, none]
+        confidence:
+          type: number
+          format: float
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
     DebugConfig:
       type: object
       description: Debug configuration response
@@ -1086,10 +1604,12 @@ components:
       properties:
         entity_type:
           type: string
-          enum: [MOVIE, PERSON]
+          enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW]
           description: |
             Entity type to generate content for.
             Use `PERSON` for all person-related entities (actors, directors, writers, producers).
+            Use `TV_SERIES` for scripted TV series (drama, comedy, sci-fi, etc.).
+            Use `TV_SHOW` for unscripted TV shows (talk shows, reality, news, documentaries).
         slug:
           type: string
           description: Preferred identifier for the entity (e.g. `the-matrix-1999`). Required when `entity_id` is omitted.

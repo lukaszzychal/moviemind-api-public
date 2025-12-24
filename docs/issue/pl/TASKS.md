@@ -1,6 +1,6 @@
 # 📋 Backlog Zadań - MovieMind API
 
-**Ostatnia aktualizacja:** 2025-12-16  
+**Ostatnia aktualizacja:** 2025-01-27  
 **Status:** 🔄 Aktywny
 
 ---
@@ -123,7 +123,7 @@ Każde zadanie ma następującą strukturę:
 8. **`TASK-011`** - Stworzenie CI dla staging (GHCR)
    - **Dlaczego:** Automatyzacja deploymentu, szybsze iteracje
    - **Czas:** 3h
-   - **Status:** ⏳ PENDING
+   - **Status:** ✅ COMPLETED (2025-12-16)
 
 9. **`TASK-015`** - Automatyczne testy Newman w CI
    - **Dlaczego:** Automatyczna weryfikacja API, wyższa jakość
@@ -672,13 +672,14 @@ Każde zadanie ma następującą strukturę:
 
 #### `TASK-041` - Dodanie seriali i programów telewizyjnych (DDD approach)
 - **Status:** ⏳ PENDING
-- **Priorytet:** 🟡 Średni
+- **Priorytet:** 🟢 Niski (Roadmap)
 - **Szacowany czas:** 30-40 godzin
 - **Czas rozpoczęcia:** --
 - **Czas zakończenia:** --
 - **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
 - **Realizacja:** Do ustalenia
 - **Opis:** Implementacja osobnych encji domenowych Series i TVShow zgodnie z Domain-Driven Design. Movie i Series/TV Show to różne koncepty domenowe - Movie nie ma odcinków, Series ma.
+- **⚠️ UWAGA:** To zadanie jest **alternatywą dla TASK-051** (proste podejście). Obecnie realizujemy **TASK-051** jako naturalne rozszerzenie MVP. TASK-041 to opcja do rozważenia w przyszłości, gdy projekt urośnie i pojawi się potrzeba refaktoryzacji z wspólnymi abstrakcjami (interfejsy, traity). Zobacz: `docs/knowledge/DDD_VS_SIMPLE_APPROACH_EXPLANATION.md` dla szczegółowego porównania.
 - **Szczegóły:**
   - Utworzenie modelu `Series` z tabelą `series`:
     - Pola: `title`, `slug`, `start_year`, `end_year`, `network`, `seasons`, `episodes`, `director`, `genres`, `default_description_id`
@@ -701,7 +702,13 @@ Każde zadanie ma następującą strukturę:
   - Testy (automatyczne i manualne)
   - Dokumentacja
 - **Zależności:** Brak
+- **Uwagi:** 
+  - **Alternatywa dla TASK-051** - obecnie realizujemy TASK-051 (proste podejście)
+  - **Do rozważenia w przyszłości** - gdy projekt urośnie i pojawi się potrzeba refaktoryzacji
+  - **DDD approach** - wprowadza wspólne abstrakcje (interfejsy, traity), ale narusza granice agregatów (Shared Kernel)
+  - Szczegóły porównania: `docs/knowledge/DDD_VS_SIMPLE_APPROACH_EXPLANATION.md`
 - **Utworzone:** 2025-01-09
+- **Zaktualizowane:** 2025-01-27 (zmiana priorytetu na 🟢 Niski - roadmap)
 ---
 
 #### `TASK-042` - Analiza możliwych rozszerzeń typów i rodzajów
@@ -806,29 +813,45 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-046` - Integracja TMDb API dla weryfikacji istnienia seriali i TV Shows przed generowaniem AI
-- **Status:** ⏳ PENDING (Wymaga TASK-041)
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 8-10 godzin (Faza 1), 3-4 godziny (Faza 2)
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~04h00m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Rozszerzenie integracji TMDb o weryfikację seriali i TV Shows przed generowaniem przez AI.
 - **Szczegóły:**
-  - **Faza 1 (Podstawowa) - ⏳ PENDING:**
-    - Rozszerzenie `TmdbVerificationService` o metody:
-      - `verifySeries(string $slug): ?array`
-      - `verifyTVShow(string $slug): ?array`
-    - Integracja weryfikacji w `SeriesController::show()` i `TVShowController::show()`
-    - Aktualizacja jobów generacji dla seriali/TV Shows
-    - Testy dla seriali i TV Shows
-  - **Faza 2 (Optymalizacja) - ⏳ PENDING:**
-    - Rozszerzenie cache o seriale i TV Shows (wspólny cache z filmami i osobami)
-    - Testy cache
-- **Zależności:** TASK-041 (dodanie seriali/TV Shows), TASK-044 (Faza 1), TASK-045 (Faza 1)
+  - **Faza 1 (Podstawowa) - ✅ COMPLETED:**
+    - ✅ Metody `verifyTvSeries()` i `verifyTvShow()` już istniały w `TmdbVerificationService`
+    - ✅ Utworzono `TmdbTvSeriesCreationService` i `TmdbTvShowCreationService` dla tworzenia encji z danych TMDb
+    - ✅ Zintegrowano weryfikację TMDb w `TvSeriesRetrievalService` i `TvShowRetrievalService` (analogicznie do `MovieRetrievalService`)
+    - ✅ Zaktualizowano `QueueTvSeriesGenerationAction` i `QueueTvShowGenerationAction` o `confidence_level` w odpowiedziach
+    - ✅ Dodano testy jednostkowe dla serwisów retrieval (6 testów dla TV Series, 6 testów dla TV Shows)
+    - ✅ Dodano testy feature dla weryfikacji TMDb (6 testów w `MissingEntityGenerationTest`)
+    - ✅ Zaktualizowano `FakeEntityVerificationService` o obsługę TV Series i TV Shows
+    - ✅ Zaktualizowano `FakeOpenAiClient` o metody `generateTvSeries()` i `generateTvShow()`
+  - **Faza 2 (Optymalizacja) - ✅ COMPLETED:**
+    - ✅ Cache dla TV Series i TV Shows już był zaimplementowany w `TmdbVerificationService` (TTL: 24h)
+    - ✅ Dodano stałe `CACHE_PREFIX_TV_SERIES` i `CACHE_PREFIX_TV_SHOW` dla spójności z Movies i People
+    - ✅ Cache działa automatycznie dla wszystkich metod weryfikacji (verifyTvSeries, verifyTvShow, searchTvSeries, searchTvShows)
+- **Zakres wykonanych prac:**
+  - ✅ Utworzono `TmdbTvSeriesCreationService` - tworzenie TV Series z danych TMDb
+  - ✅ Utworzono `TmdbTvShowCreationService` - tworzenie TV Shows z danych TMDb
+  - ✅ Zaktualizowano `TvSeriesRetrievalService` - dodana weryfikacja TMDb (exact match, search, disambiguation)
+  - ✅ Zaktualizowano `TvShowRetrievalService` - dodana weryfikacja TMDb (exact match, search, disambiguation)
+  - ✅ Zaktualizowano `QueueTvSeriesGenerationAction` - dodano `confidence_level` i metodę `confidenceLabel()`
+  - ✅ Zaktualizowano `QueueTvShowGenerationAction` - dodano `confidence_level` i metodę `confidenceLabel()`
+  - ✅ Zaktualizowano `FakeEntityVerificationService` - dodano metody dla TV Series i TV Shows
+  - ✅ Zaktualizowano `FakeOpenAiClient` - dodano metody `generateTvSeries()` i `generateTvShow()`
+  - ✅ Dodano testy jednostkowe (12 testów) i feature (6 testów) - wszystkie przechodzą
+  - ✅ PHPStan bez błędów, Laravel Pint formatowanie
+  - ✅ Wszystkie testy przechodzą: 654 passed (2855 assertions)
+- **Zależności:** TASK-051 ✅ (dodanie seriali/TV Shows), TASK-044 ✅ (Faza 1), TASK-045 ✅ (Faza 1)
 - **Powiązane dokumenty:**
   - [`docs/knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md`](../../knowledge/technical/AI_VERIFICATION_ANALYSIS_ALL_TYPES.md)
 - **Utworzone:** 2025-12-03
+- **Ukończone:** 2025-01-27
 ---
 
 #### `TASK-047` - Refaktoryzacja do wspólnego serwisu weryfikacji
@@ -850,8 +873,6 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-12-03
 - **Ukończone:** 2025-12-03
 ---
-
-#### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 
 #### `TASK-028` - Weryfikacja tagów priorytetu w synchronizacji TASKS -> Issues
 - **Status:** ⏳ PENDING
@@ -993,7 +1014,7 @@ Każde zadanie ma następującą strukturę:
 
 ### 🔄 IN_PROGRESS
 
-#### `TASK-023` - Integracja i naprawa połączenia z OpenAI
+#### `TASK-039` - Integracja i naprawa połączenia z OpenAI
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 3 godziny
@@ -1114,7 +1135,6 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-050` - Dodanie Basic Auth dla endpointów admin
-<<<<<<< HEAD
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴🔴🔴 Najwyższy
 - **Szacowany czas:** 2-3 godziny
@@ -1152,7 +1172,7 @@ Każde zadanie ma następującą strukturę:
 
 ## ✅ **Zakończone Zadania**
 
-### `TASK-051` - Sugerowanie alternatywnych slugów przy błędzie "not found"
+### `TASK-052` - Sugerowanie alternatywnych slugów przy błędzie "not found"
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 3-4 godziny
