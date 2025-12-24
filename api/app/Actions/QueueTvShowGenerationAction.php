@@ -1,0 +1,145 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Actions;
+
+use App\Enums\ContextTag;
+use App\Enums\Locale;
+use App\Events\TvShowGenerationRequested;
+use App\Models\TvShow;
+use App\Services\JobStatusService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
+class QueueTvShowGenerationAction
+{
+    public function __construct(
+        private readonly JobStatusService $jobStatusService
+    ) {}
+
+    public function handle(
+        string $slug,
+        ?float $confidence = null,
+        ?TvShow $existingTvShow = null,
+        ?string $locale = null,
+        ?string $contextTag = null,
+        ?array $tmdbData = null
+    ): array {
+        Log::info(__METHOD__, [
+            'slug' => $slug,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+            'existing_tv_show_id' => $existingTvShow?->id,
+            'existing_tv_show_slug' => $existingTvShow?->slug,
+        ]);
+        $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
+        $normalizedContextTag = $this->normalizeContextTag($contextTag);
+
+        $existingTvShow ??= TvShow::where('slug', $slug)->first();
+
+        $existingJob = $this->jobStatusService->findActiveJobForSlug('TV_SHOW', $slug, $normalizedLocale, $normalizedContextTag);
+        if ($existingJob) {
+            return $this->buildExistingJobResponse($slug, $existingJob, $existingTvShow, $normalizedLocale, $normalizedContextTag);
+        }
+
+        $jobId = (string) Str::uuid();
+
+        if (! $this->jobStatusService->acquireGenerationSlot(
+            'TV_SHOW',
+            $slug,
+            $jobId,
+            $normalizedLocale,
+            $normalizedContextTag
+        )) {
+            $existingJob = $this->jobStatusService->findActiveJobForSlug('TV_SHOW', $slug, $normalizedLocale, $normalizedContextTag);
+            if ($existingJob) {
+                return $this->buildExistingJobResponse($slug, $existingJob, $existingTvShow, $normalizedLocale, $normalizedContextTag);
+            }
+
+            return [
+                'job_id' => $jobId,
+                'status' => 'PENDING',
+                'message' => 'Generation already queued for TV show slug',
+                'slug' => $slug,
+                'confidence' => $confidence,
+                'locale' => $normalizedLocale,
+                'context_tag' => $normalizedContextTag,
+            ];
+        }
+
+        $baselineDescriptionId = $existingTvShow?->default_description_id;
+        $this->jobStatusService->initializeStatus($jobId, 'TV_SHOW', $slug, $confidence, $normalizedLocale, $normalizedContextTag);
+
+        // Dispatch event to queue the job
+        event(new TvShowGenerationRequested(
+            $slug,
+            $jobId,
+            existingTvShowId: $existingTvShow?->id,
+            baselineDescriptionId: $baselineDescriptionId,
+            locale: $normalizedLocale,
+            contextTag: $normalizedContextTag,
+            tmdbData: $tmdbData
+        ));
+
+        $response = [
+            'job_id' => $jobId,
+            'status' => 'PENDING',
+            'message' => 'Generation queued for TV show slug',
+            'slug' => $slug,
+            'confidence' => $confidence,
+            'locale' => $normalizedLocale,
+            'context_tag' => $normalizedContextTag,
+        ];
+
+        if ($existingTvShow) {
+            $response['existing_id'] = $existingTvShow->id;
+        }
+
+        return $response;
+    }
+
+    private function buildExistingJobResponse(string $slug, array $existingJob, ?TvShow $existingTvShow, string $locale, ?string $contextTag): array
+    {
+        $response = [
+            'job_id' => $existingJob['job_id'],
+            'status' => $existingJob['status'],
+            'message' => 'Generation already queued for TV show slug',
+            'slug' => $slug,
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+        ];
+
+        if ($existingTvShow) {
+            $response['existing_id'] = $existingTvShow->id;
+        }
+
+        return $response;
+    }
+
+    private function normalizeLocale(?string $locale): ?string
+    {
+        if ($locale === null || $locale === '') {
+            return null;
+        }
+
+        try {
+            return Locale::from($locale)->value;
+        } catch (\ValueError $e) {
+            return null;
+        }
+    }
+
+    private function normalizeContextTag(?string $contextTag): ?string
+    {
+        if ($contextTag === null || $contextTag === '') {
+            return null;
+        }
+
+        try {
+            return ContextTag::from($contextTag)->value;
+        } catch (\ValueError $e) {
+            return null;
+        }
+    }
+}

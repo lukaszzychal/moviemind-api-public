@@ -38,6 +38,34 @@ interface EntityVerificationServiceInterface
     public function searchPeople(string $slug, int $limit = 5): array;
 
     /**
+     * Verify if TV series exists in external database.
+     *
+     * @return array{name: string, first_air_date: string, overview: string, id: int}|null
+     */
+    public function verifyTvSeries(string $slug): ?array;
+
+    /**
+     * Search for TV series in external database (returns multiple results for disambiguation).
+     *
+     * @return array<int, array{name: string, first_air_date: string, overview: string, id: int}>
+     */
+    public function searchTvSeries(string $slug, int $limit = 5): array;
+
+    /**
+     * Verify if TV show exists in external database.
+     *
+     * @return array{name: string, first_air_date: string, overview: string, id: int}|null
+     */
+    public function verifyTvShow(string $slug): ?array;
+
+    /**
+     * Search for TV shows in external database (returns multiple results for disambiguation).
+     *
+     * @return array<int, array{name: string, first_air_date: string, overview: string, id: int}>
+     */
+    public function searchTvShows(string $slug, int $limit = 5): array;
+
+    /**
      * Perform a lightweight health check against the external API.
      *
      * @return array{success: bool, service: string, message?: string, status?: int, error?: string}

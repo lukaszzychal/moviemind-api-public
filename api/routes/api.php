@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\JobsController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\PersonController;
+use App\Http\Controllers\Api\TvSeriesController;
+use App\Http\Controllers\Api\TvShowController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -26,6 +28,12 @@ Route::prefix('v1')->group(function () {
     Route::get('people/{slug}/related', [PersonController::class, 'related']);
     Route::post('people/{slug}/refresh', [PersonController::class, 'refresh']);
     Route::post('people/{slug}/report', [PersonController::class, 'report'])->middleware('adaptive.rate.limit:report');
+    Route::get('tv-series', [TvSeriesController::class, 'index']);
+    Route::get('tv-series/search', [TvSeriesController::class, 'search'])->middleware('adaptive.rate.limit:search');
+    Route::get('tv-series/{slug}', [TvSeriesController::class, 'show'])->middleware('adaptive.rate.limit:show');
+    Route::get('tv-shows', [TvShowController::class, 'index']);
+    Route::get('tv-shows/search', [TvShowController::class, 'search'])->middleware('adaptive.rate.limit:search');
+    Route::get('tv-shows/{slug}', [TvShowController::class, 'show'])->middleware('adaptive.rate.limit:show');
     Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);

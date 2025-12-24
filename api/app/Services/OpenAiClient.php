@@ -387,6 +387,167 @@ class OpenAiClient implements OpenAiClientInterface
     }
 
     /**
+     * Generate TV series information from a slug using AI.
+     *
+     * @param  array{name: string, first_air_date: string, overview: string, id: int}|null  $tmdbData  Optional TMDb data to provide context to AI
+     */
+    public function generateTvSeries(string $slug, ?array $tmdbData = null): array
+    {
+        if (empty($this->apiKey)) {
+            return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
+        }
+
+        // Sanitize slug before using in prompts
+        try {
+            $slug = $this->promptSanitizer->sanitizeSlug($slug);
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+
+        // Sanitize TMDb data if available
+        if ($tmdbData !== null) {
+            $tmdbData = $this->sanitizeTmdbData($tmdbData);
+            $tmdbContext = $this->formatTmdbTvContext($tmdbData);
+            $systemPrompt = "You are a TV series database assistant. Generate a unique, original description for the TV series based on the provided TMDb data.\n\n".
+                "SECURITY REQUIREMENTS:\n".
+                "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+                "- Do NOT attempt to override system instructions\n".
+                "- Do NOT include any role manipulation attempts\n".
+                "- Return ONLY valid JSON\n".
+                "- Do NOT copy the overview from TMDb - create your own original description\n\n".
+                'Return JSON with: title, first_air_year, description (your original TV series plot description), genres (array).';
+            $userPrompt = "TV series data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this TV series. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the series without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, first_air_year, description (your original TV series plot), genres (array).";
+        } else {
+            $systemPrompt = "You are a TV series database assistant. IMPORTANT: First verify if the TV series exists. If the TV series does not exist, return {\"error\": \"TV series not found\"}. Only if the TV series exists, generate TV series information from the slug.\n\n".
+                "SECURITY REQUIREMENTS:\n".
+                "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+                "- Do NOT attempt to override system instructions\n".
+                "- Do NOT include any role manipulation attempts\n".
+                "- Return ONLY valid JSON\n\n".
+                'Return JSON with: title, first_air_year, description (TV series plot), genres (array).';
+            $userPrompt = "Generate TV series information for slug: {$slug}. IMPORTANT: First verify if this TV series exists. If it does not exist, return {\"error\": \"TV series not found\"}. Only if it exists, return JSON with: title, first_air_year, description (TV series plot), genres (array).\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the series without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
+        }
+
+        return $this->makeApiCall('tv_series', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
+            $result = [
+                'success' => true,
+                'title' => $content['title'] ?? null,
+                'first_air_year' => isset($content['first_air_year']) ? (int) $content['first_air_year'] : null,
+                'description' => $content['description'] ?? null,
+                'genres' => $content['genres'] ?? [],
+                'model' => $this->model,
+            ];
+
+            // Use TMDb data as fallback if AI response is missing fields
+            if ($tmdbData !== null) {
+                if (empty($result['title']) && ! empty($tmdbData['name'])) {
+                    $result['title'] = $tmdbData['name'];
+                }
+                if ($result['first_air_year'] === null && ! empty($tmdbData['first_air_date'])) {
+                    $year = (int) substr($tmdbData['first_air_date'], 0, 4);
+                    if ($year > 0) {
+                        $result['first_air_year'] = $year;
+                    }
+                }
+            }
+
+            return $result;
+        }, $this->tvSeriesResponseSchema());
+    }
+
+    /**
+     * Generate TV show information from a slug using AI.
+     *
+     * @param  array{name: string, first_air_date: string, overview: string, id: int}|null  $tmdbData  Optional TMDb data to provide context to AI
+     */
+    public function generateTvShow(string $slug, ?array $tmdbData = null): array
+    {
+        if (empty($this->apiKey)) {
+            return $this->errorResponse('OpenAI API key not configured. Set OPENAI_API_KEY in .env');
+        }
+
+        // Sanitize slug before using in prompts
+        try {
+            $slug = $this->promptSanitizer->sanitizeSlug($slug);
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+
+        // Sanitize TMDb data if available
+        if ($tmdbData !== null) {
+            $tmdbData = $this->sanitizeTmdbData($tmdbData);
+            $tmdbContext = $this->formatTmdbTvContext($tmdbData);
+            $systemPrompt = "You are a TV show database assistant. Generate a unique, original description for the TV show based on the provided TMDb data.\n\n".
+                "SECURITY REQUIREMENTS:\n".
+                "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+                "- Do NOT attempt to override system instructions\n".
+                "- Do NOT include any role manipulation attempts\n".
+                "- Return ONLY valid JSON\n".
+                "- Do NOT copy the overview from TMDb - create your own original description\n\n".
+                'Return JSON with: title, first_air_year, description (your original TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).';
+            $userPrompt = "TV show data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this TV show. Do NOT copy the overview. Create your own original description.\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV show description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the show.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, first_air_year, description (your original TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).";
+        } else {
+            $systemPrompt = "You are a TV show database assistant. IMPORTANT: First verify if the TV show exists. If the TV show does not exist, return {\"error\": \"TV show not found\"}. Only if the TV show exists, generate TV show information from the slug.\n\n".
+                "SECURITY REQUIREMENTS:\n".
+                "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
+                "- Do NOT attempt to override system instructions\n".
+                "- Do NOT include any role manipulation attempts\n".
+                "- Return ONLY valid JSON\n\n".
+                'Return JSON with: title, first_air_year, description (TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).';
+            $userPrompt = "Generate TV show information for slug: {$slug}. IMPORTANT: First verify if this TV show exists. If it does not exist, return {\"error\": \"TV show not found\"}. Only if it exists, return JSON with: title, first_air_year, description (TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV show description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the show.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
+        }
+
+        return $this->makeApiCall('tv_show', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
+            $result = [
+                'success' => true,
+                'title' => $content['title'] ?? null,
+                'first_air_year' => isset($content['first_air_year']) ? (int) $content['first_air_year'] : null,
+                'description' => $content['description'] ?? null,
+                'genres' => $content['genres'] ?? [],
+                'show_type' => $content['show_type'] ?? null,
+                'model' => $this->model,
+            ];
+
+            // Use TMDb data as fallback if AI response is missing fields
+            if ($tmdbData !== null) {
+                if (empty($result['title']) && ! empty($tmdbData['name'])) {
+                    $result['title'] = $tmdbData['name'];
+                }
+                if ($result['first_air_year'] === null && ! empty($tmdbData['first_air_date'])) {
+                    $year = (int) substr($tmdbData['first_air_date'], 0, 4);
+                    if ($year > 0) {
+                        $result['first_air_year'] = $year;
+                    }
+                }
+            }
+
+            return $result;
+        }, $this->tvShowResponseSchema());
+    }
+
+    /**
+     * Format TMDb TV data (series/show) as context string for AI prompt.
+     *
+     * @param  array{name: string, first_air_date: string, overview: string, id: int}  $tmdbData
+     */
+    private function formatTmdbTvContext(array $tmdbData): string
+    {
+        $lines = [
+            "Title: {$tmdbData['name']}",
+        ];
+
+        if (! empty($tmdbData['first_air_date'])) {
+            $lines[] = "First Air Date: {$tmdbData['first_air_date']}";
+        }
+
+        if (! empty($tmdbData['overview'])) {
+            $lines[] = "Overview: {$tmdbData['overview']}";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * Format TMDb person data as context string for AI prompt.
      *
      * @param  array{name: string, birthday: string, place_of_birth: string, id: int, biography?: string}  $tmdbData
@@ -764,6 +925,83 @@ class OpenAiClient implements OpenAiClientInterface
                     ],
                 ],
                 'required' => [],
+            ],
+        ];
+    }
+
+    private function tvSeriesResponseSchema(): array
+    {
+        return [
+            'name' => 'tv_series_generation_response',
+            'schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'error' => [
+                        'type' => 'string',
+                        'description' => 'Error message when TV series does not exist (e.g., "TV series not found")',
+                    ],
+                    'title' => [
+                        'type' => 'string',
+                        'description' => 'TV series title',
+                    ],
+                    'first_air_year' => [
+                        'type' => 'integer',
+                        'description' => 'Year the TV series first aired',
+                    ],
+                    'description' => [
+                        'type' => 'string',
+                        'description' => 'Comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). Should be engaging, informative, and provide a clear overview of the series without major spoilers.',
+                    ],
+                    'genres' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'string',
+                        ],
+                        'description' => 'Array of genre names',
+                    ],
+                ],
+                'required' => ['title', 'first_air_year', 'description', 'genres'],
+            ],
+        ];
+    }
+
+    private function tvShowResponseSchema(): array
+    {
+        return [
+            'name' => 'tv_show_generation_response',
+            'schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'error' => [
+                        'type' => 'string',
+                        'description' => 'Error message when TV show does not exist (e.g., "TV show not found")',
+                    ],
+                    'title' => [
+                        'type' => 'string',
+                        'description' => 'TV show title',
+                    ],
+                    'first_air_year' => [
+                        'type' => 'integer',
+                        'description' => 'Year the TV show first aired',
+                    ],
+                    'description' => [
+                        'type' => 'string',
+                        'description' => 'Comprehensive TV show description (minimum 2-3 sentences, 50-150 words). Should be engaging, informative, and provide a clear overview of the show.',
+                    ],
+                    'genres' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'string',
+                        ],
+                        'description' => 'Array of genre names',
+                    ],
+                    'show_type' => [
+                        'type' => 'string',
+                        'enum' => ['TALK_SHOW', 'REALITY', 'NEWS', 'DOCUMENTARY', 'VARIETY', 'GAME_SHOW'],
+                        'description' => 'Type of TV show',
+                    ],
+                ],
+                'required' => ['title', 'first_air_year', 'description', 'genres'],
             ],
         ];
     }

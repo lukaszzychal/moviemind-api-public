@@ -7,6 +7,8 @@ namespace App\Services;
 use App\Models\Movie;
 use App\Models\Person;
 use App\Models\TmdbSnapshot;
+use App\Models\TvSeries;
+use App\Models\TvShow;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Laravel\Pennant\Feature;
@@ -1051,5 +1053,577 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
         }
 
         return $personDetails;
+    }
+
+    /**
+     * Verify if TV series exists in TMDb.
+     * Distinguishes TV Series (scripted) from TV Shows (unscripted) based on genres.
+     *
+     * @return array{name: string, first_air_date: string, overview: string, id: int}|null
+     */
+    public function verifyTvSeries(string $slug): ?array
+    {
+        // Check feature flag first
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return null;
+        }
+
+        $cacheKey = 'tmdb:tv_series:'.$slug;
+
+        // Check cache first
+        if ($cached = Cache::get($cacheKey)) {
+            Log::debug('TmdbVerificationService: cache hit for TV series', ['slug' => $slug]);
+
+            return $cached === 'NOT_FOUND' ? null : $cached;
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                Log::warning('TmdbVerificationService: API key not configured', ['slug' => $slug]);
+
+                return null;
+            }
+
+            // Check rate limit
+            if (! $this->checkRateLimit()) {
+                Log::warning('TmdbVerificationService: rate limit exceeded, skipping TMDb call', ['slug' => $slug]);
+
+                return null;
+            }
+
+            // Parse slug to extract title and year
+            $parsed = TvSeries::parseSlug($slug);
+            $title = $parsed['title'];
+            $year = $parsed['year'];
+
+            // Search TMDb TV
+            $query = $title;
+            $response = $client->search()->tv($query);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($data['results'])) {
+                Log::info('TmdbVerificationService: TV series not found in TMDb', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return null;
+            }
+
+            // Filter for scripted TV series (exclude unscripted shows)
+            $scriptedResults = array_filter($data['results'], function ($result) {
+                return $this->isScriptedTv($result);
+            });
+
+            if (empty($scriptedResults)) {
+                Log::info('TmdbVerificationService: no scripted TV series found (only unscripted shows)', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return null;
+            }
+
+            // Prioritize by year if available
+            $bestMatch = null;
+            if ($year !== null) {
+                $matchingYear = array_filter($scriptedResults, function ($result) use ($year) {
+                    $resultYear = ! empty($result['first_air_date']) ? (int) substr($result['first_air_date'], 0, 4) : null;
+
+                    return $resultYear === $year;
+                });
+
+                if (! empty($matchingYear)) {
+                    $bestMatch = reset($matchingYear);
+                }
+            }
+
+            if ($bestMatch === null) {
+                $bestMatch = reset($scriptedResults);
+            }
+
+            // Get TV details
+            $tvDetails = $this->getTvDetails($bestMatch['id']);
+
+            if (empty($tvDetails)) {
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return null;
+            }
+
+            $result = [
+                'name' => $tvDetails['name'] ?? $bestMatch['name'],
+                'first_air_date' => $tvDetails['first_air_date'] ?? $bestMatch['first_air_date'] ?? '',
+                'overview' => $tvDetails['overview'] ?? $bestMatch['overview'] ?? '',
+                'id' => $bestMatch['id'],
+            ];
+
+            // Save snapshot
+            try {
+                TmdbSnapshot::updateOrCreate(
+                    [
+                        'tmdb_id' => $bestMatch['id'],
+                        'tmdb_type' => 'tv',
+                        'entity_type' => 'TV_SERIES',
+                    ],
+                    [
+                        'entity_id' => null, // Will be set when entity is created
+                        'raw_data' => $tvDetails,
+                        'fetched_at' => now(),
+                    ]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('TmdbVerificationService: failed to save TV series snapshot', [
+                    'slug' => $slug,
+                    'tmdb_id' => $bestMatch['id'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            Log::info('TmdbVerificationService: TV series found in TMDb', [
+                'slug' => $slug,
+                'tmdb_id' => $bestMatch['id'],
+                'name' => $result['name'],
+            ]);
+
+            // Cache the result
+            Cache::put($cacheKey, $result, now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return $result;
+        } catch (NotFoundException $e) {
+            Log::info('TmdbVerificationService: TV series not found in TMDb (NotFoundException)', ['slug' => $slug]);
+            Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return null;
+        } catch (RateLimitException $e) {
+            Log::warning('TmdbVerificationService: TMDb rate limit exceeded', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (TMDBException $e) {
+            Log::error('TmdbVerificationService: TMDb API error', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('TmdbVerificationService: unexpected error', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Search for TV series in TMDb (returns multiple results for disambiguation).
+     * Filters for scripted TV series only.
+     *
+     * @return array<int, array{name: string, first_air_date: string, overview: string, id: int}>
+     */
+    public function searchTvSeries(string $slug, int $limit = 5): array
+    {
+        // Check feature flag first
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return [];
+        }
+
+        $cacheKey = 'tmdb:tv_series:search:'.$slug.':'.$limit;
+
+        // Check cache first
+        if ($cached = Cache::get($cacheKey)) {
+            Log::debug('TmdbVerificationService: cache hit for TV series search', ['slug' => $slug]);
+
+            return $cached === 'NOT_FOUND' ? [] : $cached;
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                Log::warning('TmdbVerificationService: API key not configured', ['slug' => $slug]);
+
+                return [];
+            }
+
+            // Check rate limit
+            if (! $this->checkRateLimit()) {
+                Log::warning('TmdbVerificationService: rate limit exceeded, skipping TMDb call', ['slug' => $slug]);
+
+                return [];
+            }
+
+            // Parse slug to extract title and year
+            $parsed = TvSeries::parseSlug($slug);
+            $title = $parsed['title'];
+            $year = $parsed['year'];
+
+            // Search TMDb TV
+            $query = $title;
+            $response = $client->search()->tv($query);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($data['results'])) {
+                Log::info('TmdbVerificationService: no TV series found in TMDb', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return [];
+            }
+
+            // Filter for scripted TV series only
+            $scriptedResults = array_filter($data['results'], function ($result) {
+                return $this->isScriptedTv($result);
+            });
+
+            // Limit results
+            $scriptedResults = array_slice($scriptedResults, 0, $limit);
+
+            // Transform results
+            $results = array_map(function ($result) {
+                return [
+                    'name' => $result['name'] ?? '',
+                    'first_air_date' => $result['first_air_date'] ?? '',
+                    'overview' => $result['overview'] ?? '',
+                    'id' => $result['id'] ?? 0,
+                ];
+            }, $scriptedResults);
+
+            // Cache the results
+            Cache::put($cacheKey, $results, now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return $results;
+        } catch (\Throwable $e) {
+            Log::error('TmdbVerificationService: error searching TV series', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Verify if TV show exists in TMDb.
+     * Distinguishes TV Shows (unscripted) from TV Series (scripted) based on genres.
+     *
+     * @return array{name: string, first_air_date: string, overview: string, id: int}|null
+     */
+    public function verifyTvShow(string $slug): ?array
+    {
+        // Check feature flag first
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return null;
+        }
+
+        $cacheKey = 'tmdb:tv_show:'.$slug;
+
+        // Check cache first
+        if ($cached = Cache::get($cacheKey)) {
+            Log::debug('TmdbVerificationService: cache hit for TV show', ['slug' => $slug]);
+
+            return $cached === 'NOT_FOUND' ? null : $cached;
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                Log::warning('TmdbVerificationService: API key not configured', ['slug' => $slug]);
+
+                return null;
+            }
+
+            // Check rate limit
+            if (! $this->checkRateLimit()) {
+                Log::warning('TmdbVerificationService: rate limit exceeded, skipping TMDb call', ['slug' => $slug]);
+
+                return null;
+            }
+
+            // Parse slug to extract title and year
+            $parsed = TvShow::parseSlug($slug);
+            $title = $parsed['title'];
+            $year = $parsed['year'];
+
+            // Search TMDb TV
+            $query = $title;
+            $response = $client->search()->tv($query);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($data['results'])) {
+                Log::info('TmdbVerificationService: TV show not found in TMDb', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return null;
+            }
+
+            // Filter for unscripted TV shows (exclude scripted series)
+            $unscriptedResults = array_filter($data['results'], function ($result) {
+                return ! $this->isScriptedTv($result);
+            });
+
+            if (empty($unscriptedResults)) {
+                Log::info('TmdbVerificationService: no unscripted TV show found (only scripted series)', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return null;
+            }
+
+            // Prioritize by year if available
+            $bestMatch = null;
+            if ($year !== null) {
+                $matchingYear = array_filter($unscriptedResults, function ($result) use ($year) {
+                    $resultYear = ! empty($result['first_air_date']) ? (int) substr($result['first_air_date'], 0, 4) : null;
+
+                    return $resultYear === $year;
+                });
+
+                if (! empty($matchingYear)) {
+                    $bestMatch = reset($matchingYear);
+                }
+            }
+
+            if ($bestMatch === null) {
+                $bestMatch = reset($unscriptedResults);
+            }
+
+            // Get TV details
+            $tvDetails = $this->getTvDetails($bestMatch['id']);
+
+            if (empty($tvDetails)) {
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return null;
+            }
+
+            $result = [
+                'name' => $tvDetails['name'] ?? $bestMatch['name'],
+                'first_air_date' => $tvDetails['first_air_date'] ?? $bestMatch['first_air_date'] ?? '',
+                'overview' => $tvDetails['overview'] ?? $bestMatch['overview'] ?? '',
+                'id' => $bestMatch['id'],
+            ];
+
+            // Save snapshot
+            try {
+                TmdbSnapshot::updateOrCreate(
+                    [
+                        'tmdb_id' => $bestMatch['id'],
+                        'tmdb_type' => 'tv',
+                        'entity_type' => 'TV_SHOW',
+                    ],
+                    [
+                        'entity_id' => null, // Will be set when entity is created
+                        'raw_data' => $tvDetails,
+                        'fetched_at' => now(),
+                    ]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('TmdbVerificationService: failed to save TV show snapshot', [
+                    'slug' => $slug,
+                    'tmdb_id' => $bestMatch['id'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            Log::info('TmdbVerificationService: TV show found in TMDb', [
+                'slug' => $slug,
+                'tmdb_id' => $bestMatch['id'],
+                'name' => $result['name'],
+            ]);
+
+            // Cache the result
+            Cache::put($cacheKey, $result, now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return $result;
+        } catch (NotFoundException $e) {
+            Log::info('TmdbVerificationService: TV show not found in TMDb (NotFoundException)', ['slug' => $slug]);
+            Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return null;
+        } catch (RateLimitException $e) {
+            Log::warning('TmdbVerificationService: TMDb rate limit exceeded', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (TMDBException $e) {
+            Log::error('TmdbVerificationService: TMDb API error', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('TmdbVerificationService: unexpected error', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Search for TV shows in TMDb (returns multiple results for disambiguation).
+     * Filters for unscripted TV shows only.
+     *
+     * @return array<int, array{name: string, first_air_date: string, overview: string, id: int}>
+     */
+    public function searchTvShows(string $slug, int $limit = 5): array
+    {
+        // Check feature flag first
+        if (! Feature::active('tmdb_verification')) {
+            Log::debug('TmdbVerificationService: TMDb verification disabled by feature flag', ['slug' => $slug]);
+
+            return [];
+        }
+
+        $cacheKey = 'tmdb:tv_show:search:'.$slug.':'.$limit;
+
+        // Check cache first
+        if ($cached = Cache::get($cacheKey)) {
+            Log::debug('TmdbVerificationService: cache hit for TV show search', ['slug' => $slug]);
+
+            return $cached === 'NOT_FOUND' ? [] : $cached;
+        }
+
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                Log::warning('TmdbVerificationService: API key not configured', ['slug' => $slug]);
+
+                return [];
+            }
+
+            // Check rate limit
+            if (! $this->checkRateLimit()) {
+                Log::warning('TmdbVerificationService: rate limit exceeded, skipping TMDb call', ['slug' => $slug]);
+
+                return [];
+            }
+
+            // Parse slug to extract title and year
+            $parsed = TvShow::parseSlug($slug);
+            $title = $parsed['title'];
+            $year = $parsed['year'];
+
+            // Search TMDb TV
+            $query = $title;
+            $response = $client->search()->tv($query);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($data['results'])) {
+                Log::info('TmdbVerificationService: no TV shows found in TMDb', ['slug' => $slug]);
+                Cache::put($cacheKey, 'NOT_FOUND', now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+                return [];
+            }
+
+            // Filter for unscripted TV shows only
+            $unscriptedResults = array_filter($data['results'], function ($result) {
+                return ! $this->isScriptedTv($result);
+            });
+
+            // Limit results
+            $unscriptedResults = array_slice($unscriptedResults, 0, $limit);
+
+            // Transform results
+            $results = array_map(function ($result) {
+                return [
+                    'name' => $result['name'] ?? '',
+                    'first_air_date' => $result['first_air_date'] ?? '',
+                    'overview' => $result['overview'] ?? '',
+                    'id' => $result['id'] ?? 0,
+                ];
+            }, $unscriptedResults);
+
+            // Cache the results
+            Cache::put($cacheKey, $results, now()->addSeconds(self::CACHE_TTL_SECONDS));
+
+            return $results;
+        } catch (\Throwable $e) {
+            Log::error('TmdbVerificationService: error searching TV shows', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Check if TV result from TMDb is scripted (TV Series) or unscripted (TV Show).
+     * Scripted genres: Drama, Comedy, Sci-Fi, Crime, Thriller, Action, Adventure, Fantasy, Horror, Mystery, Romance
+     * Unscripted genres: Talk, Reality, News, Documentary, Variety, Game Show
+     *
+     * @param  array<string, mixed>  $result  TMDb TV result
+     */
+    private function isScriptedTv(array $result): bool
+    {
+        $genres = $result['genre_ids'] ?? [];
+        $genreNames = $result['genres'] ?? [];
+
+        // Scripted genres (TV Series)
+        $scriptedGenres = [
+            'Drama', 'Comedy', 'Sci-Fi', 'Crime', 'Thriller', 'Action', 'Adventure',
+            'Fantasy', 'Horror', 'Mystery', 'Romance', 'Animation', 'War', 'Western',
+        ];
+
+        // Unscripted genres (TV Show)
+        $unscriptedGenres = [
+            'Talk', 'Reality', 'News', 'Documentary', 'Variety', 'Game Show',
+        ];
+
+        // Check genre names if available
+        if (! empty($genreNames)) {
+            foreach ($genreNames as $genre) {
+                $genreName = is_array($genre) ? ($genre['name'] ?? '') : (string) $genre;
+                if (in_array($genreName, $unscriptedGenres, true)) {
+                    return false; // Unscripted
+                }
+                if (in_array($genreName, $scriptedGenres, true)) {
+                    return true; // Scripted
+                }
+            }
+        }
+
+        // Default: if no clear genre match, assume scripted (most TV content is scripted)
+        // This can be refined based on TMDb genre IDs if needed
+        return true;
+    }
+
+    /**
+     * Get TV details from TMDb by ID.
+     *
+     * @param  int  $tmdbId  TMDb TV ID
+     * @return array<string, mixed> TV details
+     */
+    private function getTvDetails(int $tmdbId): array
+    {
+        try {
+            $client = $this->getClient();
+            if (! $client) {
+                return [];
+            }
+
+            // Get TV details (similar to getMovieDetails)
+            $response = $client->tv()->getDetails($tmdbId, ['append_to_response' => 'credits,similar']);
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            return $data ?? [];
+        } catch (\Throwable $e) {
+            Log::warning('TmdbVerificationService: failed to get TV details', [
+                'tmdb_id' => $tmdbId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 }
