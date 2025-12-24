@@ -9,9 +9,12 @@ use App\Enums\Locale;
 use App\Models\TvShow;
 use App\Models\TvShowDescription;
 use App\Repositories\TvShowRepository;
+use App\Services\EntityVerificationServiceInterface;
+use App\Services\TmdbTvShowCreationService;
 use App\Services\TvShowRetrievalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
 class TvShowRetrievalServiceTest extends TestCase
@@ -95,10 +98,51 @@ class TvShowRetrievalServiceTest extends TestCase
         $this->assertTrue($result->isDescriptionNotFound());
     }
 
+    public function test_retrieve_tv_show_returns_not_found_when_tv_show_not_exists_and_feature_disabled(): void
+    {
+        Feature::define('ai_description_generation', false);
+
+        $service = $this->createService();
+        $result = $service->retrieveTvShow('non-existent-tv-show', null);
+
+        $this->assertFalse($result->isFound());
+        $this->assertTrue($result->isNotFound());
+    }
+
+    public function test_retrieve_tv_show_attempts_tmdb_when_tv_show_not_found_and_feature_enabled(): void
+    {
+        Feature::define('ai_description_generation', true);
+        Feature::define('tmdb_verification', true);
+
+        $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
+        $tmdbService->expects($this->once())
+            ->method('verifyTvShow')
+            ->with('test-slug')
+            ->willReturn(null);
+
+        $tmdbService->expects($this->once())
+            ->method('searchTvShows')
+            ->with('test-slug', 5)
+            ->willReturn([]);
+
+        $service = new TvShowRetrievalService(
+            new TvShowRepository,
+            $tmdbService,
+            $this->createMock(TmdbTvShowCreationService::class),
+            $this->createMock(QueueTvShowGenerationAction::class)
+        );
+
+        $result = $service->retrieveTvShow('test-slug', null);
+
+        $this->assertFalse($result->isFound());
+    }
+
     private function createService(): TvShowRetrievalService
     {
         return new TvShowRetrievalService(
             new TvShowRepository,
+            $this->createMock(EntityVerificationServiceInterface::class),
+            $this->createMock(TmdbTvShowCreationService::class),
             $this->createMock(QueueTvShowGenerationAction::class)
         );
     }

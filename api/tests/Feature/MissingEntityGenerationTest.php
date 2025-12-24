@@ -445,4 +445,98 @@ class MissingEntityGenerationTest extends TestCase
         $this->assertNotEmpty($jobId1);
         $this->assertNotEmpty($jobId2);
     }
+
+    public function test_tv_series_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setTvSeries('breaking-bad-2008', [
+            'name' => 'Breaking Bad',
+            'first_air_date' => '2008-01-20',
+            'overview' => 'A high school chemistry teacher turned methamphetamine manufacturer.',
+            'id' => 1396,
+        ]);
+
+        $res = $this->getJson('/api/v1/tv-series/breaking-bad-2008');
+        $res->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
+            ->assertJson(['locale' => 'en-US']);
+
+        // Verify confidence fields are set (not null/unknown)
+        $this->assertNotNull($res->json('confidence'));
+        $this->assertNotSame('unknown', $res->json('confidence_level'));
+        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+    }
+
+    public function test_tv_series_missing_returns_404_when_not_found_in_tmdb(): void
+    {
+        Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
+
+        // Use fake EntityVerificationService - set TV series to null (not found)
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setTvSeries('non-existent-tv-series-xyz', null);
+        // Also set empty search results which is called when verifyTvSeries returns null
+        $fake->setTvSeriesSearchResults('non-existent-tv-series-xyz', []);
+
+        $res = $this->getJson('/api/v1/tv-series/non-existent-tv-series-xyz');
+        $res->assertStatus(404)
+            ->assertJson(['error' => 'TV series not found']);
+    }
+
+    public function test_tv_series_missing_returns_404_when_flag_off(): void
+    {
+        Feature::deactivate('ai_description_generation');
+        $res = $this->getJson('/api/v1/tv-series/breaking-bad-2008');
+        $res->assertStatus(404);
+    }
+
+    public function test_tv_show_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
+    {
+        Feature::activate('ai_description_generation');
+
+        // Use fake EntityVerificationService instead of Mockery
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setTvShow('the-tonight-show-1954', [
+            'name' => 'The Tonight Show',
+            'first_air_date' => '1954-09-27',
+            'overview' => 'A late-night talk show.',
+            'id' => 12345,
+        ]);
+
+        $res = $this->getJson('/api/v1/tv-shows/the-tonight-show-1954');
+        $res->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
+            ->assertJson(['locale' => 'en-US']);
+
+        // Verify confidence fields are set (not null/unknown)
+        $this->assertNotNull($res->json('confidence'));
+        $this->assertNotSame('unknown', $res->json('confidence_level'));
+        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+    }
+
+    public function test_tv_show_missing_returns_404_when_not_found_in_tmdb(): void
+    {
+        Feature::activate('ai_description_generation');
+        Feature::activate('tmdb_verification');
+
+        // Use fake EntityVerificationService - set TV show to null (not found)
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setTvShow('non-existent-tv-show-xyz', null);
+        // Also set empty search results which is called when verifyTvShow returns null
+        $fake->setTvShowSearchResults('non-existent-tv-show-xyz', []);
+
+        $res = $this->getJson('/api/v1/tv-shows/non-existent-tv-show-xyz');
+        $res->assertStatus(404)
+            ->assertJson(['error' => 'TV show not found']);
+    }
+
+    public function test_tv_show_missing_returns_404_when_flag_off(): void
+    {
+        Feature::deactivate('ai_description_generation');
+        $res = $this->getJson('/api/v1/tv-shows/the-tonight-show-1954');
+        $res->assertStatus(404);
+    }
 }

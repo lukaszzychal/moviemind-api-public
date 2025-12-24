@@ -25,6 +25,16 @@ class FakeOpenAiClient implements OpenAiClientInterface
     private array $personResponses = [];
 
     /**
+     * @var array<string, array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, model?: string, error?: string}>
+     */
+    private array $tvSeriesResponses = [];
+
+    /**
+     * @var array<string, array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, show_type?: string, model?: string, error?: string}>
+     */
+    private array $tvShowResponses = [];
+
+    /**
      * @var array{success: bool, message?: string, status?: int, model?: string, rate_limit?: array<string, int|string|null>, error?: string}|null
      */
     private ?array $healthResponse = null;
@@ -52,6 +62,28 @@ class FakeOpenAiClient implements OpenAiClientInterface
     }
 
     /**
+     * Set TV series generation response.
+     *
+     * @param  string  $slug  TV Series slug
+     * @param  array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, model?: string, error?: string}  $response  Response data
+     */
+    public function setTvSeriesResponse(string $slug, array $response): void
+    {
+        $this->tvSeriesResponses[$slug] = $response;
+    }
+
+    /**
+     * Set TV show generation response.
+     *
+     * @param  string  $slug  TV Show slug
+     * @param  array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, show_type?: string, model?: string, error?: string}  $response  Response data
+     */
+    public function setTvShowResponse(string $slug, array $response): void
+    {
+        $this->tvShowResponses[$slug] = $response;
+    }
+
+    /**
      * Set health check response.
      *
      * @param  array{success: bool, message?: string, status?: int, model?: string, rate_limit?: array<string, int|string|null>, error?: string}  $response  Health response
@@ -68,6 +100,8 @@ class FakeOpenAiClient implements OpenAiClientInterface
     {
         $this->movieResponses = [];
         $this->personResponses = [];
+        $this->tvSeriesResponses = [];
+        $this->tvShowResponses = [];
         $this->healthResponse = null;
     }
 
@@ -119,6 +153,38 @@ class FakeOpenAiClient implements OpenAiClientInterface
         return [
             'success' => false,
             'error' => 'Person response not configured in fake',
+        ];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function generateTvSeries(string $slug, ?array $tmdbData = null): array
+    {
+        if (isset($this->tvSeriesResponses[$slug])) {
+            return $this->tvSeriesResponses[$slug];
+        }
+
+        // Default response if not configured
+        return [
+            'success' => false,
+            'error' => 'TV Series response not configured in fake',
+        ];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function generateTvShow(string $slug, ?array $tmdbData = null): array
+    {
+        if (isset($this->tvShowResponses[$slug])) {
+            return $this->tvShowResponses[$slug];
+        }
+
+        // Default response if not configured
+        return [
+            'success' => false,
+            'error' => 'TV Show response not configured in fake',
         ];
     }
 

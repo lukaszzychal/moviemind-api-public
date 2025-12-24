@@ -28,6 +28,10 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
 
     private const CACHE_PREFIX_PERSON = 'tmdb:person:';
 
+    private const CACHE_PREFIX_TV_SERIES = 'tmdb:tv_series:';
+
+    private const CACHE_PREFIX_TV_SHOW = 'tmdb:tv_show:';
+
     // TMDb API rate limits: 40 requests per 10 seconds
     private const RATE_LIMIT_REQUESTS = 40;
 
@@ -1070,7 +1074,7 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             return null;
         }
 
-        $cacheKey = 'tmdb:tv_series:'.$slug;
+        $cacheKey = self::CACHE_PREFIX_TV_SERIES.$slug;
 
         // Check cache first
         if ($cached = Cache::get($cacheKey)) {
@@ -1233,7 +1237,7 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             return [];
         }
 
-        $cacheKey = 'tmdb:tv_series:search:'.$slug.':'.$limit;
+        $cacheKey = self::CACHE_PREFIX_TV_SERIES.'search:'.$slug.':'.$limit;
 
         // Check cache first
         if ($cached = Cache::get($cacheKey)) {
@@ -1321,7 +1325,7 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             return null;
         }
 
-        $cacheKey = 'tmdb:tv_show:'.$slug;
+        $cacheKey = self::CACHE_PREFIX_TV_SHOW.$slug;
 
         // Check cache first
         if ($cached = Cache::get($cacheKey)) {
@@ -1484,7 +1488,7 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
             return [];
         }
 
-        $cacheKey = 'tmdb:tv_show:search:'.$slug.':'.$limit;
+        $cacheKey = self::CACHE_PREFIX_TV_SHOW.'search:'.$slug.':'.$limit;
 
         // Check cache first
         if ($cached = Cache::get($cacheKey)) {

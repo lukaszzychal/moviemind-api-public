@@ -23,6 +23,7 @@ This document provides detailed manual testing instructions for all Movies API e
 - [Main Testing Guide](../MANUAL_TESTING_GUIDE.md) - General setup and overview
 - [Relationships Testing Guide](../MANUAL_TESTING_RELATIONSHIPS.md) - Movie relationships
 - [People Testing Guide](../MANUAL_TESTING_PEOPLE.md) - People API
+- [TMDb Verification Testing for TV Series & TV Shows](../TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md) - TV Series and TV Shows TMDb verification
 
 ---
 

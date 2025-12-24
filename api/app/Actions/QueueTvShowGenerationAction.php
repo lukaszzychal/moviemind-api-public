@@ -63,6 +63,7 @@ class QueueTvShowGenerationAction
                 'message' => 'Generation already queued for TV show slug',
                 'slug' => $slug,
                 'confidence' => $confidence,
+                'confidence_level' => $this->confidenceLabel($confidence),
                 'locale' => $normalizedLocale,
                 'context_tag' => $normalizedContextTag,
             ];
@@ -88,6 +89,7 @@ class QueueTvShowGenerationAction
             'message' => 'Generation queued for TV show slug',
             'slug' => $slug,
             'confidence' => $confidence,
+            'confidence_level' => $this->confidenceLabel($confidence),
             'locale' => $normalizedLocale,
             'context_tag' => $normalizedContextTag,
         ];
@@ -106,6 +108,8 @@ class QueueTvShowGenerationAction
             'status' => $existingJob['status'],
             'message' => 'Generation already queued for TV show slug',
             'slug' => $slug,
+            'confidence' => $existingJob['confidence'] ?? null,
+            'confidence_level' => $this->confidenceLabel($existingJob['confidence'] ?? null),
             'locale' => $locale,
             'context_tag' => $contextTag,
         ];
@@ -115,6 +119,30 @@ class QueueTvShowGenerationAction
         }
 
         return $response;
+    }
+
+    /**
+     * Convert confidence score to human-readable label.
+     */
+    private function confidenceLabel(?float $confidence): string
+    {
+        if ($confidence === null) {
+            return 'unknown';
+        }
+
+        if ($confidence >= 0.9) {
+            return 'high';
+        }
+
+        if ($confidence >= 0.7) {
+            return 'medium';
+        }
+
+        if ($confidence >= 0.5) {
+            return 'low';
+        }
+
+        return 'very_low';
     }
 
     private function normalizeLocale(?string $locale): ?string

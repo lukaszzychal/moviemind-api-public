@@ -9,9 +9,12 @@ use App\Enums\Locale;
 use App\Models\TvSeries;
 use App\Models\TvSeriesDescription;
 use App\Repositories\TvSeriesRepository;
+use App\Services\EntityVerificationServiceInterface;
+use App\Services\TmdbTvSeriesCreationService;
 use App\Services\TvSeriesRetrievalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
 class TvSeriesRetrievalServiceTest extends TestCase
@@ -95,10 +98,51 @@ class TvSeriesRetrievalServiceTest extends TestCase
         $this->assertTrue($result->isDescriptionNotFound());
     }
 
+    public function test_retrieve_tv_series_returns_not_found_when_tv_series_not_exists_and_feature_disabled(): void
+    {
+        Feature::define('ai_description_generation', false);
+
+        $service = $this->createService();
+        $result = $service->retrieveTvSeries('non-existent-tv-series', null);
+
+        $this->assertFalse($result->isFound());
+        $this->assertTrue($result->isNotFound());
+    }
+
+    public function test_retrieve_tv_series_attempts_tmdb_when_tv_series_not_found_and_feature_enabled(): void
+    {
+        Feature::define('ai_description_generation', true);
+        Feature::define('tmdb_verification', true);
+
+        $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
+        $tmdbService->expects($this->once())
+            ->method('verifyTvSeries')
+            ->with('test-slug')
+            ->willReturn(null);
+
+        $tmdbService->expects($this->once())
+            ->method('searchTvSeries')
+            ->with('test-slug', 5)
+            ->willReturn([]);
+
+        $service = new TvSeriesRetrievalService(
+            new TvSeriesRepository,
+            $tmdbService,
+            $this->createMock(TmdbTvSeriesCreationService::class),
+            $this->createMock(QueueTvSeriesGenerationAction::class)
+        );
+
+        $result = $service->retrieveTvSeries('test-slug', null);
+
+        $this->assertFalse($result->isFound());
+    }
+
     private function createService(): TvSeriesRetrievalService
     {
         return new TvSeriesRetrievalService(
             new TvSeriesRepository,
+            $this->createMock(EntityVerificationServiceInterface::class),
+            $this->createMock(TmdbTvSeriesCreationService::class),
             $this->createMock(QueueTvSeriesGenerationAction::class)
         );
     }
