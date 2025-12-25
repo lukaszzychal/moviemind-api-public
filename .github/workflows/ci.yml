@@ -205,8 +205,122 @@ jobs:
             echo "PHPStan Fixer not installed"
           fi
 
+  postman-tests:
+    name: Postman API Tests (Newman)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moviemind_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-junit
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
+
+      - name: Cache Composer packages
+        uses: actions/cache@v5
+        with:
+          path: api/vendor
+          key: ${{ runner.os }}-php-8.3-newman-${{ hashFiles('api/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.3-
+
+      - name: Install dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Prepare environment
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          cp .env.example .env || touch .env
+          php artisan key:generate --force
+          php artisan config:clear
+          php artisan migrate --force
+          php artisan db:seed --class=SubscriptionPlanSeeder || true
+
+      - name: Start API server
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          php artisan serve --host=0.0.0.0 --port=8000 > /tmp/php-server.log 2>&1 &
+          echo "Waiting for server to start..."
+          sleep 15
+          curl -f http://localhost:8000/up || (cat /tmp/php-server.log && exit 1)
+
+      - name: Run Newman tests
+        run: |
+          newman run docs/postman/moviemind-api.postman_collection.json \
+            -e docs/postman/environments/local.postman_environment.json \
+            --env-var "baseUrl=http://localhost:8000" \
+            --reporters cli,junit \
+            --reporter-junit-export newman-results.xml \
+            --timeout-request 10000 \
+            --timeout-script 10000 || true
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: newman-results.xml
+          check_name: Postman API Tests
+
   docker-build:
-    needs: [test, security]
+    needs: [test, security, postman-tests]
     name: Docker Build
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
