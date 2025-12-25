@@ -336,8 +336,8 @@ jobs:
         with:
           files: newman-results.xml
           check_name: Postman API Tests
-          # Only publish if file exists (Newman may fail before creating file)
-          fail_on: nothing
+          # Fail the job if tests fail (but still publish results)
+          fail_on: test failures
 
   docker-build:
     needs: [test, security, postman-tests]
