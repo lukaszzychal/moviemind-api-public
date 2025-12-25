@@ -11,6 +11,12 @@ class PeopleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Prevent seeding test data in production/staging
+        if (app()->environment('production', 'staging')) {
+            $this->command->warn('PeopleSeeder: Skipping test data in production/staging environment');
+
+            return;
+        }
         $matrix = Movie::where('title', 'The Matrix')->first();
         $inception = Movie::where('title', 'Inception')->first();
 

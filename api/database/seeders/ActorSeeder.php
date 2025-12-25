@@ -15,6 +15,12 @@ class ActorSeeder extends Seeder
 {
     public function run(): void
     {
+        // Prevent seeding test data in production/staging
+        if (app()->environment('production', 'staging')) {
+            $this->command->warn('ActorSeeder: Skipping test data in production/staging environment');
+
+            return;
+        }
         $reeves = Person::firstOrCreate(
             ['name' => 'Keanu Reeves'],
             [
