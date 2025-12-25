@@ -138,3 +138,9 @@ movie-mind-api-key = "high"
 openai-api-key-detailed = "high"
 postgres-connection-string = "medium"
 redis-password = "medium"
+
+# Disable generic-api-key rule for test files
+[[extend.allowlist.rules]]
+id = "generic-api-key"
+reason = "Disable generic-api-key rule for test files to avoid false positives"
+paths = ['''api/tests/.*''']
