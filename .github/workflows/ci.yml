@@ -255,7 +255,13 @@ jobs:
           cache: 'npm'
 
       - name: Install Newman
-        run: npm install -g newman newman-reporter-junit
+        run: |
+          npm install -g newman newman-reporter-junit || {
+            echo "Global install failed, trying with sudo..."
+            sudo npm install -g newman newman-reporter-junit
+          }
+          newman --version
+          newman-reporter-junit --version || echo "JUnit reporter installed"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
