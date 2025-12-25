@@ -253,11 +253,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Newman
-        run: |
-          npm install -g newman newman-reporter-junit
-          newman --version
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -316,7 +311,8 @@ jobs:
 
       - name: Run Newman tests
         run: |
-          newman run docs/postman/moviemind-api.postman_collection.json \
+          # Use npx to run newman without global installation
+          npx --yes newman@latest run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
             --reporters cli,junit \
