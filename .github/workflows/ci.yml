@@ -252,12 +252,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install Newman
         run: |
-          npm install --save-dev newman newman-reporter-junit
-          npx newman --version
+          npm install -g newman newman-reporter-junit
+          newman --version
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -317,7 +316,7 @@ jobs:
 
       - name: Run Newman tests
         run: |
-          npx newman run docs/postman/moviemind-api.postman_collection.json \
+          newman run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
             --reporters cli,junit \
