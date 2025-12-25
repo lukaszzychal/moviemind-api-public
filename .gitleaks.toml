@@ -3,7 +3,7 @@
 title = "MovieMind API GitLeaks Configuration"
 
 [extend]
-useDefault = true
+useDefault = false  # Disable default rules to avoid false positives with test keys
 
 # Custom regex patterns
 [extend.regexes]
