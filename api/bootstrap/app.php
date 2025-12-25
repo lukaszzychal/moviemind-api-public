@@ -19,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'horizon.basic' => \App\Http\Middleware\HorizonBasicAuth::class,
             'admin.basic' => \App\Http\Middleware\AdminBasicAuth::class,
             'adaptive.rate.limit' => \App\Http\Middleware\AdaptiveRateLimit::class,
+            'rapidapi.auth' => \App\Http\Middleware\RapidApiAuth::class,
+            'plan.rate.limit' => \App\Http\Middleware\PlanBasedRateLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ApiKeyController;
 use App\Http\Controllers\Admin\FlagController;
 use App\Http\Controllers\Api\GenerateController;
 use App\Http\Controllers\Api\HealthController;
@@ -45,6 +46,12 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/', [FlagController::class, 'index']);
         Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
         Route::get('usage', [FlagController::class, 'usage']);
+    });
+    Route::prefix('api-keys')->group(function () {
+        Route::get('/', [ApiKeyController::class, 'index']);
+        Route::post('/', [ApiKeyController::class, 'store']);
+        Route::post('{id}/revoke', [ApiKeyController::class, 'revoke']);
+        Route::post('{id}/regenerate', [ApiKeyController::class, 'regenerate']);
     });
     Route::prefix('reports')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index']);
