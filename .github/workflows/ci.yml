@@ -314,8 +314,8 @@ jobs:
         with:
           collection: docs/postman/moviemind-api.postman_collection.json
           environment: docs/postman/environments/local.postman_environment.json
-          envVar: baseUrl=http://localhost:8000
-          reporters: cli,junit
+          envVar: 'baseUrl=http://localhost:8000'
+          reporters: 'cli,junit'
           junitExport: newman-results.xml
           timeoutRequest: 10000
           timeoutScript: 10000
