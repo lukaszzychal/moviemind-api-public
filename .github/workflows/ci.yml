@@ -255,8 +255,14 @@ jobs:
 
       - name: Install Newman
         run: |
-          npm install -g newman newman-reporter-junit
+          # Use npm ci or install in a temp directory to avoid permission issues
+          mkdir -p /tmp/newman-install
+          cd /tmp/newman-install
+          npm init -y
+          npm install newman newman-reporter-junit
+          export PATH="/tmp/newman-install/node_modules/.bin:$PATH"
           newman --version
+          cd ${{ github.workspace }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -316,6 +322,7 @@ jobs:
 
       - name: Run Newman tests
         run: |
+          export PATH="/tmp/newman-install/node_modules/.bin:$PATH"
           newman run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
