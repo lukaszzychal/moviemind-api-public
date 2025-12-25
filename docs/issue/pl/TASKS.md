@@ -255,6 +255,7 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-RAPI-002` - Subscription Plans System
+<<<<<<< HEAD
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 12-16 godzin
@@ -280,6 +281,7 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-RAPI-003` - Plan-based Rate Limiting
+<<<<<<< HEAD
 - **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 12-16 godzin
@@ -300,6 +302,90 @@ Każde zadanie ma następującą strukturę:
 - **Zależności:** TASK-RAPI-001 ✅, TASK-RAPI-002 ✅
 - **Utworzone:** 2025-01-27
 - **Ukończone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-RAPI-004` - RapidAPI Headers Support
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 8-12 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Obsługa nagłówków RapidAPI (X-RapidAPI-Key, X-RapidAPI-User, X-RapidAPI-Subscription)
+- **Szczegóły:**
+  - Middleware `RapidApiHeaders` (weryfikacja nagłówków RapidAPI)
+  - Service `RapidApiService` (mapowanie planów, walidacja requestów)
+  - Konfiguracja `config/rapidapi.php` (proxy secret, mapowanie planów)
+  - Testy feature
+- **Zależności:** TASK-RAPI-001, TASK-RAPI-002
+- **Utworzone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-RAPI-005` - Billing Webhooks
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 12-16 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Implementacja webhooków billingowych dla synchronizacji subskrypcji z RapidAPI
+- **Szczegóły:**
+  - Controller `BillingWebhookController` (subscription created/updated/cancelled, payment succeeded/failed)
+  - Service `BillingService` (synchronizacja subskrypcji)
+  - Model i migracja `subscriptions` (status, okresy, anulowanie)
+  - Bezpieczeństwo webhooków (HMAC verification, idempotency keys)
+  - Testy feature i bezpieczeństwa
+- **Zależności:** TASK-RAPI-001, TASK-RAPI-002
+- **Utworzone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-RAPI-006` - Usage Analytics Dashboard
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 16-20 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Dashboard analityczny dla użycia API (per plan, per endpoint, revenue stats)
+- **Szczegóły:**
+  - Controller `AnalyticsController` (overview, by plan, by endpoint, time range, top keys)
+  - Service `AnalyticsService` (statystyki użycia, przychodów, top endpointy, error rate)
+  - Resource `AnalyticsResource` (formatowanie danych)
+  - Testy feature
+- **Zależności:** TASK-RAPI-003
+- **Utworzone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-RAPI-007` - RapidAPI Publishing
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 8-12 godzin
+- **Czas rozpoczęcia:** --
+- **Czas zakończenia:** --
+- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
+- **Realizacja:** Do ustalenia
+- **Opis:** Publikacja API w RapidAPI Hub i finalizacja integracji
+- **Szczegóły:**
+  - Aktualizacja OpenAPI spec (RapidAPI headers)
+  - Dokumentacja endpointów i przykładów
+  - Konfiguracja RapidAPI Hub (plany, webhooki)
+  - Testowanie w staging
+  - Monitoring i alerty
+  - Dokumentacja (setup guide, pricing, webhooks)
+- **Zależności:** TASK-RAPI-001, TASK-RAPI-002, TASK-RAPI-003, TASK-RAPI-004, TASK-RAPI-005
+- **Utworzone:** 2025-01-27
+>>>>>>> origin/main
 - **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
 
 ---
@@ -1167,39 +1253,60 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-051` - Implementacja TV Series i TV Show
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🔴 Wysoki
 - **Szacowany czas:** 30-40 godzin
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** --
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~04h00m (wraz z TASK-046)
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Implementacja obsługi seriali telewizyjnych (TV Series) i programów telewizyjnych (TV Show) jako nowych typów encji w MovieMind API.
 - **Szczegóły:**
   - **TV Series (seriale fabularne):**
-    - Dodanie modelu `TvSeries` i `TvSeriesDescription` (analogicznie do Movie)
-    - Migracje bazy danych dla tabel `tv_series` i `tv_series_descriptions`
-    - Endpointy API: `GET /v1/tv-series`, `GET /v1/tv-series/{slug}`, `POST /v1/generate` (entity_type: TV_SERIES)
+    - ✅ Dodanie modelu `TvSeries` i `TvSeriesDescription` (analogicznie do Movie)
+    - ✅ Migracje bazy danych dla tabel `tv_series` i `tv_series_descriptions`
+    - ✅ Endpointy API: `GET /v1/tv-series`, `GET /v1/tv-series/{slug}`, `POST /v1/generate` (entity_type: TV_SERIES)
   - **TV Show (programy telewizyjne):**
-    - Dodanie modelu `TvShow` i `TvShowDescription` (analogicznie do Movie)
-    - Migracje bazy danych dla tabel `tv_shows` i `tv_show_descriptions`
-    - Endpointy API: `GET /v1/tv-shows`, `GET /v1/tv-shows/{slug}`, `POST /v1/generate` (entity_type: TV_SHOW)
-  - Integracja z TMDb API dla weryfikacji i pobierania danych (endpoint `/tv`)
-  - Logika rozróżniania między serialami a programami na podstawie gatunków TMDb
-  - Generowanie AI-opisów dla obu typów (analogicznie do filmów)
-  - Testy jednostkowe i feature tests dla obu typów
-  - Aktualizacja OpenAPI spec
-  - Dokumentacja
+    - ✅ Dodanie modelu `TvShow` i `TvShowDescription` (analogicznie do Movie)
+    - ✅ Migracje bazy danych dla tabel `tv_shows` i `tv_show_descriptions`
+    - ✅ Endpointy API: `GET /v1/tv-shows`, `GET /v1/tv-shows/{slug}`, `POST /v1/generate` (entity_type: TV_SHOW)
+  - ✅ Integracja z TMDb API dla weryfikacji i pobierania danych (endpoint `/tv`) - zrealizowana w TASK-046
+  - ✅ Generowanie AI-opisów dla obu typów (analogicznie do filmów)
+  - ✅ Testy jednostkowe i feature tests dla obu typów (46 testów, wszystkie przechodzą)
+  - ✅ Aktualizacja OpenAPI spec
+  - ✅ Dokumentacja (`docs/knowledge/ENTITY_TYPES_PROPOSALS.md`)
+- **Zakres wykonanych prac:**
+  - ✅ Utworzono modele: `TvSeries`, `TvShow`, `TvSeriesDescription`, `TvShowDescription`
+  - ✅ Utworzono 6 migracji: tv_series, tv_series_descriptions, tv_shows, tv_show_descriptions, tv_series_person, tv_show_person
+  - ✅ Utworzono kontrolery: `TvSeriesController`, `TvShowController`
+  - ✅ Zarejestrowano endpointy API (6 endpointów)
+  - ✅ Zaimplementowano Actions: `QueueTvSeriesGenerationAction`, `QueueTvShowGenerationAction`
+  - ✅ Zaimplementowano Jobs: `RealGenerateTvSeriesJob`, `MockGenerateTvSeriesJob`, `RealGenerateTvShowJob`, `MockGenerateTvShowJob`
+  - ✅ Zaktualizowano `GenerateController` o obsługę TV_SERIES i TV_SHOW
+  - ✅ Utworzono serwisy: `TvSeriesRetrievalService`, `TvShowRetrievalService`, `TvSeriesSearchService`, `TvShowSearchService`
+  - ✅ Utworzono repozytoria: `TvSeriesRepository`, `TvShowRepository`
+  - ✅ Utworzono Resources: `TvSeriesResource`, `TvShowResource`
+  - ✅ Utworzono Response Formatters: `TvSeriesResponseFormatter`, `TvShowResponseFormatter`
+  - ✅ Zintegrowano z TMDb API (TASK-046 COMPLETED) - `TmdbTvSeriesCreationService`, `TmdbTvShowCreationService`
+  - ✅ Utworzono testy: Feature (14 testów), Unit (12 testów) - wszystkie przechodzą (46 testów, 166 assertions)
+  - ✅ Zaktualizowano OpenAPI spec o TV_SERIES i TV_SHOW
+  - ✅ Wszystkie testy przechodzą: 46 passed (166 assertions)
 - **Zależności:** 
-  - TASK-015 (testy Newman) - zalecane przed rozpoczęciem
-  - Stabilizacja funkcji MOVIE i PERSON
+  - ✅ TASK-046 (Integracja TMDb dla TV Series/Shows) - COMPLETED
+  - ✅ TASK-044 (Integracja TMDb dla filmów) - COMPLETED
+  - ✅ TASK-045 (Integracja TMDb dla osób) - COMPLETED
 - **Uwagi:** 
   - **TV Series** = seriale telewizyjne (produkcje fabularne z sezonami/odcinkami)
   - **TV Show** = programy telewizyjne (talk-show, reality, news, dokumenty)
-  - Oba modele powinny być implementowane razem dla spójności (podobna struktura, ten sam endpoint TMDb)
+  - Oba modele zostały zaimplementowane razem dla spójności (podobna struktura, ten sam endpoint TMDb)
   - Naturalne rozszerzenie MVP po stabilizacji filmów i osób
   - Szczegóły propozycji: `docs/knowledge/ENTITY_TYPES_PROPOSALS.md`
 - **Utworzone:** 2025-01-27
+- **Ukończone:** 2025-01-27
+- **Powiązane dokumenty:**
+  - [`docs/issue/TASK-051_VERIFICATION_REPORT.md`](./TASK-051_VERIFICATION_REPORT.md)
+  - [`docs/knowledge/ENTITY_TYPES_PROPOSALS.md`](../../knowledge/ENTITY_TYPES_PROPOSALS.md)
+  - Commit: `3cdc9c5 feat: Add TV Series and TV Shows support`
 
 ---
 
@@ -1243,6 +1350,32 @@ Każde zadanie ma następującą strukturę:
 ---
 
 ## ✅ **Zakończone Zadania**
+
+### `TASK-051` - Implementacja TV Series i TV Show
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 30-40 godzin
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~04h00m (wraz z TASK-046)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Implementacja obsługi seriali telewizyjnych (TV Series) i programów telewizyjnych (TV Show) jako nowych typów encji w MovieMind API.
+- **Zakres wykonanych prac:**
+  - ✅ Modele: TvSeries, TvShow, TvSeriesDescription, TvShowDescription
+  - ✅ Migracje: 6 migracji (tabele główne, opisy, pivot)
+  - ✅ Endpointy API: GET /v1/tv-series, GET /v1/tv-series/{slug}, GET /v1/tv-shows, GET /v1/tv-shows/{slug}, POST /v1/generate (TV_SERIES/TV_SHOW)
+  - ✅ Generowanie AI: Actions, Jobs, Events, Listeners
+  - ✅ Integracja TMDb: TASK-046 COMPLETED
+  - ✅ Testy: 46 testów (166 assertions) - wszystkie przechodzą
+  - ✅ OpenAPI spec: zaktualizowany
+- **Zależności:** TASK-046 ✅, TASK-044 ✅, TASK-045 ✅
+- **Utworzone:** 2025-01-27
+- **Ukończone:** 2025-01-27
+- **Powiązane dokumenty:**
+  - [`docs/issue/TASK-051_VERIFICATION_REPORT.md`](./TASK-051_VERIFICATION_REPORT.md)
+  - [`docs/knowledge/ENTITY_TYPES_PROPOSALS.md`](../../knowledge/ENTITY_TYPES_PROPOSALS.md)
+
+---
 
 ### `TASK-052` - Sugerowanie alternatywnych slugów przy błędzie "not found"
 - **Status:** ✅ COMPLETED
@@ -1616,8 +1749,8 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 23 (19 + 4 RapidAPI tasks - 3 completed)
-- **Zakończone:** 31 (28 + 3 RapidAPI tasks)
+- **Aktywne:** 22 (18 + 4 RapidAPI tasks)
+- **Zakończone:** 32 (29 + 3 RapidAPI tasks)
 - **Anulowane:** 1
 - **W trakcie:** 0
 
