@@ -509,22 +509,28 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-019` - Migracja produkcyjnego obrazu Docker na Distroless
-- **Status:** ⏸️ DEFERRED
+- **Status:** ✅ COMPLETED (Minimal Alpine zaimplementowane, Distroless odroczone)
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 3-4 godziny
 - **Czas rozpoczęcia:** 2025-01-27
 - **Czas zakończenia:** 2025-01-27
-- **Czas realizacji:** ~1h (analiza)
+- **Czas realizacji:** ~2h (analiza + implementacja Minimal Alpine)
 - **Realizacja:** 🤖 AI Agent
 - **Opis:** Zastąpienie alpine'owego obrazu produkcyjnego wersją Distroless od Google w celu zmniejszenia powierzchni ataku.
 - **Szczegóły:**
-  - ⚠️ **Deferowane** z powodu wysokiej złożoności technicznej:
+  - ✅ **Zaimplementowano Minimal Alpine** jako kompromis:
+    - Usunięto niepotrzebne narzędzia z production/staging: `bash`, `git`, `curl`, `unzip`
+    - Zaktualizowano skrypty entrypoint/start do użycia `/bin/sh` zamiast `bash`
+    - Staging i Production używają tego samego zoptymalizowanego stage
+    - Zachowano wszystkie funkcjonalności runtime (PHP-FPM, Nginx, Supervisor)
+    - Redukcja powierzchni ataku przy zachowaniu kompatybilności
+  - ⚠️ **Distroless odroczone** z powodu wysokiej złożoności technicznej:
     - Niekompatybilność Alpine (musl libc) z Distroless (glibc)
     - Wymagana rekompilacja PHP i wszystkich zależności
     - Supervisor wymaga Pythona, co komplikuje migrację
     - Wysokie ryzyko dla produkcji przy niskim stosunku korzyści do wysiłku
   - ✅ Utworzono dokumentację analizy w `docs/DOCKER_DISTROLESS.md`
-  - ✅ Zidentyfikowano alternatywne podejścia (minimal Alpine, hybrid)
+  - ✅ Zidentyfikowano alternatywne podejścia (minimal Alpine ✅, hybrid, full Distroless)
   - 📝 **Przyszła praca:** Monitorowanie ekosystemu Distroless dla PHP/Nginx
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
