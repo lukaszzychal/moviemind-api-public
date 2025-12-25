@@ -312,13 +312,14 @@ jobs:
       - name: Run Newman tests
         run: |
           # Use npx to run newman without global installation
+          # Note: newman will exit with non-zero code if tests fail
           npx --yes newman@latest run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
             --reporters cli,junit \
             --reporter-junit-export newman-results.xml \
             --timeout-request 10000 \
-            --timeout-script 10000 || true
+            --timeout-script 10000
           # Verify results file was created
           if [ -f newman-results.xml ]; then
             echo "✅ newman-results.xml created"
@@ -326,8 +327,8 @@ jobs:
           else
             echo "❌ newman-results.xml not found"
             ls -la *.xml || echo "No XML files found"
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Publish test results
         if: always()
