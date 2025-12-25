@@ -67,18 +67,42 @@ class GitHubClient:
 
     def create_issue(self, task: dict[str, Any]) -> None:
         self.ensure_label("task")
+        
+        labels = ["task"]
+        if task.get("priority"):
+            priority_label = f"priority-{task['priority']}"
+            priority_colors = {
+                "high": "d73a4a",    # Red
+                "medium": "fbca04",  # Yellow
+                "low": "0e8a16"      # Green
+            }
+            self.ensure_label(priority_label, priority_colors.get(task["priority"], "0e8a16"))
+            labels.append(priority_label)
+        
         payload = {
             "title": task["title_formatted"],
             "body": task["body"],
-            "labels": ["task"],
+            "labels": labels,
         }
         self._request("POST", f"https://api.github.com/repos/{self.repo}/issues", payload)
 
     def update_issue(self, issue: dict[str, Any], task: dict[str, Any]) -> None:
+        labels = ["task"]
+        if task.get("priority"):
+            priority_label = f"priority-{task['priority']}"
+            priority_colors = {
+                "high": "d73a4a",    # Red
+                "medium": "fbca04",  # Yellow
+                "low": "0e8a16"      # Green
+            }
+            self.ensure_label(priority_label, priority_colors.get(task["priority"], "0e8a16"))
+            labels.append(priority_label)
+        
         payload = {
             "title": task["title_formatted"],
             "body": task["body"],
             "state": "closed" if task["status"].startswith(("✅", "❌")) else "open",
+            "labels": labels,
         }
         self._request("PATCH", f"https://api.github.com/repos/{self.repo}/issues/{issue['number']}", payload)
 
@@ -109,6 +133,7 @@ def parse_tasks(content: str) -> list[dict[str, Any]]:
                     "title_formatted": f"[{task_id}] {title}",
                     "raw_block": raw_block,
                     "status": status,
+                    "priority": extract_priority(block),
                     "body": build_issue_body(raw_block),
                 }
             )
@@ -122,6 +147,19 @@ def extract_field(block: list[str], field: str) -> str | None:
     for line in block:
         if line.strip().startswith(prefix):
             return line.split("**", 2)[2].strip().lstrip(":").strip()
+    return None
+
+
+def extract_priority(block: list[str]) -> str | None:
+    """Extract priority emoji from block and map to label name."""
+    for line in block:
+        if "**Priorytet:**" in line or "**Priority:**" in line:
+            if "🔴" in line:
+                return "high"
+            elif "🟡" in line:
+                return "medium"
+            elif "🟢" in line:
+                return "low"
     return None
 
 
