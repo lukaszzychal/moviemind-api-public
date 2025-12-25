@@ -73,7 +73,7 @@ class ApiKeyServiceTest extends TestCase
         $key = 'mm_test_prefix_example_key_not_real_1234567890';
         $prefix = $this->service->extractPrefix($key);
 
-        $this->assertEquals('abcdefgh', $prefix); // First 8 chars after "mm_"
+        $this->assertEquals('test_pre', $prefix); // First 8 chars after "mm_"
     }
 
     public function test_create_key_returns_plaintext_and_model(): void
