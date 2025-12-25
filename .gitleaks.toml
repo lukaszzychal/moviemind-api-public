@@ -48,6 +48,11 @@ regex = '''mm_[a-z0-9_]*_(not_real|test|example|fake|dummy|placeholder)[a-z0-9_]
 reason = "Test API keys with explicit fake markers"
 caseInsensitive = true
 
+[[extend.allowlist.regexes]]
+regex = '''['"]mm_[a-z0-9]{20,}['"]'''
+reason = "All test API keys in test files (any mm_ key with sufficient length)"
+caseInsensitive = true
+
 # Allowlist specific files
 [[extend.allowlist.paths]]
 path = '''README\.md'''
