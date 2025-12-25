@@ -253,17 +253,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Newman
-        run: |
-          # Install in temp directory to avoid permission issues
-          mkdir -p /tmp/newman-install
-          cd /tmp/newman-install
-          npm init -y
-          npm install newman newman-reporter-junit
-          echo "/tmp/newman-install/node_modules/.bin" >> $GITHUB_PATH
-          /tmp/newman-install/node_modules/.bin/newman --version
-          cd ${{ github.workspace }}
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -321,14 +310,16 @@ jobs:
           curl -f http://localhost:8000/up || (cat /tmp/php-server.log && exit 1)
 
       - name: Run Newman tests
-        run: |
-          newman run docs/postman/moviemind-api.postman_collection.json \
-            -e docs/postman/environments/local.postman_environment.json \
-            --env-var "baseUrl=http://localhost:8000" \
-            --reporters cli,junit \
-            --reporter-junit-export newman-results.xml \
-            --timeout-request 10000 \
-            --timeout-script 10000 || true
+        uses: matt-ball/newman-action@master
+        with:
+          collection: docs/postman/moviemind-api.postman_collection.json
+          environment: docs/postman/environments/local.postman_environment.json
+          envVar: baseUrl=http://localhost:8000
+          reporters: cli,junit
+          junitExport: newman-results.xml
+          timeoutRequest: 10000
+          timeoutScript: 10000
+        continue-on-error: true
 
       - name: Publish test results
         if: always()
