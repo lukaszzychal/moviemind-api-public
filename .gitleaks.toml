@@ -43,6 +43,11 @@ reason = "cURL example with placeholder API key"
 regex = '''OPENAI_API_KEY=sk-[a-zA-Z0-9]{48}'''
 reason = "Example OpenAI API key in documentation"
 
+[[extend.allowlist.regexes]]
+regex = '''mm_[a-z0-9_]*_(not_real|test|example|fake|dummy|placeholder)[a-z0-9_]*'''
+reason = "Test API keys with explicit fake markers"
+caseInsensitive = true
+
 # Allowlist specific files
 [[extend.allowlist.paths]]
 path = '''README\.md'''
@@ -63,6 +68,10 @@ reason = "Documentation directory"
 [[extend.allowlist.paths]]
 path = '''docs/pre-commit-setup\.md'''
 reason = "Pre-commit setup documentation with examples"
+
+[[extend.allowlist.paths]]
+path = '''api/tests/.*'''
+reason = "Test files with fake API keys for testing"
 
 # Custom rules
 [[extend.rules]]
