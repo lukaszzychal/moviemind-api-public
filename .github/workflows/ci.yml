@@ -323,6 +323,14 @@ jobs:
             --reporter-junit-export newman-results.xml \
             --timeout-request 10000 \
             --timeout-script 10000 || true
+          # Verify results file was created
+          if [ -f newman-results.xml ]; then
+            echo "✅ newman-results.xml created"
+            cat newman-results.xml | head -20
+          else
+            echo "❌ newman-results.xml not found"
+            ls -la *.xml || echo "No XML files found"
+          fi
         continue-on-error: true
 
       - name: Publish test results
