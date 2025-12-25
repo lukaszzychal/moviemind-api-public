@@ -53,6 +53,16 @@ regex = '''['"]mm_[a-z0-9]{20,}['"]'''
 reason = "All test API keys in test files (any mm_ key with sufficient length)"
 caseInsensitive = true
 
+[[extend.allowlist.regexes]]
+regex = '''\$key\s*=\s*['"]mm_[a-z0-9]{20,}['"]'''
+reason = "Test API key variable assignments"
+caseInsensitive = true
+
+[[extend.allowlist.regexes]]
+regex = '''\$plaintext\s*=\s*['"]mm_[a-z0-9]{20,}['"]'''
+reason = "Test API key plaintext variable assignments"
+caseInsensitive = true
+
 # Allowlist specific files
 [[extend.allowlist.paths]]
 path = '''README\.md'''
