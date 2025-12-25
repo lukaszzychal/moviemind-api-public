@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            SubscriptionPlanSeeder::class, // Must run first (before ApiKeySeeder if added later)
             GenreSeeder::class,
             MovieSeeder::class,
             PeopleSeeder::class,

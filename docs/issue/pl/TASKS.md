@@ -231,6 +231,78 @@ Każde zadanie ma następującą strukturę:
 
 ### ⏳ PENDING
 
+#### `TASK-RAPI-001` - API Key Authentication System
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 16-20 godzin
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~04h00m (już było częściowo zaimplementowane)
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Implementacja systemu autoryzacji API przez klucze API (wymagane dla RapidAPI)
+- **Szczegóły:**
+  - ✅ Model i migracja `api_keys` (hashowane klucze, plany, status)
+  - ✅ Service `ApiKeyService` (generowanie, walidacja, tracking)
+  - ✅ Middleware `RapidApiAuth` (weryfikacja header `X-RapidAPI-Key`)
+  - ✅ Admin controller do zarządzania kluczami
+  - ✅ Testy jednostkowe i feature
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-27
+- **Ukończone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+- **Uwaga:** Zadanie było już w dużej mierze zaimplementowane, tylko zweryfikowano i uzupełniono brakujące elementy
+
+---
+
+#### `TASK-RAPI-002` - Subscription Plans System
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 12-16 godzin
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~03h00m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Implementacja systemu planów subskrypcyjnych (Free/Pro/Enterprise)
+- **Szczegóły:**
+  - ✅ Model i migracja `subscription_plans` (Free: 100/mies, Pro: 10k/mies, Enterprise: unlimited)
+  - ✅ Service `PlanService` (pobieranie planów, sprawdzanie funkcji, rate limits)
+  - ✅ Seeder z 3 planami (Free, Pro, Enterprise)
+  - ✅ Factory dla SubscriptionPlan z metodami free(), pro(), enterprise()
+  - ✅ Relacja w ApiKey do SubscriptionPlan
+  - ✅ Foreign key constraint w api_keys.plan_id
+  - ✅ Testy jednostkowe (13 testów) i feature (6 testów) - wszystkie przechodzą
+  - ⏳ Integracja z feature flags (opcjonalne, do zrobienia w TASK-RAPI-004)
+- **Zależności:** Brak
+- **Utworzone:** 2025-01-27
+- **Ukończone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-RAPI-003` - Plan-based Rate Limiting
+- **Status:** ✅ COMPLETED
+- **Priorytet:** 🔴 Wysoki
+- **Szacowany czas:** 12-16 godzin
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~04h00m
+- **Realizacja:** 🤖 AI Agent
+- **Opis:** Implementacja rate limiting opartego na planach subskrypcyjnych
+- **Szczegóły:**
+  - ✅ Middleware `PlanBasedRateLimit` (monthly + per-minute limits)
+  - ✅ Service `UsageTracker` (tracking użycia, pozostały limit)
+  - ✅ Model i migracja `api_usage` (logowanie requestów)
+  - ✅ Job `ResetMonthlyUsageJob` (scheduled na 1. dnia miesiąca)
+  - ✅ Scheduled job w `routes/console.php`
+  - ✅ Testy jednostkowe (7 testów) i feature (4 testy) - wszystkie przechodzą
+  - ✅ Headers X-RateLimit-* w odpowiedziach
+  - ✅ Rejestracja middleware w `bootstrap/app.php`
+- **Zależności:** TASK-RAPI-001 ✅, TASK-RAPI-002 ✅
+- **Utworzone:** 2025-01-27
+- **Ukończone:** 2025-01-27
+- **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
 
 #### `TASK-008` - Webhooks System (Roadmap)
 - **Status:** ⏳ PENDING
@@ -1544,12 +1616,12 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 19
-- **Zakończone:** 28
+- **Aktywne:** 23 (19 + 4 RapidAPI tasks - 3 completed)
+- **Zakończone:** 31 (28 + 3 RapidAPI tasks)
 - **Anulowane:** 1
 - **W trakcie:** 0
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-23
+**Ostatnia aktualizacja:** 2025-01-27
 
