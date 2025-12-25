@@ -15,6 +15,11 @@ postgresPassword = '''postgres_password\s*=\s*['"]?[a-zA-Z0-9!@#$%^&*()_+\-=\[\]
 [extend.allowlist]
 description = "Allowlist for false positives"
 
+# Ignore specific commit with test API key
+[[extend.allowlist.commits]]
+commit = "5971c959dd4689baa97fe97c3a95506a00bd28ee"
+reason = "Initial commit with test API key that was later changed"
+
 [[extend.allowlist.regexes]]
 regex = '''password\s*=\s*['"]?password['"]?'''
 reason = "Default password placeholder"
