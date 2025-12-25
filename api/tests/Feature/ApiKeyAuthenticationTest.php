@@ -68,7 +68,8 @@ class ApiKeyAuthenticationTest extends TestCase
     public function test_middleware_rejects_invalid_api_key(): void
     {
         $response = $this->withHeaders([
-            'X-RapidAPI-Key' => 'mm_invalid123456789012345678901234567890',
+            // Use a clearly fake key for testing (not a real API key)
+            'X-RapidAPI-Key' => 'mm_invalid_example_key_not_real_12345678901234567890',
         ])->getJson('/test-rapidapi-auth');
 
         $response->assertStatus(401)

@@ -40,7 +40,8 @@ class ApiKeyServiceTest extends TestCase
 
     public function test_hash_key_returns_different_value(): void
     {
-        $plaintext = 'mm_test123456789012345678901234567890';
+        // Use a clearly fake key for testing (not a real API key)
+        $plaintext = 'mm_test_example_key_not_real_12345678901234567890';
         $hashed = $this->service->hashKey($plaintext);
 
         $this->assertNotEquals($plaintext, $hashed);
@@ -49,7 +50,8 @@ class ApiKeyServiceTest extends TestCase
 
     public function test_validate_key_returns_true_for_valid_key(): void
     {
-        $plaintext = 'mm_test123456789012345678901234567890';
+        // Use a clearly fake key for testing (not a real API key)
+        $plaintext = 'mm_test_example_key_not_real_12345678901234567890';
         $hashed = $this->service->hashKey($plaintext);
 
         $this->assertTrue($this->service->validateKey($plaintext, $hashed));
@@ -57,8 +59,9 @@ class ApiKeyServiceTest extends TestCase
 
     public function test_validate_key_returns_false_for_invalid_key(): void
     {
-        $plaintext = 'mm_test123456789012345678901234567890';
-        $wrongPlaintext = 'mm_wrong123456789012345678901234567890';
+        // Use clearly fake keys for testing (not real API keys)
+        $plaintext = 'mm_test_example_key_not_real_12345678901234567890';
+        $wrongPlaintext = 'mm_wrong_example_key_not_real_12345678901234567890';
         $hashed = $this->service->hashKey($plaintext);
 
         $this->assertFalse($this->service->validateKey($wrongPlaintext, $hashed));
@@ -66,7 +69,8 @@ class ApiKeyServiceTest extends TestCase
 
     public function test_extract_prefix_returns_correct_prefix(): void
     {
-        $key = 'mm_abcdefghijklmnopqrstuvwxyz1234567890';
+        // Use a clearly fake key for testing (not a real API key)
+        $key = 'mm_test_prefix_example_key_not_real_1234567890';
         $prefix = $this->service->extractPrefix($key);
 
         $this->assertEquals('abcdefgh', $prefix); // First 8 chars after "mm_"
@@ -110,7 +114,8 @@ class ApiKeyServiceTest extends TestCase
     {
         $this->service->createKey('Test Key');
 
-        $found = $this->service->findKeyByPlaintext('mm_invalid123456789012345678901234567890');
+        // Use a clearly fake key for testing (not a real API key)
+        $found = $this->service->findKeyByPlaintext('mm_invalid_example_key_not_real_12345678901234567890');
 
         $this->assertNull($found);
     }
