@@ -256,12 +256,8 @@ jobs:
 
       - name: Install Newman
         run: |
-          npm install -g newman newman-reporter-junit || {
-            echo "Global install failed, trying with sudo..."
-            sudo npm install -g newman newman-reporter-junit
-          }
-          newman --version
-          newman-reporter-junit --version || echo "JUnit reporter installed"
+          npm install --save-dev newman newman-reporter-junit
+          npx newman --version
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -321,7 +317,7 @@ jobs:
 
       - name: Run Newman tests
         run: |
-          newman run docs/postman/moviemind-api.postman_collection.json \
+          npx newman run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
             --reporters cli,junit \
