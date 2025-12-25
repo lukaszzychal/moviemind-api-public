@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.basic' => \App\Http\Middleware\AdminBasicAuth::class,
             'adaptive.rate.limit' => \App\Http\Middleware\AdaptiveRateLimit::class,
             'rapidapi.auth' => \App\Http\Middleware\RapidApiAuth::class,
+            'rapidapi.headers' => \App\Http\Middleware\RapidApiHeaders::class,
             'plan.rate.limit' => \App\Http\Middleware\PlanBasedRateLimit::class,
         ]);
     })
