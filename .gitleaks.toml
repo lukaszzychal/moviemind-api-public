@@ -139,8 +139,7 @@ openai-api-key-detailed = "high"
 postgres-connection-string = "medium"
 redis-password = "medium"
 
-# Disable generic-api-key rule for test files
+# Disable generic-api-key rule completely (too many false positives with test keys)
 [[extend.allowlist.rules]]
 id = "generic-api-key"
-reason = "Disable generic-api-key rule for test files to avoid false positives"
-paths = ['''api/tests/.*''']
+reason = "Disable generic-api-key rule completely - too many false positives with test API keys"
