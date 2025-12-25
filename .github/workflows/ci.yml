@@ -213,6 +213,7 @@ jobs:
     permissions:
       contents: read
       checks: write
+      pull-requests: write
     # Generate unique test database password (not a real secret, just for CI isolation)
     # GitGuardian: This is a test database password for CI only, not a production secret
     # Using 'KEY' instead of 'PASSWORD' to avoid GitGuardian false positives
