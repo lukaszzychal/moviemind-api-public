@@ -86,8 +86,10 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     # Generate unique test database key (not a real secret, just for CI isolation)
+    # GitGuardian: This is a test database password for CI only, not a production secret
     # Using 'KEY' instead of 'PASSWORD' to avoid GitGuardian false positives
     env:
+      # ggignore: This is a test database password, not a real secret
       POSTGRES_TEST_KEY: test_pg_${{ github.run_id }}_${{ github.run_number }}
     services:
       postgres:
