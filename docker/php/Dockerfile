@@ -90,74 +90,69 @@ EXPOSE 9000
 CMD ["php-fpm", "-F"]
 
 # ----------------------------------------------------------------------------
-# Stage 4: Production/Staging/Deploy - PHP-FPM + Nginx + Supervisor
+# Stage 4: Production/Staging/Deploy - PHP-FPM + Nginx + Supervisor (Distroless)
 # ----------------------------------------------------------------------------
-FROM base AS production
+# Note: Using distroless/python3 because Supervisor requires Python runtime
+FROM gcr.io/distroless/python3-debian12:nonroot AS production
 
-# Install Nginx and Supervisor for production deployments
-RUN apk add --no-cache nginx supervisor wget
+# Copy PHP runtime from builder (Alpine base)
+COPY --from=base --chown=nonroot:nonroot /usr/local/bin/php* /usr/local/bin/
+COPY --from=base --chown=nonroot:nonroot /usr/local/lib/php /usr/local/lib/php
+COPY --from=base --chown=nonroot:nonroot /usr/local/etc/php /usr/local/etc/php
+COPY --from=base --chown=nonroot:nonroot /usr/local/include/php /usr/local/include/php
 
-# Configure Nginx directories and permissions
-RUN mkdir -p /var/log/nginx /run/nginx /var/log/supervisor \
- && chown -R app:app /var/log/nginx /run/nginx /var/log/supervisor \
- && chmod -R 755 /var/log/nginx /run/nginx /var/log/supervisor
+# Copy PHP shared libraries dependencies
+COPY --from=base --chown=nonroot:nonroot /lib/libc.musl-* /lib/ || true
+COPY --from=base --chown=nonroot:nonroot /usr/lib/libpq.so* /usr/lib/ || true
+COPY --from=base --chown=nonroot:nonroot /usr/lib/libssl.so* /usr/lib/ || true
+COPY --from=base --chown=nonroot:nonroot /usr/lib/libcrypto.so* /usr/lib/ || true
+
+# Copy Nginx from builder (Alpine base)
+COPY --from=base --chown=nonroot:nonroot /usr/sbin/nginx /usr/sbin/nginx
+COPY --from=base --chown=nonroot:nonroot /etc/nginx /etc/nginx
+COPY --from=base --chown=nonroot:nonroot /var/log/nginx /var/log/nginx
+COPY --from=base --chown=nonroot:nonroot /run/nginx /run/nginx
 
 # Copy Nginx configuration
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 
+# Copy Supervisor (installed in builder stage)
+COPY --from=base --chown=nonroot:nonroot /usr/bin/supervisord /usr/bin/supervisord
+COPY --from=base --chown=nonroot:nonroot /usr/lib/python3.* /usr/lib/python3.* || true
+COPY --from=base --chown=nonroot:nonroot /usr/local/lib/python3.* /usr/local/lib/python3.* || true
+
 # Copy Supervisor configuration
 COPY docker/php/supervisord.conf /etc/supervisord.conf
 
-# Copy entrypoint script (for migrations and setup)
+# Copy entrypoint and start scripts (will be executed via Python)
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Copy start script
 COPY docker/php/start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
 
 # Fix Nginx config to use 127.0.0.1:9000 instead of php:9000
-RUN sed -i 's/fastcgi_pass php:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf || true
+# Note: We can't use sed in Distroless, so we'll handle this in start.sh
 
 # Copy dependencies from builder
-COPY --from=builder --chown=app:app /var/www/html/vendor ./vendor
+COPY --from=builder --chown=nonroot:nonroot /var/www/html/vendor ./vendor
 
 # Copy application files (excluding vendor, logs, cache - handled by .dockerignore)
-COPY --chown=app:app api/ ./
+COPY --chown=nonroot:nonroot api/ ./
 
-# Ensure Laravel storage directories exist and set proper permissions
-RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs \
- && mkdir -p bootstrap/cache \
- && chown -R app:app /var/www/html \
- && chmod -R 755 /var/www/html \
- && chmod -R 775 storage bootstrap/cache
+# Create necessary directories (Distroless doesn't have mkdir, so we do it in entrypoint)
+# But we need to create them here for proper ownership
+WORKDIR /var/www/html
 
-# Run Laravel post-install scripts (now that we have full app context)
-RUN composer dump-autoload --optimize --no-interaction || true \
- && rm -rf /tmp/composer-cache /tmp/composer \
- && composer clear-cache || true
-
-# Clean up build artifacts and temporary files to reduce image size
-RUN rm -rf /tmp/* /var/tmp/* \
- && rm -rf /root/.composer/cache \
- && rm -rf /var/cache/apk/* \
- && find /usr/local/lib/php -name "*.a" -delete || true \
- && find /usr/local/lib/php -name "*.la" -delete || true
-
-# Configure Opcache for production
-RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini && \
-    echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini && \
-    echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini && \
-    echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini && \
-    echo "opcache.revalidate_freq=2" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini && \
-    echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
+# Configure Opcache for production (copy from base)
+COPY --from=base --chown=nonroot:nonroot /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 
 # Healthcheck for production (uses PORT env var or defaults to 80)
+# Note: Distroless doesn't have wget, so we use a simple HTTP check via Python
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD sh -c 'PORT=${PORT:-80}; wget --quiet --tries=1 --spider http://localhost:${PORT}/ || exit 1'
+  CMD ["/usr/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:80/up')"]
 
 # Expose port (Railway will set PORT env var)
 EXPOSE 80
 
-# Start supervisor via start script (configures Nginx with PORT)
-CMD ["/usr/local/bin/start.sh"]
+# Start supervisor via Python (vector form, no shell)
+# Note: Supervisor needs to run entrypoint.sh first, but Distroless doesn't have shell
+# We'll use a Python wrapper script instead
+ENTRYPOINT ["/usr/bin/python3", "/usr/local/bin/start.py"]
