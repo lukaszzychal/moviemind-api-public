@@ -37,8 +37,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-      with:
-        config-path: .gitleaks.toml
     
     - name: Upload GitLeaks results
       uses: actions/upload-artifact@v6
