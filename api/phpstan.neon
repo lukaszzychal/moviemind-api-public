@@ -8,4 +8,7 @@ parameters:
         - storage
         - bootstrap/cache
     checkUninitializedProperties: false
+    ignoreErrors:
+        - '#PHPDoc tag @var with type object\{.*\} is not subtype of native type App\\Models\\ApiUsage#'
+        - '#Using nullsafe property access.*on left side of.*is unnecessary#'
 

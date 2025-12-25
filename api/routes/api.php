@@ -57,6 +57,14 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index']);
         Route::post('{id}/verify', [\App\Http\Controllers\Admin\ReportController::class, 'verify']);
     });
+    Route::prefix('analytics')->group(function () {
+        Route::get('/overview', [\App\Http\Controllers\Admin\AnalyticsController::class, 'overview']);
+        Route::get('/by-plan', [\App\Http\Controllers\Admin\AnalyticsController::class, 'byPlan']);
+        Route::get('/by-endpoint', [\App\Http\Controllers\Admin\AnalyticsController::class, 'byEndpoint']);
+        Route::get('/by-time-range', [\App\Http\Controllers\Admin\AnalyticsController::class, 'byTimeRange']);
+        Route::get('/top-api-keys', [\App\Http\Controllers\Admin\AnalyticsController::class, 'topApiKeys']);
+        Route::get('/error-rate', [\App\Http\Controllers\Admin\AnalyticsController::class, 'errorRate']);
+    });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });
 
