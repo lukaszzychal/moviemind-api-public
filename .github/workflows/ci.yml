@@ -292,12 +292,17 @@ jobs:
           # Set admin auth bypass for testing environment
           echo "ADMIN_AUTH_BYPASS_ENVS=testing,local,staging" >> .env
           php artisan config:clear
-          # Enable feature flags for Newman tests using FeatureFlagManager
+          php artisan cache:clear
+          # Enable feature flags for Newman tests - must be done after migrations
           php artisan tinker --execute="
-            \$manager = app(\App\Services\FeatureFlag\FeatureFlagManager::class);
-            \$manager->toggle('ai_description_generation', true);
-            \$manager->toggle('ai_bio_generation', true);
+            Laravel\Pennant\Feature::activate('ai_description_generation');
+            Laravel\Pennant\Feature::activate('ai_bio_generation');
             echo 'Feature flags activated' . PHP_EOL;
+          "
+          # Verify flags are active
+          php artisan tinker --execute="
+            echo 'ai_description_generation: ' . (Laravel\Pennant\Feature::active('ai_description_generation') ? 'ACTIVE' : 'INACTIVE') . PHP_EOL;
+            echo 'ai_bio_generation: ' . (Laravel\Pennant\Feature::active('ai_bio_generation') ? 'ACTIVE' : 'INACTIVE') . PHP_EOL;
           "
 
       - name: Start API server
@@ -314,6 +319,12 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: |
+          # Verify feature flags are still active before starting server
+          php artisan tinker --execute="
+            Laravel\Pennant\Feature::activate('ai_description_generation');
+            Laravel\Pennant\Feature::activate('ai_bio_generation');
+          " || true
+          php artisan cache:clear
           php artisan serve --host=0.0.0.0 --port=8000 > /tmp/php-server.log 2>&1 &
           echo "Waiting for server to start..."
           sleep 15
