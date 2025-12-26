@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AiGenerationMetric;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -632,18 +633,35 @@ class OpenAiClient implements OpenAiClientInterface
         string $systemPrompt,
         string $userPrompt,
         callable $successMapper,
-        array $jsonSchema
+        array $jsonSchema,
+        string $dataFormat = 'JSON'
     ): array {
+        $startTime = microtime(true);
+
         try {
             $response = $this->sendRequest($systemPrompt, $userPrompt, $jsonSchema);
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
             if (! $response->successful()) {
                 $this->logApiError($entityType, $slug, $response);
+                $this->trackAiMetricsError($entityType, $slug, $dataFormat, new \Exception("API returned status {$response->status()}"));
 
                 return $this->errorResponse("API returned status {$response->status()}");
             }
 
             $content = $this->extractContent($response);
+            $usage = $this->extractTokenUsage($response);
+            $parsingResult = $this->validateParsing($content, $jsonSchema);
+
+            // Track metrics
+            $this->trackAiMetrics(
+                entityType: $entityType,
+                slug: $slug,
+                dataFormat: $dataFormat,
+                usage: $usage,
+                parsingResult: $parsingResult,
+                responseTime: $responseTime
+            );
 
             // Check for error response from AI (e.g., "Movie not found", "Person not found")
             if (isset($content['error'])) {
@@ -659,6 +677,7 @@ class OpenAiClient implements OpenAiClientInterface
             return $successMapper($content);
         } catch (\Throwable $e) {
             $this->logException($entityType, $slug, $e);
+            $this->trackAiMetricsError($entityType, $slug, $dataFormat, $e);
 
             return $this->errorResponse($e->getMessage());
         }
@@ -1004,5 +1023,131 @@ class OpenAiClient implements OpenAiClientInterface
                 'required' => ['title', 'first_air_year', 'description', 'genres'],
             ],
         ];
+    }
+
+    /**
+     * Extract token usage from OpenAI API response.
+     */
+    private function extractTokenUsage($response): array
+    {
+        $responseData = $response->json();
+
+        return [
+            'prompt_tokens' => $responseData['usage']['prompt_tokens'] ?? 0,
+            'completion_tokens' => $responseData['usage']['completion_tokens'] ?? 0,
+            'total_tokens' => $responseData['usage']['total_tokens'] ?? 0,
+        ];
+    }
+
+    /**
+     * Validate parsing accuracy by checking if response matches expected schema.
+     */
+    private function validateParsing(array $content, array $jsonSchema): array
+    {
+        $errors = [];
+        $requiredFields = $jsonSchema['schema']['required'] ?? [];
+
+        foreach ($requiredFields as $field) {
+            if (! isset($content[$field])) {
+                $errors[] = "Missing required field: {$field}";
+            }
+        }
+
+        // Validate types
+        $properties = $jsonSchema['schema']['properties'] ?? [];
+        foreach ($properties as $field => $schema) {
+            if (isset($content[$field])) {
+                $expectedType = $schema['type'] ?? null;
+                $actualType = gettype($content[$field]);
+
+                if ($expectedType === 'array' && ! is_array($content[$field])) {
+                    $errors[] = "Field {$field} should be array, got {$actualType}";
+                } elseif ($expectedType === 'string' && ! is_string($content[$field])) {
+                    $errors[] = "Field {$field} should be string, got {$actualType}";
+                }
+            }
+        }
+
+        return [
+            'successful' => empty($errors),
+            'errors' => $errors,
+            'error_count' => count($errors),
+        ];
+    }
+
+    /**
+     * Track AI generation metrics.
+     */
+    private function trackAiMetrics(
+        string $entityType,
+        string $slug,
+        string $dataFormat,
+        array $usage,
+        array $parsingResult,
+        ?int $responseTime,
+        ?string $jobId = null
+    ): void {
+        try {
+            AiGenerationMetric::create([
+                'job_id' => $jobId,
+                'entity_type' => strtoupper($entityType),
+                'entity_slug' => $slug,
+                'data_format' => $dataFormat,
+                'prompt_tokens' => $usage['prompt_tokens'],
+                'completion_tokens' => $usage['completion_tokens'],
+                'total_tokens' => $usage['total_tokens'],
+                'parsing_successful' => $parsingResult['successful'],
+                'parsing_errors' => ! empty($parsingResult['errors'])
+                    ? implode('; ', $parsingResult['errors'])
+                    : null,
+                'validation_errors' => $parsingResult['errors'],
+                'response_time_ms' => $responseTime,
+                'model' => $this->model,
+            ]);
+
+            Log::info('AI generation metrics tracked', [
+                'entity_type' => $entityType,
+                'slug' => $slug,
+                'format' => $dataFormat,
+                'tokens' => $usage['total_tokens'],
+                'parsing_successful' => $parsingResult['successful'],
+            ]);
+        } catch (\Throwable $e) {
+            // Don't fail the main operation if metrics tracking fails
+            Log::warning('Failed to track AI metrics', [
+                'entity_type' => $entityType,
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Track AI metrics error.
+     */
+    private function trackAiMetricsError(
+        string $entityType,
+        string $slug,
+        string $dataFormat,
+        \Throwable $e
+    ): void {
+        try {
+            AiGenerationMetric::create([
+                'entity_type' => strtoupper($entityType),
+                'entity_slug' => $slug,
+                'data_format' => $dataFormat,
+                'prompt_tokens' => 0,
+                'completion_tokens' => 0,
+                'total_tokens' => 0,
+                'parsing_successful' => false,
+                'parsing_errors' => "Error: {$e->getMessage()}",
+                'model' => $this->model,
+            ]);
+        } catch (\Throwable $trackingError) {
+            // Silently fail - don't break main flow
+            Log::warning('Failed to track AI metrics error', [
+                'error' => $trackingError->getMessage(),
+            ]);
+        }
     }
 }

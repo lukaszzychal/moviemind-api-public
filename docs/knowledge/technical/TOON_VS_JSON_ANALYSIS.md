@@ -457,11 +457,31 @@ private function sendRequestWithToon(string $systemPrompt, string $userPrompt, a
 
 ## Powiązane dokumenty
 
+- [TOON vs JSON vs CSV Analysis (rozszerzona analiza)](./TOON_VS_JSON_VS_CSV_ANALYSIS.md)
+- [Format Comparison Article](./FORMAT_COMPARISON_ARTICLE.md)
+- [AI Format Tutorial](../tutorials/AI_FORMAT_TUTORIAL.md)
+- [TASK-040 Recommendations](../../issue/TASK_040_RECOMMENDATIONS.md)
 - [AI Validation and Hallucination Prevention](./AI_VALIDATION_AND_HALLUCINATION_PREVENTION.md)
 - [Task TASK-040](../../issue/pl/TASKS.md#task-040)
 - [TOON vs JSON: The New Format Designed for AI](https://dev.to/akki907/toon-vs-json-the-new-format-designed-for-ai-nk5)
 
 ---
 
-**Ostatnia aktualizacja:** 2025-11-30
+## Aktualizacja: Rozszerzenie o CSV
+
+**Data aktualizaji:** 2025-01-27
+
+Analiza została rozszerzona o format CSV. Zobacz [TOON vs JSON vs CSV Analysis](./TOON_VS_JSON_VS_CSV_ANALYSIS.md) dla kompleksowej analizy wszystkich trzech formatów.
+
+**Kluczowe wnioski z rozszerzonej analizy:**
+- CSV ma poważne problemy z kontekstem kolumn w długich plikach
+- CSV jest **NIEZALECANY** dla komunikacji z AI
+- TOON wymaga testów z konkretnym modelem (LLM nie są trenowane na TOON)
+- Bytes != Tokens (mniej bajtów nie zawsze oznacza mniej tokenów)
+
+**Rekomendacja:** Rozważyć eksperyment z TOON dla list filmów/osób, ale przetestować przed pełnym wdrożeniem.
+
+---
+
+**Ostatnia aktualizacja:** 2025-01-27
 
