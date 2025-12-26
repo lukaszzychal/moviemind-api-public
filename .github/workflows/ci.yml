@@ -289,14 +289,16 @@ jobs:
           php artisan config:clear
           php artisan migrate --force
           php artisan db:seed
-          # Enable feature flags for Newman tests
-          php artisan tinker --execute="
-            Laravel\Pennant\Feature::activate('ai_description_generation');
-            Laravel\Pennant\Feature::activate('ai_bio_generation');
-            echo 'Feature flags activated: ai_description_generation, ai_bio_generation';
-          "
           # Set admin auth bypass for testing environment
           echo "ADMIN_AUTH_BYPASS_ENVS=testing,local,staging" >> .env
+          php artisan config:clear
+          # Enable feature flags for Newman tests using FeatureFlagManager
+          php artisan tinker --execute="
+            \$manager = app(\App\Services\FeatureFlag\FeatureFlagManager::class);
+            \$manager->toggle('ai_description_generation', true);
+            \$manager->toggle('ai_bio_generation', true);
+            echo 'Feature flags activated' . PHP_EOL;
+          "
 
       - name: Start API server
         working-directory: api
