@@ -874,11 +874,10 @@ Każde zadanie ma następującą strukturę:
     - [`docs/business/AI_METRICS_COMPARISON_SIMPLE_GUIDE.md`](../../business/AI_METRICS_COMPARISON_SIMPLE_GUIDE.md)
     - [`docs/knowledge/technical/TOON_IMPLEMENTATION_STATUS.md`](../../knowledge/technical/TOON_IMPLEMENTATION_STATUS.md)
 - **Status implementacji TOON:**
-  - ⏳ **NIE zaimplementowany** (priorytet niski)
-  - **Dlaczego:** Obecne koszty AI są minimalne (~$0.0075/miesiąc), oszczędności z TOON byłyby ~$0.00225/miesiąc
-  - **Kiedy:** Gdy pojawi się potrzeba bulk operations lub koszty AI wzrosną
-  - **Co jest gotowe:** Przykłady kodu, dokumentacja, plan implementacji, system monitoringu
-  - **Szacowany czas implementacji:** 3-4 dni robocze (gdy będzie priorytet)
+  - ✅ **ZAIMPLEMENTOWANY** (PR #185, 2025-12-26)
+  - **Co zostało zaimplementowane:** ToonConverter service, feature flag `ai_use_toon_format`, integracja z OpenAiClient
+  - **Status:** Implementacja gotowa, ale feature flag wyłączony domyślnie (wymaga testów z rzeczywistym API)
+  - **Następne kroki:** Testy z rzeczywistym OpenAI API, implementacja bulk operations
   - **Dokumentacja:** [`docs/knowledge/technical/TOON_IMPLEMENTATION_STATUS.md`](../../knowledge/technical/TOON_IMPLEMENTATION_STATUS.md)
 
 ---
