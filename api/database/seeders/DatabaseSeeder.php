@@ -11,12 +11,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Always seed subscription plans (needed for API keys)
         $this->call([
-            SubscriptionPlanSeeder::class, // Must run first (before ApiKeySeeder if added later)
-            GenreSeeder::class,
-            MovieSeeder::class,
-            PeopleSeeder::class,
-            ActorSeeder::class, // Creates Keanu Reeves and links to The Matrix
+            SubscriptionPlanSeeder::class,
         ]);
+
+        // Only seed test data in non-production environments
+        if (! app()->environment('production', 'staging')) {
+            $this->call([
+                GenreSeeder::class,
+                MovieSeeder::class,
+                PeopleSeeder::class,
+                ActorSeeder::class, // Creates Keanu Reeves and links to The Matrix
+            ]);
+        }
     }
 }

@@ -256,6 +256,8 @@ When you need to preview authenticated flows locally, set up the demo users and 
 
 ## 🧪 Testing
 
+### PHPUnit Tests
+
 ```bash
 # Run the full test suite
 docker compose exec php php artisan test
@@ -263,6 +265,29 @@ docker compose exec php php artisan test
 # Run only feature tests
 docker compose exec php php artisan test --testsuite=feature
 ```
+
+### Postman/Newman API Tests
+
+The project includes Postman collections for API testing:
+
+- **Collection**: `docs/postman/moviemind-api.postman_collection.json`
+- **Environment**: `docs/postman/environments/local.postman_environment.json`
+
+#### Running tests locally with Newman
+
+```bash
+# Install Newman
+npm install -g newman
+
+# Run tests
+newman run docs/postman/moviemind-api.postman_collection.json \
+  -e docs/postman/environments/local.postman_environment.json \
+  --env-var "baseUrl=http://localhost:8000"
+```
+
+#### CI Integration
+
+Newman tests run automatically in CI on every push to `main` or `develop` branches. Test results are published as JUnit XML reports.
 
 ## 🤖 AI Service Modes
 

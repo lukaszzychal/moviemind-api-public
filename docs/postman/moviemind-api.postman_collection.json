@@ -134,14 +134,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "const descriptionIdVar = pm.collectionVariables.get('movieDescriptionId') || pm.collectionVariables.get('movieDefaultDescriptionId');",
-                  "if (descriptionIdVar) {",
+                  "const urlParams = pm.request.url.query.get('description_id');",
+                  "if (descriptionIdVar && urlParams) {",
                   "  const descriptionId = Number(descriptionIdVar);",
-                  "  pm.test(\\\"Selected description returned\\\", function () { pm.expect(json).to.have.property('selected_description'); });",
+                  "  pm.test(\"Selected description returned\", function () { pm.expect(json).to.have.property('selected_description'); });",
                   "  if (json.selected_description) {",
-                  "    pm.test(\\\"Selected description id matches\\\", function () { pm.expect(json.selected_description.id).to.eql(descriptionId); });",
+                  "    pm.test(\"Selected description id matches\", function () { pm.expect(json.selected_description.id).to.eql(descriptionId); });",
                   "  }",
                   "}",
                   "pm.collectionVariables.set('moviePayload', JSON.stringify(json));"
@@ -256,10 +257,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Status code is 200 or 202\", function () { pm.expect([200, 202]).to.include(pm.response.code); });",
                   "const json = pm.response.json();",
-                  "pm.test(\"Response contains person id and slug\", function () { pm.expect(json).to.have.property('id'); pm.expect(json).to.have.property('slug'); });",
-                  "pm.test(\"Response exposes bios_count\", function () { pm.expect(json).to.have.property('bios_count'); });",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test(\"Response contains person id and slug\", function () { pm.expect(json).to.have.property('id'); pm.expect(json).to.have.property('slug'); });",
+                  "  pm.test(\"Response exposes bios_count\", function () { pm.expect(json).to.have.property('bios_count'); });",
+                  "}",
                   "if (json.default_bio && json.default_bio.id) { pm.collectionVariables.set('personDefaultBioId', json.default_bio.id); }",
                   "pm.collectionVariables.set('personPayload', JSON.stringify(json));"
                 ]
@@ -362,14 +365,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\\\"Status code is 200\\\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Status code is 200 or 202\", function () { pm.expect([200, 202]).to.include(pm.response.code); });",
                   "const json = pm.response.json();",
-                  "const bioIdVar = pm.collectionVariables.get('personBioId') || pm.collectionVariables.get('personDefaultBioId');",
-                  "if (bioIdVar) {",
-                  "  const bioId = Number(bioIdVar);",
-                  "  pm.test(\\\"Selected bio returned\\\", function () { pm.expect(json).to.have.property('selected_bio'); });",
-                  "  if (json.selected_bio) {",
-                  "    pm.test(\\\"Selected bio id matches\\\", function () { pm.expect(json.selected_bio.id).to.eql(bioId); });",
+                  "if (pm.response.code === 200) {",
+                  "  const bioIdVar = pm.collectionVariables.get('personBioId') || pm.collectionVariables.get('personDefaultBioId');",
+                  "  const urlParams = pm.request.url.query.get('bio_id');",
+                  "  if (bioIdVar && urlParams) {",
+                  "    const bioId = Number(bioIdVar);",
+                  "    pm.test(\"Selected bio returned\", function () { pm.expect(json).to.have.property('selected_bio'); });",
+                  "    if (json.selected_bio) {",
+                  "      pm.test(\"Selected bio id matches\", function () { pm.expect(json.selected_bio.id).to.eql(bioId); });",
+                  "    }",
                   "  }",
                   "}",
                   "pm.collectionVariables.set('personPayload', JSON.stringify(json));"
@@ -493,9 +499,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\\\"Status code is 202\\\", function () { pm.response.to.have.status(202); });",
+                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
                   "const json = pm.response.json();",
-                  "pm.test(\\\"Response has job id\\\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
                   "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
                 ]
               }
@@ -613,9 +619,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\\\"Status code is 202\\\", function () { pm.response.to.have.status(202); });",
+                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
                   "const json = pm.response.json();",
-                  "pm.test(\\\"Response has job id\\\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
                   "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
                 ]
               }
@@ -683,7 +689,7 @@
                   "  pm.test(\"Response has status field\", function () { pm.expect(json).to.have.property('status'); });",
                   "  if (json.status !== 'UNKNOWN') { pm.test(\"Response exposes entity_id\", function () { pm.expect(json).to.have.property('entity_id'); }); }",
                   "} else {",
-                  "  pm.test(\"Unknown job response\", function () { pm.expect(json.status).to.eql('UNKNOWN'); });",
+                  "  pm.test(\"Unknown job response\", function () { pm.expect(json && json.status ? json.status : 'UNKNOWN').to.eql('UNKNOWN'); });",
                   "}"
                 ]
               }

@@ -14,6 +14,12 @@ class MovieSeeder extends Seeder
 {
     public function run(): void
     {
+        // Prevent seeding test data in production/staging
+        if (app()->environment('production', 'staging')) {
+            $this->command->warn('MovieSeeder: Skipping test data in production/staging environment');
+
+            return;
+        }
         $matrix = Movie::create([
             'title' => 'The Matrix',
             'slug' => Movie::generateSlug('The Matrix', 1999, 'The Wachowskis'),
