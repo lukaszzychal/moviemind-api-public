@@ -11,4 +11,5 @@ parameters:
     ignoreErrors:
         - '#PHPDoc tag @var with type object\{.*\} is not subtype of native type App\\Models\\ApiUsage#'
         - '#Using nullsafe property access.*on left side of.*is unnecessary#'
+        - '#Call to static method active\(\) on an unknown class Illuminate\\Support\\Facades\\Feature#'
 

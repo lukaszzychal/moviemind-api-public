@@ -11,6 +11,7 @@ use App\Features\ai_generation_baseline_locking;
 use App\Features\ai_plagiarism_detection;
 use App\Features\ai_quality_scoring;
 use App\Features\ai_translation_pipeline;
+use App\Features\ai_use_toon_format;
 use App\Features\api_v1_deprecation_notice;
 use App\Features\debug_endpoints;
 use App\Features\description_style_packs;
@@ -88,6 +89,13 @@ $flags = [
     'description_style_packs' => [
         'class' => description_style_packs::class,
         'description' => 'Additional description style packs (modern, critical, playful, ...).',
+        'category' => 'experiments',
+        'default' => false,
+        'togglable' => false,
+    ],
+    'ai_use_toon_format' => [
+        'class' => ai_use_toon_format::class,
+        'description' => 'Experimental: Use TOON format for tabular data (lists) to save tokens. WIP - requires validation.',
         'category' => 'experiments',
         'default' => false,
         'togglable' => false,

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AiGenerationMetric;
+use Illuminate\Support\Facades\Feature;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -634,8 +635,17 @@ class OpenAiClient implements OpenAiClientInterface
         string $userPrompt,
         callable $successMapper,
         array $jsonSchema,
-        string $dataFormat = 'JSON'
+        string $dataFormat = 'JSON',
+        ?string $jobId = null
     ): array {
+        // Determine actual format to use
+        $actualFormat = $this->determineDataFormat($dataFormat);
+
+        // Convert prompt data to TOON if needed
+        if ($actualFormat === 'TOON') {
+            [$systemPrompt, $userPrompt] = $this->convertPromptToToon($systemPrompt, $userPrompt);
+        }
+
         $startTime = microtime(true);
 
         try {
@@ -644,7 +654,7 @@ class OpenAiClient implements OpenAiClientInterface
 
             if (! $response->successful()) {
                 $this->logApiError($entityType, $slug, $response);
-                $this->trackAiMetricsError($entityType, $slug, $dataFormat, new \Exception("API returned status {$response->status()}"));
+                $this->trackAiMetricsError($entityType, $slug, $actualFormat, new \Exception("API returned status {$response->status()}"), $jobId, $responseTime);
 
                 return $this->errorResponse("API returned status {$response->status()}");
             }
@@ -657,10 +667,11 @@ class OpenAiClient implements OpenAiClientInterface
             $this->trackAiMetrics(
                 entityType: $entityType,
                 slug: $slug,
-                dataFormat: $dataFormat,
+                dataFormat: $actualFormat,
                 usage: $usage,
                 parsingResult: $parsingResult,
-                responseTime: $responseTime
+                responseTime: $responseTime,
+                jobId: $jobId
             );
 
             // Check for error response from AI (e.g., "Movie not found", "Person not found")
@@ -676,11 +687,50 @@ class OpenAiClient implements OpenAiClientInterface
 
             return $successMapper($content);
         } catch (\Throwable $e) {
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
             $this->logException($entityType, $slug, $e);
-            $this->trackAiMetricsError($entityType, $slug, $dataFormat, $e);
+            $this->trackAiMetricsError($entityType, $slug, $actualFormat, $e, $jobId, $responseTime);
 
             return $this->errorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Determine which data format to use (JSON or TOON).
+     *
+     * @param  string  $requestedFormat  Requested format (JSON, TOON, or 'auto')
+     * @return string Actual format to use ('JSON' or 'TOON')
+     */
+    private function determineDataFormat(string $requestedFormat): string
+    {
+        // If explicitly requested TOON, check feature flag
+        if ($requestedFormat === 'TOON') {
+            return Feature::active('ai_use_toon_format') ? 'TOON' : 'JSON';
+        }
+
+        // For 'auto', use TOON only if feature flag is enabled and data is tabular
+        if ($requestedFormat === 'auto') {
+            return Feature::active('ai_use_toon_format') ? 'TOON' : 'JSON';
+        }
+
+        // Default: always JSON for single objects
+        return 'JSON';
+    }
+
+    /**
+     * Convert prompt data to TOON format if needed.
+     *
+     * @return array{0: string, 1: string} [systemPrompt, userPrompt]
+     */
+    private function convertPromptToToon(string $systemPrompt, string $userPrompt): array
+    {
+        // For now, we just add TOON format instructions to prompts
+        // Actual TOON conversion will be done when we have bulk operations
+        $toonInstructions = "\n\nNOTE: Data may be provided in TOON format. TOON uses tabular arrays like [N]{keys}: followed by rows of comma-separated values. Parse TOON format correctly and return JSON response.";
+
+        $systemPrompt .= $toonInstructions;
+
+        return [$systemPrompt, $userPrompt];
     }
 
     /**
@@ -1135,10 +1185,13 @@ class OpenAiClient implements OpenAiClientInterface
         string $entityType,
         string $slug,
         string $dataFormat,
-        \Throwable $e
+        \Throwable $e,
+        ?string $jobId = null,
+        ?int $responseTime = null
     ): void {
         try {
             AiGenerationMetric::create([
+                'job_id' => $jobId,
                 'entity_type' => strtoupper($entityType),
                 'entity_slug' => $slug,
                 'data_format' => $dataFormat,
@@ -1147,6 +1200,7 @@ class OpenAiClient implements OpenAiClientInterface
                 'total_tokens' => 0,
                 'parsing_successful' => false,
                 'parsing_errors' => "Error: {$e->getMessage()}",
+                'response_time_ms' => $responseTime,
                 'model' => $this->model,
             ]);
         } catch (\Throwable $trackingError) {
