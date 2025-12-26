@@ -855,20 +855,31 @@ Każde zadanie ma następującą strukturę:
   - TOON: obiecujący dla tabularnych danych, ale wymaga testów z konkretnym modelem (gpt-4o-mini)
   - CSV: **NIEZALECANY** dla komunikacji z AI ze względu na problem z kontekstem kolumn
   - Rekomendacja: Eksperyment z TOON dla list filmów/osób z możliwością rollbacku
-- **Implementacja monitoringu (2025-01-27):**
+- **Implementacja monitoringu (2025-12-26):**
   - ✅ Tabela `ai_generation_metrics` - automatyczne zbieranie metryk
   - ✅ Model `AiGenerationMetric` - tracking tokenów, parsowania, błędów
   - ✅ Rozszerzenie `OpenAiClient` - automatyczne tracking przy każdym wywołaniu AI
   - ✅ Service `AiMetricsService` - analiza danych (token usage, parsing accuracy, errors)
-  - ✅ Controller `AiMetricsController` - endpointy API do analizy
-  - ✅ Job `GenerateAiMetricsReportJob` - generowanie raportów okresowych (daily, weekly, monthly)
+  - ✅ Controller `AiMetricsController` - endpointy API do analizy z automatycznymi rekomendacjami
+  - ✅ Job `GenerateAiMetricsReportJob` - generowanie raportów okresowych (daily, weekly, monthly) z rekomendacjami
   - ✅ Scheduled jobs - automatyczne generowanie raportów
-  - ✅ Dokumentacja: biznesowa, techniczna, QA
+  - ✅ Dokumentacja: biznesowa, techniczna, QA, przewodniki porównawcze
   - **Dokumentacja:**
     - [`docs/knowledge/technical/AI_METRICS_MONITORING_DECISION.md`](../../knowledge/technical/AI_METRICS_MONITORING_DECISION.md)
     - [`docs/business/AI_METRICS_MONITORING_USER_GUIDE.md`](../../business/AI_METRICS_MONITORING_USER_GUIDE.md)
     - [`docs/technical/AI_METRICS_MONITORING_DEVELOPER_GUIDE.md`](../../technical/AI_METRICS_MONITORING_DEVELOPER_GUIDE.md)
     - [`docs/qa/AI_METRICS_MONITORING_QA_GUIDE.md`](../../qa/AI_METRICS_MONITORING_QA_GUIDE.md)
+    - [`docs/knowledge/technical/AI_METRICS_COMPARISON_EXPLANATION.md`](../../knowledge/technical/AI_METRICS_COMPARISON_EXPLANATION.md)
+    - [`docs/knowledge/technical/AI_METRICS_COMPARISON_DECISION_GUIDE.md`](../../knowledge/technical/AI_METRICS_COMPARISON_DECISION_GUIDE.md)
+    - [`docs/business/AI_METRICS_COMPARISON_SIMPLE_GUIDE.md`](../../business/AI_METRICS_COMPARISON_SIMPLE_GUIDE.md)
+    - [`docs/knowledge/technical/TOON_IMPLEMENTATION_STATUS.md`](../../knowledge/technical/TOON_IMPLEMENTATION_STATUS.md)
+- **Status implementacji TOON:**
+  - ⏳ **NIE zaimplementowany** (priorytet niski)
+  - **Dlaczego:** Obecne koszty AI są minimalne (~$0.0075/miesiąc), oszczędności z TOON byłyby ~$0.00225/miesiąc
+  - **Kiedy:** Gdy pojawi się potrzeba bulk operations lub koszty AI wzrosną
+  - **Co jest gotowe:** Przykłady kodu, dokumentacja, plan implementacji, system monitoringu
+  - **Szacowany czas implementacji:** 3-4 dni robocze (gdy będzie priorytet)
+  - **Dokumentacja:** [`docs/knowledge/technical/TOON_IMPLEMENTATION_STATUS.md`](../../knowledge/technical/TOON_IMPLEMENTATION_STATUS.md)
 
 ---
 
