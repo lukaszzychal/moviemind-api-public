@@ -16,6 +16,14 @@ class OpenAiClientToonFormatTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Set required config values for tests
+        config([
+            'services.openai.api_key' => 'test-api-key',
+            'services.openai.model' => 'gpt-4o-mini',
+            'services.openai.url' => 'https://api.openai.com/v1/chat/completions',
+        ]);
+
         $this->client = new OpenAiClient(new PromptSanitizer);
     }
 
