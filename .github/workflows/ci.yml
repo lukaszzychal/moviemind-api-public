@@ -289,6 +289,14 @@ jobs:
           php artisan config:clear
           php artisan migrate --force
           php artisan db:seed
+          # Enable feature flags for Newman tests
+          php artisan tinker --execute="
+            Laravel\Pennant\Feature::activate('ai_description_generation');
+            Laravel\Pennant\Feature::activate('ai_bio_generation');
+            echo 'Feature flags activated: ai_description_generation, ai_bio_generation';
+          "
+          # Set admin auth bypass for testing environment
+          echo "ADMIN_AUTH_BYPASS_ENVS=testing,local,staging" >> .env
 
       - name: Start API server
         working-directory: api
@@ -313,9 +321,11 @@ jobs:
         run: |
           # Use npx to run newman without global installation
           # Note: newman will exit with non-zero code if tests fail
+          # Admin API key is not needed because ADMIN_AUTH_BYPASS_ENVS includes 'testing'
           npx --yes newman@latest run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
+            --env-var "ADMIN_API_KEY=not-needed-testing-bypass" \
             --reporters cli,junit \
             --reporter-junit-export newman-results.xml \
             --timeout-request 10000 \
