@@ -116,7 +116,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->movieResponseSchema());
+        }, $this->movieResponseSchema(), 'JSON', null);
     }
 
     /**
@@ -172,7 +172,7 @@ class OpenAiClient implements OpenAiClientInterface
                 'description' => $content['description'] ?? null,
                 'model' => $this->model,
             ];
-        }, $this->descriptionResponseSchema());
+        }, $this->descriptionResponseSchema(), 'JSON', null);
     }
 
     /**
@@ -385,7 +385,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->personResponseSchema());
+        }, $this->personResponseSchema(), 'JSON', null);
     }
 
     /**
@@ -454,7 +454,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->tvSeriesResponseSchema());
+        }, $this->tvSeriesResponseSchema(), 'JSON', null);
     }
 
     /**
@@ -524,7 +524,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->tvShowResponseSchema());
+        }, $this->tvShowResponseSchema(), 'JSON', null);
     }
 
     /**
