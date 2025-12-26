@@ -65,6 +65,12 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/top-api-keys', [\App\Http\Controllers\Admin\AnalyticsController::class, 'topApiKeys']);
         Route::get('/error-rate', [\App\Http\Controllers\Admin\AnalyticsController::class, 'errorRate']);
     });
+    Route::prefix('ai-metrics')->group(function () {
+        Route::get('/token-usage', [\App\Http\Controllers\Admin\AiMetricsController::class, 'tokenUsage']);
+        Route::get('/parsing-accuracy', [\App\Http\Controllers\Admin\AiMetricsController::class, 'parsingAccuracy']);
+        Route::get('/errors', [\App\Http\Controllers\Admin\AiMetricsController::class, 'errorStatistics']);
+        Route::get('/comparison', [\App\Http\Controllers\Admin\AiMetricsController::class, 'formatComparison']);
+    });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });
 
