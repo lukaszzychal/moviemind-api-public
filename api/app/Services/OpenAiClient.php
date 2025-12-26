@@ -1031,11 +1031,17 @@ class OpenAiClient implements OpenAiClientInterface
     private function extractTokenUsage($response): array
     {
         $responseData = $response->json();
+        $usage = $responseData['usage'] ?? [];
+
+        // Responses API uses input_tokens/output_tokens, Chat Completions uses prompt_tokens/completion_tokens
+        $promptTokens = $usage['prompt_tokens'] ?? $usage['input_tokens'] ?? 0;
+        $completionTokens = $usage['completion_tokens'] ?? $usage['output_tokens'] ?? 0;
+        $totalTokens = $usage['total_tokens'] ?? 0;
 
         return [
-            'prompt_tokens' => $responseData['usage']['prompt_tokens'] ?? 0,
-            'completion_tokens' => $responseData['usage']['completion_tokens'] ?? 0,
-            'total_tokens' => $responseData['usage']['total_tokens'] ?? 0,
+            'prompt_tokens' => $promptTokens,
+            'completion_tokens' => $completionTokens,
+            'total_tokens' => $totalTokens,
         ];
     }
 
