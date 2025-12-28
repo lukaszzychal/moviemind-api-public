@@ -26,9 +26,8 @@ class MissingEntityGenerationTest extends TestCase
 
     public function test_movie_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
+        // GIVEN: AI generation is enabled and movie exists in TMDb
         Feature::activate('ai_description_generation');
-
-        // Use fake EntityVerificationService instead of Mockery
         $fake = $this->fakeEntityVerificationService();
         $fake->setMovie('annihilation', [
             'title' => 'Annihilation',
@@ -38,12 +37,15 @@ class MissingEntityGenerationTest extends TestCase
             'director' => 'Alex Garland',
         ]);
 
+        // WHEN: Requesting a movie that doesn't exist locally
         $res = $this->getJson('/api/v1/movies/annihilation');
+
+        // THEN: Should return 202 with job details
         $res->assertStatus(202)
             ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
             ->assertJson(['locale' => 'en-US']);
 
-        // Verify confidence fields are set (not null/unknown)
+        // THEN: Confidence fields should be properly set
         $this->assertNotNull($res->json('confidence'));
         $this->assertNotSame('unknown', $res->json('confidence_level'));
         $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
@@ -51,32 +53,37 @@ class MissingEntityGenerationTest extends TestCase
 
     public function test_movie_missing_returns_404_when_not_found_in_tmdb(): void
     {
+        // GIVEN: AI generation and TMDb verification are enabled, but movie doesn't exist in TMDb
         Feature::activate('ai_description_generation');
         Feature::activate('tmdb_verification');
-
-        // Use fake EntityVerificationService - set movie to null (not found)
         $fake = $this->fakeEntityVerificationService();
         $fake->setMovie('non-existent-movie-xyz', null);
-        // Also set empty search results which is called when verifyMovie returns null
         $fake->setMovieSearchResults('non-existent-movie-xyz', []);
 
+        // WHEN: Requesting a movie that doesn't exist in TMDb
         $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
+
+        // THEN: Should return 404 with error message
         $res->assertStatus(404)
             ->assertJson(['error' => 'Movie not found']);
     }
 
     public function test_movie_missing_returns_404_when_flag_off(): void
     {
+        // GIVEN: AI generation is disabled
         Feature::deactivate('ai_description_generation');
+
+        // WHEN: Requesting a movie that doesn't exist locally
         $res = $this->getJson('/api/v1/movies/annihilation');
+
+        // THEN: Should return 404
         $res->assertStatus(404);
     }
 
     public function test_person_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
+        // GIVEN: AI bio generation is enabled and person exists in TMDb
         Feature::activate('ai_bio_generation');
-
-        // Use fake EntityVerificationService instead of Mockery
         $fake = $this->fakeEntityVerificationService();
         $fake->setPerson('john-doe', [
             'name' => 'John Doe',
@@ -86,12 +93,15 @@ class MissingEntityGenerationTest extends TestCase
             'biography' => 'An actor',
         ]);
 
+        // WHEN: Requesting a person that doesn't exist locally
         $res = $this->getJson('/api/v1/people/john-doe');
+
+        // THEN: Should return 202 with job details
         $res->assertStatus(202)
             ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
             ->assertJson(['locale' => 'en-US']);
 
-        // Verify confidence fields are set (not null/unknown)
+        // THEN: Confidence fields should be properly set
         $this->assertNotNull($res->json('confidence'));
         $this->assertNotSame('unknown', $res->json('confidence_level'));
         $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);

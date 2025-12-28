@@ -28,6 +28,42 @@ MovieMind API is a RESTful API for generating and storing unique descriptions of
 - **Static analysis:** PHPStan (level 5)
 - **Security:** GitLeaks (secret detection)
 - **Documentation:** OpenAPI/Swagger
+- **Local Environment:** Docker Compose (mandatory - see `.cursor/rules/090-docker-development.mdc`)
+
+---
+
+## 🐳 Local Development
+
+### Docker is Mandatory
+
+**ALWAYS use Docker for local development. NEVER use `php artisan serve` directly on host.**
+
+**Quick Start:**
+```bash
+# Start all services
+docker compose up -d
+
+# Setup application (first time)
+docker compose exec php composer install
+docker compose exec php php artisan key:generate
+docker compose exec php php artisan migrate --seed
+
+# Access application
+# API: http://localhost:8000
+```
+
+**Run commands inside PHP container:**
+```bash
+docker compose exec php php artisan migrate
+docker compose exec php php artisan test
+docker compose exec php vendor/bin/pint
+```
+
+**Why Docker is required:**
+- Matches production environment (PostgreSQL, Redis, PHP-FPM, Nginx)
+- Prevents "works on my machine" issues
+- Ensures consistency between local, CI, and production
+- See `.cursor/rules/090-docker-development.mdc` for full details
 
 ---
 
@@ -294,18 +330,22 @@ POST /api/v1/generate
 
 ## 💡 Important Notes
 
-1. **TDD** - Test before code, ALWAYS. NEVER write implementation code before tests. This is MANDATORY with NO EXCEPTIONS.
+1. **Docker is Mandatory** - ALWAYS use Docker for local development. NEVER use `php artisan serve` directly on host.
+   - Local environment must match production (PostgreSQL, Redis via Docker)
+   - Prevents test failures in production due to environment differences
+   - See `.cursor/rules/090-docker-development.mdc` for full requirements
+2. **TDD** - Test before code, ALWAYS. NEVER write implementation code before tests. This is MANDATORY with NO EXCEPTIONS.
    - Write test first (RED) → Run test (should FAIL) → Write code (GREEN) → Run test (should PASS) → Refactor
    - See `docs/cursor-rules/pl/testing.mdc` for detailed TDD workflow
-2. **Thin Controllers** - Controllers MUST be thin (max 20-30 lines per method)
+3. **Thin Controllers** - Controllers MUST be thin (max 20-30 lines per method)
    - Delegate business logic to Actions (`App\Actions\*`) or Services (`App\Services\*`)
    - Controllers should ONLY: validate requests, delegate to Actions/Services, format responses
    - NEVER put business logic, database queries, external API calls, or complex transformations in controllers
    - See `docs/cursor-rules/pl/controller-architecture.mdc` for detailed patterns
-3. **Tools** - Pint, PHPStan, tests before commit
-4. **Readability** - Code must be understandable to others
-5. **Pragmatism** - Principles are tools, not goals in themselves
-6. **Tasks** - Always start from `docs/issue/TASKS.md`
+4. **Tools** - Pint, PHPStan, tests before commit
+5. **Readability** - Code must be understandable to others
+6. **Pragmatism** - Principles are tools, not goals in themselves
+7. **Tasks** - Always start from `docs/issue/TASKS.md`
 
 ---
 
