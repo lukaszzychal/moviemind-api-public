@@ -80,6 +80,7 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/comparison', [\App\Http\Controllers\Admin\AiMetricsController::class, 'formatComparison']);
     });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
+    Route::post('database/clear-test-data', [HealthController::class, 'clearTestData']);
 });
 
 // Billing webhooks (no auth required - uses signature verification)
