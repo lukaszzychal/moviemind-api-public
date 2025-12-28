@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\WebhookEvent;
 use App\Services\BillingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,15 +72,91 @@ class BillingWebhookController
             'idempotency_key' => $idempotencyKey,
         ]);
 
-        // Route to appropriate handler
-        return match ($event) {
-            'subscription.created' => $this->handleSubscriptionCreated($data, $idempotencyKey),
-            'subscription.updated' => $this->handleSubscriptionUpdated($data, $idempotencyKey),
-            'subscription.cancelled' => $this->handleSubscriptionCancelled($data, $idempotencyKey),
-            'payment.succeeded' => $this->handlePaymentSucceeded($data, $idempotencyKey),
-            'payment.failed' => $this->handlePaymentFailed($data, $idempotencyKey),
-            default => $this->handleUnknownEvent($event, $data),
-        };
+        // Store webhook event for tracking and retry
+        $webhookEvent = WebhookEvent::firstOrCreate(
+            ['idempotency_key' => $idempotencyKey],
+            [
+                'event_type' => 'billing',
+                'source' => 'rapidapi',
+                'payload' => [
+                    'event' => $event,
+                    'data' => $data,
+                    'idempotency_key' => $idempotencyKey,
+                ],
+                'status' => 'pending',
+                'max_attempts' => 3,
+            ]
+        );
+
+        // If webhook was already processed successfully, return cached response
+        if ($webhookEvent->isProcessed()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Webhook already processed',
+                'webhook_id' => $webhookEvent->id,
+            ]);
+        }
+
+        // If webhook failed but can be retried, retry it now
+        if ($webhookEvent->isFailed() && $webhookEvent->canRetry() && $webhookEvent->shouldRetryNow()) {
+            // Update payload in case it changed
+            $webhookEvent->update([
+                'payload' => [
+                    'event' => $event,
+                    'data' => $data,
+                    'idempotency_key' => $idempotencyKey,
+                ],
+            ]);
+        }
+
+        // Process webhook with retry support
+        try {
+            $webhookEvent->markAsProcessing();
+
+            // Route to appropriate handler
+            $response = match ($event) {
+                'subscription.created' => $this->handleSubscriptionCreated($data, $idempotencyKey),
+                'subscription.updated' => $this->handleSubscriptionUpdated($data, $idempotencyKey),
+                'subscription.cancelled' => $this->handleSubscriptionCancelled($data, $idempotencyKey),
+                'payment.succeeded' => $this->handlePaymentSucceeded($data, $idempotencyKey),
+                'payment.failed' => $this->handlePaymentFailed($data, $idempotencyKey),
+                default => $this->handleUnknownEvent($event, $data),
+            };
+
+            // Mark as processed if response is successful
+            if ($response->getStatusCode() < 400) {
+                $webhookEvent->markAsProcessed();
+            } else {
+                throw new \RuntimeException('Webhook handler returned error status: '.$response->getStatusCode());
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            // Mark as failed and schedule retry
+            $webhookEvent->markAsFailed($e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Schedule retry if possible
+            if ($webhookEvent->canRetry() && $webhookEvent->next_retry_at !== null) {
+                \App\Jobs\RetryWebhookJob::dispatch($webhookEvent->id)
+                    ->delay($webhookEvent->next_retry_at);
+            }
+
+            Log::error('Billing webhook processing failed', [
+                'webhook_id' => $webhookEvent->id,
+                'event' => $event,
+                'error' => $e->getMessage(),
+                'attempts' => $webhookEvent->attempts,
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process webhook',
+                'message' => $e->getMessage(),
+                'webhook_id' => $webhookEvent->id,
+            ], 500);
+        }
     }
 
     /**
