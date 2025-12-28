@@ -150,4 +150,36 @@ class TvShow extends Model
         return $this->belongsToMany(Person::class, 'tv_show_person')
             ->withPivot(['role', 'character_name', 'job', 'billing_order']);
     }
+
+    /**
+     * Get related TV shows based on relationships.
+     *
+     * @param  array<string>|null  $types  Relationship types to filter by (e.g., ['SEQUEL', 'SPINOFF'])
+     * @return \Illuminate\Database\Eloquent\Collection<int, TvShow>
+     */
+    public function getRelatedShows(?array $types = null): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = TvShowRelationship::where(function ($q) {
+            $q->where('tv_show_id', $this->id)
+                ->orWhere('related_tv_show_id', $this->id);
+        })->with(['tvShow', 'relatedTvShow']);
+
+        if ($types !== null && count($types) > 0) {
+            $enumTypes = array_map(fn ($type) => \App\Enums\RelationshipType::from(strtoupper($type)), $types);
+            $query->whereIn('relationship_type', $enumTypes);
+        }
+
+        $relationships = $query->get();
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, TvShow> $relatedShows */
+        $relatedShows = $relationships->map(function (TvShowRelationship $relationship) {
+            return $relationship->tv_show_id === $this->id
+                ? $relationship->relatedTvShow
+                : $relationship->tvShow;
+        })->filter(function ($tvShow) {
+            return $tvShow !== null;
+        })->unique('id')->values();
+
+        return $relatedShows;
+    }
 }

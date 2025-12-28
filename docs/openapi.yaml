@@ -552,6 +552,175 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResult'
+  /v1/tv-series/compare:
+    get:
+      tags: [TV Series]
+      summary: Compare two TV series
+      parameters:
+        - in: query
+          name: slug1
+          required: true
+          schema:
+            type: string
+          description: First TV series slug
+        - in: query
+          name: slug2
+          required: true
+          schema:
+            type: string
+          description: Second TV series slug
+      responses:
+        '200':
+          description: Comparison data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tv_series1:
+                    type: object
+                  tv_series2:
+                    type: object
+                  comparison:
+                    type: object
+                    properties:
+                      common_genres:
+                        type: array
+                        items:
+                          type: string
+                      common_people:
+                        type: array
+                      year_difference:
+                        type: integer
+                      similarity_score:
+                        type: number
+                        format: float
+        '404':
+          description: One or both TV series not found
+        '422':
+          description: Validation error
+  /v1/tv-series/{slug}/related:
+    get:
+      tags: [TV Series]
+      summary: Get related TV series
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [all, collection]
+            default: all
+          description: Filter by relationship type
+      responses:
+        '200':
+          description: Related TV series list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tv_series:
+                    type: object
+                  related_tv_series:
+                    type: array
+                  count:
+                    type: integer
+        '404':
+          description: TV series not found
+  /v1/tv-series/{slug}/refresh:
+    post:
+      tags: [TV Series]
+      summary: Refresh TV series metadata from TMDb
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: TV series metadata refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  slug:
+                    type: string
+                  tv_series_id:
+                    type: string
+                  refreshed_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: TV series not found or no TMDb snapshot exists
+  /v1/tv-series/{slug}/report:
+    post:
+      tags: [TV Series]
+      summary: Report an issue with TV series or description
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - message
+              properties:
+                type:
+                  type: string
+                  enum: [INACCURATE, OFFENSIVE, SPAM, OTHER]
+                message:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+                suggested_fix:
+                  type: string
+                  maxLength: 2000
+                description_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Report created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      tv_series_id:
+                        type: string
+                      type:
+                        type: string
+                      message:
+                        type: string
+                      status:
+                        type: string
+                      priority_score:
+                        type: number
+        '404':
+          description: TV series not found
+        '422':
+          description: Validation error
   /v1/tv-shows:
     get:
       tags: [TV Shows]
@@ -703,6 +872,175 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResult'
+  /v1/tv-shows/compare:
+    get:
+      tags: [TV Shows]
+      summary: Compare two TV shows
+      parameters:
+        - in: query
+          name: slug1
+          required: true
+          schema:
+            type: string
+          description: First TV show slug
+        - in: query
+          name: slug2
+          required: true
+          schema:
+            type: string
+          description: Second TV show slug
+      responses:
+        '200':
+          description: Comparison data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tv_show1:
+                    type: object
+                  tv_show2:
+                    type: object
+                  comparison:
+                    type: object
+                    properties:
+                      common_genres:
+                        type: array
+                        items:
+                          type: string
+                      common_people:
+                        type: array
+                      year_difference:
+                        type: integer
+                      similarity_score:
+                        type: number
+                        format: float
+        '404':
+          description: One or both TV shows not found
+        '422':
+          description: Validation error
+  /v1/tv-shows/{slug}/related:
+    get:
+      tags: [TV Shows]
+      summary: Get related TV shows
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [all, collection]
+            default: all
+          description: Filter by relationship type
+      responses:
+        '200':
+          description: Related TV shows list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tv_show:
+                    type: object
+                  related_tv_shows:
+                    type: array
+                  count:
+                    type: integer
+        '404':
+          description: TV show not found
+  /v1/tv-shows/{slug}/refresh:
+    post:
+      tags: [TV Shows]
+      summary: Refresh TV show metadata from TMDb
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: TV show metadata refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  slug:
+                    type: string
+                  tv_show_id:
+                    type: string
+                  refreshed_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: TV show not found or no TMDb snapshot exists
+  /v1/tv-shows/{slug}/report:
+    post:
+      tags: [TV Shows]
+      summary: Report an issue with TV show or description
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - message
+              properties:
+                type:
+                  type: string
+                  enum: [INACCURATE, OFFENSIVE, SPAM, OTHER]
+                message:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+                suggested_fix:
+                  type: string
+                  maxLength: 2000
+                description_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Report created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      tv_show_id:
+                        type: string
+                      type:
+                        type: string
+                      message:
+                        type: string
+                      status:
+                        type: string
+                      priority_score:
+                        type: number
+        '404':
+          description: TV show not found
+        '422':
+          description: Validation error
   /v1/generate:
     post:
       tags: [Generation]

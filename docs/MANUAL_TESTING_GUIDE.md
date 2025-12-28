@@ -13,16 +13,18 @@
 4. [Movies API](#movies-api)
 5. [People API](#people-api)
 6. [Movie Relationships](#movie-relationships)
-7. [Generate API](#generate-api)
-8. [Jobs API](#jobs-api)
-9. [Movie Reports](#movie-reports)
-10. [Person Reports](#person-reports)
-10. [Adaptive Rate Limiting](#adaptive-rate-limiting)
-11. [Health & Admin](#health--admin)
-12. [Security Verification](#security-verification)
-13. [Performance Testing](#performance-testing)
-14. [Troubleshooting](#troubleshooting)
-15. [Test Report Template](#test-report-template)
+7. [TV Series & TV Shows API](#-tv-series--tv-shows-api)
+8. [TV Series & TV Show Reports](#-tv-series--tv-show-reports)
+9. [Generate API](#generate-api)
+10. [Jobs API](#jobs-api)
+11. [Movie Reports](#movie-reports)
+12. [Person Reports](#person-reports)
+13. [Adaptive Rate Limiting](#adaptive-rate-limiting)
+14. [Health & Admin](#health--admin)
+15. [Security Verification](#security-verification)
+16. [Performance Testing](#performance-testing)
+17. [Troubleshooting](#troubleshooting)
+18. [Test Report Template](#test-report-template)
 
 ---
 
@@ -1092,207 +1094,50 @@ docker compose exec php php artisan tinker
 ## 📺 TV Series & TV Shows API
 
 > **Status:** ✅ **Implemented**  
-> **Related Guide:** [TMDb Verification Testing for TV Series & TV Shows](./TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md)
+> **Related Guides:** 
+> - [TMDb Verification Testing for TV Series & TV Shows](./TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md)
+> - [Advanced Endpoints Testing Guide](./TESTING_TV_SERIES_ADVANCED_ENDPOINTS.md)
 
-**Note:** TV Series and TV Shows endpoints are now implemented with TMDb verification. For detailed testing instructions, see the dedicated guide above.
-
-**Available Endpoints:**
-
-- `GET /api/v1/tv-series` - List all TV series
-- `GET /api/v1/tv-series/{slug}` - Get TV series details (with TMDb verification)
-- `GET /api/v1/tv-series/search` - Search TV series
-- `GET /api/v1/tv-shows` - List all TV shows
-- `GET /api/v1/tv-shows/{slug}` - Get TV show details (with TMDb verification)
-- `GET /api/v1/tv-shows/search` - Search TV shows
+**Note:** TV Series and TV Shows endpoints are now implemented with TMDb verification and advanced endpoints (related, refresh, report, compare). For detailed testing instructions, see the dedicated guides above.
 
 ### Endpoints Overview
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/movies/{slug}/related` | Get related movies |
+| `GET` | `/api/v1/tv-series` | List all TV series (with pagination) or bulk retrieve by slugs |
+| `GET` | `/api/v1/tv-series/search` | Advanced TV series search |
+| `GET` | `/api/v1/tv-series/{slug}` | Get TV series details |
+| `GET` | `/api/v1/tv-series/{slug}/related` | Get related TV series |
+| `GET` | `/api/v1/tv-series/compare` | Compare two TV series |
+| `POST` | `/api/v1/tv-series/{slug}/refresh` | Refresh TV series metadata from TMDb |
+| `POST` | `/api/v1/tv-series/{slug}/report` | Report an issue with TV series or description |
+| `GET` | `/api/v1/tv-shows` | List all TV shows (with pagination) or bulk retrieve by slugs |
+| `GET` | `/api/v1/tv-shows/search` | Advanced TV show search |
+| `GET` | `/api/v1/tv-shows/{slug}` | Get TV show details |
+| `GET` | `/api/v1/tv-shows/{slug}/related` | Get related TV shows |
+| `GET` | `/api/v1/tv-shows/compare` | Compare two TV shows |
+| `POST` | `/api/v1/tv-shows/{slug}/refresh` | Refresh TV show metadata from TMDb |
+| `POST` | `/api/v1/tv-shows/{slug}/report` | Report an issue with TV show or description |
 
 ### Quick Test Examples
 
-**Get related movies:**
+**List TV series:**
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" | jq
+curl -X GET "http://localhost:8000/api/v1/tv-series" | jq
 ```
 
-**Filter by type:**
+**Search TV series:**
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type=collection" | jq
+curl -X GET "http://localhost:8000/api/v1/tv-series/search?q=breaking+bad" | jq
 ```
 
-**Filter by genre:**
+**Get TV series details:**
 
 ```bash
-# Single genre
-curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genre=science-fiction" | jq
-
-# Multiple genres (AND logic)
-curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genres[]=science-fiction&genres[]=action" | jq
+curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
 ```
-
-### Relationship Types
-
-- `SEQUEL` - Sequel (next movie in series)
-- `PREQUEL` - Prequel (previous movie in series)
-- `REMAKE` - Remake
-- `SERIES` - Part of series
-- `SPINOFF` - Spinoff
-- `SAME_UNIVERSE` - Same universe
-
-### Scenario 1: Get Related Movies
-
-**Objective:** Verify retrieving related movies.
-
-**Prerequisites:**
-
-- Movie must have `tmdb_id` and TMDB snapshot
-- `SyncMovieRelationshipsJob` must have run (check queue)
-- Movie must have relationships in TMDB (collection or similar movies)
-
-**Steps:**
-
-1. **Get related movies:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" \
-     -H "Accept: application/json" | jq
-   ```
-
-2. **Verify response (if relationships exist):**
-
-   ```json
-   {
-     "movie": {
-       "id": 1,
-       "slug": "the-matrix-1999",
-       "title": "The Matrix"
-     },
-     "related_movies": [
-       {
-         "id": 2,
-         "slug": "the-matrix-reloaded-2003",
-         "title": "The Matrix Reloaded",
-         "relationship_type": "SEQUEL",
-         "relationship_label": "Sequel",
-         "relationship_order": 1,
-         "_links": {
-           "self": {
-             "href": "http://localhost:8000/api/v1/movies/the-matrix-reloaded-2003"
-           }
-         }
-       }
-     ],
-     "count": 1,
-     "_links": {
-       "self": {
-         "href": "http://localhost:8000/api/v1/movies/the-matrix-1999/related"
-       },
-       "movie": {
-         "href": "http://localhost:8000/api/v1/movies/the-matrix-1999"
-       }
-     }
-   }
-   ```
-
-3. **If `related_movies` is empty:**
-   - Check if movie has TMDB snapshot: `docker compose exec php php artisan tinker` → `Movie::where('slug', 'the-matrix-1999')->first()->tmdbSnapshot`
-   - Check if relationships exist: `MovieRelationship::where('movie_id', 1)->count()`
-   - Manually trigger sync: `SyncMovieRelationshipsJob::dispatch(1)`
-   - Check queue worker: `docker compose exec php php artisan horizon:status`
-
-4. **Verify:**
-   - [ ] Status code: `200 OK`
-   - [ ] `movie` object present
-   - [ ] `related_movies` array present (may be empty if no relationships)
-   - [ ] If relationships exist: Each related movie has `relationship_type`, `relationship_label`, `relationship_order`
-   - [ ] `count` matches array length
-   - [ ] **Security:** `tmdb_id` is **NOT** present
-
----
-
-### Scenario 2: Filter by Relationship Type
-
-**Objective:** Verify filtering related movies by type.
-
-**Steps:**
-
-1. **Filter by single type:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL" \
-     -H "Accept: application/json" | jq
-   ```
-
-2. **Filter by multiple types:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type[]=SEQUEL&type[]=PREQUEL" \
-     -H "Accept: application/json" | jq
-   ```
-
-3. **Verify:**
-   - [ ] Only specified types are returned
-   - [ ] `count` matches filtered results
-
----
-
-### Scenario 3: Filter Related Movies by Genre
-
-**Objective:** Verify filtering related movies by genre.
-
-**Prerequisites:**
-- Movie must have related movies
-- Related movies must have genres assigned
-
-**Steps:**
-
-1. **Filter by single genre:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genre=science-fiction" \
-     -H "Accept: application/json" | jq
-   ```
-
-2. **Filter by multiple genres (AND logic - movie must have ALL genres):**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genres[]=science-fiction&genres[]=action" \
-     -H "Accept: application/json" | jq
-   ```
-
-3. **Filter by genre with type filter:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?type=collection&genre=science-fiction" \
-     -H "Accept: application/json" | jq
-   ```
-
-4. **Verify:**
-   - [ ] Only movies with specified genre(s) are returned
-   - [ ] When multiple genres specified, only movies with ALL genres are returned (AND logic)
-   - [ ] Genre filter is case-insensitive (e.g., `SCIENCE-FICTION` works the same as `science-fiction`)
-   - [ ] `count` matches filtered results
-   - [ ] Empty result when no movies match genre filter
-
-5. **Test case-insensitive filtering:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related?genre=SCIENCE-FICTION" \
-     -H "Accept: application/json" | jq
-   ```
-
-   - [ ] Should return same results as lowercase `science-fiction`
-
-**Note:** Genre filtering works with both `collection` and `similar` types. If a movie doesn't have genres assigned, it won't match any genre filter.
-
----
-
-### Scenario 4: Compare Two Movies
 
 **Objective:** Verify comparing two movies to find common elements and differences.
 
@@ -2295,6 +2140,210 @@ Reports are automatically assigned a priority score based on:
 - Verify report type weight in `ReportType` enum
 - Check if multiple reports of same type affect aggregation
 - Verify priority calculation logic in `MovieReportService`
+
+---
+
+## 📝 TV Series & TV Show Reports
+
+### Endpoints Overview
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/tv-series/{slug}/report` | Report an error in TV series description | No |
+| `POST` | `/api/v1/tv-shows/{slug}/report` | Report an error in TV show description | No |
+| `GET` | `/api/v1/admin/reports?type=tv_series` | List TV series reports (with filtering) | Yes |
+| `GET` | `/api/v1/admin/reports?type=tv_show` | List TV show reports (with filtering) | Yes |
+| `POST` | `/api/v1/admin/reports/{id}/verify` | Verify report and trigger regeneration | Yes |
+
+**Note:** Admin endpoints support all report types (movie, person, tv_series, tv_show). Use `?type=tv_series` or `?type=tv_show` to filter, or `?type=all` to see all types.
+
+### Report Types
+
+Same as Movie Reports:
+- `INACCURATE` - Factual inaccuracies (weight: 3.0)
+- `OFFENSIVE` - Offensive content (weight: 5.0)
+- `SPAM` - Spam content (weight: 5.0)
+- `OTHER` - Other issues (weight: 1.0)
+
+### Priority Scoring
+
+Same logic as Movie Reports:
+- Report type weight × number of pending reports of same type
+- **High:** `priority_score >= 3.0`
+- **Medium:** `1.0 <= priority_score < 3.0`
+- **Low:** `priority_score < 1.0`
+
+---
+
+### Scenario 1: User Reports TV Series Issue
+
+**Objective:** Verify that users can report errors in TV series descriptions.
+
+**Steps:**
+
+1. **Report a factual error:**
+
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/tv-series/breaking-bad-2008/report" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -d '{
+       "type": "INACCURATE",
+       "message": "The description incorrectly states the first air date as 2009, but it was 2008",
+       "suggested_fix": "Update first air date to 2008",
+       "description_id": "550e8400-e29b-41d4-a716-446655440000"
+     }' | jq
+   ```
+
+2. **Verify response:**
+   - [ ] Status code: `201 Created`
+   - [ ] Report ID is returned (UUID)
+   - [ ] `tv_series_id` matches the TV series
+   - [ ] `type` is valid enum value
+   - [ ] `status` is `pending`
+   - [ ] `priority_score` is calculated
+
+3. **Test with non-existent TV series:**
+
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/tv-series/non-existent-series/report" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "type": "INACCURATE",
+       "message": "Test message"
+     }' | jq
+   ```
+
+   - [ ] Status code: `404 Not Found`
+
+---
+
+### Scenario 2: Admin Lists TV Series/Show Reports
+
+**Objective:** Verify that admins can list and filter TV Series and TV Show reports.
+
+**Steps:**
+
+1. **List all reports (including TV Series/Show):**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=all" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **List only TV Series reports:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=tv_series" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+3. **List only TV Show reports:**
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/admin/reports?type=tv_show" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+4. **Verify response structure:**
+   ```json
+   {
+     "data": [
+       {
+         "id": "550e8400-e29b-41d4-a716-446655440000",
+         "entity_type": "tv_series",
+         "tv_series_id": "...",
+         "description_id": "...",
+         "type": "INACCURATE",
+         "message": "Description error...",
+         "status": "pending",
+         "priority_score": 3.0,
+         "created_at": "2025-12-23T10:30:00+00:00"
+       }
+     ],
+     "meta": {
+       "current_page": 1,
+       "per_page": 50,
+       "total": 1,
+       "last_page": 1
+     }
+   }
+   ```
+
+5. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `entity_type` is `"tv_series"` or `"tv_show"` for respective reports
+   - [ ] Reports are sorted by `priority_score` desc, then `created_at` desc
+   - [ ] Filtering works correctly for each type
+
+---
+
+### Scenario 3: Admin Verifies TV Series/Show Report
+
+**Objective:** Verify that admins can verify TV Series/Show reports and trigger automatic regeneration.
+
+**Prerequisites:**
+- Queue worker must be running: `php artisan queue:work` or Laravel Horizon
+
+**Steps:**
+
+1. **Verify a TV Series report:**
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/{report_id}/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+
+2. **Verify response:**
+   ```json
+   {
+     "id": "550e8400-e29b-41d4-a716-446655440000",
+     "entity_type": "tv_series",
+     "tv_series_id": "...",
+     "description_id": "...",
+     "status": "verified",
+     "verified_at": "2025-12-23T11:00:00+00:00"
+   }
+   ```
+
+3. **Verify:**
+   - [ ] Status code: `200 OK`
+   - [ ] `status` changed to `verified`
+   - [ ] `verified_at` timestamp is set
+   - [ ] `entity_type` is `"tv_series"` or `"tv_show"`
+
+4. **Check queue for regeneration job:**
+   - [ ] `RegenerateTvSeriesDescriptionJob` or `RegenerateTvShowDescriptionJob` is queued (if `description_id` is present)
+   - [ ] Job parameters: `tv_series_id`/`tv_show_id` and `description_id` match the report
+
+5. **Test verification without description_id:**
+   ```bash
+   # Verify a report that has description_id = null
+   curl -X POST "http://localhost:8000/api/v1/admin/reports/{report_id}/verify" \
+     -u "admin:password" \
+     -H "Accept: application/json" | jq
+   ```
+   - [ ] Status code: `200 OK`
+   - [ ] Report is verified
+   - [ ] No regeneration job is queued (description_id is null)
+
+---
+
+### Troubleshooting TV Series/Show Reports
+
+**Problem: Report not appearing in admin list**
+
+**Solution:**
+- Verify report was created: Check database `tv_series_reports` or `tv_show_reports` table
+- Check authentication: Admin endpoint requires Basic Auth
+- Verify type filter: Use `?type=tv_series` or `?type=tv_show` to see only specific reports
+
+**Problem: Regeneration job not queued after verification**
+
+**Solution:**
+- Check if `description_id` is null (no job queued for general reports)
+- Verify queue worker is running: `php artisan queue:work` or Horizon
+- Check logs for job dispatch errors
 
 ---
 

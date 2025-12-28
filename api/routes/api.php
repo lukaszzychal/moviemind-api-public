@@ -31,10 +31,18 @@ Route::prefix('v1')->group(function () {
     Route::post('people/{slug}/report', [PersonController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::get('tv-series', [TvSeriesController::class, 'index']);
     Route::get('tv-series/search', [TvSeriesController::class, 'search'])->middleware('adaptive.rate.limit:search');
+    Route::get('tv-series/compare', [TvSeriesController::class, 'compare']);
     Route::get('tv-series/{slug}', [TvSeriesController::class, 'show'])->middleware('adaptive.rate.limit:show');
+    Route::get('tv-series/{slug}/related', [TvSeriesController::class, 'related']);
+    Route::post('tv-series/{slug}/refresh', [TvSeriesController::class, 'refresh']);
+    Route::post('tv-series/{slug}/report', [TvSeriesController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::get('tv-shows', [TvShowController::class, 'index']);
     Route::get('tv-shows/search', [TvShowController::class, 'search'])->middleware('adaptive.rate.limit:search');
+    Route::get('tv-shows/compare', [TvShowController::class, 'compare']);
     Route::get('tv-shows/{slug}', [TvShowController::class, 'show'])->middleware('adaptive.rate.limit:show');
+    Route::get('tv-shows/{slug}/related', [TvShowController::class, 'related']);
+    Route::post('tv-shows/{slug}/refresh', [TvShowController::class, 'refresh']);
+    Route::post('tv-shows/{slug}/report', [TvShowController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
