@@ -637,9 +637,12 @@ Every entry follows this structure:
   - Produce a concise comparison and recommendation tailored to MovieMind API.
   - Draft a refactor plan for existing tests (file order, scope, effort).
   - Update PL/EN testing guidelines and add supporting documentation if warranted.
-  - Evaluate the “three-line test” helper approach (Given/When/Then expressed via named helper methods) as a candidate pattern.
+  - Evaluate the "three-line test" helper approach (Given/When/Then expressed via named helper methods) as a candidate pattern.
 - **Dependencies:** none
 - **Created:** 2025-11-10
+- **Educational documentation:**
+  - ✅ Comprehensive tutorial created: [`docs/knowledge/tutorials/TEST_PATTERNS_AAA_GWT_TUTORIAL.md`](../../knowledge/tutorials/TEST_PATTERNS_AAA_GWT_TUTORIAL.md)
+  - Tutorial includes: introduction to patterns, AAA vs GWT comparison, "three-line test" technique, examples from MovieMind API, migration guide, recommendations, and best practices
 
 ---
 

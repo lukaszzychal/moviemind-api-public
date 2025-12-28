@@ -157,10 +157,13 @@ Zwróć tylko czysty tekst.
 
 ## 🐳 Quick Start
 
+> **⚠️ IMPORTANT: Always use Docker for local development!**  
+> The application requires PostgreSQL and Redis. Using `php artisan serve` locally may cause inconsistencies between local and production environments. **Always use Docker Compose.**
+
 ### Prerequisites
 
-- Docker & Docker Compose
-- OpenAI API Key
+- **Docker & Docker Compose** (REQUIRED)
+- OpenAI API Key (optional, can use mock mode)
 
 ### Installation
 

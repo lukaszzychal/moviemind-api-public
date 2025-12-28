@@ -217,7 +217,7 @@ Każde zadanie ma następującą strukturę:
 - ~~`TASK-032` - Automatyczna obsada~~ ✅ COMPLETED
 - ~~`TASK-033` - Usunięcie Actor~~ ✅ COMPLETED
 - ~~`TASK-028` - Synchronizacja Issues~~ ✅ COMPLETED
-- `TASK-029` - Standaryzacja testów
+- ~~`TASK-029` - Standaryzacja testów~~ ✅ COMPLETED
 - ~~`TASK-040` - Analiza TOON vs JSON vs CSV~~ ✅ COMPLETED
 - ~~`TASK-RAPI-004` - RapidAPI Headers~~ ✅ COMPLETED
 - ~~`TASK-RAPI-005` - Billing Webhooks~~ ✅ COMPLETED
@@ -1110,22 +1110,33 @@ Każde zadanie ma następującą strukturę:
 ---
 
 #### `TASK-029` - Uporządkowanie testów według wzorca AAA lub GWT
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priorytet:** 🟡 Średni
 - **Szacowany czas:** 2-3 godziny
-- **Czas rozpoczęcia:** --
-- **Czas zakończenia:** --
-- **Czas realizacji:** -- (Agent AI obliczy automatycznie przy trybie 🤖)
-- **Realizacja:** Do ustalenia
+- **Czas rozpoczęcia:** 2025-01-27
+- **Czas zakończenia:** 2025-01-27
+- **Czas realizacji:** ~02h30m
+- **Realizacja:** 🤖 AI Agent
 - **Opis:** Przeanalizować i ustandaryzować styl testów, wybierając pomiędzy wzorcami Arrange-Act-Assert (AAA) oraz Given-When-Then (GWT).
 - **Szczegóły:**
-  - Zebrać materiał referencyjny dotyczący AAA i GWT (zalety, wady, przykłady w kontekście PHP/Laravel).
-  - Przygotować opracowanie porównujące oba podejścia wraz z rekomendacją dla MovieMind API.
-  - Opracować plan refaktoryzacji istniejących testów (kolejność plików, zakres).
-  - Zaktualizować wytyczne dotyczące testów (PL/EN) i dodać dokumentację, jeśli będzie to zasadne.
-  - Rozważyć zastosowanie techniki „trzech linii” (Given/When/Then w formie metod pomocniczych) jako wariantu rekomendowanego wzorca.
+  - ✅ Zebrano materiał referencyjny dotyczący AAA i GWT (zalety, wady, przykłady w kontekście PHP/Laravel).
+  - ✅ Przygotowano opracowanie porównujące oba podejścia wraz z rekomendacją dla MovieMind API.
+  - ✅ Opracowano plan refaktoryzacji istniejących testów (kolejność plików, zakres).
+  - ✅ Zaktualizowano wytyczne dotyczące testów (`TESTING_POLICY.md`) i dodano dokumentację.
+  - ✅ Rozważono zastosowanie techniki „trzech linii" (Given/When/Then w formie metod pomocniczych) jako wariantu rekomendowanego wzorca.
 - **Zależności:** Brak
 - **Utworzone:** 2025-11-10
+- **Ukończone:** 2025-01-27
+- **Dokumentacja:**
+  - ✅ Kompleksowy tutorial: [`docs/knowledge/tutorials/TEST_PATTERNS_AAA_GWT_TUTORIAL.md`](../../knowledge/tutorials/TEST_PATTERNS_AAA_GWT_TUTORIAL.md)
+  - ✅ Szybki przewodnik: [`docs/knowledge/tutorials/TEST_PATTERNS_AAA_VS_GWT_QUICK_GUIDE.md`](../../knowledge/tutorials/TEST_PATTERNS_AAA_VS_GWT_QUICK_GUIDE.md)
+  - ✅ Plan migracji: [`docs/knowledge/technical/TEST_PATTERNS_MIGRATION_PLAN.md`](../../knowledge/technical/TEST_PATTERNS_MIGRATION_PLAN.md)
+  - ✅ Zaktualizowana polityka testów: [`docs/knowledge/reference/TESTING_POLICY.md`](../../knowledge/reference/TESTING_POLICY.md)
+- **Rezultat:**
+  - ✅ Wybrano podejście hybrydowe: AAA dla testów jednostkowych, GWT dla testów funkcjonalnych
+  - ✅ Zrefaktoryzowano przykładowe testy: `UsageTrackerTest` (AAA), `MissingEntityGenerationTest` (GWT)
+  - ✅ Zaktualizowano dokumentację z rekomendacjami i przykładami
+  - ✅ Utworzono plan migracji dla pozostałych testów (refaktoryzacja przy okazji modyfikacji)
 
 ---
 

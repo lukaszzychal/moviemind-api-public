@@ -22,8 +22,12 @@ class PeopleApiTest extends TestCase
 
     public function test_list_people_returns_ok(): void
     {
+        // GIVEN: People exist in database (from seeders)
+
+        // WHEN: Requesting list of people
         $response = $this->getJson('/api/v1/people');
 
+        // THEN: Should return OK with correct structure
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -33,13 +37,18 @@ class PeopleApiTest extends TestCase
                 ],
             ]);
 
+        // THEN: Bios count should be an integer
         $this->assertIsInt($response->json('data.0.bios_count'));
     }
 
     public function test_list_people_with_search_query(): void
     {
+        // GIVEN: People exist in database (from seeders)
+
+        // WHEN: Searching for people with query parameter
         $response = $this->getJson('/api/v1/people?q=Christopher');
 
+        // THEN: Should return OK with correct structure
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -52,34 +61,20 @@ class PeopleApiTest extends TestCase
 
     public function test_show_person_returns_payload(): void
     {
-        $movies = $this->getJson('/api/v1/movies');
-        $movies->assertOk();
+        // GIVEN: Person exists and has at least one bio
+        $personSlug = $this->getFirstPersonSlugFromMovies();
+        $this->ensurePersonHasBio($personSlug);
 
-        $personSlug = null;
-        foreach ($movies->json('data') as $m) {
-            if (! empty($m['people'][0]['slug'])) {
-                $personSlug = $m['people'][0]['slug'];
-                break;
-            }
-        }
-        $this->assertNotNull($personSlug, 'Expected at least one person linked to movies');
-
-        // Ensure person has at least one bio (person without bio returns 202, not 200)
-        $person = Person::where('slug', $personSlug)->first();
-        if ($person && ! $person->bios()->exists()) {
-            $person->bios()->create([
-                'locale' => \App\Enums\Locale::EN_US,
-                'text' => 'Test bio for payload',
-                'context_tag' => \App\Enums\ContextTag::DEFAULT,
-                'origin' => \App\Enums\DescriptionOrigin::GENERATED,
-            ]);
-        }
-
+        // WHEN: Requesting a specific person
         $res = $this->getJson('/api/v1/people/'.$personSlug);
+
+        // THEN: Should return OK with correct structure
         $res->assertOk()->assertJsonStructure(['id', 'slug', 'name', 'bios_count']);
 
+        // THEN: Bios count should be an integer
         $this->assertIsInt($res->json('bios_count'));
 
+        // THEN: Should contain HATEOAS links
         $res->assertJsonPath('_links.self.href', url('/api/v1/people/'.$personSlug));
 
         $movieLinks = $res->json('_links.movies');
@@ -91,61 +86,35 @@ class PeopleApiTest extends TestCase
 
     public function test_show_person_response_is_cached(): void
     {
-        $movies = $this->getJson('/api/v1/movies');
-        $movies->assertOk();
-
-        $personSlug = null;
-        foreach ($movies->json('data') as $m) {
-            if (! empty($m['people'][0]['slug'])) {
-                $personSlug = $m['people'][0]['slug'];
-                break;
-            }
-        }
-
-        $this->assertNotNull($personSlug, 'Expected at least one person linked to movies');
-
-        // Ensure person has at least one bio (person without bio returns 202, not 200)
-        $person = Person::where('slug', $personSlug)->first();
-        if ($person && ! $person->bios()->exists()) {
-            $person->bios()->create([
-                'locale' => \App\Enums\Locale::EN_US,
-                'text' => 'Test bio for caching',
-                'context_tag' => \App\Enums\ContextTag::DEFAULT,
-                'origin' => \App\Enums\DescriptionOrigin::GENERATED,
-            ]);
-        }
-
+        // GIVEN: Person exists, has bio, and cache is empty
+        $personSlug = $this->getFirstPersonSlugFromMovies();
+        $this->ensurePersonHasBio($personSlug);
         $this->assertFalse(Cache::has('person:'.$personSlug.':bio:default'));
 
+        // WHEN: Requesting a person for the first time
         $first = $this->getJson('/api/v1/people/'.$personSlug);
         $first->assertOk();
 
+        // THEN: Response should be cached
         $this->assertTrue(Cache::has('person:'.$personSlug.':bio:default'));
         $this->assertSame($first->json(), Cache::get('person:'.$personSlug.':bio:default'));
 
+        // WHEN: Person data is updated but cache is not invalidated
         $personId = $first->json('id');
         Person::where('id', $personId)->update(['name' => 'Changed Name']);
 
+        // WHEN: Requesting the same person again
         $second = $this->getJson('/api/v1/people/'.$personSlug);
         $second->assertOk();
+
+        // THEN: Should return cached response (not updated data)
         $this->assertSame($first->json(), $second->json());
     }
 
     public function test_show_person_can_select_specific_bio(): void
     {
-        $movies = $this->getJson('/api/v1/movies');
-        $movies->assertOk();
-
-        $personSlug = null;
-        foreach ($movies->json('data') as $m) {
-            if (! empty($m['people'][0]['slug'])) {
-                $personSlug = $m['people'][0]['slug'];
-                break;
-            }
-        }
-
-        $this->assertNotNull($personSlug);
-
+        // GIVEN: Person with multiple bios
+        $personSlug = $this->getFirstPersonSlugFromMovies();
         $person = Person::with('bios')->where('slug', $personSlug)->firstOrFail();
         $baselineBioId = $person->default_bio_id;
 
@@ -157,18 +126,56 @@ class PeopleApiTest extends TestCase
             'ai_model' => 'mock',
         ]);
 
+        // WHEN: GET request with bio_id parameter
         $response = $this->getJson(sprintf(
             '/api/v1/people/%s?bio_id=%s',
             $personSlug,
             $alternateBio->id
         ));
 
+        // THEN: Response contains selected and default bios
         $response->assertOk()
             ->assertJsonPath('selected_bio.id', $alternateBio->id)
             ->assertJsonPath('default_bio.id', $baselineBioId);
 
+        // THEN: Response is cached
         $cacheKey = $personSlug.':bio:'.$alternateBio->id;
         $this->assertTrue(Cache::has('person:'.$cacheKey));
         $this->assertSame($response->json(), Cache::get('person:'.$cacheKey));
+    }
+
+    // Helper methods for test data setup
+
+    /**
+     * Get the slug of the first person linked to movies.
+     */
+    private function getFirstPersonSlugFromMovies(): string
+    {
+        $movies = $this->getJson('/api/v1/movies');
+        $movies->assertOk();
+
+        foreach ($movies->json('data') as $m) {
+            if (! empty($m['people'][0]['slug'])) {
+                return $m['people'][0]['slug'];
+            }
+        }
+
+        $this->fail('Expected at least one person linked to movies');
+    }
+
+    /**
+     * Ensure person has at least one bio (person without bio returns 202, not 200).
+     */
+    private function ensurePersonHasBio(string $personSlug, string $text = 'Test bio'): void
+    {
+        $person = Person::where('slug', $personSlug)->first();
+        if ($person && ! $person->bios()->exists()) {
+            $person->bios()->create([
+                'locale' => \App\Enums\Locale::EN_US,
+                'text' => $text,
+                'context_tag' => \App\Enums\ContextTag::DEFAULT,
+                'origin' => \App\Enums\DescriptionOrigin::GENERATED,
+            ]);
+        }
     }
 }

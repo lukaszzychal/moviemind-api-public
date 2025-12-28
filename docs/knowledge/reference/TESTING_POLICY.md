@@ -172,3 +172,114 @@ $service = Mockery::mock(MovieService::class);
 - **London School:** External API tests ONLY (TMDb, OpenAI)
 - **Outside-In:** Feature tests, acceptance tests, end-to-end scenarios
 
+---
+
+## Test Structure Patterns (AAA vs GWT)
+
+### Principle: Standardize Test Structure for Readability
+
+**ALWAYS structure tests using explicit patterns to improve readability and maintainability.**
+
+### Pattern Selection
+
+**Hybrid Approach - Use different patterns for different test types:**
+
+1. **Unit Tests** → **AAA Pattern (Arrange-Act-Assert)**
+   - Simple, isolated tests
+   - Clear technical focus
+   - Minimal setup required
+
+2. **Feature Tests** → **GWT Pattern (Given-When-Then)**
+   - Complex scenarios
+   - Behavior-focused
+   - More readable for stakeholders
+
+3. **Complex Feature Tests** → **Three-Line Test Pattern** (optional)
+   - Multi-step workflows
+   - Repeated patterns
+   - High readability requirements
+
+### AAA Pattern (Arrange-Act-Assert)
+
+**Use for:** Unit tests, simple isolated logic
+
+```php
+public function test_track_request_creates_usage_record(): void
+{
+    // ARRANGE: Set up test data and preconditions
+    $result = $this->apiKeyService->createKey('Test Key');
+    $apiKey = $result['apiKey'];
+    
+    // ACT: Execute the behavior being tested
+    $this->service->trackRequest($apiKey, '/api/v1/movies', method: 'GET', responseStatus: 200);
+    
+    // ASSERT: Verify the results
+    $this->assertDatabaseHas('api_usage', [
+        'api_key_id' => $apiKey->id,
+        'endpoint' => '/api/v1/movies',
+        'method' => 'GET',
+        'response_status' => 200,
+    ]);
+}
+```
+
+### GWT Pattern (Given-When-Then)
+
+**Use for:** Feature tests, complex scenarios, behavior-focused tests
+
+```php
+public function test_movie_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
+{
+    // GIVEN: AI generation is enabled and movie exists in TMDb
+    Feature::activate('ai_description_generation');
+    $fake = $this->fakeEntityVerificationService();
+    $fake->setMovie('annihilation', [
+        'title' => 'Annihilation',
+        'release_date' => '2018-02-23',
+        'id' => 300668,
+    ]);
+    
+    // WHEN: Requesting a movie that doesn't exist locally
+    $response = $this->getJson('/api/v1/movies/annihilation');
+    
+    // THEN: Should return 202 with job details
+    $response->assertStatus(202)
+        ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence'])
+        ->assertJson(['locale' => 'en-US']);
+    
+    // THEN: Confidence fields should be properly set
+    $this->assertNotNull($response->json('confidence'));
+    $this->assertContains(
+        $response->json('confidence_level'),
+        ['high', 'medium', 'low', 'very_low']
+    );
+}
+```
+
+### Three-Line Test Pattern (Optional)
+
+**Use for:** Complex feature tests with repeated patterns
+
+```php
+public function test_movie_generation_creates_director(): void
+{
+    $this->givenMovieDoesNotExist('the-matrix-1999')
+        ->whenRequestingMovie()
+        ->thenGenerationJobShouldBeQueued()
+        ->andDirectorShouldBeCreated('Lana Wachowski');
+}
+```
+
+### Rules
+
+1. **Always use explicit comments** - Mark phases with `// ARRANGE`, `// ACT`, `// ASSERT` or `// GIVEN`, `// WHEN`, `// THEN`
+2. **Keep phases distinct** - Don't mix arrange/act/assert
+3. **One act per test** - Test one behavior at a time
+4. **Multiple assertions are OK** - But verify related outcomes
+5. **Extract complex setup** - Use factories or helper methods for long arrange sections
+
+### Documentation
+
+- **Tutorial:** [`docs/knowledge/tutorials/TEST_PATTERNS_AAA_GWT_TUTORIAL.md`](../../knowledge/tutorials/TEST_PATTERNS_AAA_GWT_TUTORIAL.md)
+- **Quick Guide:** [`docs/knowledge/tutorials/TEST_PATTERNS_AAA_VS_GWT_QUICK_GUIDE.md`](../../knowledge/tutorials/TEST_PATTERNS_AAA_VS_GWT_QUICK_GUIDE.md)
+
