@@ -5,11 +5,43 @@ use Illuminate\Support\Facades\Route;
 
 // Welcome endpoint
 Route::get('/', function () {
+    $baseUrl = request()->getSchemeAndHttpHost();
+
     return response()->json([
         'message' => 'Welcome to MovieMind API',
         'status' => 'ok',
         'version' => '1.0.0',
         'api' => '/api/v1',
+        'resources' => [
+            'movies' => [
+                'url' => $baseUrl.'/api/v1/movies',
+                'description' => 'List and search movies',
+            ],
+            'people' => [
+                'url' => $baseUrl.'/api/v1/people',
+                'description' => 'List and search people (actors, directors, etc.)',
+            ],
+            'tv_series' => [
+                'url' => $baseUrl.'/api/v1/tv-series',
+                'description' => 'List and search TV series',
+            ],
+            'tv_shows' => [
+                'url' => $baseUrl.'/api/v1/tv-shows',
+                'description' => 'List and search TV shows',
+            ],
+            'generate' => [
+                'url' => $baseUrl.'/api/v1/generate',
+                'description' => 'Generate AI descriptions and bios',
+            ],
+            'health' => [
+                'url' => $baseUrl.'/api/v1/health/openai',
+                'description' => 'Check API health status',
+            ],
+        ],
+        'documentation' => [
+            'openapi' => $baseUrl.'/api/docs/openapi.yaml',
+            'swagger_ui' => $baseUrl.'/api/doc',
+        ],
     ], 200, [
         'Content-Type' => 'application/json',
     ]);
@@ -45,6 +77,8 @@ Route::get('/debug', function (FeatureFlagManager $featureFlagManager) {
             'health' => '/up',
             'movies' => '/api/v1/movies',
             'people' => '/api/v1/people',
+            'tv_series' => '/api/v1/tv-series',
+            'tv_shows' => '/api/v1/tv-shows',
             'generate' => '/api/v1/generate',
             'jobs' => '/api/v1/jobs',
         ],
