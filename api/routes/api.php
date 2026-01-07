@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
     Route::get('health/tmdb', [HealthController::class, 'tmdb']);
+    Route::get('health/instance', [HealthController::class, 'instance']);
 });
 
 Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
@@ -54,6 +55,10 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/', [FlagController::class, 'index']);
         Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
         Route::get('usage', [FlagController::class, 'usage']);
+    });
+    Route::prefix('instances')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\InstanceController::class, 'index']);
+        Route::get('{instanceId}', [\App\Http\Controllers\Admin\InstanceController::class, 'show']);
     });
     Route::prefix('api-keys')->group(function () {
         Route::get('/', [ApiKeyController::class, 'index']);

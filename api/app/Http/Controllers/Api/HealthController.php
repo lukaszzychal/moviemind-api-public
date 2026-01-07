@@ -51,6 +51,34 @@ class HealthController extends Controller
     }
 
     /**
+     * Instance health check endpoint for Modular Monolith scaling.
+     * Returns instance status and active feature flags.
+     *
+     * Access: GET /api/v1/health/instance
+     * Used by: Load balancers, monitoring systems, instance discovery
+     */
+    public function instance(): JsonResponse
+    {
+        // @phpstan-ignore-next-line - Instance ID is instance-specific and cannot be cached
+        $instanceId = env('INSTANCE_ID', 'unknown');
+        $activeFeatures = [];
+
+        // Get all feature flags from config
+        $flags = config('pennant.flags', []);
+
+        foreach ($flags as $name => $config) {
+            $activeFeatures[$name] = Feature::active($name);
+        }
+
+        return response()->json([
+            'instance_id' => $instanceId,
+            'status' => 'healthy',
+            'features' => $activeFeatures,
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
      * Debug endpoint for service configuration inspection.
      * Protected by feature flag 'debug_endpoints' (default: disabled).
      *

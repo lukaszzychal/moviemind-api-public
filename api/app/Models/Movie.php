@@ -181,6 +181,51 @@ class Movie extends Model
         return $this->hasOne(MovieDescription::class, 'id', 'default_description_id');
     }
 
+    /**
+     * Get all locales for this movie.
+     */
+    public function locales(): HasMany
+    {
+        return $this->hasMany(MovieLocale::class);
+    }
+
+    /**
+     * Get a specific locale for this movie.
+     *
+     * @param  string  $locale  Locale code (e.g., 'pl-PL', 'en-US')
+     */
+    public function locale(string $locale): ?MovieLocale
+    {
+        /** @var MovieLocale|null */
+        return $this->locales()->where('locale', $locale)->first();
+    }
+
+    /**
+     * Get localized title with fallback to en-US if requested locale doesn't exist.
+     *
+     * @param  string  $locale  Locale code (e.g., 'pl-PL', 'en-US')
+     * @return string|null Localized title or null if no locale exists
+     */
+    public function getLocalizedTitle(string $locale): ?string
+    {
+        $movieLocale = $this->locale($locale);
+
+        // If requested locale exists and has title, return it
+        if ($movieLocale && $movieLocale->title_localized) {
+            return $movieLocale->title_localized;
+        }
+
+        // Fallback to en-US if requested locale is different
+        if ($locale !== 'en-US') {
+            $enLocale = $this->locale('en-US');
+            if ($enLocale && $enLocale->title_localized) {
+                return $enLocale->title_localized;
+            }
+        }
+
+        return null;
+    }
+
     public function genres(): BelongsToMany
     {
         return $this->belongsToMany(Genre::class, 'movie_genre');

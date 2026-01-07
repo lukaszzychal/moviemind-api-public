@@ -9,6 +9,7 @@ use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Services\HateoasService;
 use App\Services\MovieDisambiguationService;
+use App\Services\MovieLocaleService;
 use App\Support\MovieRetrievalResult;
 use App\Support\SearchResult;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,8 @@ class MovieResponseFormatter
 {
     public function __construct(
         private readonly HateoasService $hateoas,
-        private readonly MovieDisambiguationService $movieDisambiguationService
+        private readonly MovieDisambiguationService $movieDisambiguationService,
+        private readonly MovieLocaleService $movieLocaleService
     ) {}
 
     /**
@@ -30,7 +32,8 @@ class MovieResponseFormatter
     public function formatSuccess(
         Movie $movie,
         string $slug,
-        ?MovieDescription $selectedDescription = null
+        ?MovieDescription $selectedDescription = null,
+        ?string $locale = null
     ): JsonResponse {
         $resource = MovieResource::make($movie)->additional([
             '_links' => $this->hateoas->movieLinks($movie),
@@ -41,6 +44,26 @@ class MovieResponseFormatter
         }
 
         $data = $resource->resolve();
+
+        // Add localized metadata if locale is provided
+        if ($locale !== null) {
+            $movieLocale = $this->movieLocaleService->getLocalizedMetadata($movie, $locale);
+            if ($movieLocale) {
+                $data['locale'] = $movieLocale->locale->value;
+                if ($movieLocale->title_localized) {
+                    $data['title_localized'] = $movieLocale->title_localized;
+                }
+                if ($movieLocale->director_localized) {
+                    $data['director_localized'] = $movieLocale->director_localized;
+                }
+                if ($movieLocale->tagline) {
+                    $data['tagline'] = $movieLocale->tagline;
+                }
+                if ($movieLocale->synopsis) {
+                    $data['synopsis'] = $movieLocale->synopsis;
+                }
+            }
+        }
 
         // Add all descriptions to response
         if ($movie->relationLoaded('descriptions')) {
@@ -161,7 +184,7 @@ class MovieResponseFormatter
     /**
      * Format response from MovieRetrievalResult.
      */
-    public function formatFromResult(MovieRetrievalResult $result, string $slug): JsonResponse
+    public function formatFromResult(MovieRetrievalResult $result, string $slug, ?string $locale = null): JsonResponse
     {
         if ($result->isCached()) {
             return response()->json($result->getData());
@@ -171,7 +194,8 @@ class MovieResponseFormatter
             return $this->formatSuccess(
                 $result->getMovie(),
                 $slug,
-                $result->getSelectedDescription()
+                $result->getSelectedDescription(),
+                $locale
             );
         }
 
