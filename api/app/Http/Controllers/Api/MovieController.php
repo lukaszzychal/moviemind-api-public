@@ -233,8 +233,9 @@ class MovieController extends Controller
             return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
         }
 
-        // Extract and validate locale parameter
-        $locale = $this->normalizeLocale($request->query('locale'));
+        // Extract and validate locale parameter (null if not provided, 'en-US' if invalid)
+        $localeParam = $request->query('locale');
+        $locale = $localeParam !== null ? $this->normalizeLocale($localeParam) : null;
 
         // Handle disambiguation selection (special case - user selects specific slug from disambiguation)
         // Note: Disambiguation now uses slugs instead of tmdb_id
@@ -249,7 +250,7 @@ class MovieController extends Controller
 
         // Cache successful responses (but not disambiguation - they should be fresh)
         if ($result->isFound() && ! $result->isCached() && ! $result->isDisambiguation()) {
-            $cacheKey = $this->cacheKey($slug, $descriptionId);
+            $cacheKey = $this->cacheKey($slug, $descriptionId, $locale);
             $responseData = json_decode($response->getContent(), true);
             Cache::put($cacheKey, $responseData, now()->addSeconds(self::CACHE_TTL_SECONDS));
         }
@@ -313,11 +314,12 @@ class MovieController extends Controller
      * @param  string|null  $descriptionId  Description ID (UUID) or null
      * @return string Cache key
      */
-    private function cacheKey(string $slug, ?string $descriptionId = null): string
+    private function cacheKey(string $slug, ?string $descriptionId = null, ?string $locale = null): string
     {
         $suffix = $descriptionId !== null ? 'desc:'.$descriptionId : 'desc:default';
+        $localeSuffix = $locale !== null ? ':locale:'.$locale : '';
 
-        return 'movie:'.$slug.':'.$suffix;
+        return 'movie:'.$slug.':'.$suffix.$localeSuffix;
     }
 
     /**
