@@ -69,6 +69,17 @@ paths:
           schema:
             type: string
           description: Free-text search (title, director, genre)
+        - in: query
+          name: locale
+          required: false
+          schema:
+            type: string
+            enum: [en-US, pl-PL, de-DE, fr-FR, es-ES]
+            default: en-US
+          description: |
+            Locale code for localized metadata. If not provided or invalid, defaults to en-US.
+            Falls back to en-US if requested locale is not available.
+          example: pl-PL
       responses:
         '200':
           description: OK
@@ -121,12 +132,27 @@ paths:
         Returns movie details including all descriptions and synchronized people (actors, directors, writers, producers).
         People are automatically synchronized from TMDb when a movie is first created. The `people` array
         contains actors with their character names and crew members with their roles.
+        
+        **Multilingual Support:** Use the `locale` query parameter to get localized metadata (title, director, tagline, synopsis).
+        If the requested locale is not available, the API automatically falls back to English (en-US).
+        Supported locales: en-US (default), pl-PL, de-DE, fr-FR, es-ES.
       parameters:
         - in: path
           name: slug
           required: true
           schema:
             type: string
+        - in: query
+          name: locale
+          required: false
+          schema:
+            type: string
+            enum: [en-US, pl-PL, de-DE, fr-FR, es-ES]
+            default: en-US
+          description: |
+            Locale code for localized metadata. If not provided or invalid, defaults to en-US.
+            Falls back to en-US if requested locale is not available.
+          example: pl-PL
       responses:
         '200':
           description: OK
@@ -185,6 +211,56 @@ paths:
                       disambiguation:
                         - slug: the-matrix-1999
                           release_year: 1999
+                with_locale:
+                  summary: Response with Polish locale
+                  value:
+                    id: 1
+                    slug: the-matrix-1999
+                    title: The Matrix
+                    locale: pl-PL
+                    title_localized: Matrix
+                    director_localized: Wachowscy
+                    tagline: Świat się zmienił
+                    release_year: 1999
+                    director: Lana Wachowski & Lilly Wachowski
+                    default_description:
+                      id: 10
+                      locale: en-US
+                      text: 'A hacker discovers the true nature of reality and joins a rebellion against the machines.'
+                      context_tag: modern
+                      origin: GENERATED
+                      ai_model: gpt-4o-mini
+                    descriptions:
+                      - id: 10
+                        locale: en-US
+                        text: 'A hacker discovers the true nature of reality and joins a rebellion against the machines.'
+                        context_tag: modern
+                        origin: GENERATED
+                        ai_model: gpt-4o-mini
+                    genres:
+                      - id: 3
+                        name: Science Fiction
+                        slug: science-fiction
+                    people:
+                      - id: 5
+                        slug: keanu-reeves
+                        name: Keanu Reeves
+                        role: ACTOR
+                        character_name: Neo
+                    _links:
+                      self:
+                        href: /api/v1/movies/the-matrix-1999
+                      people:
+                        - href: /api/v1/people/keanu-reeves
+                          title: Keanu Reeves
+                          role: ACTOR
+                          character_name: Neo
+                      generate:
+                        href: /api/v1/generate
+                        method: POST
+                        body:
+                          entity_type: MOVIE
+                          entity_id: 1
         '202':
           description: Accepted - generation queued (feature flag on)
           content:
@@ -1476,6 +1552,29 @@ components:
           type: string
         title:
           type: string
+        locale:
+          type: string
+          enum: [en-US, pl-PL, de-DE, fr-FR, es-ES]
+          nullable: true
+          description: |
+            Locale code for localized metadata. Present only when locale parameter is provided and locale data exists.
+            Falls back to en-US if requested locale is not available.
+        title_localized:
+          type: string
+          nullable: true
+          description: Localized movie title. Present only when locale parameter is provided and locale data exists.
+        director_localized:
+          type: string
+          nullable: true
+          description: Localized director name. Present only when locale parameter is provided and locale data exists.
+        tagline:
+          type: string
+          nullable: true
+          description: Localized tagline. Present only when locale parameter is provided and locale data exists.
+        synopsis:
+          type: string
+          nullable: true
+          description: Localized synopsis. Present only when locale parameter is provided and locale data exists.
         release_year:
           type: integer
           nullable: true

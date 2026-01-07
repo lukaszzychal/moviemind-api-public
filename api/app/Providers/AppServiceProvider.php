@@ -13,6 +13,7 @@ use App\Support\PhpstanFixer\Fixers\MissingPropertyDocblockFixer;
 use App\Support\PhpstanFixer\Fixers\MissingReturnDocblockFixer;
 use App\Support\PhpstanFixer\Fixers\UndefinedPivotPropertyFixer;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,6 +49,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Configure feature flags per instance from environment variables
+        // This enables Modular Monolith with Feature-Based Instance Scaling
+        // @phpstan-ignore-next-line - Instance ID is instance-specific and cannot be cached
+        $instanceId = env('INSTANCE_ID');
+
+        if ($instanceId) {
+            $flags = config('pennant.flags', []);
+
+            foreach ($flags as $name => $config) {
+                // Convert flag name to environment variable name
+                // e.g., 'ai_description_generation' -> 'FEATURE_AI_DESCRIPTION_GENERATION'
+                $envKey = 'FEATURE_'.strtoupper(str_replace(['-', '_'], '_', $name));
+                // @phpstan-ignore-next-line - Feature flags per instance are instance-specific and cannot be cached
+                $envValue = env($envKey);
+
+                // If environment variable is set, override the feature flag for this instance
+                if ($envValue !== null) {
+                    $isActive = filter_var($envValue, FILTER_VALIDATE_BOOLEAN);
+                    Feature::for('instance:'.$instanceId)->activate($name, $isActive);
+                }
+            }
+        }
     }
 }

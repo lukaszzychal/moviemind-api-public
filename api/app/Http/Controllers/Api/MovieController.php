@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\QueueMovieGenerationAction;
-use App\Enums\Locale;
+use App\Enums\Locale as LocaleEnum;
 use App\Enums\RelationshipType;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
@@ -213,7 +213,7 @@ class MovieController extends Controller
                         $generationResult = $this->queueMovieGenerationAction->handle(
                             $potentialSlug,
                             confidence: $validation['confidence'],
-                            locale: \App\Enums\Locale::EN_US->value,
+                            locale: LocaleEnum::EN_US->value,
                             tmdbData: $tmdbMovie
                         );
 
@@ -233,6 +233,9 @@ class MovieController extends Controller
             return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
         }
 
+        // Extract and validate locale parameter
+        $locale = $this->normalizeLocale($request->query('locale'));
+
         // Handle disambiguation selection (special case - user selects specific slug from disambiguation)
         // Note: Disambiguation now uses slugs instead of tmdb_id
         $selectedSlug = $request->query('slug');
@@ -242,7 +245,7 @@ class MovieController extends Controller
 
         $result = $this->movieRetrievalService->retrieveMovie($slug, $descriptionId);
 
-        $response = $this->responseFormatter->formatFromResult($result, $slug);
+        $response = $this->responseFormatter->formatFromResult($result, $slug, $locale);
 
         // Cache successful responses (but not disambiguation - they should be fresh)
         if ($result->isFound() && ! $result->isCached() && ! $result->isDisambiguation()) {
@@ -290,7 +293,7 @@ class MovieController extends Controller
             $generationResult = $this->queueMovieGenerationAction->handle(
                 $selectedSlug,
                 confidence: $validation['confidence'],
-                locale: Locale::EN_US->value,
+                locale: LocaleEnum::EN_US->value,
                 tmdbData: $selectedMovie
             );
 
@@ -337,6 +340,29 @@ class MovieController extends Controller
         }
 
         return $descriptionId;
+    }
+
+    /**
+     * Normalize and validate locale parameter.
+     * Returns default 'en-US' if not provided or invalid.
+     *
+     * @return string Valid locale code or 'en-US' as default
+     */
+    private function normalizeLocale(mixed $locale): string
+    {
+        if ($locale === null || $locale === '') {
+            return 'en-US';
+        }
+
+        $locale = (string) $locale;
+
+        // Validate locale format using LocaleEnum
+        if (LocaleEnum::isValid($locale)) {
+            return $locale;
+        }
+
+        // Invalid locale - fallback to en-US
+        return 'en-US';
     }
 
     /**
