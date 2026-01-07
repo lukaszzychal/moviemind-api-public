@@ -680,22 +680,29 @@ Every entry follows this structure:
 
 ---
 
-#### `TASK-030` – Document the “three-line test” technique
-- **Status:** ⏳ PENDING
+#### `TASK-030` – Document the "three-line test" technique
+- **Status:** ✅ COMPLETED
 - **Priority:** 🟢 Low
 - **Estimated time:** 1–2 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** -- (AI agent will auto-calc when applicable)
-- **Execution:** TBD
+- **Start time:** 2025-01-07
+- **End time:** 2025-01-07
+- **Duration:** ~2h
+- **Execution:** 🤖 AI Agent
 - **Description:** Collect references and produce a knowledge document describing the practice of structuring tests with only three helper calls (Given/When/Then).
 - **Details:**
-  - Gather sources (articles, PHP/Laravel examples) discussing “three-line” / “three-act” tests.
-  - Create a PL/EN tutorial in `docs/knowledge/tutorials/` explaining the technique, code samples, benefits, and trade-offs.
-  - Suggest naming conventions for helper methods (`given*`, `when*`, `then*`) and guidance for PHPUnit integration.
-  - Link the document with `TASK-029` and update testing guidelines once the approach is adopted.
-- **Dependencies:** `TASK-029`
+  - ✅ Gathered sources including test checklist (Level L) and AAA cheat sheet from provided images
+  - ✅ Created PL/EN tutorial in `docs/knowledge/tutorials/` explaining the technique, code samples, benefits, and trade-offs
+  - ✅ Documented naming conventions for helper methods (`given*`, `when*`, `then*`, `and*`) and PHPUnit integration
+  - ✅ Linked the document with `TASK-029` and included references to test patterns documentation
+  - ✅ Analyzed and integrated information from two provided images:
+    - Test Checklist at Level L (TDD, independent tests, fail-fast principles)
+    - AAA Test Structure Cheat Sheet (detailed test structure with comments)
+- **Dependencies:** `TASK-029` ✅
 - **Created:** 2025-11-10
+- **Completed:** 2025-01-07
+- **Related documents:**
+  - [`docs/knowledge/tutorials/THREE_LINE_TEST_TECHNIQUE.pl.md`](../../knowledge/tutorials/THREE_LINE_TEST_TECHNIQUE.pl.md)
+  - [`docs/knowledge/tutorials/THREE_LINE_TEST_TECHNIQUE.en.md`](../../knowledge/tutorials/THREE_LINE_TEST_TECHNIQUE.en.md)
 
 ---
 

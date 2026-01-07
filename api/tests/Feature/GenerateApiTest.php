@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
@@ -20,6 +22,16 @@ class GenerateApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    private $response = null;
+
+    private $movie = null;
+
+    private $person = null;
+
+    private $tvSeries = null;
+
+    private $tvShow = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,573 +43,598 @@ class GenerateApiTest extends TestCase
 
     public function test_generate_movie_blocked_when_flag_off(): void
     {
-        Feature::deactivate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'the-matrix',
-        ]);
-
-        $resp->assertStatus(403)
-            ->assertJson(['error' => 'Feature not available']);
+        $this->givenFeatureFlagDisabled('ai_description_generation')
+            ->whenGeneratingMovie('the-matrix')
+            ->thenShouldReturn403WithError('Feature not available');
     }
 
     public function test_generate_movie_allowed_when_flag_on(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'the-matrix',
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_id',
-                'status',
-                'message',
-                'slug',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'the-matrix',
-                'locale' => 'en-US',
-            ]);
-
-        // Verify Event was dispatched
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'the-matrix'
-                && $event->locale === 'en-US';
-        });
-
-        // Note: Queue::fake() prevents Listener from executing, so we only check Event
-        // If Event is dispatched and Listener is registered, Job will be queued
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('the-matrix')
+            ->thenShouldReturn202WithJobStructure()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('the-matrix')
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'the-matrix'
+                    && $event->locale === 'en-US';
+            });
     }
 
     public function test_generate_movie_respects_locale_and_context(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'the-matrix',
-            'locale' => 'pl-PL',
-            'context_tag' => 'modern',
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'the-matrix',
-                'locale' => 'pl-PL',
-                'context_tag' => 'modern',
-            ]);
-
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'the-matrix'
-                && $event->locale === 'pl-PL'
-                && $event->contextTag === 'modern';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('the-matrix', ['locale' => 'pl-PL', 'context_tag' => 'modern'])
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('the-matrix')
+            ->andShouldHaveLocale('pl-PL')
+            ->andShouldHaveContextTag('modern')
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'the-matrix'
+                    && $event->locale === 'pl-PL'
+                    && $event->contextTag === 'modern';
+            });
     }
 
     public function test_generate_movie_existing_slug_triggers_regeneration_flow(): void
     {
-        Feature::activate('ai_description_generation');
-        $movie = Movie::firstOrFail();
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $movie->slug,
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => $movie->slug,
-                'existing_id' => $movie->id,
-                'description_id' => $movie->default_description_id,
-                'locale' => 'en-US',
-            ]);
-
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) use ($movie) {
-            return $event->slug === $movie->slug
-                && $event->locale === 'en-US';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->andMovieExistsInDatabase()
+            ->whenGeneratingMovie($this->movie->slug)
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug($this->movie->slug)
+            ->andShouldHaveExistingId($this->movie->id)
+            ->andShouldHaveDescriptionId($this->movie->default_description_id)
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === $this->movie->slug
+                    && $event->locale === 'en-US';
+            });
     }
 
     public function test_generate_person_blocked_when_flag_off(): void
     {
-        Feature::deactivate('ai_bio_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => 'keanu-reeves',
-        ]);
-
-        $resp->assertStatus(403)
-            ->assertJson(['error' => 'Feature not available']);
+        $this->givenFeatureFlagDisabled('ai_bio_generation')
+            ->whenGeneratingPerson('keanu-reeves')
+            ->thenShouldReturn403WithError('Feature not available');
     }
 
     public function test_generate_person_allowed_when_flag_on(): void
     {
-        Feature::activate('ai_bio_generation');
-
-        // Use a slug that doesn't exist in seeders
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => 'new-person-slug',
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_id',
-                'status',
-                'message',
-                'slug',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'new-person-slug',
-                'locale' => 'en-US',
-            ]);
-
-        // Verify Event was dispatched
-        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'new-person-slug'
-                && $event->locale === 'en-US';
-        });
-
-        // Note: Queue::fake() prevents Listener from executing, so we only check Event
-        // If Event is dispatched and Listener is registered, Job will be queued
+        $this->givenFeatureFlagEnabled('ai_bio_generation')
+            ->whenGeneratingPerson('new-person-slug')
+            ->thenShouldReturn202WithJobStructure()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('new-person-slug')
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(PersonGenerationRequested::class, function ($event) {
+                return $event->slug === 'new-person-slug'
+                    && $event->locale === 'en-US';
+            });
     }
 
     public function test_generate_person_respects_locale_and_context(): void
     {
-        Feature::activate('ai_bio_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => 'new-person-slug',
-            'locale' => 'pl-PL',
-            'context_tag' => 'critical',
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'new-person-slug',
-                'locale' => 'pl-PL',
-                'context_tag' => 'critical',
-            ]);
-
-        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'new-person-slug'
-                && $event->locale === 'pl-PL'
-                && $event->contextTag === 'critical';
-        });
+        $this->givenFeatureFlagEnabled('ai_bio_generation')
+            ->whenGeneratingPerson('new-person-slug', ['locale' => 'pl-PL', 'context_tag' => 'critical'])
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('new-person-slug')
+            ->andShouldHaveLocale('pl-PL')
+            ->andShouldHaveContextTag('critical')
+            ->andEventShouldBeDispatched(PersonGenerationRequested::class, function ($event) {
+                return $event->slug === 'new-person-slug'
+                    && $event->locale === 'pl-PL'
+                    && $event->contextTag === 'critical';
+            });
     }
 
     public function test_generate_person_existing_slug_triggers_regeneration_flow(): void
     {
-        Feature::activate('ai_bio_generation');
-        $person = Person::firstOrFail();
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => $person->slug,
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => $person->slug,
-                'existing_id' => $person->id,
-                'bio_id' => $person->default_bio_id,
-                'locale' => 'en-US',
-            ]);
-
-        Event::assertDispatched(PersonGenerationRequested::class, function ($event) use ($person) {
-            return $event->slug === $person->slug
-                && $event->locale === 'en-US';
-        });
+        $this->givenFeatureFlagEnabled('ai_bio_generation')
+            ->andPersonExistsInDatabase()
+            ->whenGeneratingPerson($this->person->slug)
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug($this->person->slug)
+            ->andShouldHaveExistingId($this->person->id)
+            ->andShouldHaveBioId($this->person->default_bio_id)
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(PersonGenerationRequested::class, function ($event) {
+                return $event->slug === $this->person->slug
+                    && $event->locale === 'en-US';
+            });
     }
 
     public function test_generate_rejects_actor_entity_type(): void
     {
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'ACTOR',
-            'entity_id' => 'test-actor',
-        ]);
-
-        $resp->assertStatus(422)
-            ->assertJsonValidationErrors(['entity_type']);
+        $this->whenGeneratingWithEntityType('ACTOR', 'test-actor')
+            ->thenShouldReturn422()
+            ->andShouldHaveValidationError('entity_type');
     }
 
     public function test_generate_requires_string_entity_id(): void
     {
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 123,
-        ]);
-
-        $resp->assertStatus(422)
-            ->assertJsonValidationErrors(['entity_id']);
+        $this->whenGeneratingMovieWithInvalidEntityId(123)
+            ->thenShouldReturn422()
+            ->andShouldHaveValidationError('entity_id');
     }
 
     public function test_generate_movie_with_default_context_tag(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'default-context-movie',
-            // No context_tag provided - should use default
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_id',
-                'status',
-                'slug',
-                'locale',
-            ]);
-
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'default-context-movie'
-                && $event->locale === 'en-US'
-                && ($event->contextTag === null || $event->contextTag === 'DEFAULT');
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('default-context-movie')
+            ->thenShouldReturn202()
+            ->andShouldHaveJobStructure()
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'default-context-movie'
+                    && $event->locale === 'en-US'
+                    && ($event->contextTag === null || $event->contextTag === 'DEFAULT');
+            });
     }
 
     public function test_generate_movie_with_humorous_context_tag(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'humorous-context-movie',
-            'context_tag' => 'humorous',
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'humorous-context-movie',
-                'locale' => 'en-US',
-                'context_tag' => 'humorous',
-            ]);
-
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'humorous-context-movie'
-                && $event->locale === 'en-US'
-                && $event->contextTag === 'humorous';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('humorous-context-movie', ['context_tag' => 'humorous'])
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('humorous-context-movie')
+            ->andShouldHaveLocale('en-US')
+            ->andShouldHaveContextTag('humorous')
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'humorous-context-movie'
+                    && $event->locale === 'en-US'
+                    && $event->contextTag === 'humorous';
+            });
     }
 
     public function test_generate_movie_context_tag_null(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'null-context-movie',
-            'context_tag' => null,
-        ]);
-
-        $resp->assertStatus(202);
-
-        // When context_tag is explicitly null, should fallback to default
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'null-context-movie';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('null-context-movie', ['context_tag' => null])
+            ->thenShouldReturn202()
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'null-context-movie';
+            });
     }
 
     public function test_generate_movie_with_invalid_context_tag(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'invalid-context-movie',
-            'context_tag' => 'invalid-tag',
-        ]);
-
-        // Invalid context_tag should be rejected by validation
-        // When single string is converted to array, validation error key is context_tag.0
-        $resp->assertStatus(422)
-            ->assertJsonValidationErrors(['context_tag.0']);
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('invalid-context-movie', ['context_tag' => 'invalid-tag'])
+            ->thenShouldReturn422()
+            ->andShouldHaveValidationError('context_tag.0');
     }
 
     public function test_generate_movie_with_multiple_context_tags(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'multiple-context-movie',
-            'context_tag' => ['modern', 'critical', 'humorous'],
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_ids',
-                'status',
-                'message',
-                'slug',
-                'context_tags',
-                'locale',
-                'jobs',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'multiple-context-movie',
-                'context_tags' => ['modern', 'critical', 'humorous'],
-                'locale' => 'en-US',
-            ]);
-
-        // Verify multiple events were dispatched (one for each context tag)
-        Event::assertDispatched(MovieGenerationRequested::class, 3);
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'multiple-context-movie'
-                && $event->contextTag === 'modern';
-        });
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'multiple-context-movie'
-                && $event->contextTag === 'critical';
-        });
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'multiple-context-movie'
-                && $event->contextTag === 'humorous';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('multiple-context-movie', ['context_tag' => ['modern', 'critical', 'humorous']])
+            ->thenShouldReturn202()
+            ->andShouldHaveMultipleJobsStructure()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('multiple-context-movie')
+            ->andShouldHaveContextTags(['modern', 'critical', 'humorous'])
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatchedTimes(MovieGenerationRequested::class, 3)
+            ->andEventShouldHaveContextTag('modern')
+            ->andEventShouldHaveContextTag('critical')
+            ->andEventShouldHaveContextTag('humorous');
     }
 
     public function test_generate_person_with_multiple_context_tags(): void
     {
-        Feature::activate('ai_bio_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => 'multiple-context-person',
-            'context_tag' => ['modern', 'critical'],
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_ids',
-                'status',
-                'message',
-                'slug',
-                'context_tags',
-                'locale',
-                'jobs',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'multiple-context-person',
-                'context_tags' => ['modern', 'critical'],
-                'locale' => 'en-US',
-            ]);
-
-        // Verify multiple events were dispatched (one for each context tag)
-        Event::assertDispatched(PersonGenerationRequested::class, 2);
-        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'multiple-context-person'
-                && $event->contextTag === 'modern';
-        });
-        Event::assertDispatched(PersonGenerationRequested::class, function ($event) {
-            return $event->slug === 'multiple-context-person'
-                && $event->contextTag === 'critical';
-        });
+        $this->givenFeatureFlagEnabled('ai_bio_generation')
+            ->whenGeneratingPerson('multiple-context-person', ['context_tag' => ['modern', 'critical']])
+            ->thenShouldReturn202()
+            ->andShouldHaveMultipleJobsStructure()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('multiple-context-person')
+            ->andShouldHaveContextTags(['modern', 'critical'])
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatchedTimes(PersonGenerationRequested::class, 2)
+            ->andEventShouldHaveContextTag('modern')
+            ->andEventShouldHaveContextTag('critical');
     }
 
     public function test_generate_movie_with_single_context_tag_array_backward_compatibility(): void
     {
-        Feature::activate('ai_description_generation');
-
-        // Single context tag as array should work (backward compatibility)
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'single-array-context-movie',
-            'context_tag' => ['modern'],
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'single-array-context-movie',
-                'context_tag' => 'modern',
-            ]);
-
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'single-array-context-movie'
-                && $event->contextTag === 'modern';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('single-array-context-movie', ['context_tag' => ['modern']])
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('single-array-context-movie')
+            ->andShouldHaveContextTag('modern')
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'single-array-context-movie'
+                    && $event->contextTag === 'modern';
+            });
     }
 
     public function test_generate_movie_with_empty_context_tag_array(): void
     {
-        Feature::activate('ai_description_generation');
-
-        // Empty array should be treated as null
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => 'empty-context-movie',
-            'context_tag' => [],
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_id',
-                'status',
-                'slug',
-                'locale',
-            ]);
-
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->slug === 'empty-context-movie'
-                && ($event->contextTag === null || $event->contextTag === 'DEFAULT');
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingMovie('empty-context-movie', ['context_tag' => []])
+            ->thenShouldReturn202()
+            ->andShouldHaveJobStructure()
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, function ($event) {
+                return $event->slug === 'empty-context-movie'
+                    && ($event->contextTag === null || $event->contextTag === 'DEFAULT');
+            });
     }
 
     public function test_generate_tv_series_blocked_when_flag_off(): void
     {
-        Feature::deactivate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'TV_SERIES',
-            'entity_id' => 'breaking-bad-2008',
-        ]);
-
-        $resp->assertStatus(403)
-            ->assertJson(['error' => 'Feature not available']);
+        $this->givenFeatureFlagDisabled('ai_description_generation')
+            ->whenGeneratingTvSeries('breaking-bad-2008')
+            ->thenShouldReturn403WithError('Feature not available');
     }
 
     public function test_generate_tv_series_allowed_when_flag_on(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'TV_SERIES',
-            'entity_id' => 'breaking-bad-2008',
-        ]);
-
-        if ($resp->status() !== 202) {
-            dump($resp->json());
-        }
-
-        $resp->assertStatus(202)
-            ->assertJsonStructure([
-                'job_id',
-                'status',
-                'message',
-                'slug',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'breaking-bad-2008',
-                'locale' => 'en-US',
-            ]);
-
-        Event::assertDispatched(TvSeriesGenerationRequested::class, function ($event) {
-            return $event->slug === 'breaking-bad-2008'
-                && $event->locale === 'en-US';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingTvSeries('breaking-bad-2008')
+            ->thenShouldReturn202WithJobStructure()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('breaking-bad-2008')
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(TvSeriesGenerationRequested::class, function ($event) {
+                return $event->slug === 'breaking-bad-2008'
+                    && $event->locale === 'en-US';
+            });
     }
 
     public function test_generate_tv_series_existing_slug_triggers_regeneration_flow(): void
     {
-        Feature::activate('ai_description_generation');
-
-        $tvSeries = TvSeries::factory()->create([
-            'title' => 'Breaking Bad',
-            'slug' => 'breaking-bad-2008',
-        ]);
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'TV_SERIES',
-            'entity_id' => $tvSeries->slug,
-        ]);
-
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => $tvSeries->slug,
-                'existing_id' => $tvSeries->id,
-                'locale' => 'en-US',
-            ]);
-
-        Event::assertDispatched(TvSeriesGenerationRequested::class, function ($event) use ($tvSeries) {
-            return $event->slug === $tvSeries->slug
-                && $event->locale === 'en-US';
-        });
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->andTvSeriesExistsInDatabase('breaking-bad-2008')
+            ->whenGeneratingTvSeries($this->tvSeries->slug)
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug($this->tvSeries->slug)
+            ->andShouldHaveExistingId($this->tvSeries->id)
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(TvSeriesGenerationRequested::class, function ($event) {
+                return $event->slug === $this->tvSeries->slug
+                    && $event->locale === 'en-US';
+            });
     }
 
     public function test_generate_tv_show_blocked_when_flag_off(): void
     {
-        Feature::deactivate('ai_description_generation');
-
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'TV_SHOW',
-            'entity_id' => 'the-tonight-show-1954',
-        ]);
-
-        $resp->assertStatus(403)
-            ->assertJson(['error' => 'Feature not available']);
+        $this->givenFeatureFlagDisabled('ai_description_generation')
+            ->whenGeneratingTvShow('the-tonight-show-1954')
+            ->thenShouldReturn403WithError('Feature not available');
     }
 
     public function test_generate_tv_show_allowed_when_flag_on(): void
     {
-        Feature::activate('ai_description_generation');
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingTvShow('the-tonight-show-1954')
+            ->thenShouldReturn202WithJobStructure()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('the-tonight-show-1954')
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(TvShowGenerationRequested::class, function ($event) {
+                return $event->slug === 'the-tonight-show-1954'
+                    && $event->locale === 'en-US';
+            });
+    }
 
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'TV_SHOW',
-            'entity_id' => 'the-tonight-show-1954',
+    public function test_generate_tv_show_existing_slug_triggers_regeneration_flow(): void
+    {
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->andTvShowExistsInDatabase('the-tonight-show-1954')
+            ->whenGeneratingTvShow($this->tvShow->slug)
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug($this->tvShow->slug)
+            ->andShouldHaveExistingId($this->tvShow->id)
+            ->andShouldHaveLocale('en-US')
+            ->andEventShouldBeDispatched(TvShowGenerationRequested::class, function ($event) {
+                return $event->slug === $this->tvShow->slug
+                    && $event->locale === 'en-US';
+            });
+    }
+
+    // ============================================
+    // GIVEN helpers - Ustalenie kontekstu
+    // ============================================
+
+    private function givenFeatureFlagEnabled(string $feature): self
+    {
+        Feature::activate($feature);
+
+        return $this;
+    }
+
+    private function givenFeatureFlagDisabled(string $feature): self
+    {
+        Feature::deactivate($feature);
+
+        return $this;
+    }
+
+    private function andMovieExistsInDatabase(): self
+    {
+        $this->movie = Movie::firstOrFail();
+
+        return $this;
+    }
+
+    private function andPersonExistsInDatabase(): self
+    {
+        $this->person = Person::firstOrFail();
+
+        return $this;
+    }
+
+    private function andTvSeriesExistsInDatabase(string $slug): self
+    {
+        $this->tvSeries = TvSeries::factory()->create([
+            'title' => 'Breaking Bad',
+            'slug' => $slug,
         ]);
 
-        $resp->assertStatus(202)
+        return $this;
+    }
+
+    private function andTvShowExistsInDatabase(string $slug): self
+    {
+        $this->tvShow = TvShow::factory()->create([
+            'title' => 'The Tonight Show',
+            'slug' => $slug,
+        ]);
+
+        return $this;
+    }
+
+    // ============================================
+    // WHEN helpers - Wykonanie akcji
+    // ============================================
+
+    private function whenGeneratingMovie(string $slug, array $options = []): self
+    {
+        $payload = array_merge([
+            'entity_type' => 'MOVIE',
+            'entity_id' => $slug,
+        ], $options);
+
+        $this->response = $this->postJson('/api/v1/generate', $payload);
+
+        return $this;
+    }
+
+    private function whenGeneratingPerson(string $slug, array $options = []): self
+    {
+        $payload = array_merge([
+            'entity_type' => 'PERSON',
+            'entity_id' => $slug,
+        ], $options);
+
+        $this->response = $this->postJson('/api/v1/generate', $payload);
+
+        return $this;
+    }
+
+    private function whenGeneratingTvSeries(string $slug, array $options = []): self
+    {
+        $payload = array_merge([
+            'entity_type' => 'TV_SERIES',
+            'entity_id' => $slug,
+        ], $options);
+
+        $this->response = $this->postJson('/api/v1/generate', $payload);
+
+        return $this;
+    }
+
+    private function whenGeneratingTvShow(string $slug, array $options = []): self
+    {
+        $payload = array_merge([
+            'entity_type' => 'TV_SHOW',
+            'entity_id' => $slug,
+        ], $options);
+
+        $this->response = $this->postJson('/api/v1/generate', $payload);
+
+        return $this;
+    }
+
+    private function whenGeneratingWithEntityType(string $entityType, string $entityId): self
+    {
+        $this->response = $this->postJson('/api/v1/generate', [
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+        ]);
+
+        return $this;
+    }
+
+    private function whenGeneratingMovieWithInvalidEntityId($entityId): self
+    {
+        $this->response = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $entityId,
+        ]);
+
+        return $this;
+    }
+
+    // ============================================
+    // THEN helpers - Weryfikacja rezultatu
+    // ============================================
+
+    private function thenShouldReturn202(): self
+    {
+        $this->response->assertStatus(202);
+
+        return $this;
+    }
+
+    private function thenShouldReturn403WithError(string $error): self
+    {
+        $this->response->assertStatus(403)
+            ->assertJson(['error' => $error]);
+
+        return $this;
+    }
+
+    private function thenShouldReturn422(): self
+    {
+        $this->response->assertStatus(422);
+
+        return $this;
+    }
+
+    private function thenShouldReturn202WithJobStructure(): self
+    {
+        $this->response->assertStatus(202)
             ->assertJsonStructure([
                 'job_id',
                 'status',
                 'message',
                 'slug',
-            ])
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => 'the-tonight-show-1954',
-                'locale' => 'en-US',
             ]);
 
-        Event::assertDispatched(TvShowGenerationRequested::class, function ($event) {
-            return $event->slug === 'the-tonight-show-1954'
-                && $event->locale === 'en-US';
-        });
+        return $this;
     }
 
-    public function test_generate_tv_show_existing_slug_triggers_regeneration_flow(): void
+    // ============================================
+    // AND helpers - Dodatkowe weryfikacje
+    // ============================================
+
+    private function andShouldHaveStatus(string $status): self
     {
-        Feature::activate('ai_description_generation');
+        $this->response->assertJson(['status' => $status]);
 
-        $tvShow = TvShow::factory()->create([
-            'title' => 'The Tonight Show',
-            'slug' => 'the-tonight-show-1954',
+        return $this;
+    }
+
+    private function andShouldHaveSlug(string $slug): self
+    {
+        $this->response->assertJson(['slug' => $slug]);
+
+        return $this;
+    }
+
+    private function andShouldHaveLocale(string $locale): self
+    {
+        $this->response->assertJson(['locale' => $locale]);
+
+        return $this;
+    }
+
+    private function andShouldHaveContextTag(string $contextTag): self
+    {
+        $this->response->assertJson(['context_tag' => $contextTag]);
+
+        return $this;
+    }
+
+    private function andShouldHaveContextTags(array $contextTags): self
+    {
+        $this->response->assertJson(['context_tags' => $contextTags]);
+
+        return $this;
+    }
+
+    private function andShouldHaveExistingId(string $id): self
+    {
+        $this->response->assertJson(['existing_id' => $id]);
+
+        return $this;
+    }
+
+    private function andShouldHaveDescriptionId(?string $id): self
+    {
+        $this->response->assertJson(['description_id' => $id]);
+
+        return $this;
+    }
+
+    private function andShouldHaveBioId(?string $id): self
+    {
+        $this->response->assertJson(['bio_id' => $id]);
+
+        return $this;
+    }
+
+    private function andShouldHaveJobStructure(): self
+    {
+        $this->response->assertJsonStructure([
+            'job_id',
+            'status',
+            'slug',
+            'locale',
         ]);
 
-        $resp = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'TV_SHOW',
-            'entity_id' => $tvShow->slug,
+        return $this;
+    }
+
+    private function andShouldHaveMultipleJobsStructure(): self
+    {
+        $this->response->assertJsonStructure([
+            'job_ids',
+            'status',
+            'message',
+            'slug',
+            'context_tags',
+            'locale',
+            'jobs',
         ]);
 
-        $resp->assertStatus(202)
-            ->assertJson([
-                'status' => 'PENDING',
-                'slug' => $tvShow->slug,
-                'existing_id' => $tvShow->id,
-                'locale' => 'en-US',
-            ]);
+        return $this;
+    }
 
-        Event::assertDispatched(TvShowGenerationRequested::class, function ($event) use ($tvShow) {
-            return $event->slug === $tvShow->slug
-                && $event->locale === 'en-US';
-        });
+    private function andShouldHaveValidationError(string $field): self
+    {
+        $this->response->assertJsonValidationErrors([$field]);
+
+        return $this;
+    }
+
+    private function andEventShouldBeDispatched(string $eventClass, callable $assertion): self
+    {
+        Event::assertDispatched($eventClass, $assertion);
+
+        return $this;
+    }
+
+    private function andEventShouldBeDispatchedTimes(string $eventClass, int $times): self
+    {
+        Event::assertDispatched($eventClass, $times);
+
+        return $this;
+    }
+
+    private function andEventShouldHaveContextTag(string $contextTag): self
+    {
+        // Check all possible generation event types
+        $eventTypes = [
+            MovieGenerationRequested::class,
+            PersonGenerationRequested::class,
+            TvSeriesGenerationRequested::class,
+            TvShowGenerationRequested::class,
+        ];
+
+        $found = false;
+        foreach ($eventTypes as $eventType) {
+            $dispatched = Event::dispatched($eventType);
+            foreach ($dispatched as $event) {
+                if (isset($event[0]) && $event[0]->contextTag === $contextTag) {
+                    $found = true;
+                    break 2;
+                }
+            }
+        }
+
+        $this->assertTrue($found, "No event with context_tag '{$contextTag}' was dispatched");
+
+        return $this;
     }
 }
