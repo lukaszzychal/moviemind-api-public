@@ -495,6 +495,8 @@ public function test_complex_scenario(): void
 
 ## Three-Line Test Technique
 
+> **📚 For detailed documentation, see:** [`THREE_LINE_TEST_TECHNIQUE.en.md`](./THREE_LINE_TEST_TECHNIQUE.en.md) (English) or [`THREE_LINE_TEST_TECHNIQUE.pl.md`](./THREE_LINE_TEST_TECHNIQUE.pl.md) (Polish)
+
 ### Overview
 
 The **"three-line test"** technique is a variant of GWT that uses **helper methods** to create extremely readable tests:

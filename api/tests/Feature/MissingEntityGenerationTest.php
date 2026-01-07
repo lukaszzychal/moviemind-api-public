@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
@@ -15,6 +17,14 @@ class MissingEntityGenerationTest extends TestCase
 {
     use RefreshDatabase;
 
+    private $response = null;
+
+    private $response1 = null;
+
+    private $response2 = null;
+
+    private $fake = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,99 +36,57 @@ class MissingEntityGenerationTest extends TestCase
 
     public function test_movie_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
-        // GIVEN: AI generation is enabled and movie exists in TMDb
-        Feature::activate('ai_description_generation');
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setMovie('annihilation', [
-            'title' => 'Annihilation',
-            'release_date' => '2018-02-23',
-            'overview' => 'A biologist signs up for a dangerous expedition.',
-            'id' => 300668,
-            'director' => 'Alex Garland',
-        ]);
-
-        // WHEN: Requesting a movie that doesn't exist locally
-        $res = $this->getJson('/api/v1/movies/annihilation');
-
-        // THEN: Should return 202 with job details
-        $res->assertStatus(202)
-            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
-            ->assertJson(['locale' => 'en-US']);
-
-        // THEN: Confidence fields should be properly set
-        $this->assertNotNull($res->json('confidence'));
-        $this->assertNotSame('unknown', $res->json('confidence_level'));
-        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+        $this->givenAiGenerationEnabled()
+            ->andMovieExistsInTmdb('annihilation', [
+                'title' => 'Annihilation',
+                'release_date' => '2018-02-23',
+                'overview' => 'A biologist signs up for a dangerous expedition.',
+                'id' => 300668,
+                'director' => 'Alex Garland',
+            ])
+            ->whenRequestingMovie('annihilation')
+            ->thenShouldReturn202WithJobDetails()
+            ->andConfidenceFieldsShouldBeSet();
     }
 
     public function test_movie_missing_returns_404_when_not_found_in_tmdb(): void
     {
-        // GIVEN: AI generation and TMDb verification are enabled, but movie doesn't exist in TMDb
-        Feature::activate('ai_description_generation');
-        Feature::activate('tmdb_verification');
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setMovie('non-existent-movie-xyz', null);
-        $fake->setMovieSearchResults('non-existent-movie-xyz', []);
-
-        // WHEN: Requesting a movie that doesn't exist in TMDb
-        $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
-
-        // THEN: Should return 404 with error message
-        $res->assertStatus(404)
-            ->assertJson(['error' => 'Movie not found']);
+        $this->givenAiGenerationEnabled()
+            ->andTmdbVerificationEnabled()
+            ->andMovieDoesNotExistInTmdb('non-existent-movie-xyz')
+            ->whenRequestingMovie('non-existent-movie-xyz')
+            ->thenShouldReturn404WithError('Movie not found');
     }
 
     public function test_movie_missing_returns_404_when_flag_off(): void
     {
-        // GIVEN: AI generation is disabled
-        Feature::deactivate('ai_description_generation');
-
-        // WHEN: Requesting a movie that doesn't exist locally
-        $res = $this->getJson('/api/v1/movies/annihilation');
-
-        // THEN: Should return 404
-        $res->assertStatus(404);
+        $this->givenAiGenerationDisabled()
+            ->whenRequestingMovie('annihilation')
+            ->thenShouldReturn404();
     }
 
     public function test_person_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
-        // GIVEN: AI bio generation is enabled and person exists in TMDb
-        Feature::activate('ai_bio_generation');
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setPerson('john-doe', [
-            'name' => 'John Doe',
-            'birthday' => '1980-01-01',
-            'place_of_birth' => 'New York, USA',
-            'id' => 123456,
-            'biography' => 'An actor',
-        ]);
-
-        // WHEN: Requesting a person that doesn't exist locally
-        $res = $this->getJson('/api/v1/people/john-doe');
-
-        // THEN: Should return 202 with job details
-        $res->assertStatus(202)
-            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
-            ->assertJson(['locale' => 'en-US']);
-
-        // THEN: Confidence fields should be properly set
-        $this->assertNotNull($res->json('confidence'));
-        $this->assertNotSame('unknown', $res->json('confidence_level'));
-        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+        $this->givenAiBioGenerationEnabled()
+            ->andPersonExistsInTmdb('john-doe', [
+                'name' => 'John Doe',
+                'birthday' => '1980-01-01',
+                'place_of_birth' => 'New York, USA',
+                'id' => 123456,
+                'biography' => 'An actor',
+            ])
+            ->whenRequestingPerson('john-doe')
+            ->thenShouldReturn202WithJobDetails()
+            ->andConfidenceFieldsShouldBeSet();
     }
 
     public function test_person_missing_returns_404_when_not_found_in_tmdb(): void
     {
-        Feature::activate('ai_bio_generation');
-        Feature::activate('tmdb_verification');
-
-        // Use fake EntityVerificationService - set person to null (not found)
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setPerson('non-existent-person-xyz', null);
-
-        $res = $this->getJson('/api/v1/people/non-existent-person-xyz');
-        $res->assertStatus(404)
-            ->assertJson(['error' => 'Person not found']);
+        $this->givenAiBioGenerationEnabled()
+            ->andTmdbVerificationEnabled()
+            ->andPersonDoesNotExistInTmdb('non-existent-person-xyz')
+            ->whenRequestingPerson('non-existent-person-xyz')
+            ->thenShouldReturn404WithError('Person not found');
     }
 
     /**
@@ -138,31 +106,28 @@ class MissingEntityGenerationTest extends TestCase
             'Needs logic to track active generation jobs and reuse them even when movie exists without descriptions.'
         );
 
-        Feature::activate('ai_description_generation');
+        $this->givenAiGenerationEnabled()
+            ->andMovieExistsInTmdb('brand-new-movie', [
+                'title' => 'Brand New Movie',
+                'release_date' => '2024-01-01',
+                'overview' => 'A brand new movie',
+                'id' => 123456,
+            ])
+            ->whenRequestingMovie('brand-new-movie')
+            ->thenShouldReturn202();
 
-        // Use fake EntityVerificationService instead of Mockery
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setMovie('brand-new-movie', [
-            'title' => 'Brand New Movie',
-            'release_date' => '2024-01-01',
-            'overview' => 'A brand new movie',
-            'id' => 123456,
-        ]);
+        $jobId = $this->response->json('job_id');
 
-        $first = $this->getJson('/api/v1/movies/brand-new-movie');
-        $first->assertStatus(202);
-        $jobId = $first->json('job_id');
-
-        $second = $this->getJson('/api/v1/movies/brand-new-movie');
-        $second->assertStatus(202);
-        $this->assertSame($jobId, $second->json('job_id'));
+        $this->whenRequestingMovie('brand-new-movie')
+            ->thenShouldReturn202()
+            ->andJobIdShouldBe($jobId);
     }
 
     public function test_person_missing_returns_404_when_flag_off(): void
     {
-        Feature::deactivate('ai_bio_generation');
-        $res = $this->getJson('/api/v1/people/john-doe');
-        $res->assertStatus(404);
+        $this->givenAiBioGenerationDisabled()
+            ->whenRequestingPerson('john-doe')
+            ->thenShouldReturn404();
     }
 
     /**
@@ -184,369 +149,523 @@ class MissingEntityGenerationTest extends TestCase
             'even when movie exists without descriptions.'
         );
 
-        Feature::activate('ai_description_generation');
-
-        // Use real cache (array driver) to test slot management mechanism
-        config(['cache.default' => 'array']);
-        Cache::clear();
-
-        // Use Event::fake() to count dispatched events
-        Event::fake();
-
-        $slug = 'concurrent-test-movie';
-
-        // Use fake EntityVerificationService instead of Mockery
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setMovie($slug, [
-            'title' => 'Concurrent Test Movie',
-            'release_date' => '2024-01-01',
-            'overview' => 'A test movie',
-            'id' => 123456,
-        ]);
-
-        // Simulate "parallel" requests (sequential but very close in time)
-        // This tests the acquireGenerationSlot mechanism
-        $response1 = $this->getJson("/api/v1/movies/{$slug}");
-        $response2 = $this->getJson("/api/v1/movies/{$slug}"); // Immediately after
-
-        // Both should return 202
-        $response1->assertStatus(202);
-        $response2->assertStatus(202);
-
-        // Both should return the SAME job_id (slot management working)
-        $jobId1 = $response1->json('job_id');
-        $jobId2 = $response2->json('job_id');
-        $this->assertSame($jobId1, $jobId2, 'Concurrent requests should reuse the same job');
-
-        // Verify only one event was dispatched (slot management prevents duplicate jobs)
-        Event::assertDispatched(MovieGenerationRequested::class, 1);
+        $this->givenAiGenerationEnabled()
+            ->andRealCacheEnabled()
+            ->andEventFakeEnabled()
+            ->andMovieExistsInTmdb('concurrent-test-movie', [
+                'title' => 'Concurrent Test Movie',
+                'release_date' => '2024-01-01',
+                'overview' => 'A test movie',
+                'id' => 123456,
+            ])
+            ->whenRequestingMovieConcurrently('concurrent-test-movie')
+            ->thenBothResponsesShouldReturn202()
+            ->andBothShouldHaveSameJobId()
+            ->andEventShouldBeDispatchedOnce(MovieGenerationRequested::class);
     }
 
     public function test_concurrent_requests_via_generate_endpoint_only_dispatch_one_job(): void
     {
-        Feature::activate('ai_description_generation');
-
-        // Use real cache (array driver) to test slot management mechanism
-        config(['cache.default' => 'array']);
-        Cache::clear();
-
-        // Use Event::fake() to count dispatched events
-        Event::fake();
-
-        $slug = 'concurrent-generate-test';
-
-        // Simulate "parallel" requests via POST /api/v1/generate
-        $response1 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $slug,
-        ]);
-        $response2 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $slug,
-        ]); // Immediately after
-
-        // Both should return 202
-        $response1->assertStatus(202);
-        $response2->assertStatus(202);
-
-        // Both should return the SAME job_id (slot management working)
-        $jobId1 = $response1->json('job_id');
-        $jobId2 = $response2->json('job_id');
-        $this->assertSame($jobId1, $jobId2, 'Concurrent requests should reuse the same job');
-
-        // Verify only one event was dispatched (slot management prevents duplicate jobs)
-        Event::assertDispatched(MovieGenerationRequested::class, 1);
+        $this->givenAiGenerationEnabled()
+            ->andRealCacheEnabled()
+            ->andEventFakeEnabled()
+            ->whenGeneratingMovieConcurrently('concurrent-generate-test')
+            ->thenBothResponsesShouldReturn202()
+            ->andBothShouldHaveSameJobId()
+            ->andEventShouldBeDispatchedOnce(MovieGenerationRequested::class);
     }
 
     public function test_concurrent_requests_for_same_person_slug_only_dispatch_one_job(): void
     {
-        Feature::activate('ai_bio_generation');
-
-        // Use fake EntityVerificationService instead of Mockery
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setPerson('concurrent-test-person', [
-            'name' => 'Test Person',
-            'birthday' => '1980-01-01',
-            'place_of_birth' => 'Test City',
-            'id' => 123,
-        ]);
-
-        // Use real cache (array driver) to test slot management mechanism
-        config(['cache.default' => 'array']);
-        Cache::clear();
-
-        // Use Event::fake() to count dispatched events
-        Event::fake();
-
-        $slug = 'concurrent-test-person';
-
-        // Simulate "parallel" requests (sequential but very close in time)
-        // This tests the acquireGenerationSlot mechanism
-        $response1 = $this->getJson("/api/v1/people/{$slug}");
-        $response2 = $this->getJson("/api/v1/people/{$slug}"); // Immediately after
-
-        // Both should return 202
-        $response1->assertStatus(202);
-        $response2->assertStatus(202);
-
-        // Both should return the SAME job_id (slot management working)
-        $jobId1 = $response1->json('job_id');
-        $jobId2 = $response2->json('job_id');
-        $this->assertSame($jobId1, $jobId2, 'Concurrent requests should reuse the same job');
-
-        // Verify only one event was dispatched (slot management prevents duplicate jobs)
-        Event::assertDispatched(PersonGenerationRequested::class, 1);
+        $this->givenAiBioGenerationEnabled()
+            ->andPersonExistsInTmdb('concurrent-test-person', [
+                'name' => 'Test Person',
+                'birthday' => '1980-01-01',
+                'place_of_birth' => 'Test City',
+                'id' => 123,
+            ])
+            ->andRealCacheEnabled()
+            ->andEventFakeEnabled()
+            ->whenRequestingPersonConcurrently('concurrent-test-person')
+            ->thenBothResponsesShouldReturn202()
+            ->andBothShouldHaveSameJobId()
+            ->andEventShouldBeDispatchedOnce(PersonGenerationRequested::class);
     }
 
     public function test_movie_generation_bypasses_tmdb_when_feature_flag_disabled(): void
     {
-        Feature::activate('ai_description_generation');
-        Feature::deactivate('tmdb_verification');
-
-        // Use fake EntityVerificationService - set movie to null (not found)
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setMovie('non-existent-movie-xyz', null);
-
-        // When tmdb_verification is disabled, it should bypass TMDb check and allow generation
-        $res = $this->getJson('/api/v1/movies/non-existent-movie-xyz');
-        $res->assertStatus(202)
-            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level']);
-
-        // Verify confidence fields are set (not null/unknown)
-        $this->assertNotNull($res->json('confidence'));
-        $this->assertNotSame('unknown', $res->json('confidence_level'));
+        $this->givenAiGenerationEnabled()
+            ->andTmdbVerificationDisabled()
+            ->andMovieDoesNotExistInTmdb('non-existent-movie-xyz')
+            ->whenRequestingMovie('non-existent-movie-xyz')
+            ->thenShouldReturn202WithJobDetails()
+            ->andConfidenceFieldsShouldBeSet();
     }
 
     public function test_person_generation_bypasses_tmdb_when_feature_flag_disabled(): void
     {
-        Feature::activate('ai_bio_generation');
-        Feature::deactivate('tmdb_verification');
-
-        // Use fake EntityVerificationService - set person to null (not found)
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setPerson('non-existent-person-xyz', null);
-
-        // When tmdb_verification is disabled, it should bypass TMDb check and allow generation
-        $res = $this->getJson('/api/v1/people/non-existent-person-xyz');
-        $res->assertStatus(202)
-            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level']);
-
-        // Verify confidence fields are set (not null/unknown)
-        $this->assertNotNull($res->json('confidence'));
-        $this->assertNotSame('unknown', $res->json('confidence_level'));
+        $this->givenAiBioGenerationEnabled()
+            ->andTmdbVerificationDisabled()
+            ->andPersonDoesNotExistInTmdb('non-existent-person-xyz')
+            ->whenRequestingPerson('non-existent-person-xyz')
+            ->thenShouldReturn202WithJobDetails()
+            ->andConfidenceFieldsShouldBeSet();
     }
 
     public function test_concurrent_requests_via_generate_endpoint_for_person_only_dispatch_one_job(): void
     {
-        Feature::activate('ai_bio_generation');
-
-        // Use real cache (array driver) to test slot management mechanism
-        config(['cache.default' => 'array']);
-        Cache::clear();
-
-        // Use Event::fake() to count dispatched events
-        Event::fake();
-
-        $slug = 'concurrent-generate-person-test';
-
-        // Simulate "parallel" requests via POST /api/v1/generate
-        $response1 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => $slug,
-        ]);
-        $response2 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'PERSON',
-            'entity_id' => $slug,
-        ]); // Immediately after
-
-        // Both should return 202
-        $response1->assertStatus(202);
-        $response2->assertStatus(202);
-
-        // Both should return the SAME job_id (slot management working)
-        $jobId1 = $response1->json('job_id');
-        $jobId2 = $response2->json('job_id');
-        $this->assertSame($jobId1, $jobId2, 'Concurrent requests should reuse the same job');
-
-        // Verify only one event was dispatched (slot management prevents duplicate jobs)
-        Event::assertDispatched(PersonGenerationRequested::class, 1);
+        $this->givenAiBioGenerationEnabled()
+            ->andRealCacheEnabled()
+            ->andEventFakeEnabled()
+            ->whenGeneratingPersonConcurrently('concurrent-generate-person-test')
+            ->thenBothResponsesShouldReturn202()
+            ->andBothShouldHaveSameJobId()
+            ->andEventShouldBeDispatchedOnce(PersonGenerationRequested::class);
     }
 
     public function test_concurrent_requests_different_context_tag_different_jobs(): void
     {
-        Feature::activate('ai_description_generation');
-
-        // Use real cache (array driver) to test slot management mechanism
-        config(['cache.default' => 'array']);
-        Cache::clear();
-
-        // Use Event::fake() to count dispatched events
-        Event::fake();
-
-        $slug = 'concurrent-different-context-movie';
-
-        // Simulate concurrent requests with DIFFERENT context_tag
-        $response1 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $slug,
-            'context_tag' => 'modern',
-        ]);
-        $response2 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $slug,
-            'context_tag' => 'humorous',
-        ]); // Immediately after, but with different context_tag
-
-        // Both should return 202
-        $response1->assertStatus(202);
-        $response2->assertStatus(202);
-
-        // Both should return DIFFERENT job_id (different context_tag = different slots)
-        $jobId1 = $response1->json('job_id');
-        $jobId2 = $response2->json('job_id');
-        $this->assertNotSame($jobId1, $jobId2, 'Concurrent requests with different context_tag should return different job_ids');
-
-        // Verify both events were dispatched (different context_tag = different jobs)
-        Event::assertDispatched(MovieGenerationRequested::class, 2);
-
-        // Verify context_tag is correctly set in events
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->contextTag === 'modern';
-        });
-        Event::assertDispatched(MovieGenerationRequested::class, function ($event) {
-            return $event->contextTag === 'humorous';
-        });
+        $this->givenAiGenerationEnabled()
+            ->andRealCacheEnabled()
+            ->andEventFakeEnabled()
+            ->whenGeneratingMovieWithDifferentContextTags('concurrent-different-context-movie')
+            ->thenBothResponsesShouldReturn202()
+            ->andBothShouldHaveDifferentJobIds()
+            ->andEventShouldBeDispatched(MovieGenerationRequested::class, 2)
+            ->andEventShouldHaveContextTag('modern')
+            ->andEventShouldHaveContextTag('humorous');
     }
 
     public function test_multiple_context_tags_for_same_movie_allowed(): void
     {
-        Feature::activate('ai_description_generation');
+        $this->givenAiGenerationEnabled()
+            ->andRealCacheEnabled()
+            ->whenGeneratingMovieWithContextTag('multi-context-movie', 'modern')
+            ->thenShouldReturn202();
 
-        // Use real cache to allow job processing
-        config(['cache.default' => 'array']);
-        Cache::clear();
+        $jobId1 = $this->response->json('job_id');
 
-        $slug = 'multi-context-movie';
-
-        // Generate first description with modern context_tag
-        $response1 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $slug,
-            'context_tag' => 'modern',
-        ]);
-        $response1->assertStatus(202);
-        $jobId1 = $response1->json('job_id');
-
-        // Generate second description with humorous context_tag for the same movie
-        $response2 = $this->postJson('/api/v1/generate', [
-            'entity_type' => 'MOVIE',
-            'entity_id' => $slug,
-            'context_tag' => 'humorous',
-        ]);
-        $response2->assertStatus(202);
-        $jobId2 = $response2->json('job_id');
-
-        // Should return different job_ids
-        $this->assertNotSame($jobId1, $jobId2);
-
-        // After jobs complete, verify that both descriptions exist in database
-        // (This test assumes jobs will complete - in real scenario, we'd wait or mock)
-        // For now, we verify that both requests were accepted with different job_ids
-        $this->assertNotEmpty($jobId1);
-        $this->assertNotEmpty($jobId2);
+        $this->whenGeneratingMovieWithContextTag('multi-context-movie', 'humorous')
+            ->thenShouldReturn202()
+            ->andJobIdShouldBeDifferentFrom($jobId1);
     }
 
     public function test_tv_series_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
-        Feature::activate('ai_description_generation');
-
-        // Use fake EntityVerificationService instead of Mockery
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setTvSeries('breaking-bad-2008', [
-            'name' => 'Breaking Bad',
-            'first_air_date' => '2008-01-20',
-            'overview' => 'A high school chemistry teacher turned methamphetamine manufacturer.',
-            'id' => 1396,
-        ]);
-
-        $res = $this->getJson('/api/v1/tv-series/breaking-bad-2008');
-        $res->assertStatus(202)
-            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
-            ->assertJson(['locale' => 'en-US']);
-
-        // Verify confidence fields are set (not null/unknown)
-        $this->assertNotNull($res->json('confidence'));
-        $this->assertNotSame('unknown', $res->json('confidence_level'));
-        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+        $this->givenAiGenerationEnabled()
+            ->andTvSeriesExistsInTmdb('breaking-bad-2008', [
+                'name' => 'Breaking Bad',
+                'first_air_date' => '2008-01-20',
+                'overview' => 'A high school chemistry teacher turned methamphetamine manufacturer.',
+                'id' => 1396,
+            ])
+            ->whenRequestingTvSeries('breaking-bad-2008')
+            ->thenShouldReturn202WithJobDetails()
+            ->andConfidenceFieldsShouldBeSet();
     }
 
     public function test_tv_series_missing_returns_404_when_not_found_in_tmdb(): void
     {
-        Feature::activate('ai_description_generation');
-        Feature::activate('tmdb_verification');
-
-        // Use fake EntityVerificationService - set TV series to null (not found)
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setTvSeries('non-existent-tv-series-xyz', null);
-        // Also set empty search results which is called when verifyTvSeries returns null
-        $fake->setTvSeriesSearchResults('non-existent-tv-series-xyz', []);
-
-        $res = $this->getJson('/api/v1/tv-series/non-existent-tv-series-xyz');
-        $res->assertStatus(404)
-            ->assertJson(['error' => 'TV series not found']);
+        $this->givenAiGenerationEnabled()
+            ->andTmdbVerificationEnabled()
+            ->andTvSeriesDoesNotExistInTmdb('non-existent-tv-series-xyz')
+            ->whenRequestingTvSeries('non-existent-tv-series-xyz')
+            ->thenShouldReturn404WithError('TV series not found');
     }
 
     public function test_tv_series_missing_returns_404_when_flag_off(): void
     {
-        Feature::deactivate('ai_description_generation');
-        $res = $this->getJson('/api/v1/tv-series/breaking-bad-2008');
-        $res->assertStatus(404);
+        $this->givenAiGenerationDisabled()
+            ->whenRequestingTvSeries('breaking-bad-2008')
+            ->thenShouldReturn404();
     }
 
     public function test_tv_show_missing_returns_202_when_flag_on_and_found_in_tmdb(): void
     {
-        Feature::activate('ai_description_generation');
-
-        // Use fake EntityVerificationService instead of Mockery
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setTvShow('the-tonight-show-1954', [
-            'name' => 'The Tonight Show',
-            'first_air_date' => '1954-09-27',
-            'overview' => 'A late-night talk show.',
-            'id' => 12345,
-        ]);
-
-        $res = $this->getJson('/api/v1/tv-shows/the-tonight-show-1954');
-        $res->assertStatus(202)
-            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
-            ->assertJson(['locale' => 'en-US']);
-
-        // Verify confidence fields are set (not null/unknown)
-        $this->assertNotNull($res->json('confidence'));
-        $this->assertNotSame('unknown', $res->json('confidence_level'));
-        $this->assertContains($res->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+        $this->givenAiGenerationEnabled()
+            ->andTvShowExistsInTmdb('the-tonight-show-1954', [
+                'name' => 'The Tonight Show',
+                'first_air_date' => '1954-09-27',
+                'overview' => 'A late-night talk show.',
+                'id' => 12345,
+            ])
+            ->whenRequestingTvShow('the-tonight-show-1954')
+            ->thenShouldReturn202WithJobDetails()
+            ->andConfidenceFieldsShouldBeSet();
     }
 
     public function test_tv_show_missing_returns_404_when_not_found_in_tmdb(): void
     {
-        Feature::activate('ai_description_generation');
-        Feature::activate('tmdb_verification');
-
-        // Use fake EntityVerificationService - set TV show to null (not found)
-        $fake = $this->fakeEntityVerificationService();
-        $fake->setTvShow('non-existent-tv-show-xyz', null);
-        // Also set empty search results which is called when verifyTvShow returns null
-        $fake->setTvShowSearchResults('non-existent-tv-show-xyz', []);
-
-        $res = $this->getJson('/api/v1/tv-shows/non-existent-tv-show-xyz');
-        $res->assertStatus(404)
-            ->assertJson(['error' => 'TV show not found']);
+        $this->givenAiGenerationEnabled()
+            ->andTmdbVerificationEnabled()
+            ->andTvShowDoesNotExistInTmdb('non-existent-tv-show-xyz')
+            ->whenRequestingTvShow('non-existent-tv-show-xyz')
+            ->thenShouldReturn404WithError('TV show not found');
     }
 
     public function test_tv_show_missing_returns_404_when_flag_off(): void
     {
+        $this->givenAiGenerationDisabled()
+            ->whenRequestingTvShow('the-tonight-show-1954')
+            ->thenShouldReturn404();
+    }
+
+    // ============================================
+    // GIVEN helpers - Ustalenie kontekstu
+    // ============================================
+
+    private function givenAiGenerationEnabled(): self
+    {
+        Feature::activate('ai_description_generation');
+
+        return $this;
+    }
+
+    private function givenAiGenerationDisabled(): self
+    {
         Feature::deactivate('ai_description_generation');
-        $res = $this->getJson('/api/v1/tv-shows/the-tonight-show-1954');
-        $res->assertStatus(404);
+
+        return $this;
+    }
+
+    private function givenAiBioGenerationEnabled(): self
+    {
+        Feature::activate('ai_bio_generation');
+
+        return $this;
+    }
+
+    private function givenAiBioGenerationDisabled(): self
+    {
+        Feature::deactivate('ai_bio_generation');
+
+        return $this;
+    }
+
+    private function andTmdbVerificationEnabled(): self
+    {
+        Feature::activate('tmdb_verification');
+
+        return $this;
+    }
+
+    private function andTmdbVerificationDisabled(): self
+    {
+        Feature::deactivate('tmdb_verification');
+
+        return $this;
+    }
+
+    private function andMovieExistsInTmdb(string $slug, array $data): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setMovie($slug, $data);
+
+        return $this;
+    }
+
+    private function andMovieDoesNotExistInTmdb(string $slug): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setMovie($slug, null);
+        $this->fake->setMovieSearchResults($slug, []);
+
+        return $this;
+    }
+
+    private function andPersonExistsInTmdb(string $slug, array $data): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setPerson($slug, $data);
+
+        return $this;
+    }
+
+    private function andPersonDoesNotExistInTmdb(string $slug): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setPerson($slug, null);
+
+        return $this;
+    }
+
+    private function andTvSeriesExistsInTmdb(string $slug, array $data): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setTvSeries($slug, $data);
+
+        return $this;
+    }
+
+    private function andTvSeriesDoesNotExistInTmdb(string $slug): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setTvSeries($slug, null);
+        $this->fake->setTvSeriesSearchResults($slug, []);
+
+        return $this;
+    }
+
+    private function andTvShowExistsInTmdb(string $slug, array $data): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setTvShow($slug, $data);
+
+        return $this;
+    }
+
+    private function andTvShowDoesNotExistInTmdb(string $slug): self
+    {
+        if ($this->fake === null) {
+            $this->fake = $this->fakeEntityVerificationService();
+        }
+        $this->fake->setTvShow($slug, null);
+        $this->fake->setTvShowSearchResults($slug, []);
+
+        return $this;
+    }
+
+    private function andRealCacheEnabled(): self
+    {
+        config(['cache.default' => 'array']);
+        Cache::clear();
+
+        return $this;
+    }
+
+    private function andEventFakeEnabled(): self
+    {
+        Event::fake();
+
+        return $this;
+    }
+
+    // ============================================
+    // WHEN helpers - Wykonanie akcji
+    // ============================================
+
+    private function whenRequestingMovie(string $slug): self
+    {
+        $this->response = $this->getJson("/api/v1/movies/{$slug}");
+
+        return $this;
+    }
+
+    private function whenRequestingPerson(string $slug): self
+    {
+        $this->response = $this->getJson("/api/v1/people/{$slug}");
+
+        return $this;
+    }
+
+    private function whenRequestingTvSeries(string $slug): self
+    {
+        $this->response = $this->getJson("/api/v1/tv-series/{$slug}");
+
+        return $this;
+    }
+
+    private function whenRequestingTvShow(string $slug): self
+    {
+        $this->response = $this->getJson("/api/v1/tv-shows/{$slug}");
+
+        return $this;
+    }
+
+    private function whenRequestingMovieConcurrently(string $slug): self
+    {
+        $this->response1 = $this->getJson("/api/v1/movies/{$slug}");
+        $this->response2 = $this->getJson("/api/v1/movies/{$slug}");
+
+        return $this;
+    }
+
+    private function whenRequestingPersonConcurrently(string $slug): self
+    {
+        $this->response1 = $this->getJson("/api/v1/people/{$slug}");
+        $this->response2 = $this->getJson("/api/v1/people/{$slug}");
+
+        return $this;
+    }
+
+    private function whenGeneratingMovieConcurrently(string $slug): self
+    {
+        $this->response1 = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $slug,
+        ]);
+        $this->response2 = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $slug,
+        ]);
+
+        return $this;
+    }
+
+    private function whenGeneratingPersonConcurrently(string $slug): self
+    {
+        $this->response1 = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'PERSON',
+            'entity_id' => $slug,
+        ]);
+        $this->response2 = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'PERSON',
+            'entity_id' => $slug,
+        ]);
+
+        return $this;
+    }
+
+    private function whenGeneratingMovieWithDifferentContextTags(string $slug): self
+    {
+        $this->response1 = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $slug,
+            'context_tag' => 'modern',
+        ]);
+        $this->response2 = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $slug,
+            'context_tag' => 'humorous',
+        ]);
+
+        return $this;
+    }
+
+    private function whenGeneratingMovieWithContextTag(string $slug, string $contextTag): self
+    {
+        $this->response = $this->postJson('/api/v1/generate', [
+            'entity_type' => 'MOVIE',
+            'entity_id' => $slug,
+            'context_tag' => $contextTag,
+        ]);
+
+        return $this;
+    }
+
+    // ============================================
+    // THEN helpers - Weryfikacja rezultatu
+    // ============================================
+
+    private function thenShouldReturn202(): self
+    {
+        $this->response->assertStatus(202);
+
+        return $this;
+    }
+
+    private function thenShouldReturn404(): self
+    {
+        $this->response->assertStatus(404);
+
+        return $this;
+    }
+
+    private function thenShouldReturn202WithJobDetails(): self
+    {
+        $this->response->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'slug', 'confidence', 'confidence_level'])
+            ->assertJson(['locale' => 'en-US']);
+
+        return $this;
+    }
+
+    private function thenShouldReturn404WithError(string $error): self
+    {
+        $this->response->assertStatus(404)
+            ->assertJson(['error' => $error]);
+
+        return $this;
+    }
+
+    private function thenBothResponsesShouldReturn202(): self
+    {
+        $this->response1->assertStatus(202);
+        $this->response2->assertStatus(202);
+
+        return $this;
+    }
+
+    // ============================================
+    // AND helpers - Dodatkowe weryfikacje
+    // ============================================
+
+    private function andConfidenceFieldsShouldBeSet(): self
+    {
+        $this->assertNotNull($this->response->json('confidence'));
+        $this->assertNotSame('unknown', $this->response->json('confidence_level'));
+        $this->assertContains($this->response->json('confidence_level'), ['high', 'medium', 'low', 'very_low']);
+
+        return $this;
+    }
+
+    private function andJobIdShouldBe(string $expectedJobId): self
+    {
+        $this->assertSame($expectedJobId, $this->response->json('job_id'));
+
+        return $this;
+    }
+
+    private function andJobIdShouldBeDifferentFrom(string $otherJobId): self
+    {
+        $this->assertNotSame($otherJobId, $this->response->json('job_id'));
+        $this->assertNotEmpty($this->response->json('job_id'));
+
+        return $this;
+    }
+
+    private function andBothShouldHaveSameJobId(): self
+    {
+        $jobId1 = $this->response1->json('job_id');
+        $jobId2 = $this->response2->json('job_id');
+        $this->assertSame($jobId1, $jobId2, 'Concurrent requests should reuse the same job');
+
+        return $this;
+    }
+
+    private function andBothShouldHaveDifferentJobIds(): self
+    {
+        $jobId1 = $this->response1->json('job_id');
+        $jobId2 = $this->response2->json('job_id');
+        $this->assertNotSame($jobId1, $jobId2, 'Concurrent requests with different context_tag should return different job_ids');
+
+        return $this;
+    }
+
+    private function andEventShouldBeDispatchedOnce(string $eventClass): self
+    {
+        Event::assertDispatched($eventClass, 1);
+
+        return $this;
+    }
+
+    private function andEventShouldBeDispatched(string $eventClass, int $times): self
+    {
+        Event::assertDispatched($eventClass, $times);
+
+        return $this;
+    }
+
+    private function andEventShouldHaveContextTag(string $contextTag): self
+    {
+        Event::assertDispatched(MovieGenerationRequested::class, function ($event) use ($contextTag) {
+            return $event->contextTag === $contextTag;
+        });
+
+        return $this;
     }
 }
