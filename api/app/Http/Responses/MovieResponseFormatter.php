@@ -46,7 +46,7 @@ class MovieResponseFormatter
         $data = $resource->resolve();
 
         // Add localized metadata if locale is provided
-        if ($locale !== null) {
+        if ($locale !== null && $locale !== '') {
             $movieLocale = $this->movieLocaleService->getLocalizedMetadata($movie, $locale);
             if ($movieLocale) {
                 $data['locale'] = $movieLocale->locale->value;
@@ -61,6 +61,18 @@ class MovieResponseFormatter
                 }
                 if ($movieLocale->synopsis) {
                     $data['synopsis'] = $movieLocale->synopsis;
+                }
+            } else {
+                // Fallback to en-US if requested locale not found
+                $enLocale = $this->movieLocaleService->getLocalizedMetadata($movie, 'en-US');
+                if ($enLocale) {
+                    $data['locale'] = 'en-US';
+                    if ($enLocale->title_localized) {
+                        $data['title_localized'] = $enLocale->title_localized;
+                    }
+                    if ($enLocale->director_localized) {
+                        $data['director_localized'] = $enLocale->director_localized;
+                    }
                 }
             }
         }

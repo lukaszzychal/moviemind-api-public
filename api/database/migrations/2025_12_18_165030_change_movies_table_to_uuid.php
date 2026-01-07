@@ -54,6 +54,7 @@ return new class extends Migration
             DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_movie_id_foreign');
             DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_movie_id_foreign');
             DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_related_movie_id_foreign');
+            DB::statement('ALTER TABLE movie_locales DROP CONSTRAINT IF EXISTS movie_locales_movie_id_foreign');
         } else {
             // MySQL - try to drop foreign keys if they exist
             Schema::table('movies', function (Blueprint $table) {
@@ -96,6 +97,14 @@ return new class extends Migration
                     // Foreign keys might not exist, ignore
                 }
             });
+
+            Schema::table('movie_locales', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['movie_id']);
+                } catch (\Exception $e) {
+                    // Foreign key might not exist, ignore
+                }
+            });
         }
 
         // Now we can safely drop primary key constraint
@@ -131,6 +140,7 @@ return new class extends Migration
             DB::statement('ALTER TABLE movie_person ADD CONSTRAINT movie_person_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
             DB::statement('ALTER TABLE movie_relationships ADD CONSTRAINT movie_relationships_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
             DB::statement('ALTER TABLE movie_relationships ADD CONSTRAINT movie_relationships_related_movie_id_foreign FOREIGN KEY (related_movie_id) REFERENCES movies(id) ON DELETE CASCADE');
+            DB::statement('ALTER TABLE movie_locales ADD CONSTRAINT movie_locales_movie_id_foreign FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE');
         } else {
             // MySQL - recreate foreign keys using Schema
             Schema::table('movie_descriptions', function (Blueprint $table) {
@@ -148,6 +158,10 @@ return new class extends Migration
             Schema::table('movie_relationships', function (Blueprint $table) {
                 $table->foreign('movie_id')->references('id')->on('movies')->cascadeOnDelete();
                 $table->foreign('related_movie_id')->references('id')->on('movies')->cascadeOnDelete();
+            });
+
+            Schema::table('movie_locales', function (Blueprint $table) {
+                $table->foreign('movie_id')->references('id')->on('movies')->cascadeOnDelete();
             });
         }
     }
