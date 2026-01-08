@@ -209,21 +209,32 @@ Every entry follows this structure:
 ---
 
 #### `TASK-008` – Webhooks system (roadmap)
-- **Status:** ⏳ PENDING
+- **Status:** ✅ COMPLETED
 - **Priority:** 🟢 Low
 - **Estimated time:** 8–10 h
-- **Start time:** --
-- **End time:** --
-- **Duration:** --
-- **Execution:** TBD
+- **Start time:** 2026-01-07
+- **End time:** 2026-01-07
+- **Duration:** ~10h
+- **Execution:** TDD (Red-Green-Refactor), Detroit School style
 - **Description:** Implement billing/notification webhooks per roadmap
 - **Details:**
-  - Design webhook architecture
-  - Implement endpoints
-  - Add retry/error handling
-  - Document behaviour
+  - ✅ Design webhook architecture
+  - ✅ Implement endpoints (incoming and outgoing)
+  - ✅ Add retry/error handling
+  - ✅ Document behaviour (business, technical, QA)
 - **Dependencies:** none
 - **Created:** 2025-01-27
+- **Completed:** 2026-01-07
+- **Summary of changes:**
+  - Created `NotificationWebhookController` for incoming notification webhooks
+  - Created `OutgoingWebhookService` for sending webhooks to external systems
+  - Created `OutgoingWebhook` model and migration
+  - Created `SendOutgoingWebhookJob` for async webhook delivery
+  - Created `SendOutgoingWebhookListener` for generation events
+  - Added `webhook_notifications` feature flag
+  - Created comprehensive tests (Feature and Unit tests)
+  - Updated documentation (technical, business, QA)
+  - Added environment variables configuration
 - **Note:** roadmap item, low priority
 
 ---

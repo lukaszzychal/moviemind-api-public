@@ -10,6 +10,7 @@ use App\Listeners\QueueMovieGenerationJob;
 use App\Listeners\QueuePersonGenerationJob;
 use App\Listeners\QueueTvSeriesGenerationJob;
 use App\Listeners\QueueTvShowGenerationJob;
+use App\Listeners\SendOutgoingWebhookListener;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -22,9 +23,11 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         MovieGenerationRequested::class => [
             QueueMovieGenerationJob::class,
+            SendOutgoingWebhookListener::class,
         ],
         PersonGenerationRequested::class => [
             QueuePersonGenerationJob::class,
+            SendOutgoingWebhookListener::class,
         ],
         TvSeriesGenerationRequested::class => [
             QueueTvSeriesGenerationJob::class,

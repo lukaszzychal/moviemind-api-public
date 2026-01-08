@@ -89,3 +89,6 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
 
 // Billing webhooks (no auth required - uses signature verification)
 Route::post('v1/webhooks/billing', [\App\Http\Controllers\Admin\BillingWebhookController::class, 'handle']);
+
+// Notification webhooks (no auth required - uses signature verification)
+Route::post('v1/webhooks/notification', [\App\Http\Controllers\Admin\NotificationWebhookController::class, 'handle']);

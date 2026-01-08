@@ -32,6 +32,7 @@ use App\Features\tmdb_verification;
 use App\Features\toxicity_filter;
 use App\Features\usage_analytics;
 use App\Features\webhook_billing;
+use App\Features\webhook_notifications;
 
 $flags = [
     // Core AI generation
@@ -212,6 +213,13 @@ $flags = [
         'class' => webhook_billing::class,
         'description' => 'Billing webhooks (RapidAPI/Stripe etc.).',
         'category' => 'billing',
+        'default' => false,
+        'togglable' => false,
+    ],
+    'webhook_notifications' => [
+        'class' => webhook_notifications::class,
+        'description' => 'Notification webhooks (incoming and outgoing).',
+        'category' => 'operations',
         'default' => false,
         'togglable' => false,
     ],
