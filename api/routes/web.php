@@ -134,3 +134,8 @@ Route::get('/api/docs/openapi.yaml', function () {
         'Content-Type' => 'application/x-yaml',
     ]);
 });
+
+// Jobs Dashboard (protected by admin.basic middleware)
+Route::middleware('admin.basic')->get('/admin/dashboard.html', function () {
+    return response()->file(public_path('admin/dashboard.html'));
+});

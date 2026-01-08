@@ -1492,6 +1492,269 @@ paths:
                         line: 42
                         pattern: active
                         name: ai_description_generation
+  /v1/admin/jobs-dashboard/overview:
+    get:
+      tags: [Admin]
+      summary: Get queue jobs overview statistics
+      description: Returns overall statistics for all queues including pending, processing, completed, and failed jobs.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_pending:
+                    type: integer
+                    description: Total number of pending jobs
+                  total_processing:
+                    type: integer
+                    description: Total number of jobs currently being processed
+                  total_completed:
+                    type: integer
+                    description: Total number of completed jobs
+                  total_failed:
+                    type: integer
+                    description: Total number of failed jobs
+                  horizon_status:
+                    type: object
+                    nullable: true
+                    description: Horizon status if available
+                  queues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        queue:
+                          type: string
+                        pending:
+                          type: integer
+                        processing:
+                          type: integer
+                        failed:
+                          type: integer
+                  ai_jobs:
+                    type: object
+                    properties:
+                      by_status:
+                        type: object
+                        properties:
+                          PENDING:
+                            type: integer
+                          DONE:
+                            type: integer
+                          FAILED:
+                            type: integer
+                      by_entity_type:
+                        type: object
+                      total:
+                        type: integer
+  /v1/admin/jobs-dashboard/by-queue:
+    get:
+      tags: [Admin]
+      summary: Get statistics grouped by queue
+      description: Returns statistics for each queue including pending, processing, and failed job counts.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    queue:
+                      type: string
+                    pending:
+                      type: integer
+                    processing:
+                      type: integer
+                    failed:
+                      type: integer
+  /v1/admin/jobs-dashboard/recent:
+    get:
+      tags: [Admin]
+      summary: Get recent jobs with pagination
+      description: Returns recent jobs with pagination support.
+      parameters:
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        queue:
+                          type: string
+                        job:
+                          type: string
+                        attempts:
+                          type: integer
+                        status:
+                          type: string
+                          enum: [pending, processing]
+                        created_at:
+                          type: string
+                        available_at:
+                          type: string
+                  total:
+                    type: integer
+                  per_page:
+                    type: integer
+                  current_page:
+                    type: integer
+                  last_page:
+                    type: integer
+  /v1/admin/jobs-dashboard/failed:
+    get:
+      tags: [Admin]
+      summary: Get failed jobs with pagination
+      description: Returns failed jobs with optional filtering by queue or date range.
+      parameters:
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: queue
+          schema:
+            type: string
+          description: Filter by queue name
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+          description: Start date (Y-m-d format)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+          description: End date (Y-m-d format)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        uuid:
+                          type: string
+                        queue:
+                          type: string
+                        connection:
+                          type: string
+                        job:
+                          type: string
+                        exception:
+                          type: string
+                        exception_class:
+                          type: string
+                          nullable: true
+                        failed_at:
+                          type: string
+                  total:
+                    type: integer
+                  per_page:
+                    type: integer
+                  current_page:
+                    type: integer
+                  last_page:
+                    type: integer
+  /v1/admin/jobs-dashboard/failed/stats:
+    get:
+      tags: [Admin]
+      summary: Get failed jobs statistics
+      description: Returns aggregated failure statistics including counts by queue and hourly breakdown.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_failed:
+                    type: integer
+                  by_queue:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  by_hour:
+                    type: object
+                    additionalProperties:
+                      type: integer
+  /v1/admin/jobs-dashboard/processing-times:
+    get:
+      tags: [Admin]
+      summary: Get processing time statistics
+      description: Returns average processing times by queue.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  by_queue:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        avg_seconds:
+                          type: number
+                          nullable: true
+                        min_seconds:
+                          type: number
+                          nullable: true
+                        max_seconds:
+                          type: number
+                          nullable: true
+                        sample_size:
+                          type: integer
+                  overall_avg:
+                    type: number
+                    nullable: true
 components:
   securitySchemes:
     RapidAPIKey:
