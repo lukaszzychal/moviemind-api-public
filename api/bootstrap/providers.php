@@ -7,8 +7,9 @@ $providers = [
 
 // HorizonServiceProvider: Skip in testing to prevent PHP 8.3 stack overflow
 // Horizon is not needed for tests and causes compilation issues
-// Check APP_ENV directly as app() is not available at this point
-if (($_ENV['APP_ENV'] ?? env('APP_ENV', 'local')) !== 'testing') {
+// Use getenv() which works before .env is loaded
+$appEnv = getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? 'local');
+if ($appEnv !== 'testing') {
     $providers[] = App\Providers\HorizonServiceProvider::class;
 }
 
