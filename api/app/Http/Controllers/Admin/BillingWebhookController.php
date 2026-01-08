@@ -90,11 +90,26 @@ class BillingWebhookController
 
         // If webhook was already processed successfully, return cached response
         if ($webhookEvent->isProcessed()) {
-            return response()->json([
+            // Try to find subscription_id from payload or database
+            $subscriptionId = null;
+            if ($event === 'subscription.created' && $idempotencyKey !== null) {
+                $subscription = \App\Models\Subscription::where('idempotency_key', $idempotencyKey)->first();
+                if ($subscription !== null) {
+                    $subscriptionId = $subscription->id;
+                }
+            }
+
+            $response = [
                 'status' => 'success',
                 'message' => 'Webhook already processed',
                 'webhook_id' => $webhookEvent->id,
-            ]);
+            ];
+
+            if ($subscriptionId !== null) {
+                $response['subscription_id'] = $subscriptionId;
+            }
+
+            return response()->json($response);
         }
 
         // If webhook failed but can be retried, retry it now

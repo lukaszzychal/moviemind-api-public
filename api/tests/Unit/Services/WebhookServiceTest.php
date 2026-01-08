@@ -111,7 +111,12 @@ class WebhookServiceTest extends TestCase
 
         // ASSERT: Retry job was dispatched
         Queue::assertPushed(\App\Jobs\RetryWebhookJob::class, function ($job) use ($webhookEvent) {
-            return $job->webhookEventId === $webhookEvent->id;
+            // Use reflection to access private property
+            $reflection = new \ReflectionClass($job);
+            $property = $reflection->getProperty('webhookEventId');
+            $property->setAccessible(true);
+
+            return $property->getValue($job) === $webhookEvent->id;
         });
     }
 
