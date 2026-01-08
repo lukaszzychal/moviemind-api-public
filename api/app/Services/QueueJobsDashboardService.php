@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
-use Laravel\Horizon\Horizon;
 
 /**
  * Service for queue jobs dashboard statistics.
