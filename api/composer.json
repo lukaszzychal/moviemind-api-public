@@ -37,10 +37,7 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
-        },
-        "exclude-from-classmap": [
-            "vendor/laravel/horizon"
-        ]
+        }
     },
     "scripts": {
         "local:env": [
