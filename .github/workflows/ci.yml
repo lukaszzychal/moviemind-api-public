@@ -60,6 +60,8 @@ jobs:
 
       - name: Prepare environment
         working-directory: api
+        env:
+          APP_ENV: testing
         run: |
           # Create .env if it doesn't exist
           if [ ! -f .env ]; then
@@ -68,6 +70,8 @@ jobs:
           # Generate APP_KEY and ensure it's set
           php artisan key:generate --force
           php artisan config:clear
+          # Rebuild autoloader to apply dont-discover
+          composer dump-autoload --optimize
 
       - name: Setup PHPUnit configuration
         working-directory: api
