@@ -209,6 +209,176 @@ $webhookService->processWebhook(
 );
 ```
 
+## Notification Webhooks
+
+### Overview
+
+Notification webhooks support both **incoming** (external systems sending webhooks to MovieMind API) and **outgoing** (MovieMind API sending webhooks to external systems) webhooks.
+
+### Incoming Notification Webhooks
+
+External systems can send notification webhooks to MovieMind API at `POST /api/v1/webhooks/notification`.
+
+#### Supported Event Types
+
+- `generation.completed` - External system notifies about completed generation
+- `generation.failed` - External system notifies about failed generation
+- `user.registered` - User registration notification
+- `user.updated` - User profile update
+
+#### Request Format
+
+```json
+{
+  "event": "generation.completed",
+  "data": {
+    "entity_type": "MOVIE",
+    "entity_id": "the-matrix-1999",
+    "job_id": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "idempotency_key": "unique-key-123"
+}
+```
+
+#### Signature Verification
+
+Notification webhooks support HMAC-SHA256 signature verification via `X-Notification-Webhook-Signature` header:
+
+```php
+$signature = hash_hmac('sha256', $requestBody, $secret);
+```
+
+#### Configuration
+
+```env
+NOTIFICATION_WEBHOOK_SECRET=your-secret-key
+WEBHOOK_VERIFY_NOTIFICATION_SIGNATURE=true
+```
+
+### Outgoing Notification Webhooks
+
+MovieMind API can send webhooks to external systems when events occur (e.g., generation completed, generation failed).
+
+#### Components
+
+1. **OutgoingWebhook Model** - Stores outgoing webhook delivery attempts
+2. **OutgoingWebhookService** - Handles webhook delivery with retry support
+3. **SendOutgoingWebhookJob** - Queue job for async webhook delivery
+4. **SendOutgoingWebhookListener** - Listens to generation events and dispatches webhooks
+
+#### Supported Event Types
+
+- `movie.generation.requested` - Movie generation requested
+- `person.generation.requested` - Person generation requested
+- `movie.generation.completed` - Movie generation completed (future)
+- `person.generation.completed` - Person generation completed (future)
+- `movie.generation.failed` - Movie generation failed (future)
+- `person.generation.failed` - Person generation failed (future)
+
+#### Configuration
+
+```env
+# Webhook URLs per event type
+WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://example.com/webhook
+WEBHOOK_URL_PERSON_GENERATION_COMPLETED=https://example.com/webhook
+
+# Outgoing webhook secret (for signing)
+OUTGOING_WEBHOOK_SECRET=your-secret-key
+
+# Retry configuration
+WEBHOOK_OUTGOING_MAX_ATTEMPTS=3
+WEBHOOK_RETRY_DELAY_1=1
+WEBHOOK_RETRY_DELAY_2=5
+WEBHOOK_RETRY_DELAY_3=15
+```
+
+#### Webhook Payload Format
+
+```json
+{
+  "entity_type": "MOVIE",
+  "slug": "the-matrix-1999",
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "locale": "en-US",
+  "context_tag": "modern"
+}
+```
+
+#### Signature Header
+
+Outgoing webhooks are signed with HMAC-SHA256 and sent in `X-MovieMind-Webhook-Signature` header:
+
+```php
+$signature = hash_hmac('sha256', json_encode($payload), $secret);
+```
+
+#### Database Schema
+
+```sql
+CREATE TABLE outgoing_webhooks (
+    id UUID PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    payload JSON NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    status ENUM('pending', 'sent', 'failed', 'permanently_failed') DEFAULT 'pending',
+    attempts TINYINT DEFAULT 0,
+    max_attempts TINYINT DEFAULT 3,
+    response_code SMALLINT,
+    response_body JSON,
+    error_message TEXT,
+    sent_at TIMESTAMP,
+    next_retry_at TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+#### Usage Example
+
+```php
+use App\Services\OutgoingWebhookService;
+
+$webhookService = app(OutgoingWebhookService::class);
+
+$webhook = $webhookService->sendWebhook(
+    eventType: 'movie.generation.completed',
+    payload: [
+        'entity_type' => 'MOVIE',
+        'slug' => 'the-matrix-1999',
+        'job_id' => '550e8400-e29b-41d4-a716-446655440000',
+    ],
+    url: 'https://example.com/webhook'
+);
+
+// Check status
+if ($webhook->isSent()) {
+    // Success
+} elseif ($webhook->isFailed()) {
+    // Failed, will retry automatically
+}
+```
+
+#### Retry Mechanism
+
+Outgoing webhooks use the same exponential backoff strategy as incoming webhooks:
+- **Attempt 1:** 1 minute delay
+- **Attempt 2:** 5 minutes delay
+- **Attempt 3:** 15 minutes delay
+
+Failed webhooks are automatically retried via `SendOutgoingWebhookJob`.
+
+### Feature Flag
+
+Notification webhooks are controlled by the `webhook_notifications` feature flag:
+
+```php
+use Laravel\Pennant\Feature;
+
+if (Feature::active('webhook_notifications')) {
+    // Webhook functionality enabled
+}
+```
+
 ## Related Documentation
 
 - [ADR-008: Webhook System Architecture](../../adr/008-webhook-system-architecture.md)
@@ -216,8 +386,9 @@ $webhookService->processWebhook(
 - [QA Testing Guide](../../qa/WEBHOOK_SYSTEM_QA_GUIDE.md)
 - [Manual Testing Guide](../../qa/WEBHOOK_SYSTEM_MANUAL_TESTING.md)
 - [Business Documentation](../../business/WEBHOOK_SYSTEM_BUSINESS.md)
+- [Notification Webhooks Guide](./NOTIFICATION_WEBHOOKS.md)
 
 ---
 
-**Last updated:** 2025-01-27
+**Last updated:** 2026-01-07
 

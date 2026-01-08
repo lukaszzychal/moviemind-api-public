@@ -71,6 +71,34 @@ External Service → Webhook → MovieMind API
                     Success ✅ or Permanent Failure ❌
 ```
 
+## Notification Webhooks
+
+### Incoming Notification Webhooks
+
+External systems can send notification webhooks to MovieMind API to notify about events such as:
+- Generation completed
+- Generation failed
+- User registered
+- User updated
+
+**Business Value:**
+- Real-time synchronization with external systems
+- Automatic event processing
+- Reliable delivery with retry support
+
+### Outgoing Notification Webhooks
+
+MovieMind API can send webhooks to external systems when events occur, such as:
+- Movie generation requested
+- Person generation requested
+- (Future) Generation completed
+- (Future) Generation failed
+
+**Business Value:**
+- Real-time notifications to external systems
+- Integration with third-party services
+- Event-driven architecture
+
 ## 📊 Key Features
 
 ### 1. Automatic Retry
