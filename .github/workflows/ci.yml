@@ -81,7 +81,7 @@ jobs:
           APP_ENV: testing
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
-        run: php -d memory_limit=512M artisan test
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=32M artisan test
 
   test-postgresql:
     name: Test PostgreSQL-specific features
