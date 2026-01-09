@@ -84,6 +84,14 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/errors', [\App\Http\Controllers\Admin\AiMetricsController::class, 'errorStatistics']);
         Route::get('/comparison', [\App\Http\Controllers\Admin\AiMetricsController::class, 'formatComparison']);
     });
+    Route::prefix('jobs-dashboard')->group(function () {
+        Route::get('/overview', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'overview']);
+        Route::get('/by-queue', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'byQueue']);
+        Route::get('/recent', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'recent']);
+        Route::get('/failed', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failed']);
+        Route::get('/failed/stats', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failedStats']);
+        Route::get('/processing-times', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'processingTimes']);
+    });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });
 

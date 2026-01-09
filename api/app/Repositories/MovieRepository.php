@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Movie;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MovieRepository
 {
@@ -11,9 +12,16 @@ class MovieRepository
     {
         return Movie::query()
             ->when($query, function ($builder) use ($query) {
+                $driver = DB::getDriverName();
+                $genresColumn = match ($driver) {
+                    'pgsql' => 'genres::text',
+                    'sqlite' => 'CAST(genres AS TEXT)',
+                    default => 'genres',
+                };
+
                 $builder->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"])
                     ->orWhereRaw('LOWER(director) LIKE LOWER(?)', ["%$query%"])
-                    ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', ["%$query%"]);
+                    ->orWhereRaw("LOWER({$genresColumn}) LIKE LOWER(?)", ["%$query%"]);
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')

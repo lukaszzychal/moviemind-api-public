@@ -16,6 +16,11 @@ class HorizonAuthorizationTest extends TestCase
     {
         parent::setUp();
         $this->artisan('migrate');
+
+        // Register HorizonServiceProvider for this test class
+        // HorizonServiceProvider is normally disabled in testing to prevent stack overflow,
+        // but we need it for authorization tests
+        $this->app->register(\App\Providers\HorizonServiceProvider::class);
     }
 
     public function test_horizon_allows_access_in_local_environment(): void

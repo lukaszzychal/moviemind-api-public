@@ -18,6 +18,7 @@ class RetryWebhookJobTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Queue::fake(); // Prevent infinite recursion from self::dispatch() in RetryWebhookJob
         $this->artisan('migrate');
     }
 
@@ -83,7 +84,6 @@ class RetryWebhookJobTest extends TestCase
     public function test_retry_webhook_job_reschedules_if_not_ready(): void
     {
         // ARRANGE: Failed webhook not ready for retry yet
-        Queue::fake();
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
             'source' => 'rapidapi',

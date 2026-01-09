@@ -60,6 +60,8 @@ jobs:
 
       - name: Prepare environment
         working-directory: api
+        env:
+          APP_ENV: testing
         run: |
           # Create .env if it doesn't exist
           if [ ! -f .env ]; then
@@ -68,6 +70,8 @@ jobs:
           # Generate APP_KEY and ensure it's set
           php artisan key:generate --force
           php artisan config:clear
+          # Rebuild autoloader to apply dont-discover
+          composer dump-autoload --optimize
 
       - name: Setup PHPUnit configuration
         working-directory: api
@@ -81,7 +85,7 @@ jobs:
           APP_ENV: testing
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
-        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=32M artisan test
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test
 
   test-postgresql:
     name: Test PostgreSQL-specific features
@@ -158,7 +162,7 @@ jobs:
           DB_DATABASE: moviemind_test
           DB_USERNAME: postgres
           DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
-        run: php artisan test --filter=PostgreSQLSpecificTest
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test --filter=PostgreSQLSpecificTest
 
   security:
     name: Security & Lint
