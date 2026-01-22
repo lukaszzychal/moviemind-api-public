@@ -68,7 +68,11 @@ Plaintext key: mm_abc12345def67890ghijklmnopqrstuvwxyz (save this - it won't be 
 
 **If You Missed the Key:**
 The full plaintext key is **never stored** in the database (only hashed). If you missed it:
-- **Option 1:** Re-run seeder (will skip if keys exist, so delete existing keys first)
+- **Option 1:** Reset database and re-run seeder to get fresh keys:
+```bash
+docker compose exec php php artisan migrate:fresh --seed
+```
+**Warning:** This will delete all existing data and create fresh demo data with new API keys.
 - **Option 2:** Create new key via admin panel at `http://localhost:8000/admin`
 - **Option 3:** Use Artisan Tinker:
 ```bash
