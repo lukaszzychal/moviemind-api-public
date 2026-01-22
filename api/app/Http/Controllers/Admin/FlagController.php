@@ -1,62 +1,60 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\SetFlagRequest;
+use App\Http\Requests\SetFlagRequest;
 use App\Services\FeatureFlag\FeatureFlagManager;
 use App\Services\FeatureFlag\FeatureFlagUsageScanner;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FlagController extends Controller
 {
     public function __construct(
         private readonly FeatureFlagManager $featureFlagManager,
-        private readonly FeatureFlagUsageScanner $usageScanner,
+        private readonly FeatureFlagUsageScanner $usageScanner
     ) {}
 
-    public function index()
+    public function index(): JsonResponse
     {
-        $data = collect($this->featureFlagManager->all())
-            ->map(fn (array $meta, string $name) => [
-                'name' => $name,
-                'active' => $this->featureFlagManager->isActive($name),
-                'description' => $meta['description'] ?? null,
-                'category' => $meta['category'] ?? null,
-                'default' => (bool) ($meta['default'] ?? false),
-                'togglable' => (bool) ($meta['togglable'] ?? false),
-            ])
-            ->values();
-
-        return response()->json(['data' => $data]);
+        return response()->json($this->featureFlagManager->all());
     }
 
-    public function setFlag(SetFlagRequest $request, string $name)
+    public function setFlag(SetFlagRequest $request, string $name): JsonResponse
     {
-        $flag = $this->featureFlagManager->get($name);
+        $validated = $request->validated();
+        $state = $validated['state'];
 
-        if ($flag === null) {
-            abort(404, 'Feature flag not found.');
-        }
-
-        if (! $this->featureFlagManager->isTogglable($name)) {
-            abort(403, 'Feature flag cannot be toggled via API.');
-        }
-
-        $this->featureFlagManager->toggle($name, $request->wantsActivation());
+        $this->featureFlagManager->set($name, $state === 'on');
 
         return response()->json([
-            'name' => $name,
-            'active' => $this->featureFlagManager->isActive($name),
+            'message' => "Feature flag '{$name}' updated.",
+            'state' => $state,
         ]);
     }
 
-    public function usage()
+    public function resetFlag(string $name): JsonResponse
     {
-        $flagNames = array_keys($this->featureFlagManager->all());
-        $usage = $this->usageScanner->scan($flagNames);
+        $this->featureFlagManager->reset($name);
 
-        return response()->json(['usage' => $usage]);
+        return response()->json([
+            'message' => "Feature flag '{$name}' has been reset to its default value.",
+        ]);
+    }
+
+    public function usage(Request $request): JsonResponse
+    {
+        $flagName = $request->query('flag');
+        if (! $flagName) {
+            return response()->json(['error' => 'Flag name is required.'], 400);
+        }
+
+        $usages = $this->usageScanner->scan($flagName);
+
+        return response()->json([
+            'flag' => $flagName,
+            'usages' => $usages,
+        ]);
     }
 }

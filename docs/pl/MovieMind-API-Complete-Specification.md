@@ -18,7 +18,7 @@ Udostępnić API, które:
 
 ### 💡 Rodzaj Produktu
 
-**MVP (Minimum Viable Product)** – pierwsza działająca wersja z minimalnym zakresem funkcji, możliwa do wystawienia na RapidAPI.
+**MVP (Minimum Viable Product)** – pierwsza działająca wersja z minimalnym zakresem funkcji, zaprojektowana dla celów portfolio/demo.
 
 **Nie PoC, bo:**
 - PoC = tylko dowód, że da się generować tekst AI (bez systemu, bazy, API)
@@ -49,7 +49,7 @@ Publiczne repo pokazuje:
 
 **🔹 2. Bezpieczniej i bardziej elastycznie**
 Prywatne repo może zawierać:
-- klucze API (OpenAI, RapidAPI, SMTP, RabbitMQ) — w .env lub Vault
+- klucze API (OpenAI, SMTP, RabbitMQ) — w .env lub Vault
 - pełny workflow (CI/CD, webhooki)
 - analizy wydajności, monitoringi, testy integracyjne
 - AI logic (prompt templates, selection heuristics) — Twoja "tajemnica handlowa"
@@ -418,7 +418,7 @@ services:
 🚫 brak tłumaczeń automatycznych
 
 ### 💰 Po co MVP?
-- Weryfikacja zapotrzebowania (RapidAPI)
+- Weryfikacja zapotrzebowania (portfolio/demo)
 - Pomiar kosztów generacji i cache
 - Fundament pod wersję PRO (webhooki, rate limit, billing)
 
@@ -464,7 +464,7 @@ services:
 ### Faza 9: Dokumentacja i API Docs (Tydzień 10)
 - OpenAPI, README, przykłady użycia
 
-### Faza 10: RapidAPI i Launch (Tydzień 11-12)
+### Faza 10: Przygotowanie do Produkcji i Launch (Tydzień 11-12) - Opcjonalna integracja z providerem billing
 - Webhooki, plany, publikacja
 
 ---
@@ -541,7 +541,7 @@ return [
 ## 🔐 Bezpieczeństwo i Zarządzanie Kluczami
 
 ### 🔒 Zasada Ogólna
-❌ Nigdy nie commituj prawdziwych kluczy API (OpenAI, RapidAPI, SMTP, RabbitMQ)
+❌ Nigdy nie commituj prawdziwych kluczy API (OpenAI, SMTP, RabbitMQ)
 ✅ Używaj `.env` tylko lokalnie/na serwerze
 ✅ Commituj wyłącznie `.env.example` (placeholdery)
 
@@ -550,7 +550,7 @@ return [
 
 ---
 
-## 💰 Monetyzacja (RapidAPI)
+## 💰 Monetyzacja (Portfolio/Demo - Lokalne API Keys)
 
 | Plan | Limit | Funkcje |
 | ------ | ------- | ---------- |
@@ -568,7 +568,7 @@ Licencja: "No License" lub Creative Commons BY-NC (non-commercial)
 ### Scenariusz B: Open Source w Portfolio
 Licencja: MIT lub Apache 2.0
 
-### Scenariusz C: Komercyjny SaaS (RapidAPI / płatne API)
+### Scenariusz C: Komercyjny SaaS (Billing Provider / płatne API)
 Strategia dual-license:
 - Public repo: MIT / CC-BY-NC (non-commercial)
 - Private repo: własna licencja komercyjna
@@ -592,7 +592,7 @@ Strategia dual-license:
 3. Tydzień 5-6: Prawdziwe AI w prywatnym repo
 4. Tydzień 7-8: Cache i wielojęzyczność
 5. Tydzień 9-10: Testy i dokumentacja
-6. Tydzień 11-12: RapidAPI i launch
+6. Tydzień 11-12: Przygotowanie do produkcji i opcjonalna integracja z providerem billing
 
 ### 💡 Kluczowe Zasady
 - Bezpieczeństwo: Nigdy nie commituj prawdziwych kluczy API

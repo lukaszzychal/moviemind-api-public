@@ -8,7 +8,7 @@
 
 ## 📖 What is a Webhook System?
 
-A **webhook system** is a mechanism that allows external services (like RapidAPI, Stripe, or other payment providers) to automatically notify MovieMind API when important events occur, such as:
+A **webhook system** is a mechanism that allows external services (like Stripe, PayPal, or other payment providers) to automatically notify MovieMind API when important events occur, such as:
 - A new subscription is created
 - A subscription is upgraded or cancelled
 - A payment succeeds or fails
@@ -44,7 +44,7 @@ Instead of MovieMind API constantly checking ("polling") external services for u
 ### Simple Flow
 
 ```
-External Service (RapidAPI) → Event Occurs → Sends Webhook → MovieMind API
+External Service (Billing Provider) → Event Occurs → Sends Webhook → MovieMind API
                                                               ↓
                                                     Process Event
                                                               ↓
@@ -149,12 +149,12 @@ MovieMind API can send webhooks to external systems when events occur, such as:
 
 ### ❌ Problem BEZ Webhooks (Jak to działałoby bez webhooks)
 
-**Scenariusz:** Użytkownik kupuje subskrypcję Pro na RapidAPI za $29/miesiąc.
+**Scenariusz:** Użytkownik kupuje subskrypcję Pro przez billing provider (Stripe/PayPal) za $29/miesiąc.
 
 **BEZ webhooks:**
-1. Użytkownik płaci na RapidAPI ✅
+1. Użytkownik płaci przez billing provider ✅
 2. MovieMind API **NIE WIE** o tym, że użytkownik zapłacił
-3. MovieMind API musiałoby **co minutę** sprawdzać RapidAPI: "Czy ten użytkownik zapłacił?"
+3. MovieMind API musiałoby **co minutę** sprawdzać billing provider: "Czy ten użytkownik zapłacił?"
 4. Użytkownik czeka **minutę, 5 minut, godzinę** na dostęp do Pro features
 5. **Złe doświadczenie użytkownika** - zapłacił, ale nie ma dostępu
 

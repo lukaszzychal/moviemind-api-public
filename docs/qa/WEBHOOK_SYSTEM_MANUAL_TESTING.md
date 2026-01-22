@@ -51,7 +51,7 @@
 {
   "event": "subscription.created",
   "data": {
-    "rapidapi_user_id": "user-test-001",
+    "api_key_id": "api-key-test-001",
     "plan": "basic"
   },
   "idempotency_key": "test-001"
@@ -256,7 +256,7 @@ WHERE idempotency_key = 'test-permanent-001';
 ```bash
 curl -X POST http://localhost:8000/api/v1/webhooks/billing \
   -H "Content-Type: application/json" \
-  -d '{"event": "subscription.created", "data": {"rapidapi_user_id": "user-123", "plan": "basic"}}'
+  -d '{"event": "subscription.created", "data": {"api_key_id": "api-key-123", "plan": "basic"}}'
 ```
 
 **Expected Response:**
@@ -370,7 +370,7 @@ curl -X POST http://localhost:8000/api/v1/webhooks/billing \
   -d '{
     "event": "subscription.created",
     "data": {
-      "rapidapi_user_id": "user-test-001",
+      "api_key_id": "api-key-test-001",
       "plan": "basic"
     },
     "idempotency_key": "test-001"

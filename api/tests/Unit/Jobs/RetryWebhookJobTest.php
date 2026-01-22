@@ -27,10 +27,10 @@ class RetryWebhookJobTest extends TestCase
         // ARRANGE: Create failed webhook ready for retry
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => [
                 'event' => 'subscription.created',
-                'data' => ['rapidapi_user_id' => 'user-123', 'plan' => 'basic'],
+                'data' => ['plan' => 'free'],
             ],
             'status' => 'failed',
             'attempts' => 1,
@@ -65,7 +65,7 @@ class RetryWebhookJobTest extends TestCase
         // ARRANGE: Permanently failed webhook
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data'],
             'status' => 'permanently_failed',
             'attempts' => 3,
@@ -86,7 +86,7 @@ class RetryWebhookJobTest extends TestCase
         // ARRANGE: Failed webhook not ready for retry yet
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data'],
             'status' => 'failed',
             'attempts' => 1,

@@ -47,13 +47,16 @@ Route::prefix('v1')->group(function () {
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
     Route::get('health/tmdb', [HealthController::class, 'tmdb']);
+    Route::get('health/tvmaze', [HealthController::class, 'tvmaze']);
     Route::get('health/instance', [HealthController::class, 'instance']);
+    Route::get('health/db', [HealthController::class, 'database']);
 });
 
 Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
     Route::prefix('flags')->group(function () {
         Route::get('/', [FlagController::class, 'index']);
-        Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
+        Route::post('{name}', [FlagController::class, 'setFlag']);
+        Route::delete('{name}', [FlagController::class, 'resetFlag']); // New endpoint
         Route::get('usage', [FlagController::class, 'usage']);
     });
     Route::prefix('instances')->group(function () {

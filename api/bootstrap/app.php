@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust all proxies (Docker/Nginx)
+        $middleware->trustProxies(at: '*');
+
         // Add request-id and correlation-id middleware globally
         $middleware->append(\App\Http\Middleware\RequestIdMiddleware::class);
 
@@ -19,8 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'horizon.basic' => \App\Http\Middleware\HorizonBasicAuth::class,
             'admin.basic' => \App\Http\Middleware\AdminBasicAuth::class,
             'adaptive.rate.limit' => \App\Http\Middleware\AdaptiveRateLimit::class,
-            'rapidapi.auth' => \App\Http\Middleware\RapidApiAuth::class,
-            'rapidapi.headers' => \App\Http\Middleware\RapidApiHeaders::class,
+            'api.key.auth' => \App\Http\Middleware\ApiKeyAuth::class,
             'plan.rate.limit' => \App\Http\Middleware\PlanBasedRateLimit::class,
         ]);
     })

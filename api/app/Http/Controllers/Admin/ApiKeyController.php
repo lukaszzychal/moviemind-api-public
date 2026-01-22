@@ -9,6 +9,7 @@ use App\Models\ApiKey;
 use App\Services\ApiKeyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ApiKeyController extends Controller
 {
@@ -100,6 +101,13 @@ class ApiKeyController extends Controller
      */
     public function revoke(string $id): JsonResponse
     {
+        if (! Str::isUuid($id)) {
+            return response()->json([
+                'error' => 'Not found',
+                'message' => 'API key not found.',
+            ], 404);
+        }
+
         $apiKey = ApiKey::find($id);
 
         if ($apiKey === null) {
@@ -124,6 +132,13 @@ class ApiKeyController extends Controller
      */
     public function regenerate(Request $request, string $id): JsonResponse
     {
+        if (! Str::isUuid($id)) {
+            return response()->json([
+                'error' => 'Not found',
+                'message' => 'API key not found.',
+            ], 404);
+        }
+
         $validated = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
         ]);

@@ -23,8 +23,8 @@ class PlanBasedRateLimitTest extends TestCase
         $this->artisan('db:seed', ['--class' => 'SubscriptionPlanSeeder']);
         $this->apiKeyService = new ApiKeyService;
 
-        // Create a test route protected by rapidapi.auth and plan.rate.limit middleware
-        Route::middleware(['rapidapi.auth', 'plan.rate.limit'])->get('/test-plan-rate-limit', function () {
+        // Create a test route protected by api.key.auth and plan.rate.limit middleware
+        Route::middleware(['api.key.auth', 'plan.rate.limit'])->get('/test-plan-rate-limit', function () {
             return response()->json(['message' => 'Success']);
         });
     }

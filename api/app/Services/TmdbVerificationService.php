@@ -19,6 +19,17 @@ use LukaszZychal\TMDB\Exception\TMDBException;
 
 /**
  * Service for verifying entity existence in TMDb before AI generation.
+ *
+ * ⚠️ LICENSE REQUIREMENT:
+ * - Portfolio/Demo: Non-commercial use OK (with attribution)
+ * - Production: Commercial license REQUIRED from TMDB
+ * - Contact: sales@themoviedb.org
+ * - See: docs/LEGAL_TMDB_LICENSE.md for full licensing requirements
+ *
+ * Attribution required even with commercial license:
+ * - TMDB logo (less prominent than your logo)
+ * - Text: "This [application] uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
+ * - Link: https://www.themoviedb.org
  */
 class TmdbVerificationService implements EntityVerificationServiceInterface
 {

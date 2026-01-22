@@ -23,7 +23,7 @@ class WebhookService
      * Store and process a webhook event.
      *
      * @param  string  $eventType  Type of webhook (billing, notification, etc.)
-     * @param  string  $source  Source of webhook (rapidapi, stripe, etc.)
+     * @param  string  $source  Source of webhook (stripe, paypal, test, etc.)
      * @param  array  $payload  Webhook payload data
      * @param  string|null  $idempotencyKey  Idempotency key to prevent duplicates
      * @param  callable  $processor  Callback function to process the webhook
@@ -156,95 +156,9 @@ class WebhookService
      */
     private function getDefaultProcessor(WebhookEvent $webhookEvent): ?callable
     {
-        // For billing webhooks, return a processor that uses BillingService
-        if ($webhookEvent->event_type === 'billing' && $webhookEvent->source === 'rapidapi') {
-            return function (array $payload) {
-                $event = $payload['event'] ?? null;
-                $data = $payload['data'] ?? [];
-                $idempotencyKey = $payload['idempotency_key'] ?? null;
-
-                if ($event === null) {
-                    throw new \InvalidArgumentException('Event type is required in webhook payload');
-                }
-
-                $billingService = app(BillingService::class);
-                $rapidApiService = app(RapidApiService::class);
-
-                // Process billing webhook events
-                match ($event) {
-                    'subscription.created' => $this->processSubscriptionCreated($billingService, $rapidApiService, $data, $idempotencyKey),
-                    'subscription.updated' => $this->processSubscriptionUpdated($billingService, $rapidApiService, $data, $idempotencyKey),
-                    'subscription.cancelled' => $this->processSubscriptionCancelled($billingService, $data, $idempotencyKey),
-                    'payment.succeeded' => $this->processPaymentSucceeded($data, $idempotencyKey),
-                    'payment.failed' => $this->processPaymentFailed($data, $idempotencyKey),
-                    default => throw new \InvalidArgumentException("Unknown billing event type: {$event}"),
-                };
-            };
-        }
-
+        // Default processors can be added here for other webhook sources (e.g., Stripe, PayPal)
+        // For now, return null - processors must be provided explicitly
         return null;
-    }
-
-    /**
-     * Process subscription.created event.
-     */
-    private function processSubscriptionCreated(
-        BillingService $billingService,
-        RapidApiService $rapidApiService,
-        array $data,
-        ?string $idempotencyKey
-    ): void {
-        $validator = \Illuminate\Support\Facades\Validator::make($data, [
-            'rapidapi_user_id' => 'required|string',
-            'plan' => 'required|string|in:basic,pro,ultra',
-            'api_key_id' => 'nullable|uuid',
-        ]);
-
-        if ($validator->fails()) {
-            throw new \InvalidArgumentException('Invalid subscription data: '.$validator->errors()->first());
-        }
-
-        $mappedPlan = $rapidApiService->mapRapidApiPlan($data['plan']);
-        if ($mappedPlan === null) {
-            throw new \InvalidArgumentException("Unknown RapidAPI plan: {$data['plan']}");
-        }
-
-        $billingService->createSubscription(
-            $data['rapidapi_user_id'],
-            $mappedPlan,
-            $data['api_key_id'] ?? null,
-            $idempotencyKey
-        );
-    }
-
-    /**
-     * Process subscription.updated event.
-     */
-    private function processSubscriptionUpdated(
-        BillingService $billingService,
-        RapidApiService $rapidApiService,
-        array $data,
-        ?string $idempotencyKey
-    ): void {
-        $validator = \Illuminate\Support\Facades\Validator::make($data, [
-            'subscription_id' => 'required|uuid',
-            'plan' => 'required|string|in:basic,pro,ultra',
-        ]);
-
-        if ($validator->fails()) {
-            throw new \InvalidArgumentException('Invalid subscription data: '.$validator->errors()->first());
-        }
-
-        $mappedPlan = $rapidApiService->mapRapidApiPlan($data['plan']);
-        if ($mappedPlan === null) {
-            throw new \InvalidArgumentException("Unknown plan: {$data['plan']}");
-        }
-
-        $billingService->updateSubscription(
-            $data['subscription_id'],
-            $mappedPlan,
-            $idempotencyKey
-        );
     }
 
     /**

@@ -38,7 +38,7 @@ External Service → Webhook Endpoint → Store in DB → Process Event
 CREATE TABLE webhook_events (
     id UUID PRIMARY KEY,
     event_type VARCHAR(100) NOT NULL,      -- billing, notification, etc.
-    source VARCHAR(100) NOT NULL,          -- rapidapi, stripe, etc.
+    source VARCHAR(100) NOT NULL,          -- stripe, paypal, etc.
     payload JSON NOT NULL,                  -- Webhook payload data
     status ENUM(...) DEFAULT 'pending',     -- pending, processing, processed, failed, permanently_failed
     attempts TINYINT DEFAULT 0,            -- Number of processing attempts
@@ -82,7 +82,7 @@ $webhookService = app(WebhookService::class);
 
 $webhookEvent = $webhookService->processWebhook(
     eventType: 'billing',
-    source: 'rapidapi',
+    source: 'stripe', // or 'paypal', etc.
     payload: [
         'event' => 'subscription.created',
         'data' => [...],
@@ -382,7 +382,7 @@ if (Feature::active('webhook_notifications')) {
 ## Related Documentation
 
 - [ADR-008: Webhook System Architecture](../../adr/008-webhook-system-architecture.md)
-- [RapidAPI Webhooks Guide](../../../RAPIDAPI_WEBHOOKS.md)
+- [Billing Webhooks Guide](../../business/SUBSCRIPTION_SYSTEM.md)
 - [QA Testing Guide](../../qa/WEBHOOK_SYSTEM_QA_GUIDE.md)
 - [Manual Testing Guide](../../qa/WEBHOOK_SYSTEM_MANUAL_TESTING.md)
 - [Business Documentation](../../business/WEBHOOK_SYSTEM_BUSINESS.md)

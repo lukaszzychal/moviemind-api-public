@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('webhook_events', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('event_type', 100)->index()->comment('Type of webhook: billing, notification, etc.');
-            $table->string('source', 100)->index()->comment('Source of webhook: rapidapi, stripe, etc.');
+            $table->string('source', 100)->index()->comment('Source of webhook: stripe, paypal, test, etc.');
             $table->json('payload')->comment('Webhook payload data');
             $table->enum('status', ['pending', 'processing', 'processed', 'failed', 'permanently_failed'])->default('pending')->index();
             $table->unsignedTinyInteger('attempts')->default(0)->comment('Number of processing attempts');

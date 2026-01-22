@@ -933,6 +933,293 @@ esac
 
 ---
 
+## Cloud Platform Examples
+
+### Azure
+
+#### Azure App Service (Container Instances)
+
+**Example: Azure App Service with multiple slots**
+
+```yaml
+# azure-app-service.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: moviemind-api-config
+data:
+  APP_ENV: production
+  DB_CONNECTION: pgsql
+  DB_HOST: moviemind-db.postgres.database.azure.com
+  REDIS_HOST: moviemind-redis.redis.cache.windows.net
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api-full
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: api
+        image: moviemind-api:latest
+        envFrom:
+        - configMapRef:
+            name: moviemind-api-config
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: FEATURE_AI_BIO
+          value: "true"
+        - name: FEATURE_ADVANCED_SEARCH
+          value: "false"
+```
+
+**Azure Container Instances (ACI) with Application Gateway**
+
+```bash
+# Create resource group
+az group create --name moviemind-rg --location westeurope
+
+# Create Azure Container Registry
+az acr create --resource-group moviemind-rg --name moviemindacr --sku Basic
+
+# Build and push image
+az acr build --registry moviemindacr --image moviemind-api:latest .
+
+# Create Container Instances
+az container create \
+  --resource-group moviemind-rg \
+  --name moviemind-api-1 \
+  --image moviemindacr.azurecr.io/moviemind-api:latest \
+  --registry-login-server moviemindacr.azurecr.io \
+  --registry-username moviemindacr \
+  --registry-password <password> \
+  --environment-variables \
+    INSTANCE_ID=api-1 \
+    FEATURE_AI_DESCRIPTION=true \
+    FEATURE_AI_BIO=true \
+    FEATURE_ADVANCED_SEARCH=false \
+    DB_HOST=moviemind-db.postgres.database.azure.com \
+    REDIS_HOST=moviemind-redis.redis.cache.windows.net \
+  --cpu 1 \
+  --memory 1 \
+  --ports 8000
+```
+
+**Azure Kubernetes Service (AKS)**
+
+```yaml
+# aks-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: moviemind-api
+  template:
+    metadata:
+      labels:
+        app: moviemind-api
+    spec:
+      containers:
+      - name: api
+        image: moviemindacr.azurecr.io/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: DB_HOST
+          value: "moviemind-db.postgres.database.azure.com"
+        - name: REDIS_HOST
+          value: "moviemind-redis.redis.cache.windows.net"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+```
+
+---
+
+### Google Cloud Platform (GCP)
+
+#### Cloud Run (Serverless Containers)
+
+**Example: Cloud Run with multiple services**
+
+```yaml
+# cloud-run-service-full.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: moviemind-api-full
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "3"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+      - image: gcr.io/moviemind-project/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          value: "cloud-run-full"
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: FEATURE_AI_BIO
+          value: "true"
+        - name: FEATURE_ADVANCED_SEARCH
+          value: "false"
+```
+
+**Deployment to Cloud Run:**
+
+```bash
+# Build and push image
+gcloud builds submit --tag gcr.io/moviemind-project/moviemind-api:latest
+
+# Deploy service
+gcloud run deploy moviemind-api-full \
+  --image gcr.io/moviemind-project/moviemind-api:latest \
+  --platform managed \
+  --region europe-west1 \
+  --min-instances 3 \
+  --max-instances 10 \
+  --set-env-vars INSTANCE_ID=cloud-run-full,FEATURE_AI_DESCRIPTION=true
+```
+
+#### Google Kubernetes Engine (GKE)
+
+```yaml
+# gke-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: moviemind-api
+  template:
+    metadata:
+      labels:
+        app: moviemind-api
+    spec:
+      containers:
+      - name: api
+        image: gcr.io/moviemind-project/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+```
+
+---
+
+### Amazon Web Services (AWS)
+
+#### AWS ECS (Elastic Container Service)
+
+**Example: ECS Task Definition with Feature Flags**
+
+```json
+{
+  "family": "moviemind-api-full",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "containerDefinitions": [
+    {
+      "name": "moviemind-api",
+      "image": "moviemind-api:latest",
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "INSTANCE_ID",
+          "value": "ecs-full"
+        },
+        {
+          "name": "FEATURE_AI_DESCRIPTION",
+          "value": "true"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### AWS EKS (Elastic Kubernetes Service)
+
+```yaml
+# eks-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: moviemind-api
+  template:
+    metadata:
+      labels:
+        app: moviemind-api
+    spec:
+      containers:
+      - name: api
+        image: moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+```
+
+---
+
+### Cloud Platform Comparison
+
+| Platform | Service | Auto-scaling | Load Balancing | Monthly Cost | Ideal For |
+|----------|---------|--------------|----------------|--------------|-----------|
+| **Azure** | App Service | ✅ Yes | ✅ Application Gateway | $50-200 | Small/Medium |
+| **Azure** | AKS | ✅ HPA | ✅ Load Balancer | $100-500 | Large/Enterprise |
+| **GCP** | Cloud Run | ✅ Automatic | ✅ Cloud Load Balancer | $30-150 | Small/Medium |
+| **GCP** | GKE | ✅ HPA | ✅ Load Balancer | $100-400 | Large/Enterprise |
+| **AWS** | ECS Fargate | ✅ Service Auto-scaling | ✅ ALB/NLB | $80-300 | Medium/Large |
+| **AWS** | EKS | ✅ HPA | ✅ ELB | $150-600 | Large/Enterprise |
+
+---
+
 ## Feature Flags Management
 
 ### Database-Driven Flags

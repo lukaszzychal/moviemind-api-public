@@ -15,7 +15,7 @@ class FeatureFlagManager
 
     public function __construct(?array $definitions = null)
     {
-        $this->definitions = $definitions ?? config('pennant.flags', []);
+        $this->definitions = $definitions ?? config('pennant.metadata', []);
     }
 
     /**
@@ -45,19 +45,24 @@ class FeatureFlagManager
         return (bool) ($meta['togglable'] ?? false);
     }
 
-    public function toggle(string $name, bool $activate): void
+    public function set(string $name, bool $activate): void
     {
+        // Use 'default' scope to match UI behavior (FeatureFlags page)
         if ($activate) {
-            Feature::activate($name);
-
-            return;
+            Feature::for('default')->activate($name);
+        } else {
+            Feature::for('default')->deactivate($name);
         }
+    }
 
-        Feature::deactivate($name);
+    public function reset(string $name): void
+    {
+        Feature::for('default')->forget($name);
     }
 
     public function isActive(string $name): bool
     {
-        return (bool) Feature::active($name);
+        // Use 'default' scope to match UI behavior (FeatureFlags page)
+        return (bool) Feature::for('default')->active($name);
     }
 }

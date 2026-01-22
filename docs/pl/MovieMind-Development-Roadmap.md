@@ -29,7 +29,7 @@
 - **Wielojęzyczność** - obsługa wielu języków z inteligentnym tłumaczeniem
 - **Wersjonowanie** - porównywanie i wybór najlepszych wersji opisów
 - **Skalowalność** - architektura hybrydowa Python + PHP
-- **Monetyzacja** - API-as-a-Service przez RapidAPI
+- **Monetyzacja** - Lokalne API keys (portfolio/demo), Stripe/PayPal (produkcja)
 
 ### 🏗️ Strategia Dual-Repository:
 - **Publiczne repo** - portfolio, demonstracja umiejętności
@@ -112,7 +112,7 @@ Pełny produkt komercyjny z rzeczywistą integracją AI, billingiem i funkcjami 
 | Komponent          | Funkcjonalność             | Różnica vs Publiczne     |
 | ------------------ | -------------------------- | ------------------------ |
 | **AI Integration** | OpenAI GPT-4o, Claude      | Mock → Real AI           |
-| **Billing**        | RapidAPI plans, webhooks   | Brak → Pełny billing     |
+| **Billing**        | Lokalne API keys (demo), Stripe/PayPal (produkcja) | Lokalne → Pełny billing     |
 | **Rate Limiting**  | Plany free/pro/enterprise  | Brak → Zaawansowane      |
 | **Monitoring**     | Prometheus, Grafana        | Podstawowe → Pełne       |
 | **Security**       | OAuth, JWT, encryption     | Podstawowe → Enterprise  |
@@ -122,7 +122,7 @@ Pełny produkt komercyjny z rzeczywistą integracją AI, billingiem i funkcjami 
 
 ```php
 // Laravel - Jeden serwis (Public + Admin)
-POST /admin/billing/webhook   # RapidAPI billing
+POST /admin/billing/webhook   # Billing webhooks (przygotowane dla Stripe/PayPal)
 GET  /admin/analytics/usage   # Usage statistics
 POST /admin/ai/regenerate     # Force regeneration
 GET  /admin/health/detailed   # Health check
@@ -204,7 +204,7 @@ GET  /admin/health/detailed   # Health check
 **Cel:** Zbudować most od demo do komercyjnego wdrożenia
 
 #### Zadania:
-- [ ] **RapidAPI integration** – publikacja w staging z mock billingiem
+- [ ] **Billing integration** – przygotowanie webhooków dla przyszłych providerów (Stripe, PayPal)
 - [ ] **Plany subskrypcyjne** – macierz planów, polityki rate-limitów, feature gating
 - [ ] **Style packs & rekomendacje** – ekspozycja zaawansowanych możliwości AI
 - [ ] **Usage analytics** – dashboardy kosztów AI, wolumenów i języków
@@ -249,7 +249,7 @@ Client → Laravel API → Redis Cache → PostgreSQL
 
 ### 🔄 Ewolucja styku publicznego (opcjonalnie w przyszłości)
 Jeśli kiedykolwiek będziesz potrzebował:
-- **RapidAPI deployment** → Wystaw Laravel API przez API Gateway (np. Kong, Tyk)
+- **API Gateway deployment** → Wystaw Laravel API przez API Gateway (np. Kong, Tyk) - opcjonalnie dla produkcji
 - **Wysoka skala** (>10k req/min) → Skaluj horyzontalnie Laravel (Octane/Redis cache)
 - **Zespół Python** → Integruj ich przez kolejkę/SDK zamiast osobnego API
 
@@ -326,19 +326,23 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ## 🇵🇱 Monetyzacja
 
-### 💰 Plany RapidAPI
+### 💰 Plany subskrypcji (lokalne API keys dla portfolio/demo)
 
 | Plan           | Limit                  | Cena         | Funkcje                     |
 | -------------- | ---------------------- | ------------ | --------------------------- |
 | **Free**       | 100 zapytań/miesiąc    | $0           | Podstawowe dane, cache      |
-| **Pro**        | 10 000 zapytań/miesiąc | $29/miesiąc  | AI generacja, style packs   |
-| **Enterprise** | Nielimitowany          | $199/miesiąc | Webhooki, dedykowane modele |
+| **Pro**        | 10 000 zapytań/miesiąc | Demo  | AI generacja, style packs   |
+| **Enterprise** | Nielimitowany          | Demo | Webhooki, dedykowane modele |
 
-### 📊 Model Rozliczeń
-- **Pay-per-use** - płatność za użycie
-- **Subscription** - subskrypcja miesięczna
-- **Enterprise** - licencja korporacyjna
-- **Webhook billing** - rozliczenie przez webhooki
+**Uwaga:** Dla portfolio/demo subskrypcje są zarządzane lokalnie przez API keys w admin panelu. Dla produkcji można zintegrować Stripe/PayPal. RapidAPI zostało usunięte z projektu.
+
+### 📊 Model Rozliczeń (portfolio/demo)
+- **Local API keys** - zarządzanie subskrypcjami lokalnie przez admin panel
+- **Subscription plans** - plany free/pro/enterprise z limitami
+- **Rate limiting** - ograniczenia na podstawie planu subskrypcji
+- **Webhook billing** - przygotowane dla przyszłych providerów (Stripe, PayPal)
+
+**Uwaga:** Dla produkcji można zintegrować Stripe/PayPal. RapidAPI zostało usunięte z projektu.
 
 ### 🎯 Strategia Cenowa
 - **Competitive pricing** - konkurencyjne ceny
@@ -489,12 +493,12 @@ return [
 
 **Faza 2 (opcjonalnie, jeśli potrzeba): Wzmocnienie warstwy publicznej**
 Jeśli pojawi się potrzeba:
-- **RapidAPI deployment** → Dodaj API Gateway (Kong/Tyk) przed Laravel
+- **API Gateway deployment** → Dodaj API Gateway (Kong/Tyk) przed Laravel - opcjonalnie dla produkcji
 - **Wysoka skala** (>10k req/min) → Skaluj Laravel (Octane, cache, read replicas)
 - **Zespół Python** → Integruj z Laravel przez kolejkę (RabbitMQ) lub SDK
 
 **Kiedy rozdzielać?**
-- ✅ Publikujesz API na RapidAPI
+- ✅ Publikujesz API publicznie (opcjonalnie przez API Gateway)
 - ✅ Masz >10k requestów/minutę
 - ✅ Potrzebujesz zaawansowanych Python AI pipeline'ów
 - ✅ Masz osobny zespół Python

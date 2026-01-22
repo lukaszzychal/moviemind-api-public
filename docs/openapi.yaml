@@ -20,18 +20,16 @@ info:
     
     See `docs/REQUEST_ID_CORRELATION_ID.md` for detailed documentation.
     
-    **RapidAPI Integration:**
-    When accessing this API through RapidAPI, the following headers are automatically handled:
-    - `X-RapidAPI-Proxy-Secret`: Secret key for proxy authentication (validated by server)
-    - `X-RapidAPI-User`: RapidAPI user identifier (automatically extracted)
-    - `X-RapidAPI-Subscription`: RapidAPI subscription plan (basic, pro, ultra)
-    
     **API Key Authentication:**
     All endpoints require API key authentication via one of the following methods:
-    - Header: `X-RapidAPI-Key: <your-api-key>`
-    - Header: `Authorization: Bearer <your-api-key>`
+    - Header: `X-API-Key: <your-api-key>` (standard)
+    - Header: `X-RapidAPI-Key: <your-api-key>` (legacy support - kept for backward compatibility)
+    - Header: `Authorization: Bearer <your-api-key>` (alternative)
     
-    API keys are prefixed with `mm_` and can be obtained from the Admin API or RapidAPI dashboard.
+    API keys are prefixed with `mm_` and can be obtained from the Admin API.
+    
+    **Note:** This API is designed for portfolio/demo purposes. Subscriptions are managed locally via API keys.
+    For production use, billing providers (Stripe, PayPal, etc.) can be integrated.
     
     **Rate Limiting:**
     Rate limits are enforced based on your subscription plan:
@@ -1757,16 +1755,21 @@ paths:
                     nullable: true
 components:
   securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (prefixed with `mm_`). Standard header for API key authentication.
     RapidAPIKey:
       type: apiKey
       in: header
       name: X-RapidAPI-Key
-      description: API key for authentication (prefixed with `mm_`)
+      description: Legacy API key header (kept for backward compatibility). Prefer X-API-Key for new integrations.
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Bearer token authentication (alternative to X-RapidAPI-Key)
+      description: Bearer token authentication (alternative to X-API-Key)
   headers:
     XRequestID:
       description: Unique identifier for this HTTP request (UUIDv4). Use this ID to trace logs and debug issues.

@@ -30,6 +30,10 @@ use Laravel\Pennant\Feature;
 /**
  * Real Generate Movie Job - calls actual AI API for production.
  * Used when AI_SERVICE=real.
+ *
+ * Note: This job may receive TMDB data for movie verification.
+ * ⚠️ TMDB License: Commercial license required for production use.
+ * See: docs/LEGAL_TMDB_LICENSE.md
  */
 class RealGenerateMovieJob implements ShouldQueue
 {
@@ -39,6 +43,16 @@ class RealGenerateMovieJob implements ShouldQueue
 
     public int $timeout = 120; // Longer timeout for real API calls
 
+    /**
+     * @param  string  $slug  Movie slug
+     * @param  string  $jobId  Job ID (UUID)
+     * @param  string|null  $existingMovieId  Existing movie ID (if any)
+     * @param  string|null  $baselineDescriptionId  Baseline description ID (if any)
+     * @param  string|null  $locale  Locale for generation
+     * @param  string|null  $contextTag  Context tag for generation
+     * @param  array|null  $tmdbData  TMDB verification data (if available)
+     *                                ⚠️ Note: TMDB requires commercial license for production use
+     */
     public function __construct(
         public string $slug,
         public string $jobId,
@@ -375,6 +389,19 @@ class RealGenerateMovieJob implements ShouldQueue
         }
 
         Cache::put($this->cacheKey(), $payload, now()->addMinutes(15));
+
+        // Also update database via JobStatusService
+        /** @var JobStatusService $jobStatusService */
+        $jobStatusService = app(JobStatusService::class);
+        if ($status === 'DONE' && $id !== null) {
+            $jobStatusService->markDone($this->jobId, 'MOVIE', $id, $slug ?? $this->slug);
+        } elseif ($status === 'FAILED') {
+            $errorMessage = $error['message'] ?? 'Unknown error';
+            $jobStatusService->markFailed($this->jobId, 'MOVIE', $errorMessage);
+        } else {
+            // Update status for other states (e.g., PENDING -> PROCESSING)
+            $jobStatusService->updateStatus($this->jobId, $payload);
+        }
     }
 
     private function nextContextTag(Movie $movie): string

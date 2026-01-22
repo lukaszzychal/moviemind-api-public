@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -9,6 +10,9 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Laravel\Pennant\Feature;
 
 class FeatureFlags extends Page implements HasForms
 {
@@ -16,96 +20,94 @@ class FeatureFlags extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-flag';
 
+    protected static ?string $navigationGroup = 'System';
+
     protected static string $view = 'filament.pages.feature-flags';
 
-    protected static ?string $navigationLabel = 'Feature Flags';
-
-    protected static ?string $title = 'Feature Flags Management';
-
-    protected static ?int $navigationSort = 10;
-
-    public array $flags = [];
+    public ?array $data = [];
 
     public function mount(): void
     {
         $this->loadFlags();
     }
 
-    protected function loadFlags(): void
+    public function loadFlags(): void
     {
-        $allFlags = config('pennant.flags', []);
-
-        foreach ($allFlags as $key => $config) {
-            $this->flags[$key] = $config['default'] ?? false;
-        }
+        // Load flags from database overrides first, then fallback to config defaults
+        // Use Feature::for('default') to ensure we check the default scope
+        $this->form->fill(
+            collect(config('pennant.metadata'))
+                ->mapWithKeys(fn ($flag, $name) => [$name => (bool) Feature::for('default')->active($name)])
+                ->all()
+        );
     }
 
     public function form(Form $form): Form
     {
-        $allFlags = config('pennant.flags', []);
         $schema = [];
+        $flags = config('pennant.metadata', []);
 
-        $categories = [
-            'core_ai' => 'Core AI Features',
-            'ai_quality' => 'AI Quality & Safety',
-            'localization' => 'Localization',
-            'experiments' => 'Experimental Features',
-            'admin' => 'Admin Features',
-            'api' => 'API Features',
-            'caching' => 'Caching',
-            'webhooks' => 'Webhooks',
-            'public' => 'Public Features',
-            'security' => 'Security',
-        ];
+        // Get overridden flags for default scope only
+        $overriddenFlags = DB::table('features')
+            ->where('scope', '__laravel_null')
+            ->pluck('name')
+            ->toArray();
 
-        foreach ($categories as $categoryKey => $categoryLabel) {
-            $categoryFlags = array_filter($allFlags, fn ($flag) => ($flag['category'] ?? '') === $categoryKey);
+        // Group flags by category while preserving flag names as keys
+        $flagsByCategory = collect($flags)
+            ->mapToGroups(fn ($flag, $name) => [$flag['category'] => [$name => $flag]])
+            ->map(fn ($group) => $group->collapse());
 
-            if (empty($categoryFlags)) {
-                continue;
+        foreach ($flagsByCategory as $category => $flags) {
+            $fields = [];
+            foreach ($flags as $name => $flag) {
+                $isOverridden = in_array($name, $overriddenFlags);
+                $fields[] = Toggle::make($name)
+                    ->label($name)
+                    ->helperText($flag['description'])
+                    ->hint($isOverridden ? 'Overridden' : 'Default')
+                    ->hintColor($isOverridden ? 'warning' : 'gray');
             }
-
-            $toggles = [];
-            foreach ($categoryFlags as $key => $config) {
-                $toggles[] = Toggle::make("flags.{$key}")
-                    ->label($this->formatFlagName($key))
-                    ->helperText($config['description'] ?? '')
-                    ->disabled(! ($config['togglable'] ?? true))
-                    ->inline(false);
-            }
-
-            $schema[] = Section::make($categoryLabel)
-                ->schema($toggles)
-                ->collapsible()
+            $schema[] = Section::make(ucfirst(str_replace('_', ' ', $category)))
+                ->schema($fields)
                 ->columns(2);
         }
 
-        return $form
-            ->schema($schema)
-            ->statePath('flags');
-    }
-
-    protected function formatFlagName(string $key): string
-    {
-        return str_replace('_', ' ', ucwords($key, '_'));
-    }
-
-    public function save(): void
-    {
-        Notification::make()
-            ->title('Feature flags updated')
-            ->success()
-            ->body('Note: Changes are in-memory only. To persist, update config/pennant.php')
-            ->send();
+        return $form->schema($schema)->statePath('data');
     }
 
     protected function getFormActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label('Save Changes')
-                ->action('save')
-                ->color('primary'),
+                ->submit('save'),
+            Action::make('resetAll')
+                ->label('Reset All to Default')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->action('resetAllFlags'),
         ];
+    }
+
+    public function save(): void
+    {
+        foreach ($this->form->getState() as $name => $state) {
+            // Use for() to ensure we're setting for default scope
+            if ((bool) $state) {
+                Feature::for('default')->activate($name);
+            } else {
+                Feature::for('default')->deactivate($name);
+            }
+        }
+        Notification::make()->title('Feature flags updated successfully.')->success()->send();
+        $this->loadFlags();
+    }
+
+    public function resetAllFlags(): void
+    {
+        Artisan::call('pennant:purge');
+        Notification::make()->title('All flags have been reset to their default values.')->success()->send();
+        $this->loadFlags();
     }
 }

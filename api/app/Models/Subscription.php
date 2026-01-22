@@ -10,11 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Subscription model for tracking user subscriptions from RapidAPI.
+ * Subscription model for tracking user subscriptions.
+ *
+ * Note: For portfolio/demo, subscriptions are managed locally via API keys.
+ * The `rapidapi_user_id` field is deprecated and kept for backward compatibility only.
  *
  * @property string $id
  * @property string|null $api_key_id
- * @property string|null $rapidapi_user_id
+ * @property string|null $rapidapi_user_id Deprecated: kept for backward compatibility, always null for local subscriptions
  * @property string $plan_id
  * @property string $status
  * @property \Carbon\Carbon|null $current_period_start

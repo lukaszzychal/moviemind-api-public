@@ -19,6 +19,7 @@ use App\Repositories\TvSeriesReportRepository;
 use App\Repositories\TvShowReportRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ReportController extends Controller
 {
@@ -179,6 +180,10 @@ class ReportController extends Controller
      */
     public function verify(string $id): JsonResponse
     {
+        if (! Str::isUuid($id)) {
+            return response()->json(['error' => 'Report not found'], 404);
+        }
+
         // Try to find as movie report first
         $movieReport = MovieReport::find($id);
         if ($movieReport !== null) {

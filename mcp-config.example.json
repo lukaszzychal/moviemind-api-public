@@ -1,13 +1,97 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "python",
+    "Railway": {
+      "command": "npx",
       "args": [
-        "-m",
-        "mcp_server_filesystem",
+        "-y",
+        "@railway/mcp-server"
+      ],
+      "env": {}
+    },
+    "mcp-doc-generator": {
+      "command": "npx",
+      "args": [
+        "github:lukaszzychal/mcp-doc-generator#v0.1.6"
+      ]
+    },
+    "github": {
+      "command": "/Users/lukaszzychal/github-mcp-server",
+      "args": [
+        "stdio"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN_HERE"
+      }
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "env": {
+        "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY_HERE"
+      }
+    },
+    "filesystem": {
+      "command": "mcp-server-filesystem",
+      "args": [
         "--project-dir",
         "/Users/lukaszzychal/PhpstormProjects/moviemind-api-public"
       ]
+    },
+    "memory-bank": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@allpepper/memory-bank-mcp"
+      ],
+      "env": {
+        "MEMORY_BANK_ROOT": "/Users/lukaszzychal/memory-bank"
+      }
+    },
+    "playwright": {
+      "command": "node",
+      "args": [
+        "/Users/lukaszzychal/PhpstormProjects/moviemind-api-public/node_modules/@playwright/mcp/cli.js"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "notion": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ],
+      "env": {
+        "NOTION_TOKEN": "YOUR_NOTION_TOKEN_HERE"
+      }
+    },
+    "postman": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@postman/postman-mcp-server"
+      ],
+      "env": {
+        "POSTMAN_API_KEY": "YOUR_POSTMAN_API_KEY_HERE"
+      }
+    },
+    "Chrome DevTools": {
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest"
+      ],
+      "env": {}
+    },
+    "jetbrains": {
+      "url": "http://localhost:64342/sse"
     }
   }
 }

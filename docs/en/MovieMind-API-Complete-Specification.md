@@ -17,7 +17,7 @@ Provide an API that:
 
 ### 💡 Product Type
 
-MVP (Minimum Viable Product) — first working version with minimal feature scope, ready for deployment on RapidAPI.
+MVP (Minimum Viable Product) — first working version with minimal feature scope, designed for portfolio/demo purposes.
 
 Not PoC, because:
 - PoC = only proof that AI text generation is possible (without system, database, API)
@@ -260,7 +260,7 @@ services:
 7) Multilingual Support (Week 8)
 8) Testing & QA (Week 9)
 9) Documentation & API Docs (Week 10)
-10) RapidAPI Preparation & Launch (Weeks 11-12)
+10) Production Preparation & Launch (Weeks 11-12) - Optional billing provider integration
 
 ---
 
@@ -318,7 +318,7 @@ Environment files and CI secrets should be configured securely.
 
 ---
 
-## 💰 Monetization (RapidAPI)
+## 💰 Monetization (Portfolio/Demo - Local API Keys)
 
 | Plan       | Limit                 | Features                                           |
 | ---------- | --------------------- | -------------------------------------------------- |
@@ -346,7 +346,7 @@ Next Steps (suggested):
 3) Weeks 5-6: Implement real AI (private)
 4) Weeks 7-8: Caching & multilingual
 5) Weeks 9-10: Tests & docs
-6) Weeks 11-12: RapidAPI & launch
+6) Weeks 11-12: Production preparation & optional billing provider integration
 
 Key Principles: security, separation, quality, documentation.
 

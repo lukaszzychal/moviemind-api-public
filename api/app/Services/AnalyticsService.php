@@ -214,6 +214,7 @@ class AnalyticsService
         $driver = config('database.default');
 
         $isSqlite = $driver === 'sqlite' || str_contains($driver, 'sqlite');
+        $isPgsql = $driver === 'pgsql';
 
         if ($isSqlite) {
             $dateExpr = match ($period) {
@@ -222,6 +223,14 @@ class AnalyticsService
                 'monthly' => "strftime('%Y-%m', created_at)",
                 default => "strftime('%Y-%m-%d', created_at)",
             };
+        } elseif ($isPgsql) {
+            $dateFormat = match ($period) {
+                'daily' => 'YYYY-MM-DD',
+                'weekly' => 'IYYY-IW', // ISO week for PostgreSQL
+                'monthly' => 'YYYY-MM',
+                default => 'YYYY-MM-DD',
+            };
+            $dateExpr = "to_char(created_at, '{$dateFormat}')";
         } else {
             $dateFormat = match ($period) {
                 'daily' => '%Y-%m-%d',

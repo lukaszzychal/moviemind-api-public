@@ -8,13 +8,15 @@ use App\Services\EntityVerificationServiceInterface;
 use App\Services\OpenAiClientInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Laravel\Pennant\Feature;
 
 class HealthController extends Controller
 {
     public function __construct(
         private readonly OpenAiClientInterface $openAiClient,
-        private readonly EntityVerificationServiceInterface $tmdbVerificationService
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService,
+        private readonly \App\Services\TvmazeVerificationService $tvmazeVerificationService
     ) {}
 
     public function openAi(): JsonResponse
@@ -34,6 +36,9 @@ class HealthController extends Controller
     /**
      * Check TMDb API health.
      *
+     * Note: TMDb requires commercial license for production use.
+     * See docs/LEGAL_TMDB_LICENSE.md for licensing requirements.
+     *
      * @author MovieMind API Team
      */
     public function tmdb(): JsonResponse
@@ -48,6 +53,50 @@ class HealthController extends Controller
         }
 
         return response()->json($result, $status);
+    }
+
+    /**
+     * Check TVmaze API health.
+     *
+     * Note: TVmaze is free and allows commercial use under CC BY-SA license.
+     * Attribution required: Link to TVmaze (https://www.tvmaze.com) in your application.
+     * See docs/LEGAL_TVMAZE_LICENSE.md for licensing details.
+     *
+     * @author MovieMind API Team
+     */
+    public function tvmaze(): JsonResponse
+    {
+        $result = $this->tvmazeVerificationService->health();
+
+        $success = (bool) $result['success'];
+        $status = 200;
+
+        if (! $success) {
+            $status = array_key_exists('status', $result) ? (int) $result['status'] : 503;
+        }
+
+        return response()->json($result, $status);
+    }
+
+    /**
+     * Check Database health.
+     * Used by E2E tests to wait for DB readiness.
+     */
+    public function database(): JsonResponse
+    {
+        try {
+            DB::connection()->getPdo();
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Database connection established',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Database connection failed: '.$e->getMessage(),
+            ], 503);
+        }
     }
 
     /**
@@ -87,8 +136,8 @@ class HealthController extends Controller
      */
     public function debugConfig(Request $request): JsonResponse
     {
-        // Security: Check feature flag
-        if (! Feature::active('debug_endpoints')) {
+        // Security: Check feature flag (use 'default' scope to match UI behavior)
+        if (! Feature::for('default')->active('debug_endpoints')) {
             return response()->json([
                 'error' => 'Forbidden',
                 'message' => 'Debug endpoints are disabled. Enable feature flag "debug_endpoints" to access this endpoint.',
@@ -184,6 +233,7 @@ class HealthController extends Controller
                 'health' => [
                     'GET /api/v1/health/openai',
                     'GET /api/v1/health/tmdb',
+                    'GET /api/v1/health/db',
                 ],
             ],
             'timestamp' => now()->toIso8601String(),

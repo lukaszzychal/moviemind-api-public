@@ -14,7 +14,9 @@
 
 ## 🎯 Przegląd projektu
 
-MovieMind API to usługa REST, która generuje i przechowuje unikalne opisy filmów, seriali i aktorów przy użyciu technologii AI. W przeciwieństwie do klasycznych baz (IMDb, TMDb) MovieMind dostarcza oryginalne treści, obsługując wiele języków oraz różne style narracji.
+MovieMind API to **projekt portfolio/demo**, który demonstruje usługę REST do generowania i przechowywania unikalnych opisów filmów, seriali i aktorów przy użyciu technologii AI. W przeciwieństwie do klasycznych baz (IMDb, TMDb) MovieMind dostarcza oryginalne treści, obsługując wiele języków oraz różne style narracji.
+
+**Uwaga:** To projekt portfolio z pełną funkcjonalnością do celów demonstracyjnych. Dla wdrożenia produkcyjnego mogą być wymagane licencje komercyjne (zobacz [Licencje API zewnętrznych](#-licencje-api-zewnętrznych) poniżej).
 
 ## ✨ Kluczowe funkcje
 
@@ -211,7 +213,7 @@ Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 | Generowanie AI | `AI_SERVICE=mock` (deterministyczne demo) i `AI_SERVICE=real` z OpenAI | Multi-provider, kontrola kosztów, strażnicy halucynacji |
 | Doświadczenie admina | Panel admin z flagami, CRUD, konta demo | Pełna konsola operacyjna z billingiem, analityką, audytem |
 | Autoryzacja | Demo auth dla admina + otwarte API publiczne | Klucze na plan, OAuth/JWT, limity wg poziomów |
-| Webhooki | Symulator endpointów + inspektor żądań | Produkcyjne procesory webhooków (RapidAPI/Stripe, partnerzy) |
+| Webhooki | Symulator endpointów + inspektor żądań | Produkcyjne procesory webhooków (Stripe/PayPal, partnerzy) |
 | Monitoring | Dashboardy Telescope, przykładowe Grafana | Zaawansowane metryki, SLA, alerty on-call |
 | Lokalizacja | Przykładowe treści wielojęzyczne + glosariusz | Pełna ścieżka tłumaczeń, prompty per locale |
 | Dokumentacja | OpenAPI, notatki architektoniczne, przewodnik portfolio | Komercyjne runbooki, playbooki wdrożeniowe, dokumenty dla vendorów |
@@ -287,10 +289,33 @@ To publiczne repo demonstracyjne. Pełne funkcje komercyjne dostępne są w repo
 
 Projekt objęty licencją MIT – szczegóły w pliku [LICENSE](LICENSE).
 
+---
+
+## ⚠️ Licencje API zewnętrznych
+
+### TMDB (The Movie Database)
+
+**Użycie portfolio/demo:**
+- ✅ Użycie niekomercyjne dozwolone (z atrybucją)
+- Wymagana atrybucja: logo TMDB + tekst + link
+
+**Użycie produkcyjne:**
+- ❌ **Wymagana licencja komercyjna**
+- Kontakt: sales@themoviedb.org
+- Szacunkowe koszty: ~$149/miesiąc (małe aplikacje) do $42,000/rok (enterprise)
+- Szczegóły: [`docs/LEGAL_TMDB_LICENSE.md`](docs/LEGAL_TMDB_LICENSE.md)
+
+### TVmaze
+
+**Użycie portfolio i produkcyjne:**
+- ✅ Użycie komercyjne dozwolone (darmowe, licencja CC BY-SA)
+- Wymagana atrybucja: link do TVmaze
+- Szczegóły: [`docs/LEGAL_TVMAZE_LICENSE.md`](docs/LEGAL_TVMAZE_LICENSE.md)
+
 ## 🔗 Powiązane projekty
 
 - **Repo prywatne**: pełna wersja z billingiem, webhookami i panelem admin
-- **RapidAPI Marketplace**: publikacja produkcyjna API
+- **Billing Provider Integration**: opcjonalna integracja z Stripe/PayPal dla produkcji
 - **Strona dokumentacji**: rozbudowane materiały API
 
 ## 📞 Wsparcie

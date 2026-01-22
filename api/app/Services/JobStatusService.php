@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class JobStatusService
@@ -21,7 +22,7 @@ class JobStatusService
     private const STATUS_FAILED = 'FAILED';
 
     /**
-     * Initialize job status in cache.
+     * Initialize job status in cache and database.
      */
     public function initializeStatus(
         string $jobId,
@@ -31,6 +32,10 @@ class JobStatusService
         ?string $locale = null,
         ?string $contextTag = null
     ): void {
+        // Get entity_id from slug (for MOVIE, PERSON, etc.)
+        $entityId = $this->getEntityIdFromSlug($entityType, $slug);
+
+        // Save to cache
         Cache::put(
             $this->cacheKey($jobId),
             [
@@ -46,6 +51,25 @@ class JobStatusService
             Carbon::now()->addMinutes(self::CACHE_TTL_MINUTES)
         );
 
+        // Save to database (ai_jobs table)
+        // Note: ai_jobs.id is auto-increment, but we need to store job_id (UUID) in payload_json
+        // entity_id is UUID (string) since models use UUID as primary key
+        // entity_id can be null if entity doesn't exist yet (will be updated when entity is created)
+        DB::table('ai_jobs')->insert([
+            'entity_type' => $entityType,
+            'entity_id' => $entityId, // Can be null if entity doesn't exist yet
+            'locale' => $locale,
+            'context_tag' => $contextTag,
+            'status' => self::STATUS_PENDING,
+            'payload_json' => json_encode([
+                'job_id' => $jobId,
+                'slug' => $slug,
+                'confidence' => $confidence,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->storeSlugMapping($entityType, $slug, $jobId, self::STATUS_PENDING, $locale, $contextTag);
         Log::info('JobStatusService: initialized status', [
             'job_id' => $jobId,
@@ -54,6 +78,21 @@ class JobStatusService
             'locale' => $locale,
             'context_tag' => $contextTag,
         ]);
+    }
+
+    /**
+     * Get entity_id from slug (for database storage).
+     * Returns UUID (string) since models use UUID as primary key.
+     */
+    private function getEntityIdFromSlug(string $entityType, string $slug): ?string
+    {
+        return match (strtoupper($entityType)) {
+            'MOVIE' => \App\Models\Movie::where('slug', $slug)->value('id'),
+            'PERSON' => \App\Models\Person::where('slug', $slug)->value('id'),
+            'TV_SERIES' => \App\Models\TvSeries::where('slug', $slug)->value('id'),
+            'TV_SHOW' => \App\Models\TvShow::where('slug', $slug)->value('id'),
+            default => null,
+        };
     }
 
     /**
@@ -159,6 +198,18 @@ class JobStatusService
         $status = (string) ($merged['status'] ?? '');
         $locale = $merged['locale'] ?? null;
         $contextTag = $merged['context_tag'] ?? null;
+
+        // Update database (ai_jobs table)
+        // Use whereRaw for PostgreSQL JSON queries
+        DB::table('ai_jobs')
+            ->whereRaw("payload_json->>'job_id' = ?", [$jobId])
+            ->update([
+                'status' => $status,
+                'locale' => $locale,
+                'context_tag' => $contextTag,
+                'payload_json' => json_encode($merged),
+                'updated_at' => now(),
+            ]);
 
         if ($entityType !== '' && $requestedSlug !== '') {
             $this->storeSlugMapping($entityType, $requestedSlug, $jobId, $status, $this->stringOrNull($locale), $this->stringOrNull($contextTag));

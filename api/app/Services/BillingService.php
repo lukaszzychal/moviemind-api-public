@@ -14,26 +14,20 @@ use Illuminate\Support\Facades\Log;
  *
  * Responsibilities:
  * - Create, update, and cancel subscriptions
- * - Synchronize plans from RapidAPI
  * - Handle idempotency for webhooks
+ * - Manage subscriptions for local API keys (portfolio/demo)
  */
 class BillingService
 {
-    public function __construct(
-        private readonly RapidApiService $rapidApiService
-    ) {}
-
     /**
      * Create a new subscription.
      *
-     * @param  string|null  $rapidApiUserId  RapidAPI user identifier
      * @param  string  $planName  Internal plan name (free, pro, enterprise)
-     * @param  string|null  $apiKeyId  Associated API key ID (optional)
+     * @param  string|null  $apiKeyId  Associated API key ID (required for local subscriptions)
      * @param  string|null  $idempotencyKey  Idempotency key to prevent duplicates
      * @return Subscription The created subscription
      */
     public function createSubscription(
-        ?string $rapidApiUserId,
         string $planName,
         ?string $apiKeyId = null,
         ?string $idempotencyKey = null
@@ -53,10 +47,10 @@ class BillingService
 
         $plan = SubscriptionPlan::where('name', $planName)->firstOrFail();
 
-        return DB::transaction(function () use ($rapidApiUserId, $plan, $apiKeyId, $idempotencyKey) {
+        return DB::transaction(function () use ($plan, $apiKeyId, $idempotencyKey) {
             $subscription = Subscription::create([
                 'api_key_id' => $apiKeyId,
-                'rapidapi_user_id' => $rapidApiUserId,
+                'rapidapi_user_id' => null, // Deprecated: kept for backward compatibility, always null for local subscriptions
                 'plan_id' => $plan->id,
                 'status' => 'active',
                 'current_period_start' => now(),
@@ -66,7 +60,7 @@ class BillingService
 
             Log::info('Subscription created', [
                 'subscription_id' => $subscription->id,
-                'rapidapi_user_id' => $rapidApiUserId,
+                'api_key_id' => $apiKeyId,
                 'plan' => $plan->name,
             ]);
 
@@ -160,60 +154,6 @@ class BillingService
 
             return $subscription->fresh();
         });
-    }
-
-    /**
-     * Synchronize plan from RapidAPI.
-     *
-     * Maps RapidAPI plan to internal plan and updates or creates subscription.
-     *
-     * @param  string|null  $rapidApiUserId  RapidAPI user identifier
-     * @param  string  $rapidApiPlan  RapidAPI plan (basic, pro, ultra)
-     * @param  string|null  $apiKeyId  Associated API key ID (optional)
-     * @param  string|null  $idempotencyKey  Idempotency key
-     * @return Subscription The synchronized subscription
-     */
-    public function syncPlanFromRapidApi(
-        ?string $rapidApiUserId,
-        string $rapidApiPlan,
-        ?string $apiKeyId = null,
-        ?string $idempotencyKey = null
-    ): Subscription {
-        $mappedPlan = $this->rapidApiService->mapRapidApiPlan($rapidApiPlan);
-
-        if ($mappedPlan === null) {
-            throw new \InvalidArgumentException("Unknown RapidAPI plan: {$rapidApiPlan}");
-        }
-
-        // Try to find existing subscription
-        $subscription = null;
-        if ($rapidApiUserId !== null) {
-            $subscription = Subscription::where('rapidapi_user_id', $rapidApiUserId)
-                ->where('status', 'active')
-                ->first();
-        } elseif ($apiKeyId !== null) {
-            $subscription = Subscription::where('api_key_id', $apiKeyId)
-                ->where('status', 'active')
-                ->first();
-        }
-
-        if ($subscription !== null) {
-            return $this->updateSubscription($subscription->id, $mappedPlan, $idempotencyKey);
-        }
-
-        return $this->createSubscription($rapidApiUserId, $mappedPlan, $apiKeyId, $idempotencyKey);
-    }
-
-    /**
-     * Find subscription by RapidAPI user ID.
-     *
-     * @return Subscription|null The subscription or null if not found
-     */
-    public function findByRapidApiUserId(string $rapidApiUserId): ?Subscription
-    {
-        return Subscription::where('rapidapi_user_id', $rapidApiUserId)
-            ->where('status', 'active')
-            ->first();
     }
 
     /**

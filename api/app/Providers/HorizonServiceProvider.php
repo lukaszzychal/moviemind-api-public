@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Illuminate\Contracts\Foundation\CachesRoutes;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Laravel\Horizon\Horizon;
-use Laravel\Horizon\HorizonApplicationServiceProvider;
+use Laravel\Horizon\HorizonServiceProvider as BaseHorizonServiceProvider;
 
-class HorizonServiceProvider extends HorizonApplicationServiceProvider
+class HorizonServiceProvider extends BaseHorizonServiceProvider
 {
     /**
      * Bootstrap any application services.
@@ -18,9 +20,36 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         parent::boot();
 
-        // Horizon::routeSmsNotificationsTo('15556667777');
-        // Horizon::routeMailNotificationsTo('example@example.com');
-        // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');
+        // Override routes registration to use our custom route registration
+        // (parent::boot() already registers routes, but we want to ensure they're registered correctly)
+        // Note: parent::boot() from BaseHorizonServiceProvider already handles routes, resources, and commands
+    }
+
+    /**
+     * Register the Horizon routes.
+     */
+    protected function registerRoutes(): void
+    {
+        if ($this->app instanceof CachesRoutes && $this->app->routesAreCached()) {
+            return;
+        }
+
+        Route::group([
+            'domain' => config('horizon.domain', null),
+            'prefix' => config('horizon.path'),
+            'namespace' => 'Laravel\Horizon\Http\Controllers',
+            'middleware' => config('horizon.middleware', 'web'),
+        ], function () {
+            $this->loadRoutesFrom(base_path('vendor/laravel/horizon/routes/web.php'));
+        });
+    }
+
+    /**
+     * Register the Horizon resources (views).
+     */
+    protected function registerResources(): void
+    {
+        $this->loadViewsFrom(base_path('vendor/laravel/horizon/resources/views'), 'horizon');
     }
 
     /**

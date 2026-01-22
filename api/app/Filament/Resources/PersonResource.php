@@ -3,25 +3,24 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PersonResource\Pages;
+use App\Filament\Resources\PersonResource\RelationManagers;
 use App\Models\Person;
+use App\Services\AiGenerationTriggerService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class PersonResource extends Resource
 {
     protected static ?string $model = Person::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'People';
-
-    protected static ?string $modelLabel = 'Person';
-
-    protected static ?string $pluralModelLabel = 'People';
+    protected static ?string $navigationGroup = 'Content';
 
     protected static ?int $navigationSort = 2;
 
@@ -33,28 +32,17 @@ class PersonResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                        if (! $get('slug')) {
-                            $set('slug', \Illuminate\Support\Str::slug($state));
-                        }
-                    }),
+                    ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
                 Forms\Components\TextInput::make('slug')
                     ->required()
                     ->maxLength(255)
-                    ->unique(ignoreRecord: true)
-                    ->disabled()
-                    ->dehydrated(),
-                Forms\Components\DatePicker::make('birth_date')
-                    ->label('Birth Date')
-                    ->displayFormat('Y-m-d')
-                    ->maxDate(now()),
+                    ->unique(ignoreRecord: true),
+                Forms\Components\DatePicker::make('birth_date'),
                 Forms\Components\TextInput::make('birthplace')
-                    ->maxLength(255)
-                    ->label('Birthplace'),
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('tmdb_id')
                     ->numeric()
-                    ->label('TMDb ID')
-                    ->helperText('The Movie Database ID'),
+                    ->unique(ignoreRecord: true),
             ]);
     }
 
@@ -64,72 +52,91 @@ class PersonResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->sortable()
-                    ->limit(50),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('birth_date')
-                    ->date('Y-m-d')
-                    ->sortable()
-                    ->label('Birth Date'),
+                    ->date()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('birthplace')
-                    ->searchable()
-                    ->limit(30)
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('slug')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('bios_count')
+                    ->counts('bios')
+                    ->label('Bios'),
                 Tables\Columns\TextColumn::make('tmdb_id')
-                    ->numeric()
-                    ->sortable()
-                    ->label('TMDb ID')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('TMDb')
+                    ->formatStateUsing(fn ($state) => $state ? 'Link' : '-')
+                    ->url(fn ($state) => $state ? "https://www.themoviedb.org/person/{$state}" : null)
+                    ->openUrlInNewTab()
+                    ->color(fn ($state) => $state ? 'primary' : 'gray'),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\Filter::make('birth_year')
-                    ->form([
-                        Forms\Components\TextInput::make('year_from')
-                            ->numeric()
-                            ->label('Born After'),
-                        Forms\Components\TextInput::make('year_to')
-                            ->numeric()
-                            ->label('Born Before'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['year_from'],
-                                fn (Builder $query, $year): Builder => $query->whereYear('birth_date', '>=', $year),
-                            )
-                            ->when(
-                                $data['year_to'],
-                                fn (Builder $query, $year): Builder => $query->whereYear('birth_date', '<=', $year),
-                            );
-                    }),
+                Tables\Filters\Filter::make('has_tmdb_id')
+                    ->query(fn ($query) => $query->whereNotNull('tmdb_id'))
+                    ->label('Has TMDb ID'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('generate')
+                    ->label('Generate AI')
+                    ->icon('heroicon-o-sparkles')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\Select::make('locale')
+                            ->options([
+                                'en-US' => 'English (US)',
+                                'pl-PL' => 'Polish',
+                                'de-DE' => 'German',
+                                'fr-FR' => 'French',
+                                'es-ES' => 'Spanish',
+                            ])
+                            ->default('en-US')
+                            ->required(),
+                        Forms\Components\Select::make('context_tag')
+                            ->options([
+                                'default' => 'Default',
+                                'short' => 'Short',
+                                'detailed' => 'Detailed',
+                                'funny' => 'Humorous',
+                                'critical' => 'Critical',
+                            ])
+                            ->default('default')
+                            ->required(),
+                    ])
+                    ->action(function (Person $record, array $data, AiGenerationTriggerService $service) {
+                        $success = $service->trigger(
+                            entityType: 'PERSON',
+                            slug: $record->slug,
+                            locale: $data['locale'],
+                            contextTag: $data['context_tag']
+                        );
+
+                        if ($success) {
+                            Notification::make()
+                                ->title('Generation queued successfully')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Generation failed')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('created_at', 'desc');
+            ]);
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\BiosRelationManager::class,
         ];
     }
 
@@ -138,7 +145,6 @@ class PersonResource extends Resource
         return [
             'index' => Pages\ListPeople::route('/'),
             'create' => Pages\CreatePerson::route('/create'),
-            'view' => Pages\ViewPerson::route('/{record}'),
             'edit' => Pages\EditPerson::route('/{record}/edit'),
         ];
     }

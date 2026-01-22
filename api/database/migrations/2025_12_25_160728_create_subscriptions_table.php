@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('api_key_id')->nullable()->comment('Associated API key (nullable for RapidAPI-only subscriptions)');
-            $table->string('rapidapi_user_id', 255)->nullable()->index()->comment('RapidAPI user identifier');
+            $table->uuid('api_key_id')->nullable()->comment('Associated API key (required for local subscriptions)');
+            $table->string('rapidapi_user_id', 255)->nullable()->index()->comment('Deprecated: RapidAPI user identifier (kept for backward compatibility, always null for local subscriptions)');
             $table->uuid('plan_id');
             $table->enum('status', ['active', 'cancelled', 'expired'])->default('active');
             $table->timestamp('current_period_start')->nullable();
