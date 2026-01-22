@@ -250,7 +250,6 @@ GET /api/v1/jobs/{job_id}
 
 **Methods:**
 - `X-API-Key: <api-key>` (standard)
-- `X-RapidAPI-Key: <api-key>` (legacy support)
 - `Authorization: Bearer <api-key>` (alternative)
 
 **Key Format:**

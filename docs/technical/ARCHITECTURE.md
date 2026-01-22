@@ -104,6 +104,21 @@ This document provides a comprehensive overview of the MovieMind API architectur
 
 **Pattern:** Thin Controllers (max 20-30 lines per method)
 
+**Why this pattern?**
+Thin Controllers follow the Single Responsibility Principle - controllers should only handle HTTP concerns, not business logic. This makes the codebase more maintainable and testable.
+
+**Advantages:**
+- ✅ Easy to test (mock dependencies)
+- ✅ Business logic reusable (not tied to HTTP)
+- ✅ Clear separation of concerns
+- ✅ Easier to understand and maintain
+- ✅ Can swap HTTP layer (REST → GraphQL) without changing business logic
+
+**Disadvantages:**
+- ❌ More files/classes (but better organized)
+- ❌ Requires dependency injection setup
+- ❌ Slightly more verbose (but more explicit)
+
 **Examples:**
 - `MovieController` - Movie endpoints
 - `PersonController` - Person endpoints
@@ -143,14 +158,29 @@ class MovieController extends Controller
 - Complex operations
 - Caching strategies
 
+**Pattern:** Service Layer Pattern
+
+**Why this pattern?**
+Services encapsulate business logic that doesn't belong in controllers or repositories. They coordinate between multiple components and handle complex workflows.
+
+**Advantages:**
+- ✅ Business logic centralized (not scattered)
+- ✅ Reusable across different entry points (API, CLI, Jobs)
+- ✅ Easy to test (mock dependencies)
+- ✅ Clear responsibility boundaries
+- ✅ Can be shared between controllers
+
+**Disadvantages:**
+- ❌ Can become "God Classes" if not careful (keep services focused)
+- ❌ Requires careful dependency management
+- ❌ May need multiple services for complex domains
+
 **Examples:**
 - `MovieRetrievalService` - Movie retrieval logic
 - `MovieSearchService` - Search functionality
 - `TmdbVerificationService` - TMDB integration
 - `TvmazeVerificationService` - TVmaze integration
 - `AiGenerationTriggerService` - AI generation coordination
-
-**Pattern:** Service Layer Pattern
 
 **Architecture:**
 ```php
@@ -182,11 +212,26 @@ class MovieRetrievalService
 - Event dispatching
 - Job queuing
 
+**Pattern:** Action Pattern (Single Responsibility)
+
+**Why this pattern?**
+Actions represent single, cohesive business operations. They're perfect for complex workflows that involve multiple steps, events, or external calls.
+
+**Advantages:**
+- ✅ Single responsibility (one action = one operation)
+- ✅ Highly testable (clear input/output)
+- ✅ Composable (can chain actions)
+- ✅ Self-documenting (action name describes what it does)
+- ✅ Easy to add logging/metrics per action
+
+**Disadvantages:**
+- ❌ Can lead to many small classes (but better organized)
+- ❌ Requires discipline to keep actions focused
+- ❌ May need action coordinators for complex flows
+
 **Examples:**
 - `QueueMovieGenerationAction` - Queue AI generation for movies
 - `QueuePersonGenerationAction` - Queue AI generation for people
-
-**Pattern:** Action Pattern (Single Responsibility)
 
 **Architecture:**
 ```php
@@ -216,11 +261,26 @@ class QueueMovieGenerationAction
 - Query optimization
 - Data mapping
 
+**Pattern:** Repository Pattern
+
+**Why this pattern?**
+Repositories abstract data access, making it easy to swap implementations (PostgreSQL → MongoDB) and test business logic without hitting the database.
+
+**Advantages:**
+- ✅ Testability (mock repositories in tests)
+- ✅ Flexibility (can swap data sources)
+- ✅ Centralized query logic (easier to optimize)
+- ✅ Clear data access interface
+- ✅ Can cache at repository level
+
+**Disadvantages:**
+- ❌ Additional abstraction layer (slight overhead)
+- ❌ Can become "God Repositories" if not careful
+- ❌ Requires discipline to avoid leaking ORM-specific code
+
 **Examples:**
 - `MovieRepository` - Movie data access
 - `PersonRepository` - Person data access
-
-**Pattern:** Repository Pattern
 
 **Architecture:**
 ```php
@@ -250,13 +310,29 @@ class MovieRepository
 - Business rules (accessors, mutators)
 - Validation
 
+**Pattern:** Active Record (Eloquent ORM)
+
+**Why this pattern?**
+Active Record is Laravel's default ORM pattern. Models represent database tables and provide a simple, intuitive interface for data manipulation.
+
+**Advantages:**
+- ✅ Simple and intuitive (Laravel convention)
+- ✅ Built-in relationships (hasMany, belongsTo, etc.)
+- ✅ Automatic timestamps, UUIDs, etc.
+- ✅ Easy to use (no extra abstraction)
+- ✅ Rich feature set (scopes, accessors, mutators)
+
+**Disadvantages:**
+- ❌ Tight coupling to database (harder to test)
+- ❌ Can become "God Models" (too much logic)
+- ❌ Less flexible than Data Mapper pattern
+- ❌ Harder to swap ORM implementations
+
 **Examples:**
 - `Movie` - Movie entity
 - `Person` - Person entity
 - `MovieDescription` - Movie description entity
 - `ApiKey` - API key entity
-
-**Pattern:** Active Record (Eloquent ORM)
 
 **Architecture:**
 ```php
@@ -285,11 +361,26 @@ class Movie extends Model
 - HATEOAS links
 - Response structure
 
+**Pattern:** Response Formatter Pattern
+
+**Why this pattern?**
+Response Formatters ensure consistent API responses across all endpoints. They centralize response structure, making it easy to change formats or add features (versioning, HATEOAS).
+
+**Advantages:**
+- ✅ Consistent API responses (easier for clients)
+- ✅ Centralized formatting logic (DRY)
+- ✅ Easy to version responses
+- ✅ Can add features (HATEOAS, metadata) in one place
+- ✅ Testable (mock formatters)
+
+**Disadvantages:**
+- ❌ Additional abstraction layer
+- ❌ Can become verbose for simple responses
+- ❌ Requires discipline to use consistently
+
 **Examples:**
 - `MovieResponseFormatter` - Movie response formatting
 - `PersonResponseFormatter` - Person response formatting
-
-**Pattern:** Response Formatter Pattern
 
 **Architecture:**
 ```php

@@ -1,8 +1,31 @@
 # MovieMind API - Manual Test Plans
 
 > **For:** QA Engineers, Testers, Manual Testers  
-> **Last Updated:** 2026-01-21  
+> **Last Updated:** 2026-01-22  
 > **Status:** Portfolio/Demo Project
+
+---
+
+## 📖 How to Use This Document
+
+This document provides **complete manual testing guide** from basic setup to full functionality testing. Each test case includes:
+
+- **Prerequisites:** What you need before testing
+- **Steps:** Detailed test steps
+- **cURL Commands:** Ready-to-copy commands with payloads
+- **Expected Results:** What to expect
+
+**Quick Navigation:**
+- [Quick Start](#-quick-start---testing-from-scratch) - Start here for initial setup
+- [Movies Endpoints](#-movies-endpoints) - Test movie-related functionality
+- [People Endpoints](#-people-endpoints) - Test person-related functionality
+- [TV Series/Shows](#-tv-series-endpoints) - Test TV content
+- [Generation](#-generation-endpoint) - Test AI generation
+- [Authentication](#-authentication--authorization) - Test auth and rate limiting
+- [Health Checks](#-health-checks) - Test service health
+- [External Integrations](#-external-integrations) - Test TMDB/TVmaze/OpenAI
+
+**Tip:** Copy cURL commands directly to your terminal. Replace `mm_your_api_key_here` with your actual API key.
 
 ---
 
@@ -11,6 +34,83 @@
 This document provides comprehensive manual test plans for MovieMind API, including test cases for all endpoints, integrations, and features.
 
 **Note:** This is a portfolio/demo project. For production deployment, see [Production Testing](#production-testing).
+
+---
+
+## 🚀 Quick Start - Testing from Scratch
+
+### Prerequisites Setup
+
+1. **Start Docker Services:**
+```bash
+docker compose up -d
+```
+
+2. **Run Migrations and Seeders:**
+```bash
+docker compose exec php php artisan migrate --seed
+```
+
+3. **Get Demo API Key:**
+After seeding, check the console output or database for demo API keys:
+- Free Plan: `mm_...` (prefix visible in logs)
+- Pro Plan: `mm_...` (prefix visible in logs)
+- Enterprise Plan: `mm_...` (prefix visible in logs)
+
+Or check database:
+```bash
+docker compose exec db psql -U moviemind -d moviemind -c "SELECT name, key_prefix, plan_id FROM api_keys WHERE is_active = true;"
+```
+
+4. **Set Environment Variable (Optional):**
+```bash
+export API_KEY="mm_your_actual_api_key_here"
+```
+
+### Basic Test Flow
+
+**1. Health Check:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json"
+```
+
+**2. List Movies:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json"
+```
+
+**3. Get Specific Movie:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json"
+```
+
+**4. Generate Description (Pro/Enterprise only):**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+```
+
+**5. Check Job Status:**
+```bash
+# Replace {job_id} with job ID from previous response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json"
+```
 
 ---
 
@@ -44,11 +144,35 @@ Each test case includes:
 3. Verify response contains `data` array
 4. Verify each movie has required fields: `id`, `slug`, `title`, `release_year`
 
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Status: `200 OK`
 - Response contains array of movies
 - Each movie has required fields
 - HATEOAS links present
+
+**Example Response:**
+```json
+{
+  "data": [
+    {
+      "id": "01234567-89ab-cdef-0123-456789abcdef",
+      "slug": "the-matrix-1999",
+      "title": "The Matrix",
+      "release_year": 1999
+    }
+  ],
+  "links": {
+    "self": "http://localhost:8000/api/v1/movies"
+  }
+}
+```
 
 ---
 
@@ -70,12 +194,36 @@ Each test case includes:
 5. Verify movie has people array
 6. Verify HATEOAS links present
 
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Status: `200 OK`
 - Movie data correct
 - Descriptions array present
 - People array present
 - Links present
+
+**Example Response:**
+```json
+{
+  "data": {
+    "id": "01234567-89ab-cdef-0123-456789abcdef",
+    "slug": "the-matrix-1999",
+    "title": "The Matrix",
+    "release_year": 1999,
+    "descriptions": [...],
+    "people": [...]
+  },
+  "links": {
+    "self": "http://localhost:8000/api/v1/movies/the-matrix-1999"
+  }
+}
+```
 
 ---
 
@@ -95,10 +243,35 @@ Each test case includes:
 3. Verify response contains relevant movies
 4. Verify search results are sorted by relevance
 
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Status: `200 OK`
 - Relevant movies returned
 - Results sorted correctly
+
+**Example Response:**
+```json
+{
+  "data": [
+    {
+      "id": "01234567-89ab-cdef-0123-456789abcdef",
+      "slug": "the-matrix-1999",
+      "title": "The Matrix",
+      "release_year": 1999
+    }
+  ],
+  "meta": {
+    "query": "matrix",
+    "total": 1
+  }
+}
+```
 
 ---
 
@@ -118,10 +291,48 @@ Each test case includes:
 3. Verify response contains all requested movies
 4. Verify movies are in correct order
 
+**cURL Command:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "slugs": [
+      "the-matrix-1999",
+      "inception-2010",
+      "interstellar-2014"
+    ]
+  }'
+```
+
 **Expected Result:**
 - Status: `200 OK`
 - All requested movies returned
 - Correct order maintained
+
+**Example Response:**
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "slug": "the-matrix-1999",
+      "title": "The Matrix"
+    },
+    {
+      "id": "...",
+      "slug": "inception-2010",
+      "title": "Inception"
+    },
+    {
+      "id": "...",
+      "slug": "interstellar-2014",
+      "title": "Interstellar"
+    }
+  ]
+}
+```
 
 ---
 
@@ -140,6 +351,13 @@ Each test case includes:
 2. Verify response status is `200 OK`
 3. Verify response contains both movies
 4. Verify comparison data (common genres, people) present
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/compare?slugs=the-matrix-1999,inception-2010" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
 
 **Expected Result:**
 - Status: `200 OK`
@@ -164,6 +382,13 @@ Each test case includes:
 2. Verify response status is `200 OK`
 3. Verify response contains related movies
 4. Verify relationship types are correct
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
 
 **Expected Result:**
 - Status: `200 OK`
@@ -213,6 +438,21 @@ Each test case includes:
 3. Verify response contains `job_id`
 4. Poll `GET /api/v1/jobs/{job_id}` until status is `DONE`
 5. Verify movie data refreshed
+
+**cURL Command:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Check Job Status:**
+```bash
+# Replace {job_id} with actual job ID from response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
 
 **Expected Result:**
 - Status: `202 Accepted`
@@ -287,27 +527,147 @@ Similar test cases to Movies:
 
 ## 📺 TV Series Endpoints
 
-Similar test cases to Movies:
-- TC-TVSERIES-001: List TV Series
-- TC-TVSERIES-002: Get TV Series by Slug
-- TC-TVSERIES-003: Search TV Series
-- TC-TVSERIES-004: Compare TV Series
-- TC-TVSERIES-005: Get Related TV Series
-- TC-TVSERIES-006: Refresh TV Series Data
-- TC-TVSERIES-007: Report TV Series Issue
+### TC-TVSERIES-001: List TV Series
+
+**Test ID:** TC-TVSERIES-001  
+**Priority:** P0  
+**Description:** Verify that listing TV series returns correct data
+
+**Prerequisites:**
+- API key with Free plan or higher
+- TV series exist in database
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-series" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- Response contains array of TV series
+- Each TV series has required fields
+
+---
+
+### TC-TVSERIES-002: Get TV Series by Slug
+
+**Test ID:** TC-TVSERIES-002  
+**Priority:** P0  
+**Description:** Verify that retrieving TV series by slug returns correct data
+
+**Prerequisites:**
+- API key with Free plan or higher
+- TV series exists: `breaking-bad-2008`
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- TV series data correct
+- Descriptions array present
+
+---
+
+### TC-TVSERIES-003: Search TV Series
+
+**Test ID:** TC-TVSERIES-003  
+**Priority:** P1  
+**Description:** Verify that searching TV series returns relevant results
+
+**Prerequisites:**
+- API key with Free plan or higher
+- TV series exist in database
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-series/search?q=breaking" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- Relevant TV series returned
 
 ---
 
 ## 📺 TV Shows Endpoints
 
-Similar test cases to Movies:
-- TC-TVSHOW-001: List TV Shows
-- TC-TVSHOW-002: Get TV Show by Slug
-- TC-TVSHOW-003: Search TV Shows
-- TC-TVSHOW-004: Compare TV Shows
-- TC-TVSHOW-005: Get Related TV Shows
-- TC-TVSHOW-006: Refresh TV Show Data
-- TC-TVSHOW-007: Report TV Show Issue
+### TC-TVSHOW-001: List TV Shows
+
+**Test ID:** TC-TVSHOW-001  
+**Priority:** P0  
+**Description:** Verify that listing TV shows returns correct data
+
+**Prerequisites:**
+- API key with Free plan or higher
+- TV shows exist in database
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-shows" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- Response contains array of TV shows
+- Each TV show has required fields
+
+---
+
+### TC-TVSHOW-002: Get TV Show by Slug
+
+**Test ID:** TC-TVSHOW-002  
+**Priority:** P0  
+**Description:** Verify that retrieving TV show by slug returns correct data
+
+**Prerequisites:**
+- API key with Free plan or higher
+- TV show exists: `the-tonight-show-1954`
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-shows/the-tonight-show-1954" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- TV show data correct
+- Descriptions array present
+
+---
+
+### TC-TVSHOW-003: Search TV Shows
+
+**Test ID:** TC-TVSHOW-003  
+**Priority:** P1  
+**Description:** Verify that searching TV shows returns relevant results
+
+**Prerequisites:**
+- API key with Free plan or higher
+- TV shows exist in database
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-shows/search?q=tonight" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- Relevant TV shows returned
 
 ---
 
@@ -331,11 +691,43 @@ Similar test cases to Movies:
 4. Poll `GET /api/v1/jobs/{job_id}` until status is `DONE`
 5. Verify description generated and saved
 
+**cURL Command:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+```
+
+**Check Job Status:**
+```bash
+# Replace {job_id} with actual job ID from response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Status: `202 Accepted`
 - Job ID returned
 - Job completes successfully
 - Description generated and saved
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Generation queued",
+  "job_id": "01234567-89ab-cdef-0123-456789abcdef",
+  "status": "PENDING"
+}
+```
 
 ---
 
@@ -356,6 +748,28 @@ Similar test cases to Movies:
 3. Verify response contains `job_id`
 4. Poll `GET /api/v1/jobs/{job_id}` until status is `DONE`
 5. Verify biography generated and saved
+
+**cURL Command:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "PERSON",
+    "slug": "keanu-reeves-1964",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+```
+
+**Check Job Status:**
+```bash
+# Replace {job_id} with actual job ID from response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
 
 **Expected Result:**
 - Status: `202 Accepted`
@@ -382,6 +796,50 @@ Similar test cases to Movies:
 3. Generate with `context_tag: humorous`
 4. Verify each description has different style
 
+**cURL Commands:**
+
+**Modern Style:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+```
+
+**Critical Style:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "critical"
+  }'
+```
+
+**Humorous Style:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "humorous"
+  }'
+```
+
 **Expected Result:**
 - Different styles generated
 - Context tags respected
@@ -405,6 +863,50 @@ Similar test cases to Movies:
 3. Generate with `locale: de-DE`
 4. Verify each description in correct language
 
+**cURL Commands:**
+
+**Polish (pl-PL):**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+```
+
+**English (en-US):**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "en-US",
+    "context_tag": "modern"
+  }'
+```
+
+**German (de-DE):**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "de-DE",
+    "context_tag": "modern"
+  }'
+```
+
 **Expected Result:**
 - Descriptions in correct languages
 - Locale respected
@@ -427,9 +929,32 @@ Similar test cases to Movies:
 5. Send request with valid API key
 6. Verify response status is `200 OK`
 
+**cURL Commands:**
+
+**Without API Key (should fail):**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "Accept: application/json"
+```
+
+**With Invalid API Key (should fail):**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "X-API-Key: mm_invalid_key_12345" \
+  -H "Accept: application/json"
+```
+
+**With Valid API Key (should succeed):**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
-- Missing/invalid key: `401 Unauthorized`
-- Valid key: `200 OK`
+- Without API key: `401 Unauthorized`
+- Invalid API key: `401 Unauthorized`
+- Valid API key: `200 OK`
 
 ---
 
@@ -451,10 +976,35 @@ Similar test cases to Movies:
 6. Send request again
 7. Verify request succeeds
 
+**cURL Commands:**
+
+**Free Plan (10 requests/minute):**
+```bash
+# Send 11 requests rapidly (11th should fail)
+for i in {1..11}; do
+  echo "Request $i:"
+  curl -X GET "http://localhost:8000/api/v1/movies" \
+    -H "X-API-Key: mm_free_plan_key_here" \
+    -H "Accept: application/json" \
+    -w "\nHTTP Status: %{http_code}\n\n" \
+    -o /dev/null -s
+  sleep 0.1
+done
+```
+
+**Check Rate Limit Headers:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json" \
+  -i | grep -i "x-ratelimit"
+```
+
 **Expected Result:**
 - Rate limit enforced correctly
-- Headers present
+- Headers present (X-RateLimit-Limit, X-RateLimit-Remaining)
 - Retry after works
+- Different limits per plan (Free: 10, Pro: 100, Enterprise: 1000)
 
 ---
 
@@ -494,13 +1044,29 @@ Similar test cases to Movies:
 
 **Prerequisites:**
 - Feature flag `tmdb_verification` enabled
-- Valid TMDB API key
+- Valid TMDB API key configured
 
 **Steps:**
 1. Request movie not in database: `annihilation-2018`
 2. Verify TMDB verification triggered
 3. Verify movie created from TMDB data
 4. Verify response contains movie data
+
+**cURL Commands:**
+
+**Request Movie (triggers TMDB verification):**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/annihilation-2018" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Check TMDB Health:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health/tmdb" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
 
 **Expected Result:**
 - TMDB verification works
@@ -524,6 +1090,22 @@ Similar test cases to Movies:
 3. Verify TV series created from TVmaze data
 4. Verify response contains TV series data
 
+**cURL Commands:**
+
+**Request TV Series (triggers TVmaze verification):**
+```bash
+curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Check TVmaze Health:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health/tvmaze" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - TVmaze verification works
 - TV series created correctly
@@ -539,7 +1121,7 @@ Similar test cases to Movies:
 
 **Prerequisites:**
 - Feature flag `ai_description_generation` enabled
-- Valid OpenAI API key
+- Valid OpenAI API key configured
 - API key with Pro plan or higher
 
 **Steps:**
@@ -549,9 +1131,40 @@ Similar test cases to Movies:
 4. Verify description generated
 5. Verify description is unique (not copied)
 
+**cURL Commands:**
+
+**Generate Description (triggers OpenAI API):**
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+```
+
+**Check Job Status:**
+```bash
+# Replace {job_id} with job ID from response
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Check OpenAI Health:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health/openai" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Generation works
-- Description unique
+- Description unique (not copied from external sources)
 - Job completes successfully
 
 ---
@@ -617,9 +1230,25 @@ Similar test cases to Movies:
 2. Verify response status is `404 Not Found`
 3. Verify error message is clear
 
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/movies/non-existent-1999" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Status: `404 Not Found`
 - Clear error message
+
+**Example Error Response:**
+```json
+{
+  "success": false,
+  "error": "Not Found",
+  "message": "Movie not found: non-existent-1999"
+}
+```
 
 ---
 
@@ -651,9 +1280,123 @@ Similar test cases to Movies:
 2. Verify response status is `429 Too Many Requests`
 3. Verify `retry_after` header present
 
+**cURL Command (Exceed Rate Limit):**
+```bash
+# Send 11 requests rapidly to exceed Free plan limit (10/minute)
+for i in {1..11}; do
+  echo "Request $i:"
+  curl -X GET "http://localhost:8000/api/v1/movies" \
+    -H "X-API-Key: mm_free_plan_key_here" \
+    -H "Accept: application/json" \
+    -w "\nHTTP Status: %{http_code}\n\n"
+  sleep 0.1
+done
+```
+
 **Expected Result:**
-- Status: `429 Too Many Requests`
+- Status: `429 Too Many Requests` (for 11th request)
 - Retry information provided
+- Rate limit headers present
+
+**Example Error Response:**
+```json
+{
+  "success": false,
+  "error": "Rate limit exceeded",
+  "message": "Too many requests. Please try again later.",
+  "retry_after": 60,
+  "limit": 10,
+  "remaining": 0
+}
+```
+
+---
+
+## 🏥 Health Checks
+
+### TC-HEALTH-001: API Health Check
+
+**Test ID:** TC-HEALTH-001  
+**Priority:** P0  
+**Description:** Verify that API health check endpoint works
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK`
+- Response indicates API is healthy
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "service": "api",
+  "status": "healthy",
+  "timestamp": "2026-01-22T18:00:00Z"
+}
+```
+
+---
+
+### TC-HEALTH-002: TMDB Health Check
+
+**Test ID:** TC-HEALTH-002  
+**Priority:** P1  
+**Description:** Verify that TMDB health check endpoint works
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health/tmdb" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK` (if TMDB accessible) or `503 Service Unavailable` (if not)
+- Response indicates TMDB service status
+
+---
+
+### TC-HEALTH-003: TVmaze Health Check
+
+**Test ID:** TC-HEALTH-003  
+**Priority:** P1  
+**Description:** Verify that TVmaze health check endpoint works
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health/tvmaze" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK` (if TVmaze accessible) or `503 Service Unavailable` (if not)
+- Response indicates TVmaze service status
+
+---
+
+### TC-HEALTH-004: OpenAI Health Check
+
+**Test ID:** TC-HEALTH-004  
+**Priority:** P1  
+**Description:** Verify that OpenAI health check endpoint works
+
+**cURL Command:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/health/openai" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Expected Result:**
+- Status: `200 OK` (if OpenAI accessible) or `503 Service Unavailable` (if not)
+- Response indicates OpenAI service status
 
 ---
 
@@ -661,7 +1404,59 @@ Similar test cases to Movies:
 
 ### Scenario 1: Happy Path - Movie Retrieval
 
-1. Search for movie: `GET /api/v1/movies/search?q=matrix`
+**Complete Flow:**
+1. Search for movie
+2. Get movie details
+3. Generate description
+4. Check job status
+5. Retrieve movie with new description
+
+**cURL Commands:**
+```bash
+# 1. Search for movie
+curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+
+# 2. Get movie details
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+
+# 3. Generate description
+curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "entity_type": "MOVIE",
+    "slug": "the-matrix-1999",
+    "locale": "pl-PL",
+    "context_tag": "modern"
+  }'
+
+# 4. Check job status (replace {job_id} with actual job ID)
+curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+
+# 5. Retrieve movie with new description
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
+  -H "X-API-Key: mm_your_api_key_here" \
+  -H "Accept: application/json"
+```
+
+---
+
+### Scenario 2: Complete User Journey - From Search to Generation
+
+**Complete Flow:**
+1. Health check
+2. Search for content
+3. Get details
+4. Generate AI content
+5. Monitor job
+6. Retrieve final result
 2. Get movie details: `GET /api/v1/movies/the-matrix-1999`
 3. Get related movies: `GET /api/v1/movies/the-matrix-1999/related`
 4. Get collection: `GET /api/v1/movies/the-matrix-1999/collection`
@@ -733,5 +1528,5 @@ Similar test cases to Movies:
 
 ---
 
-**Last Updated:** 2026-01-21  
+**Last Updated:** 2026-01-22  
 **Status:** Portfolio/Demo Project
