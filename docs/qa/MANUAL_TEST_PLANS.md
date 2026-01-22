@@ -24,6 +24,8 @@ This document provides **complete manual testing guide** from basic setup to ful
 - [Authentication](#-authentication--authorization) - Test auth and rate limiting
 - [Health Checks](#-health-checks) - Test service health
 - [External Integrations](#-external-integrations) - Test TMDB/TVmaze/OpenAI
+- [Admin Panel UI](#-admin-panel-ui-testing) - Test admin interface (Filament)
+- [Admin API](#-admin-features-api) - Test admin API endpoints
 
 **Tip:** Copy cURL commands directly to your terminal. Replace `mm_your_api_key_here` with your actual API key.
 
@@ -1169,16 +1171,17 @@ curl -X GET "http://localhost:8000/api/v1/health/openai" \
 
 ---
 
-## 🎛️ Admin Features
+## 🎛️ Admin Features (API)
 
-### TC-ADMIN-001: Feature Flag Management
+### TC-ADMIN-001: Feature Flag Management (API)
 
 **Test ID:** TC-ADMIN-001  
 **Priority:** P1  
-**Description:** Verify that feature flags can be toggled
+**Description:** Verify that feature flags can be toggled via API
 
 **Prerequisites:**
 - Admin credentials
+- API key with admin access
 
 **Steps:**
 1. List all flags via `GET /api/v1/admin/flags`
@@ -1187,20 +1190,46 @@ curl -X GET "http://localhost:8000/api/v1/health/openai" \
 4. Disable flag via `DELETE /api/v1/admin/flags/{name}`
 5. Verify flag disabled
 
+**cURL Commands:**
+
+**List All Flags:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/admin/flags" \
+  -H "X-API-Key: mm_your_admin_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Enable Flag:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/admin/flags/ai_description_generation" \
+  -H "X-API-Key: mm_your_admin_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"state": "on"}'
+```
+
+**Disable Flag:**
+```bash
+curl -X DELETE "http://localhost:8000/api/v1/admin/flags/ai_description_generation" \
+  -H "X-API-Key: mm_your_admin_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Flags can be toggled
 - Changes take effect immediately
 
 ---
 
-### TC-ADMIN-002: API Key Management
+### TC-ADMIN-002: API Key Management (API)
 
 **Test ID:** TC-ADMIN-002  
 **Priority:** P1  
-**Description:** Verify that API keys can be managed
+**Description:** Verify that API keys can be managed via API
 
 **Prerequisites:**
 - Admin credentials
+- API key with admin access
 
 **Steps:**
 1. Create API key via `POST /api/v1/admin/api-keys`
@@ -1211,9 +1240,238 @@ curl -X GET "http://localhost:8000/api/v1/health/openai" \
 6. Regenerate key via `POST /api/v1/admin/api-keys/{id}/regenerate`
 7. Verify new key generated
 
+**cURL Commands:**
+
+**Create API Key:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/admin/api-keys" \
+  -H "X-API-Key: mm_your_admin_api_key_here" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "Test API Key",
+    "plan_id": 2
+  }'
+```
+
+**List API Keys:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/admin/api-keys" \
+  -H "X-API-Key: mm_your_admin_api_key_here" \
+  -H "Accept: application/json"
+```
+
+**Revoke API Key:**
+```bash
+# Replace {id} with actual API key ID
+curl -X POST "http://localhost:8000/api/v1/admin/api-keys/{id}/revoke" \
+  -H "X-API-Key: mm_your_admin_api_key_here" \
+  -H "Accept: application/json"
+```
+
 **Expected Result:**
 - Keys can be created, revoked, regenerated
 - Security maintained
+
+---
+
+## 🖥️ Admin Panel UI Testing
+
+> **Note:** For comprehensive UI testing, see [Admin Panel Manual Test Plan](ADMIN_PANEL_MANUAL_TEST_PLAN.md)
+
+### Quick Access
+
+**URL:** `http://localhost:8000/admin`
+
+**Default Admin Credentials:**
+- **Email:** `admin@moviemind.local`
+- **Password:** `password123`
+
+**Setup (if needed):**
+```bash
+# Seed admin user
+docker compose exec php php artisan db:seed --class=AdminUserSeeder
+```
+
+---
+
+### TC-UI-001: Admin Panel Login
+
+**Test ID:** TC-UI-001  
+**Priority:** P0  
+**Description:** Verify that admin panel login works
+
+**Prerequisites:**
+- Admin user exists in database
+- Docker services running
+
+**Steps:**
+1. Open `http://localhost:8000/admin` in browser
+2. Verify redirect to login page (`/admin/login`)
+3. Enter invalid credentials
+4. Verify error message displayed
+5. Enter valid credentials (`admin@moviemind.local` / `password123`)
+6. Verify successful login and redirect to dashboard
+
+**Expected Result:**
+- Login page accessible
+- Invalid credentials rejected
+- Valid credentials accepted
+- Dashboard accessible after login
+
+---
+
+### TC-UI-002: Dashboard Widgets
+
+**Test ID:** TC-UI-002  
+**Priority:** P0  
+**Description:** Verify that dashboard widgets display correctly
+
+**Prerequisites:**
+- Logged in as admin
+- Database contains test data (run seeders)
+
+**Steps:**
+1. Navigate to dashboard (`/admin`)
+2. Verify `StatsOverview` widget displays:
+   - Total Movies
+   - Total People
+   - Total TV Series
+   - Total TV Shows
+   - Pending Jobs
+   - Failed Jobs
+3. Verify `JobsChart` widget displays
+4. Verify `RecentJobsWidget` displays
+5. Verify `FailedJobsWidget` displays
+
+**Expected Result:**
+- All widgets visible
+- Statistics accurate
+- Charts render correctly
+
+---
+
+### TC-UI-003: Movie Resource Management
+
+**Test ID:** TC-UI-003  
+**Priority:** P1  
+**Description:** Verify that movie resources can be managed via UI
+
+**Prerequisites:**
+- Logged in as admin
+- Movies exist in database
+
+**Steps:**
+1. Navigate to Movies list (`/admin/movies`)
+2. Verify table displays movies
+3. Verify columns: `Descriptions` (count), `TMDb` (link)
+4. Click `TMDb` link - verify opens in new tab
+5. Click `Generate AI` action (⚡ icon)
+6. Fill modal: select locale and context tag
+7. Submit modal - verify notification "Generation queued successfully"
+8. Navigate to movie edit page (`/admin/movies/{id}/edit`)
+9. Verify `Descriptions` section displays list of descriptions
+
+**Expected Result:**
+- Movies list displays correctly
+- TMDb links work
+- AI generation modal works
+- Descriptions section displays correctly
+
+---
+
+### TC-UI-004: Feature Flags Management (UI)
+
+**Test ID:** TC-UI-004  
+**Priority:** P1  
+**Description:** Verify that feature flags can be managed via UI
+
+**Prerequisites:**
+- Logged in as admin
+
+**Steps:**
+1. Navigate to Feature Flags page (`/admin/feature-flags`)
+2. Verify list of flags displays
+3. Toggle a flag (e.g., `ai_description_generation`)
+4. Verify flag state changes
+5. Verify notification confirms change
+6. Test API endpoint to verify flag state changed
+
+**Expected Result:**
+- Feature flags page accessible
+- Flags can be toggled
+- Changes reflected immediately
+- API confirms changes
+
+---
+
+### TC-UI-005: Jobs Dashboard
+
+**Test ID:** TC-UI-005  
+**Priority:** P1  
+**Description:** Verify that jobs dashboard displays correctly
+
+**Prerequisites:**
+- Logged in as admin
+- Jobs exist in database (run some generation jobs)
+
+**Steps:**
+1. Navigate to Jobs Dashboard (`/admin/jobs-dashboard`)
+2. Verify job statistics display
+3. Verify recent jobs list
+4. Verify failed jobs list
+5. Verify job status filters work
+
+**Expected Result:**
+- Jobs dashboard accessible
+- Statistics accurate
+- Job lists display correctly
+- Filters work
+
+---
+
+### TC-UI-006: Reports Management
+
+**Test ID:** TC-UI-006  
+**Priority:** P2  
+**Description:** Verify that reports can be managed via UI
+
+**Prerequisites:**
+- Logged in as admin
+- Reports exist in database (create via API or seeder)
+
+**Steps:**
+1. Navigate to Reports list (`/admin/reports`)
+2. Verify table displays reports
+3. Use `Status` filter - select `pending`
+4. Verify only pending reports displayed
+5. Use `Entity Type` filter - select `movie`
+6. Verify only movie reports displayed
+7. Click `Verify & Regenerate` action (if status is `pending`)
+8. Verify confirmation dialog appears
+
+**Expected Result:**
+- Reports list displays correctly
+- Filters work
+- Actions available for pending reports
+
+---
+
+### Complete UI Test Flow
+
+**Full Test Scenario:**
+1. **Login** → Access admin panel
+2. **Dashboard** → Verify widgets and statistics
+3. **Movies** → List, view, edit, generate AI
+4. **People** → List, view, edit, generate AI
+5. **TV Series** → List, view, edit, generate AI
+6. **TV Shows** → List, view, edit, generate AI
+7. **Feature Flags** → Toggle flags, verify changes
+8. **Jobs Dashboard** → Monitor jobs, check status
+9. **Reports** → View, filter, manage reports
+10. **Logout** → Verify logout works
+
+**For detailed step-by-step instructions, see:** [Admin Panel Manual Test Plan](ADMIN_PANEL_MANUAL_TEST_PLAN.md)
 
 ---
 
