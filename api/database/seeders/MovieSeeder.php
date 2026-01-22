@@ -21,10 +21,12 @@ class MovieSeeder extends Seeder
         }
 
         $matrix = Movie::firstOrCreate(
-            ['slug' => Movie::generateSlug('The Matrix', 1999, 'The Wachowskis')],
             [
                 'title' => 'The Matrix',
                 'release_year' => 1999,
+            ],
+            [
+                'slug' => Movie::generateSlug('The Matrix', 1999, 'The Wachowskis'),
                 'director' => 'The Wachowskis',
             ]
         );
@@ -42,10 +44,12 @@ class MovieSeeder extends Seeder
         }
 
         $inception = Movie::firstOrCreate(
-            ['slug' => Movie::generateSlug('Inception', 2010, 'Christopher Nolan')],
             [
                 'title' => 'Inception',
                 'release_year' => 2010,
+            ],
+            [
+                'slug' => Movie::generateSlug('Inception', 2010, 'Christopher Nolan'),
                 'director' => 'Christopher Nolan',
             ]
         );
