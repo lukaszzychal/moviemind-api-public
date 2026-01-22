@@ -54,15 +54,39 @@ docker compose exec php php artisan migrate --seed
 ```
 
 3. **Get Demo API Key:**
-After seeding, check the console output or database for demo API keys:
-- Free Plan: `mm_...` (prefix visible in logs)
-- Pro Plan: `mm_...` (prefix visible in logs)
-- Enterprise Plan: `mm_...` (prefix visible in logs)
 
-Or check database:
+**IMPORTANT:** Full API keys are displayed **only once** in the console output during seeding. Save them immediately!
+
+**During Seeding:**
+When you run `php artisan migrate --seed`, the `ApiKeySeeder` will output messages like:
+```
+ApiKeySeeder: Created demo API key 'Demo Free Plan Key' with prefix 'abc12345'
+Plaintext key: mm_abc12345def67890ghijklmnopqrstuvwxyz (save this - it won't be shown again!)
+```
+
+**Copy the full key** (starts with `mm_`) from the console output immediately.
+
+**If You Missed the Key:**
+The full plaintext key is **never stored** in the database (only hashed). If you missed it:
+- **Option 1:** Re-run seeder (will skip if keys exist, so delete existing keys first)
+- **Option 2:** Create new key via admin panel at `http://localhost:8000/admin`
+- **Option 3:** Use Artisan Tinker:
+```bash
+docker compose exec php php artisan tinker
+```
+Then in tinker:
+```php
+$service = app(\App\Services\ApiKeyService::class);
+$plan = \App\Models\SubscriptionPlan::where('name', 'free')->first();
+$result = $service->createKey('Test Key', $plan->id);
+echo $result['key']; // Copy this key!
+```
+
+**Check Existing Keys (prefixes only):**
 ```bash
 docker compose exec db psql -U moviemind -d moviemind -c "SELECT name, key_prefix, plan_id FROM api_keys WHERE is_active = true;"
 ```
+Note: This shows only the **prefix** (first 8 chars after `mm_`), not the full key.
 
 4. **Set Environment Variable (Optional):**
 ```bash
