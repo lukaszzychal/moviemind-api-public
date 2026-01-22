@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\GetRelatedMoviesAction;
 use App\Actions\QueueMovieGenerationAction;
 use App\Enums\Locale as LocaleEnum;
+use App\Enums\RelationshipType;
 use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkMoviesRequest;
@@ -14,9 +14,9 @@ use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
 use App\Http\Responses\MovieResponseFormatter;
 use App\Models\Movie;
+use App\Models\MovieRelationship;
 use App\Models\MovieReport;
 use App\Repositories\MovieRepository;
-use App\Services\BulkRetrievalService;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
 use App\Services\MovieCollectionService;
@@ -24,6 +24,7 @@ use App\Services\MovieComparisonService;
 use App\Services\MovieReportService;
 use App\Services\MovieRetrievalService;
 use App\Services\MovieSearchService;
+use App\Services\TmdbVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -42,9 +43,7 @@ class MovieController extends Controller
         private readonly MovieResponseFormatter $responseFormatter,
         private readonly MovieReportService $movieReportService,
         private readonly MovieCollectionService $movieCollectionService,
-        private readonly MovieComparisonService $movieComparisonService,
-        private readonly BulkRetrievalService $bulkRetrievalService,
-        private readonly GetRelatedMoviesAction $getRelatedMoviesAction
+        private readonly MovieComparisonService $movieComparisonService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -72,62 +71,92 @@ class MovieController extends Controller
     /**
      * Handle bulk retrieve via GET /movies?slugs=...
      */
-    /**
-     * Handle bulk retrieve via GET /movies?slugs=...
-     */
     private function handleBulkRetrieve(Request $request): JsonResponse
     {
-        // Use BulkMoviesRequest logic for validation manually since we are in a private method called by index
-        // Ideally index should just assume search and we separate bulk to another endpoint,
-        // but for backward compatibility we keep logic here but use the Service.
-
+        // Parse slugs from query parameter (comma-separated string or array)
         $slugsParam = $request->query('slugs');
+
+        // Handle empty or null slugs parameter
         if ($slugsParam === null || $slugsParam === '') {
-            return response()->json(['errors' => ['slugs' => ['The slugs field is required and cannot be empty.']]], 422);
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                ],
+            ], 422);
         }
 
         $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
         $slugs = array_map('trim', $slugs);
         $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
 
+        // Validate slugs after filtering
         if (empty($slugs)) {
-            return response()->json(['errors' => ['slugs' => ['The slugs field is required and cannot be empty.']]], 422);
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                ],
+            ], 422);
         }
 
         if (count($slugs) > 50) {
-            return response()->json(['errors' => ['slugs' => ['The slugs field must not have more than 50 items.']]], 422);
+            return response()->json([
+                'errors' => [
+                    'slugs' => ['The slugs field must not have more than 50 items.'],
+                ],
+            ], 422);
         }
 
+        // Validate slug format
         foreach ($slugs as $slug) {
             if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json(['errors' => ['slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.']]], 422);
+                return response()->json([
+                    'errors' => [
+                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
+                    ],
+                ], 422);
             }
         }
 
-        // Parse include
+        // Parse include parameter
         $includeParam = $request->query('include');
         $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
         $include = array_map('trim', $include);
+        $include = array_filter($include, fn ($item) => $item !== '');
+
+        // Validate include values
         $allowedInclude = ['descriptions', 'people', 'genres'];
         foreach ($include as $item) {
             if (! in_array($item, $allowedInclude, true)) {
-                return response()->json(['errors' => ['include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.']]], 422);
+                return response()->json([
+                    'errors' => [
+                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
+                    ],
+                ], 422);
             }
         }
 
-        // Use Service
-        $result = $this->bulkRetrievalService->retrieve(
-            $this->movieRepository,
-            $slugs,
-            $include,
-            function (Movie $movie) {
-                return MovieResource::make($movie)->additional([
-                    '_links' => $this->hateoas->movieLinks($movie),
-                ])->resolve();
-            }
-        );
+        // Find movies
+        $movies = $this->movieRepository->findBySlugs($slugs, $include);
 
-        return response()->json($result, 200);
+        // Format movies as resources
+        $data = $movies->map(function (Movie $movie) {
+            $resource = MovieResource::make($movie)->additional([
+                '_links' => $this->hateoas->movieLinks($movie),
+            ]);
+
+            return $resource->resolve();
+        })->toArray();
+
+        // Find which slugs were not found
+        $foundSlugs = $movies->pluck('slug')->toArray();
+        $notFound = array_values(array_diff($slugs, $foundSlugs));
+
+        return response()->json([
+            'data' => $data,
+            'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => count($slugs),
+        ], 200);
     }
 
     /**
@@ -394,7 +423,83 @@ class MovieController extends Controller
             return $this->responseFormatter->formatNotFound();
         }
 
-        $result = $this->getRelatedMoviesAction->handle($movie, $request);
+        // Parse type filter: collection, similar, or all (default)
+        $typeFilter = $request->query('type', 'all');
+        $typeFilter = strtolower((string) $typeFilter);
+
+        // Parse genre filters: single genre or multiple genres (AND logic)
+        $genreSlugs = $this->parseGenreFilters($request);
+
+        $collectionMovies = [];
+        $similarMovies = [];
+
+        // Collection relationships - from database (SEQUEL, PREQUEL, SERIES, SPINOFF, REMAKE)
+        if ($typeFilter === 'all' || $typeFilter === 'collection') {
+            $collectionTypes = [
+                RelationshipType::SEQUEL->value,
+                RelationshipType::PREQUEL->value,
+                RelationshipType::SERIES->value,
+                RelationshipType::SPINOFF->value,
+                RelationshipType::REMAKE->value,
+            ];
+            $relatedMoviesCollection = $movie->getRelatedMovies($collectionTypes);
+
+            // Ensure genres are loaded for all related movies before filtering
+            // Use loadMissing to avoid N+1 queries
+            if ($relatedMoviesCollection->isNotEmpty()) {
+                $relatedMoviesCollection->loadMissing('genres');
+            }
+
+            $collectionMovies = $relatedMoviesCollection
+                ->filter(function (Movie $relatedMovie) use ($genreSlugs) {
+                    // Ensure genres are loaded for this specific movie
+                    if (! $relatedMovie->relationLoaded('genres')) {
+                        $relatedMovie->load('genres');
+                    }
+
+                    return $this->matchesGenreFilter($relatedMovie, $genreSlugs);
+                })
+                ->map(function (Movie $relatedMovie) use ($movie) {
+                    $relationship = MovieRelationship::where(function ($query) use ($movie, $relatedMovie) {
+                        $query->where('movie_id', $movie->id)
+                            ->where('related_movie_id', $relatedMovie->id);
+                    })->orWhere(function ($query) use ($movie, $relatedMovie) {
+                        $query->where('movie_id', $relatedMovie->id)
+                            ->where('related_movie_id', $movie->id);
+                    })->first();
+
+                    $resource = MovieResource::make($relatedMovie)->additional([
+                        '_links' => $this->hateoas->movieLinks($relatedMovie),
+                    ]);
+
+                    $movieData = $resource->resolve();
+                    $movieData['relationship_type'] = $relationship?->relationship_type->value ?? null;
+                    $movieData['relationship_label'] = $relationship?->relationship_type->label() ?? null;
+                    $movieData['relationship_order'] = $relationship?->order;
+
+                    return $movieData;
+                })->values()->toArray();
+        }
+
+        // Similar movies - from TMDB API (cached, not stored in database)
+        if ($typeFilter === 'all' || $typeFilter === 'similar') {
+            $similarMovies = $this->getSimilarMoviesFromTmdb($movie, limit: 10);
+            // Filter similar movies by genre if filter is applied
+            if (! empty($genreSlugs)) {
+                $similarMovies = array_filter($similarMovies, function ($movieData) use ($genreSlugs) {
+                    // Similar movies come from TMDb API, so we need to check if they exist in our DB
+                    $movie = Movie::where('slug', $movieData['slug'] ?? null)->first();
+                    if (! $movie) {
+                        return false; // Skip movies not in our DB (can't check genres)
+                    }
+
+                    return $this->matchesGenreFilter($movie, $genreSlugs);
+                });
+            }
+        }
+
+        // Combine results
+        $allRelatedMovies = array_merge($collectionMovies, $similarMovies);
 
         return response()->json([
             'movie' => [
@@ -402,20 +507,139 @@ class MovieController extends Controller
                 'slug' => $movie->slug,
                 'title' => $movie->title,
             ],
-            'related_movies' => array_merge($result['collection'], $result['similar']),
-            'count' => count($result['collection']) + count($result['similar']),
+            'related_movies' => $allRelatedMovies,
+            'count' => count($allRelatedMovies),
             'filters' => [
-                'type' => $result['type_filter'],
-                'collection_count' => count($result['collection']),
-                'similar_count' => count($result['similar']),
+                'type' => $typeFilter,
+                'collection_count' => count($collectionMovies),
+                'similar_count' => count($similarMovies),
             ],
             '_links' => [
-                'self' => ['href' => url("/api/v1/movies/{$slug}/related")],
-                'movie' => ['href' => url("/api/v1/movies/{$slug}")],
-                'collection' => ['href' => url("/api/v1/movies/{$slug}/related?type=collection")],
-                'similar' => ['href' => url("/api/v1/movies/{$slug}/related?type=similar")],
+                'self' => [
+                    'href' => url("/api/v1/movies/{$slug}/related"),
+                ],
+                'movie' => [
+                    'href' => url("/api/v1/movies/{$slug}"),
+                ],
+                'collection' => [
+                    'href' => url("/api/v1/movies/{$slug}/related?type=collection"),
+                ],
+                'similar' => [
+                    'href' => url("/api/v1/movies/{$slug}/related?type=similar"),
+                ],
             ],
         ]);
+    }
+
+    /**
+     * Get similar movies from TMDB API (cached for 24 hours).
+     * Similar movies are NOT stored in database to prevent cascade effect.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSimilarMoviesFromTmdb(Movie $movie, int $limit = 10): array
+    {
+        /** @var \App\Models\TmdbSnapshot|null $snapshot */
+        $snapshot = $movie->tmdbSnapshot;
+        if (! $snapshot) {
+            return [];
+        }
+
+        // Cache similar movies for 24 hours (they can change, but not frequently)
+        return Cache::remember(
+            "movie_similar_{$movie->id}_{$limit}",
+            now()->addHours(24),
+            function () use ($movie, $snapshot, $limit) {
+                try {
+                    // Similar movies are only available from TmdbVerificationService, not from interface
+                    if (! $this->tmdbVerificationService instanceof TmdbVerificationService) {
+                        return [];
+                    }
+
+                    $movieDetails = $this->tmdbVerificationService->getMovieDetails($snapshot->tmdb_id);
+                    $similarResults = $movieDetails['similar']['results'] ?? [];
+
+                    // Limit to top N similar movies
+                    $similarResults = array_slice($similarResults, 0, $limit);
+
+                    // Transform TMDB results to API format
+                    $transformed = [];
+                    foreach ($similarResults as $similarMovie) {
+                        $tmdbId = $similarMovie['id'] ?? null;
+                        if (! $tmdbId) {
+                            continue;
+                        }
+
+                        // Try to find existing movie in our database
+                        /** @var Movie|null $existingMovie */
+                        $existingMovie = Movie::where('tmdb_id', $tmdbId)->first();
+
+                        if ($existingMovie) {
+                            // Movie exists locally - return full movie data
+                            $resource = MovieResource::make($existingMovie)->additional([
+                                '_links' => $this->hateoas->movieLinks($existingMovie),
+                            ]);
+
+                            $movieData = $resource->resolve();
+                            $movieData['relationship_type'] = 'SAME_UNIVERSE';
+                            $movieData['relationship_label'] = 'Similar Movie';
+                            $movieData['relationship_order'] = null;
+
+                            $transformed[] = $movieData;
+                        } else {
+                            // Movie doesn't exist locally - return minimal TMDB data
+                            $transformed[] = [
+                                'id' => null,
+                                'slug' => null,
+                                'title' => $similarMovie['title'] ?? 'Unknown',
+                                'release_year' => ! empty($similarMovie['release_date'])
+                                    ? (int) substr($similarMovie['release_date'], 0, 4)
+                                    : null,
+                                'director' => null,
+                                'genres' => [],
+                                'description' => null,
+                                'descriptions' => [],
+                                'people' => [],
+                                'relationship_type' => 'SAME_UNIVERSE',
+                                'relationship_label' => 'Similar Movie',
+                                'relationship_order' => null,
+                                '_links' => [
+                                    'self' => null, // Movie doesn't exist locally
+                                    'generate' => [
+                                        'href' => url('/api/v1/generate'),
+                                        'method' => 'POST',
+                                        'body' => [
+                                            'entity_type' => 'MOVIE',
+                                            'slug' => Movie::generateSlug(
+                                                $similarMovie['title'] ?? 'Unknown',
+                                                ! empty($similarMovie['release_date'])
+                                                    ? (int) substr($similarMovie['release_date'], 0, 4)
+                                                    : null
+                                            ),
+                                        ],
+                                    ],
+                                ],
+                                '_meta' => [
+                                    'exists_locally' => false,
+                                    'tmdb_id' => $tmdbId,
+                                    'source' => 'tmdb_similar',
+                                ],
+                            ];
+                        }
+                    }
+
+                    return $transformed;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to fetch similar movies from TMDB', [
+                        'movie_id' => $movie->id,
+                        'tmdb_id' => $snapshot->tmdb_id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return [];
+                }
+            }
+        );
     }
 
     /**
@@ -501,18 +725,98 @@ class MovieController extends Controller
         $slugs = $request->getSlugs();
         $include = $request->getInclude();
 
-        $result = $this->bulkRetrievalService->retrieve(
-            $this->movieRepository,
-            $slugs,
-            $include,
-            function (Movie $movie) {
-                return MovieResource::make($movie)->additional([
-                    '_links' => $this->hateoas->movieLinks($movie),
-                ])->resolve();
-            }
-        );
+        // Find movies
+        $movies = $this->movieRepository->findBySlugs($slugs, $include);
 
-        return response()->json($result, 200);
+        // Format movies as resources
+        $data = $movies->map(function (Movie $movie) {
+            $resource = MovieResource::make($movie)->additional([
+                '_links' => $this->hateoas->movieLinks($movie),
+            ]);
+
+            return $resource->resolve();
+        })->toArray();
+
+        // Find which slugs were not found
+        $foundSlugs = $movies->pluck('slug')->toArray();
+        $notFound = array_values(array_diff($slugs, $foundSlugs));
+
+        return response()->json([
+            'data' => $data,
+            'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => count($slugs),
+        ], 200);
+    }
+
+    /**
+     * Parse genre filters from request.
+     * Supports both single genre (?genre=slug) and multiple genres (?genres[]=slug1&genres[]=slug2).
+     *
+     * @return array<string> Array of genre slugs (lowercase)
+     */
+    private function parseGenreFilters(Request $request): array
+    {
+        $genreSlugs = [];
+
+        // Check for single genre parameter
+        $singleGenre = $request->query('genre');
+        if ($singleGenre !== null) {
+            $genreSlugs[] = strtolower((string) $singleGenre);
+        }
+
+        // Check for multiple genres parameter
+        $multipleGenres = $request->query('genres', []);
+        if (is_array($multipleGenres)) {
+            foreach ($multipleGenres as $genre) {
+                if (is_string($genre) && ! empty($genre)) {
+                    $genreSlugs[] = strtolower($genre);
+                }
+            }
+        }
+
+        // Remove duplicates and return
+        return array_values(array_unique($genreSlugs));
+    }
+
+    /**
+     * Check if a movie matches the genre filter.
+     * If multiple genres are provided, movie must have ALL of them (AND logic).
+     *
+     * @param  array<string>  $genreSlugs
+     */
+    private function matchesGenreFilter(Movie $movie, array $genreSlugs): bool
+    {
+        // If no genre filter, all movies match
+        if (empty($genreSlugs)) {
+            return true;
+        }
+
+        // Load genres if not already loaded
+        if (! $movie->relationLoaded('genres')) {
+            $movie->load('genres');
+        }
+
+        // Get movie's genre slugs (lowercase for case-insensitive comparison)
+        // Use getRelation() to get the relation, not the casted property
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Genre>|null $genres */
+        $genres = $movie->getRelation('genres');
+
+        // If genres relation is not loaded or is empty, movie doesn't match
+        if (! $genres || $genres->isEmpty()) {
+            return false;
+        }
+
+        $movieGenreSlugs = $genres->pluck('slug')->map(fn ($slug) => strtolower((string) $slug))->toArray();
+
+        // Movie must have ALL requested genres (AND logic)
+        foreach ($genreSlugs as $requestedSlug) {
+            if (! in_array($requestedSlug, $movieGenreSlugs, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
