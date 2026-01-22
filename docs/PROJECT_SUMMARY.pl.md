@@ -171,25 +171,6 @@ Gotowa do produkcji usługa API, która:
 
 ---
 
-## 🎓 Efekty Uczenia
-
-### Czego Się Nauczyłem
-1. **Wzorce Architektury:** Repository, Service Layer, Action, Event-Driven
-2. **Najlepsze Praktyki Laravel:** Thin Controllers, Dependency Injection, Jobs
-3. **Projektowanie API:** Zasady RESTful, HATEOAS, wersjonowanie
-4. **Testowanie:** TDD, Piramida Testów, Strategie mockowania
-5. **DevOps:** Docker, CI/CD, strategie wdrożenia
-6. **Bezpieczeństwo:** Zarządzanie kluczami API, rate limiting, wykrywanie sekretów
-
-### Rozwiązane Wyzwania
-1. **Przetwarzanie Asynchroniczne:** Architektura event-driven dla generowania AI
-2. **Rate Limiting:** Rate limiting oparty na planach z Redis
-3. **Zewnętrzne API:** Integracja TMDB/TVmaze z cache'owaniem
-4. **Wielojęzyczność:** Generowanie treści oparte na locale
-5. **Skalowalność:** Projekt bezstanowego API dla skalowania poziomego
-
----
-
 ## 🔐 Funkcje Bezpieczeństwa
 
 - **Uwierzytelnianie Kluczem API:** Zahashowane klucze, bezpieczne przechowywanie
@@ -230,28 +211,6 @@ Gotowa do produkcji usługa API, która:
 - Wsparcie WebSocket dla aktualizacji w czasie rzeczywistym
 - Zaawansowany dashboard analityczny
 - Wsparcie multi-tenant
-
----
-
-## 💡 Punkty do Rozmowy Rekrutacyjnej
-
-### Decyzje Architektoniczne
-- **Dlaczego Thin Controllers?** Separacja odpowiedzialności, testowalność, reużywalność
-- **Dlaczego Repository Pattern?** Testowalność, elastyczność, optymalizacja zapytań
-- **Dlaczego Event-Driven?** Skalowalność, luźne sprzężenie, rozszerzalność
-- **Dlaczego Service Layer?** Centralizacja logiki biznesowej, reużywalność
-
-### Wyzwania Techniczne
-- **Przetwarzanie Asynchroniczne:** Jak obsłużyć długotrwałe zadania generowania AI
-- **Rate Limiting:** Rate limiting oparty na planach z Redis sliding window
-- **Strategia Cache'owania:** Różne TTL dla różnych źródeł danych
-- **Integracja Zewnętrznych API:** Obsługa limitów, błędów, ponownych prób
-
-### Najlepsze Praktyki
-- **TDD:** Najpierw testy, potem implementacja
-- **Jakość Kodu:** Pint, PHPStan, GitLeaks w pre-commit hooks
-- **Dokumentacja:** Kompleksowa dokumentacja dla wszystkich interesariuszy
-- **Bezpieczeństwo:** Hashowanie kluczy API, rate limiting, wykrywanie sekretów
 
 ---
 
