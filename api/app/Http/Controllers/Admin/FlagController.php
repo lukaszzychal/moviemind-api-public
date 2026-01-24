@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SetFlagRequest;
+use App\Http\Requests\Admin\SetFlagRequest;
 use App\Services\FeatureFlag\FeatureFlagManager;
 use App\Services\FeatureFlag\FeatureFlagUsageScanner;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +20,9 @@ class FlagController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json($this->featureFlagManager->all());
+        return response()->json([
+            'data' => $this->featureFlagManager->allWithStatus(),
+        ]);
     }
 
     public function setFlag(SetFlagRequest $request, string $name): JsonResponse
@@ -31,6 +33,8 @@ class FlagController extends Controller
         $this->featureFlagManager->set($name, $state === 'on');
 
         return response()->json([
+            'name' => $name,
+            'active' => $this->featureFlagManager->isActive($name),
             'message' => "Feature flag '{$name}' updated.",
             'state' => $state,
         ]);

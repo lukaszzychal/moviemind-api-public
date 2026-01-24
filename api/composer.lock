@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6f5d084cf6bcc46d007e8fd1dfdb0b2b",
+    "content-hash": "4f1725282e17fac5686c93c96866b494",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -2246,16 +2246,16 @@
         },
         {
             "name": "laravel/horizon",
-            "version": "v5.40.2",
+            "version": "v5.43.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/horizon.git",
-                "reference": "005e5638478db9e25f7ae5cfb30c56846fbad793"
+                "reference": "2a04285ba83915511afbe987cbfedafdc27fd2de"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/horizon/zipball/005e5638478db9e25f7ae5cfb30c56846fbad793",
-                "reference": "005e5638478db9e25f7ae5cfb30c56846fbad793",
+                "url": "https://api.github.com/repos/laravel/horizon/zipball/2a04285ba83915511afbe987cbfedafdc27fd2de",
+                "reference": "2a04285ba83915511afbe987cbfedafdc27fd2de",
                 "shasum": ""
             },
             "require": {
@@ -2319,9 +2319,9 @@
             ],
             "support": {
                 "issues": "https://github.com/laravel/horizon/issues",
-                "source": "https://github.com/laravel/horizon/tree/v5.40.2"
+                "source": "https://github.com/laravel/horizon/tree/v5.43.0"
             },
-            "time": "2025-11-28T20:12:12+00:00"
+            "time": "2026-01-15T15:10:56+00:00"
         },
         {
             "name": "laravel/pennant",

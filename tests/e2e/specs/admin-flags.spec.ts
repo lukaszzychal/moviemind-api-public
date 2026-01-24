@@ -30,7 +30,7 @@ test.describe('Admin Feature Flags Management', () => {
     await expect(page).toHaveURL(/\/admin\/feature-flags$/);
   });
 
-  test('should display feature flags and allow toggling', async ({ page }) => {
+  test('should display feature flags and allow toggling', async ({ page, request }) => {
     // GIVEN: The feature flags page is loaded
     await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible();
     
@@ -38,6 +38,18 @@ test.describe('Admin Feature Flags Management', () => {
     const flagToggle = page.getByLabel('ai_description_generation');
     await expect(flagToggle).toBeVisible();
     const initialState = await flagToggle.isChecked();
+
+    // Verify initial state matches API
+    const initialApiResponse = await request.get('/api/v1/admin/flags', {
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from('admin@moviemind.local:password123').toString('base64'),
+      },
+    });
+    expect(initialApiResponse.status()).toBe(200);
+    const initialApiData = await initialApiResponse.json();
+    const initialApiFlag = initialApiData.data?.find((f: any) => f.name === 'ai_description_generation');
+    expect(initialApiFlag).toBeTruthy();
+    expect(initialApiFlag.active).toBe(initialState);
 
     // WHEN: The user toggles the flag
     await flagToggle.setChecked(!initialState);
@@ -49,6 +61,40 @@ test.describe('Admin Feature Flags Management', () => {
     // AND: The new state should be persisted after a page reload
     await page.reload();
     await expect(page.getByLabel('ai_description_generation')).toBeChecked(!initialState);
+
+    // AND: API should reflect the same state
+    const updatedApiResponse = await request.get('/api/v1/admin/flags', {
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from('admin@moviemind.local:password123').toString('base64'),
+      },
+    });
+    expect(updatedApiResponse.status()).toBe(200);
+    const updatedApiData = await updatedApiResponse.json();
+    const updatedApiFlag = updatedApiData.data?.find((f: any) => f.name === 'ai_description_generation');
+    expect(updatedApiFlag).toBeTruthy();
+    expect(updatedApiFlag.active).toBe(!initialState);
+  });
+
+  test('should show consistent flag status between UI and API', async ({ page, request }) => {
+    // GIVEN: User is on the feature flags page
+    await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible();
+
+    // WHEN: Checking flag status in UI
+    const flagToggle = page.getByLabel('ai_description_generation');
+    await expect(flagToggle).toBeVisible();
+    const uiState = await flagToggle.isChecked();
+
+    // THEN: API should show the same status
+    const apiResponse = await request.get('/api/v1/admin/flags', {
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from('admin@moviemind.local:password123').toString('base64'),
+      },
+    });
+    expect(apiResponse.status()).toBe(200);
+    const apiData = await apiResponse.json();
+    const apiFlag = apiData.data?.find((f: any) => f.name === 'ai_description_generation');
+    expect(apiFlag).toBeTruthy();
+    expect(apiFlag.active).toBe(uiState);
   });
 
   test('should reset flags to default', async ({ page }) => {

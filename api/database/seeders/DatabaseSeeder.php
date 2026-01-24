@@ -13,13 +13,14 @@ class DatabaseSeeder extends Seeder
     {
         // Always seed subscription plans (needed for API keys)
         $this->call([
+            AdminUserSeeder::class,
             SubscriptionPlanSeeder::class,
         ]);
 
         // Only seed test data in non-production environments
         if (! app()->environment('production', 'staging')) {
             $this->call([
-                AdminUserSeeder::class, // Create default admin user
+
                 ApiKeySeeder::class, // Create demo API keys for each plan
                 GenreSeeder::class,
                 MovieSeeder::class,

@@ -2,6 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 
+// OpenAPI Documentation routes (public, no authentication required)
+Route::get('api/doc', function () {
+    return response()->file(public_path('docs/index.html'));
+});
+
+Route::get('api/docs/openapi.yaml', function () {
+    return response()->file(public_path('docs/openapi.yaml'))
+        ->header('Content-Type', 'application/x-yaml');
+});
+
 // Welcome endpoint
 Route::get('/', function () {
     // ... (rest of the file remains the same)
@@ -26,5 +36,3 @@ Route::get('/', function () {
         ],
     ], 200, ['Content-Type' => 'application/json']);
 });
-
-// ... (rest of the file remains the same)

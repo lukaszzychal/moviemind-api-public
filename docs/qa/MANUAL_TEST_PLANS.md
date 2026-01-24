@@ -1485,21 +1485,103 @@ docker compose exec php php artisan db:seed --class=AdminUserSeeder
 
 ---
 
+### TC-UI-009: Analytics Dashboard
+
+**Test ID:** TC-UI-009
+**Priority:** P2
+**Description:** Verify that analytics dashboard displays correct data
+
+**Steps:**
+1. Navigate to Admin Dashboard (`/admin`)
+2. Verify "Analytics Overview" widget is present
+3. Verify "Total Movies", "Total People", "Active API Keys", "Webhooks Sent" stats are displayed
+4. Verify numbers match database counts (approx.)
+
+**Expected Result:**
+- Dashboard loads without errors
+- Stats are visible
+
+---
+
+### TC-UI-010: Webhook Management
+
+**Test ID:** TC-UI-010
+**Priority:** P2
+**Description:** Verify outgoing webhooks list and details
+
+**Steps:**
+1. Navigate to Outgoing Webhooks (`/admin/outgoing-webhooks`)
+2. Verify list of webhooks is displayed
+3. Click "View" on a webhook
+4. Verify Payload and Response data are visible
+
+**Expected Result:**
+- Webhooks listed with status badges
+- Details view shows debugging info
+
+---
+
+### TC-UI-007: Subscription Plans Management
+
+**Test ID:** TC-UI-007
+**Priority:** P1
+**Description:** Verify that subscription plans can be managed via UI
+
+**Steps:**
+1. Navigate to Subscription Plans list (`/admin/subscription-plans`)
+2. Verify existing plans (`free`, `pro`, `enterprise`) are listed
+3. Click "Edit" on 'free' plan
+4. Verify form fields (Monthly Limit, Rate Limit, etc.)
+5. Save changes
+6. Verify changes reflected in list
+
+**Expected Result:**
+- Plans listed correctly
+- Edit functionality works
+
+---
+
+### TC-UI-008: API Key Management
+
+**Test ID:** TC-UI-008
+**Priority:** P0
+**Description:** Verify that API keys can be created and revoked
+
+**Steps:**
+1. Navigate to API Keys list (`/admin/api-keys`)
+2. Click "Create API Key"
+3. Enter Name: "Test Key UI"
+4. Select Plan: "Pro Plan"
+5. Click "Create"
+6. **Verify notification shows the full key** (e.g., `mm_...`)
+7. Copy the key and verify it matches format
+8. Go back to list
+9. Verify key is listed with masked prefix
+10. Click "Revoke" (Delete action)
+11. Verify key is deactivated/deleted
+
+**Expected Result:**
+- Creation flow shows full key once
+- Key listed with prefix
+- Revocation works
+
+---
+
 ### Complete UI Test Flow
 
 **Full Test Scenario:**
 1. **Login** → Access admin panel
 2. **Dashboard** → Verify widgets and statistics
-3. **Movies** → List, view, edit, generate AI
-4. **People** → List, view, edit, generate AI
-5. **TV Series** → List, view, edit, generate AI
-6. **TV Shows** → List, view, edit, generate AI
-7. **Feature Flags** → Toggle flags, verify changes
-8. **Jobs Dashboard** → Monitor jobs, check status
-9. **Reports** → View, filter, manage reports
-10. **Logout** → Verify logout works
-
-**For detailed step-by-step instructions, see:** [Admin Panel Manual Test Plan](ADMIN_PANEL_MANUAL_TEST_PLAN.md)
+3. **Subscription Plans** → Verify plans and limits
+4. **API Keys** → Create new key, verify display, revoke
+5. **Movies** → List, view, edit, generate AI
+6. **People** → List, view, edit, generate AI
+7. **TV Series** → List, view, edit, generate AI
+8. **TV Shows** → List, view, edit, generate AI
+9. **Feature Flags** → Toggle flags, verify changes
+10. **Jobs Dashboard** → Monitor jobs, check status
+11. **Reports** → View, filter, manage reports
+12. **Logout** → Verify logout works
 
 ---
 
@@ -1600,11 +1682,11 @@ done
 
 ## 🏥 Health Checks
 
-### TC-HEALTH-001: API Health Check
+### TC-HEALTH-001: Comprehensive API Health Check
 
 **Test ID:** TC-HEALTH-001  
 **Priority:** P0  
-**Description:** Verify that API health check endpoint works
+**Description:** Verify that comprehensive API health check endpoint works. This endpoint checks all system components: database, OpenAI, TMDb, TVmaze, and instance status.
 
 **cURL Command:**
 ```bash
@@ -1614,18 +1696,95 @@ curl -X GET "http://localhost:8000/api/v1/health" \
 ```
 
 **Expected Result:**
-- Status: `200 OK`
-- Response indicates API is healthy
+- Status: `200 OK` (if all critical services are healthy) or `503 Service Unavailable` (if any critical service is down)
+- Response contains health status for all components
 
-**Example Response:**
+**Example Response (All Healthy):**
 ```json
 {
-  "success": true,
-  "service": "api",
   "status": "healthy",
-  "timestamp": "2026-01-22T18:00:00Z"
+  "timestamp": "2026-01-22T18:00:00Z",
+  "checks": {
+    "database": {
+      "status": "ok",
+      "message": "Database connection established"
+    },
+    "openai": {
+      "success": true,
+      "status": "ok",
+      "message": "OpenAI API is accessible"
+    },
+    "tmdb": {
+      "success": true,
+      "status": "ok",
+      "message": "TMDb API is accessible"
+    },
+    "tvmaze": {
+      "success": true,
+      "status": "ok",
+      "message": "TVmaze API is accessible"
+    },
+    "instance": {
+      "instance_id": "api-1",
+      "status": "healthy",
+      "features": {
+        "ai_description_generation": true,
+        "ai_bio_generation": true
+      }
+    }
+  }
 }
 ```
+
+**Example Response (Degraded - Database Down):**
+```json
+{
+  "status": "degraded",
+  "timestamp": "2026-01-22T18:00:00Z",
+  "checks": {
+    "database": {
+      "status": "error",
+      "message": "Database connection failed: Connection refused"
+    },
+    "openai": {
+      "success": true,
+      "status": "ok"
+    },
+    "tmdb": {
+      "success": true,
+      "status": "ok"
+    },
+    "tvmaze": {
+      "success": true,
+      "status": "ok"
+    },
+    "instance": {
+      "instance_id": "api-1",
+      "status": "healthy"
+    }
+  }
+}
+```
+
+**Notes:**
+- **Status `healthy`**: All critical services (database, OpenAI, instance) are operational
+- **Status `degraded`**: Some services are down, but API can still function (e.g., TMDb/TVmaze are optional)
+- **HTTP 200**: API is operational (may be degraded)
+- **HTTP 503**: Critical services are down (database or OpenAI)
+- TMDb and TVmaze are optional services - their failure doesn't affect overall status code
+
+---
+
+**Available Health Endpoints:**
+
+- **`GET /api/v1/health`** - Comprehensive health check (all components) - **Recommended for general monitoring**
+- **`GET /api/v1/health/db`** - Database health check only
+- **`GET /api/v1/health/openai`** - OpenAI API health check only
+- **`GET /api/v1/health/tmdb`** - TMDb API health check only
+- **`GET /api/v1/health/tvmaze`** - TVmaze API health check only
+- **`GET /api/v1/health/instance`** - Instance status and feature flags
+
+**Tip:** Use `/api/v1/health` for general monitoring. Use specific endpoints (`/health/db`, `/health/openai`, etc.) for targeted diagnostics.
 
 ---
 

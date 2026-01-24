@@ -59,6 +59,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->navigationItems([
+                \Filament\Navigation\NavigationItem::make('Horizon')
+                    ->url('/horizon', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-globe-alt')
+                    ->group('System')
+                    ->sort(3),
             ]);
     }
 }

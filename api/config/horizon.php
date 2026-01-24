@@ -83,7 +83,7 @@ return [
     |
     */
 
-    'middleware' => ['web', 'horizon.basic'],
+    'middleware' => ['web'],
 
     /*
     |--------------------------------------------------------------------------
@@ -200,61 +200,55 @@ return [
         'supervisor-1' => [
             'connection' => 'redis',
             'queue' => ['default'],
-            'balance' => env('HORIZON_BALANCE', 'auto'),
-            'autoScalingStrategy' => env('HORIZON_AUTOSCALING_STRATEGY', 'time'),
-            'maxProcesses' => (int) env('HORIZON_MAX_PROCESSES', 1),
-            'maxTime' => (int) env('HORIZON_MAX_TIME', 0),
-            'maxJobs' => (int) env('HORIZON_MAX_JOBS', 0),
-            'memory' => (int) env('HORIZON_MEMORY', 128),
-            'tries' => (int) env('HORIZON_TRIES', 3),
-            'timeout' => (int) env('HORIZON_TIMEOUT', 120),
-            'nice' => (int) env('HORIZON_NICE', 0),
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 1,
+            'timeout' => 60,
+            'nice' => 0,
         ],
     ],
 
     'environments' => [
         'production' => [
             'supervisor-1' => [
-                'maxProcesses' => (int) env('HORIZON_PROD_MAX_PROCESSES', 10),
-                'balanceMaxShift' => (int) env('HORIZON_PROD_BALANCE_MAX_SHIFT', 1),
-                'balanceCooldown' => (int) env('HORIZON_PROD_BALANCE_COOLDOWN', 3),
-                'tries' => (int) env('HORIZON_PROD_TRIES', env('HORIZON_TRIES', 3)),
-                'timeout' => (int) env('HORIZON_PROD_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
-            ],
-        ],
-
-        'staging' => [
-            'supervisor-1' => [
-                'maxProcesses' => (int) env('HORIZON_STAGING_MAX_PROCESSES', 5),
-                'balanceMaxShift' => (int) env('HORIZON_STAGING_BALANCE_MAX_SHIFT', 1),
-                'balanceCooldown' => (int) env('HORIZON_STAGING_BALANCE_COOLDOWN', 3),
-                'tries' => (int) env('HORIZON_STAGING_TRIES', env('HORIZON_TRIES', 3)),
-                'timeout' => (int) env('HORIZON_STAGING_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
+                'maxProcesses' => 10,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
             ],
         ],
 
         'local' => [
             'supervisor-1' => [
-                'maxProcesses' => (int) env('HORIZON_LOCAL_MAX_PROCESSES', 3),
-                'tries' => (int) env('HORIZON_LOCAL_TRIES', env('HORIZON_TRIES', 3)),
-                'timeout' => (int) env('HORIZON_LOCAL_TIMEOUT', env('HORIZON_TIMEOUT', 120)),
+                'maxProcesses' => 3,
             ],
         ],
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Horizon Authorization
+    | File Watcher Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure which environments may bypass Horizon authorization and which
-    | user emails are permitted to view the dashboard in protected contexts.
+    | The following list of directories and files will be watched when using
+    | the `horizon:listen` command. Whenever any directories or files are
+    | changed, Horizon will automatically restart to apply all changes.
     |
     */
 
-    'auth' => [
-        'bypass_environments' => explode(',', env('HORIZON_AUTH_BYPASS_ENVS', 'local,staging')),
-        'allowed_emails' => array_filter(array_map('trim', explode(',', env('HORIZON_ALLOWED_EMAILS', '')))),
-        'basic_auth_password' => env('HORIZON_BASIC_AUTH_PASSWORD'),
+    'watch' => [
+        'app',
+        'bootstrap',
+        'config/**/*.php',
+        'database/**/*.php',
+        'public/**/*.php',
+        'resources/**/*.php',
+        'routes',
+        'composer.lock',
+        'composer.json',
+        '.env',
     ],
 ];

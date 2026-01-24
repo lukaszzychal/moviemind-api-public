@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
     Route::post('tv-shows/{slug}/report', [TvShowController::class, 'report'])->middleware('adaptive.rate.limit:report');
     Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
     Route::get('jobs/{id}', [JobsController::class, 'show']);
+    Route::get('health', [HealthController::class, 'health']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
     Route::get('health/tmdb', [HealthController::class, 'tmdb']);
     Route::get('health/tvmaze', [HealthController::class, 'tvmaze']);

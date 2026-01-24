@@ -12,7 +12,7 @@ abstract class BaseFeature
     {
         $flag = $this->flagName();
 
-        return config("pennant.flags.{$flag}.default", false);
+        return config("pennant.metadata.{$flag}.default", false);
     }
 
     protected function flagName(): string

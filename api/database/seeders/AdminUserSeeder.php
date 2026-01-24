@@ -13,12 +13,14 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $email = env('ADMIN_EMAIL', 'admin@moviemind.local');
+
         // Create admin user if not exists
-        if (! User::where('email', 'admin@moviemind.local')->exists()) {
+        if (! User::where('email', $email)->exists()) {
             User::create([
-                'name' => 'Admin User',
-                'email' => 'admin@moviemind.local',
-                'password' => Hash::make('password123'),
+                'name' => env('ADMIN_NAME', 'Admin User'),
+                'email' => $email,
+                'password' => Hash::make(env('ADMIN_PASSWORD', 'password123')),
                 'email_verified_at' => now(),
             ]);
         }

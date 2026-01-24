@@ -11,7 +11,6 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Laravel\Pennant\Feature;
 
 class FeatureFlags extends Page implements HasForms
@@ -34,10 +33,10 @@ class FeatureFlags extends Page implements HasForms
     public function loadFlags(): void
     {
         // Load flags from database overrides first, then fallback to config defaults
-        // Use Feature::for('default') to ensure we check the default scope
+        // Use default scope (null) to match application code (Feature::active() without for())
         $this->form->fill(
             collect(config('pennant.metadata'))
-                ->mapWithKeys(fn ($flag, $name) => [$name => (bool) Feature::for('default')->active($name)])
+                ->mapWithKeys(fn ($flag, $name) => [$name => (bool) Feature::active($name)])
                 ->all()
         );
     }
@@ -47,12 +46,6 @@ class FeatureFlags extends Page implements HasForms
         $schema = [];
         $flags = config('pennant.metadata', []);
 
-        // Get overridden flags for default scope only
-        $overriddenFlags = DB::table('features')
-            ->where('scope', '__laravel_null')
-            ->pluck('name')
-            ->toArray();
-
         // Group flags by category while preserving flag names as keys
         $flagsByCategory = collect($flags)
             ->mapToGroups(fn ($flag, $name) => [$flag['category'] => [$name => $flag]])
@@ -61,12 +54,9 @@ class FeatureFlags extends Page implements HasForms
         foreach ($flagsByCategory as $category => $flags) {
             $fields = [];
             foreach ($flags as $name => $flag) {
-                $isOverridden = in_array($name, $overriddenFlags);
                 $fields[] = Toggle::make($name)
                     ->label($name)
-                    ->helperText($flag['description'])
-                    ->hint($isOverridden ? 'Overridden' : 'Default')
-                    ->hintColor($isOverridden ? 'warning' : 'gray');
+                    ->helperText($flag['description']);
             }
             $schema[] = Section::make(ucfirst(str_replace('_', ' ', $category)))
                 ->schema($fields)
@@ -93,11 +83,11 @@ class FeatureFlags extends Page implements HasForms
     public function save(): void
     {
         foreach ($this->form->getState() as $name => $state) {
-            // Use for() to ensure we're setting for default scope
+            // Use default scope (null) to match application code (Feature::active() without for())
             if ((bool) $state) {
-                Feature::for('default')->activate($name);
+                Feature::activate($name);
             } else {
-                Feature::for('default')->deactivate($name);
+                Feature::deactivate($name);
             }
         }
         Notification::make()->title('Feature flags updated successfully.')->success()->send();

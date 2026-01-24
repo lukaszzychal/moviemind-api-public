@@ -422,9 +422,17 @@ Monitor API health and external service connectivity.
 
 ---
 
-### Analytics
+### Analytics & Dashboard
 
-**Endpoints:**
+**Description:**
+Comprehensive visual dashboard for monitoring system health and business metrics.
+
+**Features:**
+- **Visual Dashboard:** Real-time widgets for:
+  - Total Movies/People count
+  - Active Subscriptions (API Keys)
+  - Webhook Delivery Status
+- **Endpoints:**
 - `GET /api/v1/admin/analytics/overview` - Overview statistics
 - `GET /api/v1/admin/analytics/by-plan` - Statistics by subscription plan
 - `GET /api/v1/admin/analytics/by-endpoint` - Statistics by endpoint

@@ -21,7 +21,7 @@ Panel administracyjny MovieMind API to narzędzie do zarządzania treścią film
 ### 3. Demokratyzacja Dostępu
 - **Cel:** Umożliwienie zarządzania treścią osobom nietechnicznym
 - **Korzyść:** Content managerowie mogą pracować bez wsparcia developerów
-- **Oszczędność:** ~8h/tydzień czasu developerów
+- **Oszczędność:** ~8h/tydzień czasu developeró w
 
 ---
 

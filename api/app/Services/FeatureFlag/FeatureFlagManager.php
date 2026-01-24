@@ -27,6 +27,28 @@ class FeatureFlagManager
     }
 
     /**
+     * Get all flags with their active status.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function allWithStatus(): array
+    {
+        return collect($this->definitions)
+            ->map(function ($flag, $name) {
+                return [
+                    'name' => $name,
+                    'active' => $this->isActive($name),
+                    'description' => $flag['description'] ?? '',
+                    'category' => $flag['category'] ?? 'other',
+                    'default' => $flag['default'] ?? false,
+                    'togglable' => $flag['togglable'] ?? false,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public function get(string $name): ?array
@@ -47,22 +69,22 @@ class FeatureFlagManager
 
     public function set(string $name, bool $activate): void
     {
-        // Use 'default' scope to match UI behavior (FeatureFlags page)
+        // Use default scope (null) to match application code (Feature::active() without for())
         if ($activate) {
-            Feature::for('default')->activate($name);
+            Feature::activate($name);
         } else {
-            Feature::for('default')->deactivate($name);
+            Feature::deactivate($name);
         }
     }
 
     public function reset(string $name): void
     {
-        Feature::for('default')->forget($name);
+        Feature::forget($name);
     }
 
     public function isActive(string $name): bool
     {
-        // Use 'default' scope to match UI behavior (FeatureFlags page)
-        return (bool) Feature::for('default')->active($name);
+        // Use default scope (null) to match application code (Feature::active() without for())
+        return (bool) Feature::active($name);
     }
 }

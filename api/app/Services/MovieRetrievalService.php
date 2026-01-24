@@ -279,6 +279,12 @@ class MovieRetrievalService
             return $this->handleSingleTmdbResult($searchResults[0], $slug, $descriptionId, $validation);
         }
 
+        // TMDb search zwrócił pustą listę - sprawdź czy można generować bez TMDb
+        if (Feature::active('ai_description_generation')) {
+            // Generuj joba bez TMDb danych (slug jest już zwalidowany)
+            return $this->queueGenerationWithoutTmdb($slug, $validation);
+        }
+
         return MovieRetrievalResult::notFound();
     }
 
