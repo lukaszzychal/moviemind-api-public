@@ -195,18 +195,108 @@ class RealGenerateTvSeriesJob implements ShouldQueue
                 $title = $aiResponse['title'] ?? ($parsed['title'] ?? Str::of($this->slug)->replace('-', ' ')->title());
                 $firstAirYear = $aiResponse['first_air_year'] ?? $parsed['year'] ?? (int) date('Y');
 
+                // Extract TMDb ID from available sources
+                // @phpstan-ignore-next-line
+                $tmdbId = $this->tmdbData['id'] ?? ($aiResponse['tmdb_id'] ?? null);
+
                 // Generate unique slug
                 $generatedSlug = TvSeries::generateSlug((string) $title, $firstAirYear);
 
-                // Create TV series
-                $tvSeries = TvSeries::create([
-                    'title' => (string) $title,
-                    'slug' => $generatedSlug,
-                    'first_air_date' => "{$firstAirYear}-01-01",
-                    'number_of_seasons' => null,
-                    'number_of_episodes' => null,
-                    'genres' => $aiResponse['genres'] ?? ['Drama'],
-                ]);
+                $tvSeries = null;
+
+                // SMART DEDUPLICATION STRATEGY
+
+                // 1. Exact Match (TMDB ID)
+                if (! empty($tmdbId)) {
+                    $existingByTmdb = TvSeries::where('tmdb_id', $tmdbId)->first();
+                    if ($existingByTmdb) {
+                        $tvSeries = $existingByTmdb;
+                        Log::info('RealGenerateTvSeriesJob deduplicated by TMDb ID', [
+                            'slug' => $this->slug,
+                            'generated_slug' => $generatedSlug,
+                            'tmdb_id' => $tmdbId,
+                            'found_id' => $tvSeries->id,
+                        ]);
+                    }
+                }
+
+                // 2. Match by Slug
+                if (! $tvSeries) {
+                    $existingByGeneratedSlug = $tvSeriesRepository->findBySlugForJob($generatedSlug);
+                    if ($existingByGeneratedSlug) {
+                        $tvSeries = $existingByGeneratedSlug;
+                        Log::info('RealGenerateTvSeriesJob deduplicated by Slug', [
+                            'slug' => $this->slug,
+                            'generated_slug' => $generatedSlug,
+                            'found_id' => $tvSeries->id,
+                        ]);
+                    }
+                }
+
+                // 3. Heuristic Match (Title + Release Year)
+                if (! $tvSeries) {
+                    $candidates = TvSeries::where('title', (string) $title)->get();
+
+                    // Format year as date start for comparison if needed, or extract year from first_air_date
+                    foreach ($candidates as $candidate) {
+                        $candidateYear = $candidate->first_air_date ? (int) substr($candidate->first_air_date->format('Y-m-d'), 0, 4) : null;
+
+                        // 3a. Exact match on year
+                        if ($candidateYear === (int) $firstAirYear) {
+                            $tvSeries = $candidate;
+                            Log::info('RealGenerateTvSeriesJob deduplicated by Title + Year', [
+                                'title' => $title,
+                                'year' => $firstAirYear,
+                                'found_id' => $tvSeries->id,
+                            ]);
+                            break;
+                        }
+
+                        // 3b. Heuristic: Existing record has NULL/missing date (Legacy/Incomplete)
+                        if ($candidate->first_air_date === null) {
+                            $tvSeries = $candidate;
+                            Log::info('RealGenerateTvSeriesJob deduplicated by Title (Legacy/Null Year)', [
+                                'title' => $title,
+                                'found_id' => $tvSeries->id,
+                            ]);
+                            break;
+                        }
+                    }
+                }
+
+                if ($tvSeries) {
+                    // Update existing TV series if needed
+                    $updates = [];
+
+                    // Link TMDb ID if found and missing
+                    if (! empty($tmdbId) && ! $tvSeries->tmdb_id) {
+                        $updates['tmdb_id'] = $tmdbId;
+                    }
+
+                    // Backfill first_air_date if missing
+                    if (! $tvSeries->first_air_date && $firstAirYear) {
+                        $updates['first_air_date'] = "{$firstAirYear}-01-01";
+                    }
+
+                    if (! empty($updates)) {
+                        $tvSeries->update($updates);
+                        Log::info('RealGenerateTvSeriesJob updated existing TV series metadata', [
+                            'id' => $tvSeries->id,
+                            'updates' => $updates,
+                        ]);
+                    }
+                } else {
+                    // Create new TV series
+                    $tvSeries = TvSeries::create([
+                        'title' => (string) $title,
+                        'slug' => $generatedSlug,
+                        'first_air_date' => "{$firstAirYear}-01-01",
+                        'number_of_seasons' => null,
+                        'number_of_episodes' => null,
+                        'genres' => $aiResponse['genres'] ?? ['Drama'],
+                        'tmdb_id' => $tmdbId,
+                    ]);
+                }
 
                 $locale = $this->resolveLocale();
                 $contextTag = $this->determineContextTag($tvSeries, $locale);

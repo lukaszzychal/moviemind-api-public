@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'adaptive.rate.limit' => \App\Http\Middleware\AdaptiveRateLimit::class,
             'api.key.auth' => \App\Http\Middleware\ApiKeyAuth::class,
             'plan.rate.limit' => \App\Http\Middleware\PlanBasedRateLimit::class,
+            'plan.feature' => \App\Http\Middleware\PlanFeatureMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -165,11 +165,10 @@ Each test case includes:
 **Description:** Verify that listing movies returns correct data
 
 **Prerequisites:**
-- API key with Free plan or higher
 - Movies exist in database
 
 **Steps:**
-1. Send `GET /api/v1/movies` with valid API key
+1. Send `GET /api/v1/movies`
 2. Verify response status is `200 OK`
 3. Verify response contains `data` array
 4. Verify each movie has required fields: `id`, `slug`, `title`, `release_year`
@@ -177,7 +176,6 @@ Each test case includes:
 **cURL Command:**
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies" \
-  -H "X-API-Key: mm_your_api_key_here" \
   -H "Accept: application/json"
 ```
 
@@ -710,12 +708,12 @@ curl -X GET "http://localhost:8000/api/v1/tv-shows/search?q=tonight" \
 **Description:** Verify that generating movie description queues job
 
 **Prerequisites:**
-- API key with Pro plan or higher
-- Feature flag `ai_description_generation` enabled
+- Valid API key (Auth required)
+- Subscription Plan with `ai_generate` feature tag enabled
 - Movie exists: `the-matrix-1999`
 
 **Steps:**
-1. Send `POST /api/v1/generate` with movie generation request
+1. Send `POST /api/v1/generate` with movie generation request and `X-API-Key`
 2. Verify response status is `202 Accepted`
 3. Verify response contains `job_id`
 4. Poll `GET /api/v1/jobs/{job_id}` until status is `DONE`

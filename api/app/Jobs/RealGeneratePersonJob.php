@@ -582,38 +582,112 @@ class RealGeneratePersonJob implements ShouldQueue
         $birthplace = $aiResponse['birthplace'] ?? 'Unknown';
         $biography = $aiResponse['biography'] ?? "Biography for {$name}.";
 
+        // Extract TMDb ID from available sources (Constructor data > AI response)
+        // @phpstan-ignore-next-line
+        $tmdbId = $this->tmdbData['id'] ?? ($aiResponse['tmdb_id'] ?? null);
+
         // Generate unique slug from AI data instead of using slug from request
-        // This ensures uniqueness and prevents conflicts with ambiguous slugs
-        // Following DIP: use Person model method, not direct slug from request
         $generatedSlug = Person::generateSlug((string) $name, $birthDate, $birthplace);
 
-        // Check if person already exists with generated slug (prevent duplicates)
-        // This handles race conditions where multiple jobs create the same person
         /** @var PersonRepository $personRepository */
         $personRepository = app(PersonRepository::class);
-        $existingByGeneratedSlug = $personRepository->findBySlugForJob($generatedSlug);
-        if ($existingByGeneratedSlug) {
-            // Person already exists with generated slug - use it
-            $person = $existingByGeneratedSlug;
-        } else {
-            // Check if person exists by name + birth date (even if slug differs)
-            // This prevents duplicates when slug format differs
-            $existingByNameBirth = Person::where('name', (string) $name)
-                ->where('birth_date', $birthDate)
-                ->first();
+        $person = null;
 
-            if ($existingByNameBirth) {
-                // Person already exists - use it
-                $person = $existingByNameBirth;
-            } else {
-                // Create new person
-                $person = Person::create([
-                    'name' => (string) $name,
-                    'slug' => $generatedSlug,
-                    'birth_date' => $birthDate,
-                    'birthplace' => $birthplace,
+        // SMART DEDUPLICATION STRATEGY
+
+        // 1. Exact Match (ID): Check by tmdb_id FIRST
+        if (! empty($tmdbId)) {
+            $existingByTmdb = Person::where('tmdb_id', $tmdbId)->first();
+            if ($existingByTmdb) {
+                $person = $existingByTmdb;
+                Log::info('RealGeneratePersonJob deduplicated by TMDb ID', [
+                    'slug' => $this->slug,
+                    'generated_slug' => $generatedSlug,
+                    'tmdb_id' => $tmdbId,
+                    'found_id' => $person->id,
                 ]);
             }
+        }
+
+        // 2. Match by Slug: Check by generated slug
+        if (! $person) {
+            $existingByGeneratedSlug = $personRepository->findBySlugForJob($generatedSlug);
+            if ($existingByGeneratedSlug) {
+                $person = $existingByGeneratedSlug;
+                Log::info('RealGeneratePersonJob deduplicated by Slug', [
+                    'slug' => $this->slug,
+                    'generated_slug' => $generatedSlug,
+                    'found_id' => $person->id,
+                ]);
+            }
+        }
+
+        // 3. Heuristic Match (Name + Birth Date)
+        if (! $person) {
+            // Find all people with matching name
+            $candidates = Person::where('name', (string) $name)->get();
+
+            foreach ($candidates as $candidate) {
+                // 3a. Exact match on birth date
+                if ($candidate->birth_date && $candidate->birth_date->format('Y-m-d') === $birthDate) {
+                    $person = $candidate;
+                    Log::info('RealGeneratePersonJob deduplicated by Name + BirthDate', [
+                        'name' => $name,
+                        'birth_date' => $birthDate,
+                        'found_id' => $person->id,
+                    ]);
+                    break;
+                }
+
+                // 3b. Heuristic: Existing record has NULL birth_date (Legacy/Incomplete)
+                // Start assumption: If names match and old record has NO birthdate, it is likely the same person
+                // This fixes the "Keanu Reeves" duplication issue where legacy record was incomplete
+                if ($candidate->birth_date === null) {
+                    $person = $candidate;
+                    Log::info('RealGeneratePersonJob deduplicated by Name (Legacy/Null BirthDate)', [
+                        'name' => $name,
+                        'found_id' => $person->id,
+                    ]);
+                    break;
+                }
+            }
+        }
+
+        if ($person) {
+            // Update existing person if needed
+            $updates = [];
+
+            // Link TMDb ID if found and missing
+            if (! empty($tmdbId) && ! $person->tmdb_id) {
+                $updates['tmdb_id'] = $tmdbId;
+            }
+
+            // Backfill birth date if missing or default
+            if (! $person->birth_date && $birthDate !== '1970-01-01') {
+                $updates['birth_date'] = $birthDate;
+            }
+
+            // Backfill birthplace
+            if ((! $person->birthplace || $person->birthplace === 'Unknown') && $birthplace !== 'Unknown') {
+                $updates['birthplace'] = $birthplace;
+            }
+
+            if (! empty($updates)) {
+                $person->update($updates);
+                Log::info('RealGeneratePersonJob updated existing person metadata', [
+                    'id' => $person->id,
+                    'updates' => $updates,
+                ]);
+            }
+        } else {
+            // Create new person using all available data
+            $person = Person::create([
+                'name' => (string) $name,
+                'slug' => $generatedSlug,
+                'birth_date' => $birthDate,
+                'birthplace' => $birthplace,
+                'tmdb_id' => $tmdbId,
+            ]);
         }
 
         $locale = $this->resolveLocale();

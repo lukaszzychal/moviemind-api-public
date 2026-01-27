@@ -548,6 +548,8 @@ paths:
     post:
       tags: [Generation]
       summary: Queue generation for an entity
+      security:
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -993,6 +995,10 @@ components:
     basicAuth:
       type: http
       scheme: basic
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
   schemas:
     Genre:
       type: object

@@ -43,7 +43,12 @@ Route::prefix('v1')->group(function () {
     Route::get('tv-shows/{slug}/related', [TvShowController::class, 'related']);
     Route::post('tv-shows/{slug}/refresh', [TvShowController::class, 'refresh']);
     Route::post('tv-shows/{slug}/report', [TvShowController::class, 'report'])->middleware('adaptive.rate.limit:report');
-    Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
+    Route::post('generate', [GenerateController::class, 'generate'])->middleware([
+        'adaptive.rate.limit:generate',
+        'api.key.auth',
+        'plan.rate.limit',
+        'plan.feature:ai_generate',
+    ]);
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::get('health', [HealthController::class, 'health']);
     Route::get('health/openai', [HealthController::class, 'openAi']);

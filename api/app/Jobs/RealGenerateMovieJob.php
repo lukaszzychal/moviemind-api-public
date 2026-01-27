@@ -193,7 +193,7 @@ class RealGenerateMovieJob implements ShouldQueue
             $aiResponse = $openAiClient->generateMovieDescription(
                 $movie->title,
                 $movie->release_year,
-                $movie->director,
+                $movie->director ?? 'Unknown Director',
                 $contextTag,
                 $locale->value,
                 $this->tmdbData
@@ -1019,12 +1019,6 @@ class RealGenerateMovieJob implements ShouldQueue
                             'overview_length' => strlen(trim($tmdbOverview)),
                         ]);
                     }
-
-                    // Note: We don't retry AI generation here because:
-                    // 1. First call already had TMDb data and failed
-                    // 2. Retry with same data likely to fail again
-                    // 3. Using TMDb overview as fallback allows movie creation to proceed
-                    // 4. If overview is too short, validation will catch it and provide clear error
                 } else {
                     // No TMDb data available - try to find suggested slugs
                     $suggestedSlugs = $this->findSuggestedSlugs();
@@ -1097,6 +1091,9 @@ class RealGenerateMovieJob implements ShouldQueue
         $rawDescriptionText = $aiResponse['description'] ?? null;
         $genres = $aiResponse['genres'] ?? [];
 
+        // Extract TMDb ID from available sources
+        $tmdbId = $this->tmdbData['id'] ?? ($aiResponse['tmdb_id'] ?? null);
+
         // Sanitize and validate description using AiOutputValidator
         if ($rawDescriptionText !== null && is_string($rawDescriptionText)) {
             /** @var AiOutputValidator $outputValidator */
@@ -1160,41 +1157,108 @@ class RealGenerateMovieJob implements ShouldQueue
         $this->validateAiResponse($aiResponse, $title, $releaseYear, $director, $descriptionText);
 
         // Generate unique slug from AI data instead of using slug from request
-        // This ensures uniqueness and prevents conflicts with ambiguous slugs
-        // Following DIP: use Movie model method, not direct slug from request
         $generatedSlug = Movie::generateSlug((string) $title, $releaseYear, $director);
 
-        // Check if movie already exists with generated slug (prevent duplicates)
-        // This handles race conditions where multiple jobs create the same movie
         /** @var MovieRepository $movieRepository */
         $movieRepository = app(MovieRepository::class);
-        $existingByGeneratedSlug = $movieRepository->findBySlugForJob($generatedSlug);
-        if ($existingByGeneratedSlug) {
-            // Movie already exists with generated slug - use it
-            $movie = $existingByGeneratedSlug;
-        } else {
-            // Check if movie exists by title + year (even if slug differs)
-            // This prevents duplicates when slug format differs
-            $existingByTitleYear = Movie::where('title', (string) $title)
-                ->where('release_year', $releaseYear)
-                ->first();
+        $movie = null;
 
-            if ($existingByTitleYear) {
-                // Movie already exists - use it
-                $movie = $existingByTitleYear;
-            } else {
-                // Create new movie
-                $movie = Movie::create([
-                    'title' => (string) $title,
-                    'slug' => $generatedSlug,
-                    'release_year' => $releaseYear,
-                    'director' => $director,
-                    'genres' => $genres,
+        // SMART DEDUPLICATION STRATEGY
+
+        // 1. Exact Match (TMDB ID)
+        if (! empty($tmdbId)) {
+            $existingByTmdb = Movie::where('tmdb_id', $tmdbId)->first();
+            if ($existingByTmdb) {
+                $movie = $existingByTmdb;
+                Log::info('RealGenerateMovieJob deduplicated by TMDb ID', [
+                    'slug' => $this->slug,
+                    'generated_slug' => $generatedSlug,
+                    'tmdb_id' => $tmdbId,
+                    'found_id' => $movie->id,
                 ]);
-
-                // Invalidate movie search cache when new movie is created
-                $this->invalidateMovieSearchCache();
             }
+        }
+
+        // 2. Match by Slug
+        if (! $movie) {
+            $existingByGeneratedSlug = $movieRepository->findBySlugForJob($generatedSlug);
+            if ($existingByGeneratedSlug) {
+                $movie = $existingByGeneratedSlug;
+                Log::info('RealGenerateMovieJob deduplicated by Slug', [
+                    'slug' => $this->slug,
+                    'generated_slug' => $generatedSlug,
+                    'found_id' => $movie->id,
+                ]);
+            }
+        }
+
+        // 3. Heuristic Match (Title + Release Year)
+        if (! $movie) {
+            $candidates = Movie::where('title', (string) $title)->get();
+
+            foreach ($candidates as $candidate) {
+                // 3a. Exact match on year
+                if ($candidate->release_year === (int) $releaseYear) {
+                    $movie = $candidate;
+                    Log::info('RealGenerateMovieJob deduplicated by Title + Year', [
+                        'title' => $title,
+                        'year' => $releaseYear,
+                        'found_id' => $movie->id,
+                    ]);
+                    break;
+                }
+
+                // 3b. Heuristic: Existing record has NULL year (Legacy/Incomplete)
+                if ($candidate->release_year === null) {
+                    $movie = $candidate;
+                    Log::info('RealGenerateMovieJob deduplicated by Title (Legacy/Null Year)', [
+                        'title' => $title,
+                        'found_id' => $movie->id,
+                    ]);
+                    break;
+                }
+            }
+        }
+
+        if ($movie) {
+            // Update existing movie if needed
+            $updates = [];
+
+            // Link TMDb ID if found and missing
+            if (! empty($tmdbId) && ! $movie->tmdb_id) {
+                $updates['tmdb_id'] = $tmdbId;
+            }
+
+            // Backfill release year if missing
+            if (! $movie->release_year && $releaseYear) {
+                $updates['release_year'] = $releaseYear;
+            }
+
+            // Backfill director
+            if ((! $movie->director || $movie->director === 'Unknown Director') && $director && $director !== 'Unknown Director') {
+                $updates['director'] = $director;
+            }
+
+            if (! empty($updates)) {
+                $movie->update($updates);
+                Log::info('RealGenerateMovieJob updated existing movie metadata', [
+                    'id' => $movie->id,
+                    'updates' => $updates,
+                ]);
+            }
+        } else {
+            // Create new movie using all available data
+            $movie = Movie::create([
+                'title' => (string) $title,
+                'slug' => $generatedSlug,
+                'release_year' => $releaseYear,
+                'director' => $director,
+                'genres' => $genres,
+                'tmdb_id' => $tmdbId,
+            ]);
+
+            // Invalidate movie search cache when new movie is created
+            $this->invalidateMovieSearchCache();
         }
 
         $locale = $this->resolveLocale();

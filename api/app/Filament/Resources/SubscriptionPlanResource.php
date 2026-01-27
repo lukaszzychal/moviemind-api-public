@@ -59,8 +59,13 @@ class SubscriptionPlanResource extends Resource
                             ]),
                         Forms\Components\TagsInput::make('features')
                             ->separator(',')
+                            ->suggestions([
+                                'ai_generate',
+                                'bulk_export',
+                                'advanced_search',
+                            ])
                             ->columnSpanFull()
-                            ->helperText('Press Enter to add feature tags'),
+                            ->helperText('Press Enter to add feature tags. Required for /generate: "ai_generate"'),
                         Forms\Components\Toggle::make('is_active')
                             ->required()
                             ->default(true),
