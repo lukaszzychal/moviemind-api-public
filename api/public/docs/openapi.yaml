@@ -3,7 +3,7 @@ info:
   title: MovieMind API
   version: 1.0.0
   description: |
-    Public REST API for movies and people with AI-powered descriptions and bios.
+    Public REST API for movies, people, TV series, and TV shows with AI-powered descriptions.
     Uses slug-based resource identifiers. When data is missing and the corresponding
     feature flag is enabled, endpoints return 202 Accepted and queue generation.
 servers:
@@ -12,11 +12,13 @@ servers:
 tags:
   - name: Movies
   - name: People
+  - name: TvSeries
+  - name: TvShows
   - name: Generation
   - name: Jobs
   - name: Admin
   - name: Health
-  - name: Debug
+  - name: Webhooks
 paths:
   /v1/movies:
     get:
@@ -40,6 +42,64 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Movie'
+  /v1/movies/search:
+    get:
+      tags: [Movies]
+      summary: Search movies (Advanced)
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
+  /v1/movies/bulk:
+    post:
+      tags: [Movies]
+      summary: Get multiple movies by slugs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slugs:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
+  /v1/movies/compare:
+    get:
+      tags: [Movies]
+      summary: Compare movies
+      parameters:
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of slugs to compare
+      responses:
+        '200':
+          description: OK
   /v1/movies/{slug}:
     get:
       tags: [Movies]
@@ -65,6 +125,75 @@ paths:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '404':
           description: Not Found (feature flag off)
+  /v1/movies/{slug}/collection:
+    get:
+      tags: [Movies]
+      summary: Get movie collection/franchise
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/movies/{slug}/related:
+    get:
+      tags: [Movies]
+      summary: Get related movies
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
+  /v1/movies/{slug}/refresh:
+    post:
+      tags: [Movies]
+      summary: Force refresh movie data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/movies/{slug}/report:
+    post:
+      tags: [Movies]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                details:
+                  type: string
+      responses:
+        '201':
+          description: Report created
+
   /v1/people:
     get:
       tags: [People]
@@ -74,7 +203,7 @@ paths:
           name: q
           schema:
             type: string
-          description: Free-text search (name, birthplace, movies)
+          description: Free-text search
       responses:
         '200':
           description: OK
@@ -87,6 +216,57 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Person'
+  /v1/people/search:
+    get:
+      tags: [People]
+      summary: Search people (Advanced)
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Person'
+  /v1/people/bulk:
+    post:
+      tags: [People]
+      summary: Get multiple people by slugs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slugs:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+  /v1/people/compare:
+    get:
+      tags: [People]
+      summary: Compare people
+      parameters:
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
   /v1/people/{slug}:
     get:
       tags: [People]
@@ -105,13 +285,265 @@ paths:
               schema:
                 $ref: '#/components/schemas/PersonFull'
         '202':
-          description: Accepted - generation queued (feature flag on)
+          description: Accepted - generation queued
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '404':
-          description: Not Found (feature flag off)
+          description: Not Found
+  /v1/people/{slug}/related:
+    get:
+      tags: [People]
+      summary: Get related people
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/people/{slug}/refresh:
+    post:
+      tags: [People]
+      summary: Force refresh person data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/people/{slug}/report:
+    post:
+      tags: [People]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Report created
+
+  /v1/tv-series:
+    get:
+      tags: [TvSeries]
+      summary: List TV Series
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvSeries'
+  /v1/tv-series/search:
+    get:
+      tags: [TvSeries]
+      summary: Search TV Series
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-series/compare:
+    get:
+      tags: [TvSeries]
+      summary: Compare TV Series
+      parameters:
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-series/{slug}:
+    get:
+      tags: [TvSeries]
+      summary: Get TV Series by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TvSeriesFull'
+        '202':
+          description: Accepted - generation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+  /v1/tv-series/{slug}/related:
+    get:
+      tags: [TvSeries]
+      summary: Get related TV Series
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-series/{slug}/refresh:
+    post:
+      tags: [TvSeries]
+      summary: Force refresh TV Series data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/tv-series/{slug}/report:
+    post:
+      tags: [TvSeries]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Report created
+
+  /v1/tv-shows:
+    get:
+      tags: [TvShows]
+      summary: List TV Shows
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvShow'
+  /v1/tv-shows/search:
+    get:
+      tags: [TvShows]
+      summary: Search TV Shows
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-shows/compare:
+    get:
+      tags: [TvShows]
+      summary: Compare TV Shows
+      parameters:
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-shows/{slug}:
+    get:
+      tags: [TvShows]
+      summary: Get TV Show by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TvShowFull'
+        '202':
+          description: Accepted - generation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+  /v1/tv-shows/{slug}/related:
+    get:
+      tags: [TvShows]
+      summary: Get related TV Shows
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-shows/{slug}/refresh:
+    post:
+      tags: [TvShows]
+      summary: Force refresh TV Show data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/tv-shows/{slug}/report:
+    post:
+      tags: [TvShows]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Report created
+
   /v1/generate:
     post:
       tags: [Generation]
@@ -124,20 +556,14 @@ paths:
               $ref: '#/components/schemas/GenerateRequest'
       responses:
         '200':
-          description: Accepted (mock)
+          description: Accepted
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AcceptedGeneration'
         '403':
           description: Feature not available
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+
   /v1/jobs/{id}:
     get:
       tags: [Jobs]
@@ -156,6 +582,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Job'
+
   /v1/health/openai:
     get:
       tags: [Health]
@@ -163,43 +590,49 @@ paths:
       responses:
         '200':
           description: OpenAI reachable
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  status:
-                    type: integer
-                  rate_limit:
-                    type: object
-                    additionalProperties: true
         '503':
           description: OpenAI unavailable
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  error:
+  /v1/health:
+    get:
+      tags: [Health]
+      summary: Overall System Health
+      responses:
+        '200':
+          description: OK
+  /v1/health/db:
+    get:
+      tags: [Health]
+      summary: Check Database connectivity
+      responses:
+        '200':
+          description: OK
+  /v1/health/instance:
+    get:
+      tags: [Health]
+      summary: Instance Health
+      responses:
+        '200':
+          description: OK
+  /v1/health/tmdb:
+    get:
+      tags: [Health]
+      summary: TMDB API Health
+      responses:
+        '200':
+          description: OK
+  /v1/health/tvmaze:
+    get:
+      tags: [Health]
+      summary: TVMaze API Health
+      responses:
+        '200':
+          description: OK
+
   /v1/admin/debug/config:
     get:
-      tags: [Admin]
+      tags: [Debug]
       summary: Debug service configuration
-      description: |
-        Debug endpoint to inspect service configuration, including AI_SERVICE, OpenAI settings, and other service parameters.
-        
-        **Security:**
-        - Protected by feature flag `debug_endpoints` (default: disabled)
-        - Enable via feature flag API: `POST /api/v1/admin/flags/debug_endpoints` with body `{"state": "on"}`
-        - Disabled by default in production for security
-        
-        **Note:** This endpoint is intended for development and debugging purposes. Keep the feature flag disabled in production unless needed for troubleshooting.
+      description: Protected by feature flag `debug_endpoints`
       responses:
         '200':
           description: Configuration data
@@ -207,21 +640,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DebugConfig'
-        '403':
-          description: Forbidden (feature flag disabled)
+      security:
+        - AdminToken: []
+
+  /v1/admin/flags/overrides:
+    get:
+      tags: [Admin]
+      summary: List feature flag overrides (DB)
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                  message:
-                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        scope: { type: string }
+                        value: { type: boolean }
+                        updated_at: { type: string, format: date-time }
+
   /v1/admin/flags:
     get:
       tags: [Admin]
       summary: List feature flags
+      security:
+        - AdminToken: []
       responses:
         '200':
           description: OK
@@ -229,6 +680,8 @@ paths:
     post:
       tags: [Admin]
       summary: Toggle a feature flag
+      security:
+        - AdminToken: []
       parameters:
         - in: path
           name: name
@@ -236,7 +689,6 @@ paths:
           schema:
             type: string
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -248,14 +700,299 @@ paths:
       responses:
         '200':
           description: OK
+    delete:
+      tags: [Admin]
+      summary: Reset a feature flag
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
   /v1/admin/flags/usage:
     get:
       tags: [Admin]
       summary: Flags usage metrics
+      security:
+        - AdminToken: []
       responses:
         '200':
           description: OK
+
+  /v1/admin/instances:
+    get:
+      tags: [Admin]
+      summary: List instances
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/instances/{instanceId}:
+    get:
+      tags: [Admin]
+      summary: Get instance details
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: instanceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/api-keys:
+    get:
+      tags: [Admin]
+      summary: List API keys
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Admin]
+      summary: Create API key
+      security:
+        - AdminToken: []
+      responses:
+        '201':
+          description: Created
+  /v1/admin/api-keys/{id}/revoke:
+    post:
+      tags: [Admin]
+      summary: Revoke API key
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/admin/api-keys/{id}/regenerate:
+    post:
+      tags: [Admin]
+      summary: Regenerate API key
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/reports:
+    get:
+      tags: [Admin]
+      summary: List reports
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/reports/{id}/verify:
+    post:
+      tags: [Admin]
+      summary: Verify report
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/analytics/overview:
+    get:
+      tags: [Admin]
+      summary: Analytics Overview
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/by-plan:
+    get:
+      tags: [Admin]
+      summary: Analytics By Plan
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/by-endpoint:
+    get:
+      tags: [Admin]
+      summary: Analytics By Endpoint
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/by-time-range:
+    get:
+      tags: [Admin]
+      summary: Analytics By Time Range
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/top-api-keys:
+    get:
+      tags: [Admin]
+      summary: Top API Key Usage
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/error-rate:
+    get:
+      tags: [Admin]
+      summary: Error Rate Stats
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/ai-metrics/token-usage:
+    get:
+      tags: [Admin]
+      summary: AI Token Usage
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/ai-metrics/parsing-accuracy:
+    get:
+      tags: [Admin]
+      summary: AI Parsing Accuracy
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/ai-metrics/errors:
+    get:
+      tags: [Admin]
+      summary: AI Error Stats
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/ai-metrics/comparison:
+    get:
+      tags: [Admin]
+      summary: AI Model Comparison
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/jobs-dashboard/overview:
+    get:
+      tags: [Admin]
+      summary: Jobs Dashboard Overview
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/by-queue:
+    get:
+      tags: [Admin]
+      summary: Jobs by Queue
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/recent:
+    get:
+      tags: [Admin]
+      summary: Recent Jobs
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/failed:
+    get:
+      tags: [Admin]
+      summary: Failed Jobs
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/failed/stats:
+    get:
+      tags: [Admin]
+      summary: Failed Jobs Stats
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/processing-times:
+    get:
+      tags: [Admin]
+      summary: Job Processing Times
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/webhooks/billing:
+    post:
+      tags: [Webhooks]
+      summary: Handle billing events
+      responses:
+        '200':
+          description: OK
+  /v1/webhooks/notification:
+    post:
+      tags: [Webhooks]
+      summary: Handle notification events
+      responses:
+        '200':
+          description: OK
+
 components:
+  securitySchemes:
+    AdminToken:
+      type: apiKey
+      in: header
+      name: X-Admin-Token
+    basicAuth:
+      type: http
+      scheme: basic
   schemas:
     Genre:
       type: object
@@ -318,6 +1055,7 @@ components:
             _links:
               type: object
               additionalProperties: true
+    
     Person:
       type: object
       properties:
@@ -367,175 +1105,125 @@ components:
             _links:
               type: object
               additionalProperties: true
-    DebugConfig:
+
+    TvSeries:
       type: object
-      description: Debug configuration response
       properties:
-        environment:
-          type: object
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        first_air_date:
+          type: string
+          format: date
+          nullable: true
+        last_air_date:
+          type: string
+          format: date
+          nullable: true
+        number_of_seasons:
+          type: integer
+        number_of_episodes:
+          type: integer
+    TvSeriesFull:
+      allOf:
+        - $ref: '#/components/schemas/TvSeries'
+        - type: object
           properties:
-            app_env:
-              type: string
-            app_debug:
-              type: boolean
-            ai_service_env:
-              type: string
-              nullable: true
-            ai_service_config:
-              type: string
-            ai_service_selector:
-              type: string
-            is_real:
-              type: boolean
-            is_mock:
-              type: boolean
-        openai:
-          type: object
-          properties:
-            api_key_set:
-              type: boolean
-            api_key_preview:
-              type: string
-              nullable: true
-            model:
-              type: string
-            api_url:
-              type: string
-            health_url:
-              type: string
-            backoff_enabled:
-              type: boolean
-            backoff_intervals:
+            descriptions:
               type: array
               items:
-                type: integer
-        queue:
-          type: object
-          properties:
-            connection:
-              type: string
-            redis_host:
-              type: string
-              nullable: true
-        cache:
-          type: object
-          properties:
-            driver:
-              type: string
-        database:
-          type: object
-          properties:
-            connection:
-              type: string
-            host:
-              type: string
-              nullable: true
-        services:
-          type: object
-          properties:
-            openai_client_class:
-              type: string
-            openai_client_interface:
-              type: string
-        timestamp:
+                type: object
+                properties:
+                  text:
+                    type: string
+            genres:
+              type: array
+              items:
+                $ref: '#/components/schemas/Genre'
+            people:
+              type: array
+              items:
+                $ref: '#/components/schemas/Person'
+
+    TvShow:
+      type: object
+      properties:
+        id:
           type: string
-          format: date-time
-        note:
+          format: uuid
+        slug:
           type: string
+        title:
+          type: string
+        first_air_date:
+          type: string
+          format: date
+          nullable: true
+    TvShowFull:
+      allOf:
+        - $ref: '#/components/schemas/TvShow'
+        - type: object
+          properties:
+            descriptions:
+              type: array
+              items:
+                type: object
+                properties:
+                  text:
+                    type: string
+
+    DebugConfig:
+      type: object
+      properties:
+        environment: { type: object }
+        openai: { type: object }
+        queue: { type: object }
+    
     Job:
       type: object
       properties:
-        job_id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [PENDING, DONE, FAILED, UNKNOWN]
-        entity:
-          type: string
-          enum: [MOVIE, PERSON]
-        entity_id:
-          type: integer
-          nullable: true
-        slug:
-          type: string
-          nullable: true
-        confidence:
-          type: number
-          format: float
-          nullable: true
-        error:
-          type: object
-          nullable: true
-          properties:
-            type:
-              type: string
-              enum: [NOT_FOUND, AI_API_ERROR, VALIDATION_ERROR, UNKNOWN_ERROR]
-            message:
-              type: string
-              description: Short technical error message
-            technical_message:
-              type: string
-              description: Full exception message for debugging
-            user_message:
-              type: string
-              description: User-friendly error message
-        description_id:
-          type: integer
-          nullable: true
-        bio_id:
-          type: integer
-          nullable: true
-        locale:
-          type: string
-          nullable: true
-        context_tag:
-          type: string
-          nullable: true
+        job_id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, DONE, FAILED, UNKNOWN] }
+        entity: { type: string, enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW] }
+        slug: { type: string }
+        error: { type: object }
+
     AcceptedGeneration:
       type: object
       properties:
-        job_id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [PENDING]
-        slug:
-          type: string
-        confidence:
-          type: number
-          format: float
-          description: Confidence score (0.0-1.0) indicating how likely the slug represents a valid entity
-          nullable: true
-        confidence_level:
-          type: string
-          enum: [high, medium, low, very_low, unknown]
-          description: Human-readable confidence level based on slug validation
-          nullable: true
-        locale:
-          type: string
-          description: Locale for the generation (e.g., en-US, pl-PL)
-          nullable: true
-        context_tag:
-          type: string
-          description: Context tag for the generation (e.g., modern, critical, humorous)
-          nullable: true
+        job_id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING] }
+        slug: { type: string }
+        locale: { type: string }
+        context_tags: 
+          type: array
+          items:
+            type: string
+
     GenerateRequest:
       type: object
-      required: [entity_type, entity_id]
+      required: [entity_type]
       properties:
         entity_type:
           type: string
-          enum: [MOVIE, PERSON]
-          description: |
-            Entity type to generate content for.
-            Use `PERSON` for all person-related entities (actors, directors, writers, producers).
+          enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW]
+        slug:
+          type: string
+          description: The slug of the entity (preferred)
         entity_id:
-          type: integer
+          type: string
+          description: Legacy field for slug/ID
         locale:
           type: string
+          default: en-US
         context_tag:
-          type: string
-
-
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: Single context tag or list of tags

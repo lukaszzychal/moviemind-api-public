@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'horizon.basic' => \App\Http\Middleware\HorizonBasicAuth::class,
             'admin.basic' => \App\Http\Middleware\AdminBasicAuth::class,
+            'admin.token' => \App\Http\Middleware\AdminTokenAuth::class,
             'adaptive.rate.limit' => \App\Http\Middleware\AdaptiveRateLimit::class,
             'api.key.auth' => \App\Http\Middleware\ApiKeyAuth::class,
             'plan.rate.limit' => \App\Http\Middleware\PlanBasedRateLimit::class,
