@@ -64,6 +64,8 @@ class GenerateMovieJobTest extends TestCase
 
     public function test_job_appends_description_for_existing_movie(): void
     {
+        Feature::deactivate('ai_generation_baseline_locking');
+
         $movie = Movie::create([
             'title' => 'The Matrix',
             'slug' => 'the-matrix',
@@ -245,6 +247,8 @@ class GenerateMovieJobTest extends TestCase
 
     public function test_subsequent_job_does_not_override_default_if_baseline_has_changed(): void
     {
+        Feature::deactivate('ai_generation_baseline_locking');
+
         $movie = Movie::create([
             'title' => 'The Matrix',
             'slug' => 'the-matrix',
