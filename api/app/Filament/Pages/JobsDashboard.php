@@ -6,6 +6,7 @@ use App\Filament\Widgets\FailedJobsWidget;
 use App\Filament\Widgets\JobsChart;
 use App\Filament\Widgets\RecentJobsWidget;
 use App\Filament\Widgets\StatsOverview;
+use App\Filament\Widgets\WorkersStatusWidget;
 use Filament\Pages\Page;
 
 class JobsDashboard extends Page
@@ -29,6 +30,7 @@ class JobsDashboard extends Page
     protected function getFooterWidgets(): array
     {
         return [
+            WorkersStatusWidget::class,
             RecentJobsWidget::class,
             FailedJobsWidget::class,
         ];

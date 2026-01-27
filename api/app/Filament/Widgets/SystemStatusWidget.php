@@ -23,9 +23,9 @@ class SystemStatusWidget extends Widget
     {
         $this->status = Cache::remember('system-status-widget', 60, function () {
             try {
-                // We need to bypass the admin basic auth for this internal call
+                // We need to bypass the admin auth for this internal call
                 // A dedicated internal API client or direct service call would be better in the long run
-                $response = Http::withBasicAuth(env('ADMIN_USER', 'admin'), env('ADMIN_PASSWORD', 'password'))
+                $response = Http::withHeader('X-Admin-Token', env('ADMIN_API_TOKEN'))
                     ->get(url('/api/v1/admin/debug/config'));
 
                 if ($response->successful()) {
@@ -39,6 +39,7 @@ class SystemStatusWidget extends Widget
                 'app_env' => config('app.env'),
                 'app_debug' => config('app.debug'),
                 'ai_service_env' => config('services.ai.service'),
+                'instance_id' => env('INSTANCE_ID', 'unknown'),
             ];
         });
     }

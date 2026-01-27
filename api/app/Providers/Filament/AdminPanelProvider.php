@@ -29,7 +29,8 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->login(\App\Filament\Pages\Auth\Login::class)
             ->brandName('MovieMind Admin')
             ->colors([
                 'primary' => Color::Blue,
@@ -66,6 +67,11 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-globe-alt')
                     ->group('System')
                     ->sort(3),
+                \Filament\Navigation\NavigationItem::make('API Docs')
+                    ->url('/docs', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-book-open')
+                    ->group('System')
+                    ->sort(4),
             ]);
     }
 }

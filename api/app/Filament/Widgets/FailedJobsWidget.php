@@ -26,7 +26,15 @@ class FailedJobsWidget extends BaseWidget
                     ->badge()
                     ->color('danger'),
                 Tables\Columns\TextColumn::make('payload')
-                    ->formatStateUsing(fn (?array $state) => $state['displayName'] ?? 'Unknown Job')
+                    ->formatStateUsing(function ($state) {
+                        if (is_string($state)) {
+                            $decoded = json_decode($state, true);
+
+                            return $decoded['displayName'] ?? 'Unknown Job';
+                        }
+
+                        return $state['displayName'] ?? 'Unknown Job';
+                    })
                     ->label('Job Class'),
                 Tables\Columns\TextColumn::make('exception')
                     ->limit(50)
