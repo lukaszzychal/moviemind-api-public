@@ -8,8 +8,9 @@ Route::get('api/doc', function () {
 });
 
 Route::get('api/docs/openapi.yaml', function () {
-    return response()->file(public_path('docs/openapi.yaml'))
-        ->header('Content-Type', 'application/x-yaml');
+    return response()->file(public_path('docs/openapi.yaml'), [
+        'Content-Type' => 'application/x-yaml',
+    ]);
 });
 
 // Welcome endpoint
