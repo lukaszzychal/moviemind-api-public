@@ -53,11 +53,12 @@ Route::prefix('v1')->group(function () {
     Route::get('health/db', [HealthController::class, 'database']);
 });
 
-Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
+Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
     Route::prefix('flags')->group(function () {
         Route::get('/', [FlagController::class, 'index']);
+        Route::get('overrides', [FlagController::class, 'overrides']); // New endpoint
         Route::post('{name}', [FlagController::class, 'setFlag']);
-        Route::delete('{name}', [FlagController::class, 'resetFlag']); // New endpoint
+        Route::delete('{name}', [FlagController::class, 'resetFlag']);
         Route::get('usage', [FlagController::class, 'usage']);
     });
     Route::prefix('instances')->group(function () {

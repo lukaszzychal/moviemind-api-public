@@ -25,6 +25,13 @@ class FlagController extends Controller
         ]);
     }
 
+    public function overrides(): JsonResponse
+    {
+        return response()->json([
+            'data' => \App\Models\FeatureFlag::all(),
+        ]);
+    }
+
     public function setFlag(SetFlagRequest $request, string $name): JsonResponse
     {
         $validated = $request->validated();
@@ -52,14 +59,18 @@ class FlagController extends Controller
     public function usage(Request $request): JsonResponse
     {
         $flagName = $request->query('flag');
-        if (! $flagName) {
-            return response()->json(['error' => 'Flag name is required.'], 400);
+
+        if ($flagName) {
+            $flagsToScan = [$flagName];
+        } else {
+            // If no flag specified, scan all known flags
+            $flagsToScan = array_keys($this->featureFlagManager->all());
         }
 
-        $usages = $this->usageScanner->scan($flagName);
+        $usages = $this->usageScanner->scan($flagsToScan);
 
         return response()->json([
-            'flag' => $flagName,
+            'flag' => $flagName ?? 'all',
             'usages' => $usages,
         ]);
     }

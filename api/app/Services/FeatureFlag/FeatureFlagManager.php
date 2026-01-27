@@ -15,7 +15,7 @@ class FeatureFlagManager
 
     public function __construct(?array $definitions = null)
     {
-        $this->definitions = $definitions ?? config('pennant.metadata', []);
+        $this->definitions = $definitions ?? config('features', []);
     }
 
     /**
@@ -41,7 +41,8 @@ class FeatureFlagManager
                     'description' => $flag['description'] ?? '',
                     'category' => $flag['category'] ?? 'other',
                     'default' => $flag['default'] ?? false,
-                    'togglable' => $flag['togglable'] ?? false,
+                    'togglable' => $this->isTogglable($name),
+                    'forced' => ($flag['force'] ?? null) !== null && ($flag['force'] ?? null) !== '',
                 ];
             })
             ->values()
@@ -64,11 +65,24 @@ class FeatureFlagManager
             return false;
         }
 
-        return (bool) ($meta['togglable'] ?? false);
+        // If 'force' is present and not empty, it overrides everything and locks the flag.
+        $force = $meta['force'] ?? null;
+        if ($force !== null && $force !== '') {
+            return false;
+        }
+
+        // Otherwise respect the 'togglable' key (default true)
+        return (bool) ($meta['togglable'] ?? true);
     }
 
     public function set(string $name, bool $activate): void
     {
+        if (! $this->isTogglable($name)) {
+            // Silently ignore or throw exception?
+            // "Zabrania zmiany za pomocą endpointa czy ui" -> Exception is better for API feedback
+            throw new \RuntimeException("Feature flag '{$name}' is not togglable.");
+        }
+
         // Use default scope (null) to match application code (Feature::active() without for())
         if ($activate) {
             Feature::activate($name);
@@ -79,6 +93,10 @@ class FeatureFlagManager
 
     public function reset(string $name): void
     {
+        if (! $this->isTogglable($name)) {
+            throw new \RuntimeException("Feature flag '{$name}' is locked and cannot be reset.");
+        }
+
         Feature::forget($name);
     }
 
