@@ -49,6 +49,7 @@ Controller → MovieGenerationRequested event
 
 ## 📚 Related documents
 - Polish version: [`../pl/ARCHITECTURE_ANALYSIS.md`](../pl/ARCHITECTURE_ANALYSIS.md)  
-- Refactor execution report: [`../issue/en/REFACTOR_CONTROLLERS_SOLID.en.md`](../issue/en/REFACTOR_CONTROLLERS_SOLID.en.md)
+- Refactor execution report: [`../issue/en/REFACTOR_CONTROLLERS_SOLID.en.md`](../issue/en/REFACTOR_CONTROLLERS_SOLID.en.md)  
+- For the distinction between a general-purpose API and a Backend for Frontend (BFF), see [BFF document](BFF_BACKEND_FOR_FRONTEND.md).
 
 **Last updated:** 2025-11-07

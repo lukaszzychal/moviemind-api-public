@@ -72,3 +72,9 @@ Queue Worker (wykonuje Job)
 
 **Użyj Events + Jobs** - to standardowe Laravel podejście i lepiej pasuje do architektury frameworka.
 
+---
+
+## Powiązane dokumenty
+- Wersja angielska: [../en/ARCHITECTURE_ANALYSIS.md](../en/ARCHITECTURE_ANALYSIS.md)  
+- Różnica między API ogólnego przeznaczenia a Backend for Frontend (BFF): [dokument BFF](BFF_BACKEND_FOR_FRONTEND.pl.md).
+
