@@ -30,13 +30,14 @@ class OutgoingWebhookService
      */
     public function sendWebhook(string $eventType, array $payload, string $url, ?OutgoingWebhook $existingWebhook = null): OutgoingWebhook
     {
-        // Use existing webhook or create new one
         if ($existingWebhook !== null) {
             $webhook = $existingWebhook;
+            $requestPayload = $webhook->payload ?? [];
         } else {
+            $requestPayload = $this->payloadWithEventInfo($payload, $eventType);
             $webhook = OutgoingWebhook::create([
                 'event_type' => $eventType,
-                'payload' => $payload,
+                'payload' => $requestPayload,
                 'url' => $url,
                 'status' => 'pending',
                 'attempts' => 0,
@@ -45,28 +46,22 @@ class OutgoingWebhookService
         }
 
         try {
-            // Prepare request
             $request = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'User-Agent' => 'MovieMind-API/1.0',
             ]);
 
-            // Add timeout only in non-test environment
             if (! app()->environment('testing')) {
                 $request = $request->timeout(30);
             }
 
-            // Sign request if secret is configured
             $secret = config('webhooks.outgoing_secret');
-            // Use webhook payload if existing webhook, otherwise use provided payload
-            $requestPayload = $existingWebhook !== null ? $webhook->payload : $payload;
             $body = json_encode($requestPayload);
             if ($secret !== null && $secret !== '') {
                 $signature = hash_hmac('sha256', $body, $secret);
                 $request = $request->withHeader(config('webhooks.outgoing_signature_header', 'X-MovieMind-Webhook-Signature'), $signature);
             }
 
-            // Send webhook
             $response = $request->post($url, $requestPayload);
 
             // Check for connection/timeout errors
@@ -279,5 +274,22 @@ class OutgoingWebhookService
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Merge payload with event identifier so the receiver can see webhook type (requested, completed, failed).
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function payloadWithEventInfo(array $payload, string $eventType): array
+    {
+        $parts = explode('.', $eventType);
+        $eventKind = (string) end($parts);
+
+        return array_merge($payload, [
+            'event' => $eventType,
+            'event_kind' => $eventKind,
+        ]);
     }
 }

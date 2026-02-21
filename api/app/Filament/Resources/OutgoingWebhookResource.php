@@ -16,35 +16,59 @@ class OutgoingWebhookResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationGroup = 'Webhooks';
+
+    protected static ?string $navigationLabel = 'Webhook history';
+
     public static function form(Form $form): Form
     {
+        $eventTypeOptions = array_combine(
+            $keys = array_keys(config('webhooks.outgoing_urls', [])),
+            $keys
+        ) ?: [];
+
         return $form
             ->schema([
                 Forms\Components\Section::make()
                     ->schema([
-                        Forms\Components\TextInput::make('event_type')
+                        Forms\Components\Select::make('event_type')
                             ->required()
-                            ->maxLength(255),
+                            ->options($eventTypeOptions)
+                            ->searchable()
+                            ->helperText('Event types from config/webhooks.php (outgoing_urls).'),
                         Forms\Components\TextInput::make('url')
                             ->label('Webhook URL')
                             ->required()
-                            ->maxLength(255)
+                            ->maxLength(500)
+                            ->helperText('Full URL to receive POST request (e.g. https://example.com/webhook).')
                             ->columnSpanFull(),
                         Forms\Components\KeyValue::make('payload')
                             ->label('Request Payload')
+                            ->helperText('Optional JSON key-value payload; leave empty for minimal payload.')
                             ->columnSpanFull(),
                         Forms\Components\Grid::make(3)
                             ->schema([
-                                Forms\Components\TextInput::make('status')
-                                    ->required(),
+                                Forms\Components\Select::make('status')
+                                    ->required()
+                                    ->options([
+                                        'pending' => 'Pending',
+                                        'sent' => 'Sent',
+                                        'failed' => 'Failed',
+                                        'permanently_failed' => 'Permanently Failed',
+                                    ])
+                                    ->default('pending')
+                                    ->helperText('DB enum: pending, sent, failed, permanently_failed.'),
                                 Forms\Components\TextInput::make('attempts')
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->default(0)
+                                    ->helperText('Number of delivery attempts (default 0 for new).'),
                                 Forms\Components\TextInput::make('response_code')
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->helperText('HTTP response code (set after delivery).'),
                             ]),
                         Forms\Components\Textarea::make('error_message')
                             ->columnSpanFull()
-                            ->visible(fn (OutgoingWebhook $record) => $record->error_message !== null),
+                            ->visible(fn (?OutgoingWebhook $record): bool => $record !== null && $record->error_message !== null),
                         Forms\Components\KeyValue::make('response_body')
                             ->label('Response Body')
                             ->columnSpanFull(),

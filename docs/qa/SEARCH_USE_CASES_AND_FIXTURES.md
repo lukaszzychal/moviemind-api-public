@@ -45,10 +45,13 @@ Each row is one use case: required query params, expected outcome, and which fix
 | 9 | No results | `q=NonexistentMovieXYZ123` | 404, match_type=none, results=[] | No fixture needed |
 | 10 | Pagination | `q=matrix&page=1&per_page=5` | 200, pagination object + slice of results | Enough movies matching "matrix" (seed + optional) |
 | 11 | Page beyond last | `q=matrix&page=99&per_page=10` | 200, last page returned (effective page clamped) | Any |
-| 12 | Sort | `q=star&sort=title&order=asc` | 200, results sorted by title asc | Movies matching "star" (seed or test data) |
+| 12 | Sort | `q=matrix&sort=title&order=asc` | 200, results sorted by title asc | Movies matching "matrix" (MovieSeeder) |
 | 13 | Source filter local | `q=matrix&source=local` | 200, only local results | Local movies matching q |
 | 14 | Source filter external | `q=matrix&source=external` | 200, only external (TMDB) results | TMDB feature on; no fixture for external |
 | 15 | Limits | `q=matrix&local_limit=2&external_limit=2` | 200, at most 2 local + 2 external | Any |
+| 16 | **Disambiguation** | `q=bad+boys` then `GET /movies/bad-boys?slug=bad-boys-ii-2003` | Search: 200, ambiguous results; selection: 200, selected movie (no generation) | Bad Boys (1995) + Bad Boys II (2003) – SearchFixturesSeeder |
+| 17 | **Collection** | `GET /movies/the-matrix-1999/collection` | 200, `collection` + `movies` array (same TMDb collection) | The Matrix + 2 sequels with `belongs_to_collection` in snapshot – CollectionFixturesSeeder |
+| 18 | **Related movies** | `GET /movies/the-matrix-1999/related` | 200, `related_movies` array (at least one when fixture present) | movie_relationships row (e.g. Matrix–Inception) – SearchFixturesSeeder |
 
 **Fixtures in codebase today:**
 
@@ -58,8 +61,8 @@ Each row is one use case: required query params, expected outcome, and which fix
 
 So after `migrate --seed` (with seeders that run in non-production):
 
-- Use cases 1–7 and 9–10 are covered for manual testing (actor-only requires ActorSeeder).
-- Use cases 8, 11–15 depend on seed or test-created data.
+- Use cases 1–7, 9–12, 16–18 are covered for manual testing (actor-only requires ActorSeeder; collection requires CollectionFixturesSeeder; related requires SearchFixturesSeeder).
+- Use cases 8, 11, 13–15 depend on seed or test-created data.
 
 ---
 
@@ -69,6 +72,12 @@ So after `migrate --seed` (with seeders that run in non-production):
 
 1. **Year-only:** Creates a movie with `release_year=1985` ("Search Fixture Year 1985") so `?year=1985` returns at least one result.
 2. **Multiple actors:** Attaches Laurence Fishburne to The Matrix so `?actor[]=Keanu&actor[]=Laurence` (or `q=Matrix&actor[]=Keanu&actor[]=Laurence`) returns The Matrix from seed data.
+3. **Disambiguation (Scenario 5):** Creates Bad Boys (1995) and Bad Boys II (2003) with slugs `bad-boys-1995` and `bad-boys-ii-2003` so that `GET /movies/search?q=bad+boys` returns both (ambiguous) and `GET /movies/bad-boys?slug=bad-boys-ii-2003` returns the selected movie from DB (no generation queued).
+4. **Related movies (Scenario 8 / TC-MOVIE-006):** Creates one `movie_relationships` row linking The Matrix to Inception (e.g. SAME_UNIVERSE) so `GET /movies/the-matrix-1999/related` returns at least one related movie.
+
+**CollectionFixturesSeeder** (`api/database/seeders/CollectionFixturesSeeder.php`) is called from `DatabaseSeeder` in non-production. It:
+
+1. **Collection (Scenario 7 / TC-MOVIE-007):** Ensures The Matrix and two sequels (The Matrix Reloaded, The Matrix Revolutions) have TMDb snapshots with the same `belongs_to_collection` (id 234, "The Matrix Collection") so `GET /movies/the-matrix-1999/collection` returns 200 with `collection` and `movies` array.
 
 Together with **MovieSeeder** (Matrix, Inception), **PeopleSeeder** (directors), and **ActorSeeder** (Keanu Reeves → Matrix), running `php artisan migrate --seed` gives a single dataset so every use case in the matrix above has predictable data for manual testing.
 
@@ -77,6 +86,6 @@ Together with **MovieSeeder** (Matrix, Inception), **PeopleSeeder** (directors),
 ## References
 
 - Feature tests: `api/tests/Feature/SearchMoviesTest.php`, `MovieSearchLimitPerSourceTest.php`, `MovieSearchSortingTest.php`
-- Seeders: `api/database/seeders/MovieSeeder.php`, `PeopleSeeder.php`, `ActorSeeder.php`
+- Seeders: `api/database/seeders/MovieSeeder.php`, `PeopleSeeder.php`, `ActorSeeder.php`, `SearchFixturesSeeder.php`, `CollectionFixturesSeeder.php`
 - Manual testing: `docs/MANUAL_TESTING_GUIDE.md` (Movies Search section), `docs/qa/MANUAL_TEST_PLANS.md`
 - E2E: `tests/e2e/specs/` (no search endpoint coverage yet)

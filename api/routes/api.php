@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ApiKeyController;
 use App\Http\Controllers\Admin\FlagController;
+use App\Http\Controllers\Admin\WebhookSubscriptionController;
 use App\Http\Controllers\Api\GenerateController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\JobsController;
@@ -108,6 +109,12 @@ Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
         Route::get('{id}/features', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'getFeatures']);
         Route::post('{id}/features', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'addFeature']);
         Route::delete('{id}/features/{feature}', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'removeFeature']);
+    });
+    Route::prefix('webhook-subscriptions')->group(function () {
+        Route::get('/', [WebhookSubscriptionController::class, 'index']);
+        Route::post('/', [WebhookSubscriptionController::class, 'store']);
+        Route::patch('{id}', [WebhookSubscriptionController::class, 'update']);
+        Route::delete('{id}', [WebhookSubscriptionController::class, 'destroy']);
     });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });

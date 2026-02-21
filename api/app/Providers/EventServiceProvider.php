@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\MovieGenerationCompleted;
+use App\Events\MovieGenerationFailed;
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
 use App\Events\TvSeriesGenerationRequested;
@@ -27,6 +29,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         PersonGenerationRequested::class => [
             QueuePersonGenerationJob::class,
+            SendOutgoingWebhookListener::class,
+        ],
+        MovieGenerationCompleted::class => [
+            SendOutgoingWebhookListener::class,
+        ],
+        MovieGenerationFailed::class => [
             SendOutgoingWebhookListener::class,
         ],
         TvSeriesGenerationRequested::class => [

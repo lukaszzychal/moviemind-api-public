@@ -77,6 +77,10 @@
         "docker:up": [
             "docker compose up -d"
         ],
+        "env-reload": [
+            "cd .. && docker compose up -d --force-recreate php horizon",
+            "cd .. && docker compose exec -T php php artisan config:clear"
+        ],
         "docker:down": [
             "docker compose down -v"
         ],

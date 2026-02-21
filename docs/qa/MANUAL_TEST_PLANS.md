@@ -45,6 +45,8 @@ This document provides comprehensive manual test plans for MovieMind API, includ
 
 **Note:** This is a portfolio/demo project. For production deployment, see [Production Testing](#production-testing).
 
+**Automated coverage:** See [TEST_COVERAGE_MATRIX.md](TEST_COVERAGE_MATRIX.md) for which sections and TC-* are covered by PHPUnit Feature tests and E2E/Playwright.
+
 ---
 
 ## 🚀 Quick Start - Testing from Scratch
@@ -292,21 +294,24 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
 - Relevant movies returned
 - Results sorted correctly
 
-**Example Response:**
+**Example Response:** (actual search API structure)
 ```json
 {
-  "data": [
+  "results": [
     {
-      "id": "01234567-89ab-cdef-0123-456789abcdef",
+      "source": "local",
       "slug": "the-matrix-1999",
       "title": "The Matrix",
-      "release_year": 1999
+      "release_year": 1999,
+      "director": "The Wachowskis",
+      "has_description": true
     }
   ],
-  "meta": {
-    "query": "matrix",
-    "total": 1
-  }
+  "total": 1,
+  "local_count": 1,
+  "external_count": 0,
+  "match_type": "exact",
+  "confidence": 1.0
 }
 ```
 
@@ -320,10 +325,10 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
 
 **Prerequisites:**
 - API key with Pro plan or higher
-- Movies exist: `the-matrix-1999`, `inception-2010`, `interstellar-2014`
+- Movies exist: `the-matrix-1999`, `inception-2010` (run `php artisan migrate --seed`)
 
 **Steps:**
-1. Send `POST /api/v1/movies/bulk` with slugs array
+1. Send `POST /api/v1/movies/bulk` with slugs array (or GET with `?slugs=...`)
 2. Verify response status is `200 OK`
 3. Verify response contains all requested movies
 4. Verify movies are in correct order
@@ -337,37 +342,26 @@ curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
   -d '{
     "slugs": [
       "the-matrix-1999",
-      "inception-2010",
-      "interstellar-2014"
+      "inception-2010"
     ]
   }'
 ```
 
 **Expected Result:**
 - Status: `200 OK`
-- All requested movies returned
-- Correct order maintained
+- All requested movies returned in `data`
+- `count` and `requested_count` match; `not_found` empty for existing slugs
 
 **Example Response:**
 ```json
 {
   "data": [
-    {
-      "id": "...",
-      "slug": "the-matrix-1999",
-      "title": "The Matrix"
-    },
-    {
-      "id": "...",
-      "slug": "inception-2010",
-      "title": "Inception"
-    },
-    {
-      "id": "...",
-      "slug": "interstellar-2014",
-      "title": "Interstellar"
-    }
-  ]
+    { "id": "...", "slug": "the-matrix-1999", "title": "The Matrix", "release_year": 1999, "_links": {} },
+    { "id": "...", "slug": "inception-2010", "title": "Inception", "release_year": 2010, "_links": {} }
+  ],
+  "not_found": [],
+  "count": 2,
+  "requested_count": 2
 }
 ```
 
@@ -412,13 +406,13 @@ curl -X GET "http://localhost:8000/api/v1/movies/compare?slugs=the-matrix-1999,i
 **Prerequisites:**
 - API key with Free plan or higher
 - Movie exists: `the-matrix-1999`
-- Related movies exist
+- Run `php artisan migrate --seed`; with relationship fixture, at least one related movie is returned
 
 **Steps:**
 1. Send `GET /api/v1/movies/the-matrix-1999/related` with valid API key
 2. Verify response status is `200 OK`
-3. Verify response contains related movies
-4. Verify relationship types are correct
+3. Verify response contains `related_movies` array (may be empty if no relationships; with seed fixtures, Inception may appear as related)
+4. If present, verify relationship types (e.g. SAME_UNIVERSE) and movie fields
 
 **cURL Command:**
 ```bash
@@ -429,8 +423,8 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" \
 
 **Expected Result:**
 - Status: `200 OK`
-- Related movies returned
-- Relationship types correct
+- `related_movies` array present (empty or populated from `movie_relationships`)
+- Relationship types correct when present
 
 ---
 
@@ -462,19 +456,17 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999/related" \
 
 **Test ID:** TC-MOVIE-008  
 **Priority:** P1  
-**Description:** Verify that refresh endpoint queues generation job
+**Description:** Verify that refresh endpoint syncs movie metadata from TMDb (no job queued)
 
 **Prerequisites:**
 - API key with Pro plan or higher
-- Movie exists: `the-matrix-1999`
-- Feature flag `ai_description_generation` enabled
+- Movie exists: `the-matrix-1999` with TMDb snapshot (run `php artisan migrate --seed`)
 
 **Steps:**
 1. Send `POST /api/v1/movies/the-matrix-1999/refresh` with valid API key
-2. Verify response status is `202 Accepted`
-3. Verify response contains `job_id`
-4. Poll `GET /api/v1/jobs/{job_id}` until status is `DONE`
-5. Verify movie data refreshed
+2. Verify response status is `200 OK`
+3. Verify response contains `message`, `slug`, `movie_id`, `refreshed_at`
+4. Optionally GET the movie again to confirm metadata updated
 
 **cURL Command:**
 ```bash
@@ -483,19 +475,10 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
   -H "Accept: application/json"
 ```
 
-**Check Job Status:**
-```bash
-# Replace {job_id} with actual job ID from response
-curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
-  -H "X-API-Key: mm_your_api_key_here" \
-  -H "Accept: application/json"
-```
-
 **Expected Result:**
-- Status: `202 Accepted`
-- Job ID returned
-- Job completes successfully
-- Movie data refreshed
+- Status: `200 OK`
+- Response: `message` (e.g. "Movie data refreshed from TMDb"), `slug`, `movie_id`, `refreshed_at`
+- No job_id (metadata sync is synchronous; for AI description generation use POST /api/v1/generate)
 
 ---
 
@@ -526,24 +509,21 @@ curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
 
 **Test ID:** TC-MOVIE-010  
 **Priority:** P1  
-**Description:** Verify that ambiguous movie requests return disambiguation options
+**Description:** Verify that ambiguous movie search returns multiple options and selection by slug works
 
 **Prerequisites:**
 - API key with Free plan or higher
-- Multiple movies with same title/year exist
+- Run `php artisan migrate --seed` (SearchFixturesSeeder creates Bad Boys 1995 and Bad Boys II 2003)
 
 **Steps:**
-1. Send `GET /api/v1/movies/heat-1995` (ambiguous)
-2. Verify response status is `300 Multiple Choices`
-3. Verify response contains `disambiguation` object
-4. Verify disambiguation options are listed
-5. Select option via `?slug=heat-1995-michael-mann`
-6. Verify correct movie returned
+1. Send `GET /api/v1/movies/search?q=bad+boys` with valid API key
+2. Verify response status is `200 OK` with `match_type`: `"ambiguous"`, `results` array with at least two movies (e.g. bad-boys-1995, bad-boys-ii-2003)
+3. Send `GET /api/v1/movies/bad-boys-ii-2003` (or `GET /api/v1/movies/bad-boys?slug=bad-boys-ii-2003` if testing slug selection)
+4. Verify selected movie returned (e.g. "Bad Boys II", 2003)
 
 **Expected Result:**
-- Status: `300 Multiple Choices`
-- Disambiguation options present
-- Selection works correctly
+- Search: Status `200 OK`, multiple results, `match_type` ambiguous
+- Selection: Status `200 OK`, correct movie by slug (no generation queued when fixture exists)
 
 ---
 
@@ -777,7 +757,7 @@ curl -X GET "http://localhost:8000/api/v1/jobs/{job_id}" \
 **Prerequisites:**
 - API key with Pro plan or higher
 - Feature flag `ai_bio_generation` enabled
-- Person exists: `keanu-reeves-1964`
+- Person exists: `keanu-reeves` (run `php artisan migrate --seed`; ActorSeeder creates this slug)
 
 **Steps:**
 1. Send `POST /api/v1/generate` with person generation request
@@ -794,7 +774,7 @@ curl -X POST "http://localhost:8000/api/v1/generate" \
   -H "Accept: application/json" \
   -d '{
     "entity_type": "PERSON",
-    "slug": "keanu-reeves-1964",
+    "slug": "keanu-reeves",
     "locale": "pl-PL",
     "context_tag": "modern"
   }'
@@ -1519,11 +1499,13 @@ docker compose exec php php artisan db:seed --class=AdminUserSeeder
 **Steps:**
 1. Navigate to Outgoing Webhooks (`/admin/outgoing-webhooks`)
 2. Verify list of webhooks is displayed
-3. Click "View" on a webhook
-4. Verify Payload and Response data are visible
+3. Open **Create** (`/admin/outgoing-webhooks/create`). Fill **Event type** (e.g. `movie.generation.completed`), **Webhook URL**, **Status** = `pending`, **Attempts** = `0`; save. For field details and allowed values, see [MANUAL_TESTING_GUIDE – Outgoing Webhooks – Create form: fields and values](../MANUAL_TESTING_GUIDE.md#create-form-fields-and-values).
+4. Click "View" on a webhook (e.g. the one just created)
+5. Verify Payload and Response data are visible
 
 **Expected Result:**
 - Webhooks listed with status badges
+- Create and save succeeds; new record appears in list / view
 - Details view shows debugging info
 
 ---

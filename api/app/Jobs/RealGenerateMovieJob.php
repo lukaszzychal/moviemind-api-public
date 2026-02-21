@@ -6,6 +6,8 @@ use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
 use App\Enums\RoleType;
+use App\Events\MovieGenerationCompleted;
+use App\Events\MovieGenerationFailed;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Models\Person;
@@ -395,9 +397,24 @@ class RealGenerateMovieJob implements ShouldQueue
         $jobStatusService = app(JobStatusService::class);
         if ($status === 'DONE' && $id !== null) {
             $jobStatusService->markDone($this->jobId, 'MOVIE', $id, $slug ?? $this->slug);
+            event(new MovieGenerationCompleted(
+                $this->jobId,
+                $slug ?? $this->slug,
+                $id,
+                $locale ?? $this->locale,
+                $contextTag ?? $this->contextTag,
+                $descriptionId
+            ));
         } elseif ($status === 'FAILED') {
             $errorMessage = $error['message'] ?? 'Unknown error';
             $jobStatusService->markFailed($this->jobId, 'MOVIE', $errorMessage);
+            event(new MovieGenerationFailed(
+                $this->jobId,
+                $this->slug,
+                $errorMessage,
+                $this->locale,
+                $this->contextTag
+            ));
         } else {
             // Update status for other states (e.g., PENDING -> PROCESSING)
             $jobStatusService->updateStatus($this->jobId, $payload);

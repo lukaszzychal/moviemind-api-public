@@ -369,8 +369,77 @@ jobs:
           # Fail the job if tests fail (but still publish results)
           fail_on: test failures
 
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Prepare API .env
+        working-directory: api
+        run: |
+          cp .env.example .env || true
+          KEY="base64:$(openssl rand -base64 32)"
+          sed -i "s|^APP_KEY=.*|APP_KEY=$KEY|" .env
+          echo "APP_ENV=testing" >> .env
+          echo "ADMIN_AUTH_BYPASS_ENVS=testing,local,staging" >> .env
+
+      - name: Start Docker Compose
+        env:
+          DB_DATABASE: moviemind
+          DB_USERNAME: moviemind
+          DB_PASSWORD: moviemind
+        run: |
+          docker compose up -d
+          echo "Waiting for services..."
+          sleep 30
+          docker compose ps
+
+      - name: Wait for API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/up > /dev/null; then
+              echo "API is up"
+              break
+            fi
+            echo "Waiting for API... ($i/30)"
+            sleep 5
+          done
+          curl -sf http://localhost:8000/up || (docker compose logs && exit 1)
+
+      - name: Run migrations and seed
+        run: |
+          docker compose exec -T php php artisan key:generate --force
+          docker compose exec -T php php artisan config:clear
+          docker compose exec -T php php artisan migrate --force
+          docker compose exec -T php php artisan db:seed
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
+        run: npx playwright test --config=tests/e2e/playwright.config.ts
+        env:
+          CI: true
+
+      - name: Stop Docker Compose
+        if: always()
+        run: docker compose down -v || true
+
   docker-build:
-    needs: [test, security, postman-tests]
+    needs: [test, security, postman-tests, e2e]
     name: Docker Build
     if: github.event_name == 'push'
     runs-on: ubuntu-latest

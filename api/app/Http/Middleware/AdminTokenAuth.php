@@ -16,7 +16,7 @@ class AdminTokenAuth
     public function handle(Request $request, Closure $next): Response
     {
         $token = $request->header('X-Admin-Token') ?? $request->bearerToken();
-        $validToken = env('ADMIN_API_TOKEN');
+        $validToken = config('admin.api_token');
 
         if (! $validToken || $token !== $validToken) {
             return response()->json(['message' => 'Unauthorized'], 401);

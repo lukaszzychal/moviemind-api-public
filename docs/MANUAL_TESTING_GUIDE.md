@@ -19,12 +19,13 @@
 10. [Jobs API](#jobs-api)
 11. [Movie Reports](#movie-reports)
 12. [Person Reports](#person-reports)
-13. [Adaptive Rate Limiting](#adaptive-rate-limiting)
-14. [Health & Admin](#health--admin)
-15. [Security Verification](#security-verification)
-16. [Performance Testing](#performance-testing)
-17. [Troubleshooting](#troubleshooting)
-18. [Test Report Template](#test-report-template)
+13. [Webhooks](#webhooks)
+14. [Adaptive Rate Limiting](#adaptive-rate-limiting)
+15. [Health & Admin](#health--admin)
+16. [Security Verification](#security-verification)
+17. [Performance Testing](#performance-testing)
+18. [Troubleshooting](#troubleshooting)
+19. [Test Report Template](#test-report-template)
 
 ---
 
@@ -42,6 +43,9 @@ This document provides comprehensive manual testing instructions for all MovieMi
 - **Adaptive Rate Limiting:** Dynamic rate limits based on system load
 - **Health:** System health checks
 - **Admin:** Feature flags and debug endpoints
+- **Webhooks:** Outgoing webhooks (admin UI, config); incoming webhooks (billing/notification endpoints)
+
+For which sections are covered by PHPUnit and E2E/Playwright, see [TEST_COVERAGE_MATRIX.md](qa/TEST_COVERAGE_MATRIX.md).
 
 ---
 
@@ -364,14 +368,14 @@ curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
 
 **Refresh movie (⚠️ requires POST method):**
 
-Ten endpoint odświeża dane o filmie (np. The Matrix). Pobiera on jego najnowsze informacje za pomocą zewnętrznego API (z TMDb), aktualizuje nasz zapisany lokalnie snapshot oraz czyści pamięć podręczną (cache) aplikacji. Skutkiem tego jest to, że przy następnym zapytaniu z użyciem metody GET, API pobierze dla nas zaktualizowane i najświeższe dane.
+Ten endpoint odświeża dane o filmie (np. The Matrix): pobiera najnowsze informacje ze źródła zewnętrznego, aktualizuje lokalny snapshot oraz czyści cache. Przy następnym GET API zwróci zaktualizowane dane.
 
 ```bash
-# Refresh "The Matrix" (1999) from TMDb source
+# Refresh "The Matrix" (1999)
 curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
   -H "Accept: application/json" | jq
 
-# Refresh "Inception" (2010) from TMDb source
+# Refresh "Inception" (2010)
 curl -X POST "http://localhost:8000/api/v1/movies/inception-2010/refresh" \
   -H "Accept: application/json" | jq
 
@@ -381,8 +385,8 @@ curl -X GET "http://localhost:8000/api/v1/movies/inception-2010" | jq
 
 **Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
 
-**Troubleshooting (`{"error": "No TMDb snapshot found for this movie"}`):**
-Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku snapshotu, oznacza to, że odpytywany film nie posiada powiązanego rekordu przechowującego pierwotne pobrane dane z zewnętrznej bazy TMDb (z numerem ID wymaganym do odświeżania). Taki stan ma najczęściej miejsce w wygenerowanych testowych "seederach". W środowisku produkcyjnym, każdy film początkowo importowany z wyszukiwania i tworzony automatycznie dostaję taki snapshot nadany. By zademonstrować to ręcznie — wykonaj endpoint `/v1/movies/search` by zainicjować powstanie nowego filmu, wejdź na jego nowo poznany `slug`, a dopiero po tym odpytaj endpoint `/v1/movies/{nowy_slug}/refresh`. 
+**Troubleshooting (błąd braku snapshotu):**  
+Jeśli w odpowiedzi pojawi się błąd o braku snapshotu dla filmu, oznacza to, że ten film nie ma powiązanego rekordu z danymi ze źródła zewnętrznego (wymaganego do odświeżania). Często tak jest w danych z seedów. W środowisku produkcyjnym filmy utworzone z wyszukiwania mają taki snapshot. Aby przetestować refresh ręcznie: użyj `/v1/movies/search`, wejdź na zwrócony `slug`, a potem wywołaj `/v1/movies/{slug}/refresh`. 
 
 ### Scenario 1: List All Movies
 
@@ -449,6 +453,9 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&page=1&per_page=5" \
      -H "Accept: application/json" | jq
+
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&page=2&per_page=2" \
+     -H "Accept: application/json" | jq
    ```
 
 5. **Search by actor:**
@@ -457,6 +464,8 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
    curl -X GET "http://localhost:8000/api/v1/movies/search?actor=Keanu%20Reeves" \
      -H "Accept: application/json" | jq
    ```
+
+   **Expected:** `results` contain movies that have the given actor; each item has `source`, `slug` (or `suggested_slug` for external), `title`, `release_year`, `director`, and `has_description` (local) or `needs_creation` (external).
 
 6. **Search by multiple actors:**
 
@@ -469,11 +478,11 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
 
    ```bash
    # Sort by title ascending
-   curl -X GET "http://localhost:8000/api/v1/movies/search?q=star&sort=title&order=asc" \
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&sort=title&order=asc" \
      -H "Accept: application/json" | jq
    
    # Sort by release year descending
-   curl -X GET "http://localhost:8000/api/v1/movies/search?q=star&sort=release_year&order=desc" \
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&sort=release_year&order=desc" \
      -H "Accept: application/json" | jq
    ```
 
@@ -488,9 +497,11 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
 9. **Combined advanced search:**
 
    ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/search?q=action&year=2020&director=Nolan&page=1&per_page=10&sort=release_year&order=desc" \
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=action&year=2010&director=Nolan&page=1&per_page=10&sort=release_year&order=desc" \
      -H "Accept: application/json" | jq
    ```
+
+   **Expected:** `pagination` present with `current_page`, `per_page`, `total_pages`, `total`, `has_next_page`, `has_previous_page`; `results` array.
 
 10. **Search with source filter (local only):**
 
@@ -499,6 +510,8 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
       -H "Accept: application/json" | jq
     ```
 
+    **Expected:** Each result has `source: "local"`; `external_count` is `0`.
+
 11. **Search with source filter (external only):**
 
     ```bash
@@ -506,7 +519,41 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
       -H "Accept: application/json" | jq
     ```
 
-12. **Verify response:**
+    **Expected:** Each result has `source: "external"` (or `suggested_slug` and `needs_creation: true`); when only external results exist, `local_count` is `0`.
+
+12. **Verify response structure:**
+
+   ```json
+   {
+     "results": [
+       {
+         "source": "local",
+         "slug": "the-matrix-1999",
+         "title": "The Matrix",
+         "release_year": 1999,
+         "director": "The Wachowskis",
+         "has_description": true
+       }
+     ],
+     "total": 1,
+     "local_count": 1,
+     "external_count": 0,
+     "match_type": "exact",
+     "confidence": 1.0,
+     "pagination": {
+       "current_page": 1,
+       "per_page": 10,
+       "total_pages": 1,
+       "total": 1,
+       "has_next_page": false,
+       "has_previous_page": false
+     }
+   }
+   ```
+
+   **Note:** When no movies match (e.g. `q=NonexistentMovieXYZ123`), the API returns status 404 with `match_type: "none"`, `total: 0`, `results: []`. For multiple matches (disambiguation) status is 300. External results use `suggested_slug` and `needs_creation: true` instead of `slug` and `has_description`. The `pagination` key is only present when `page` and `per_page` query parameters are used.
+
+13. **Verify:**
     - [ ] Status code: `200 OK` (or `300` for disambiguation, `404` for not found)
     - [ ] Results match search criteria
     - [ ] Pagination works correctly
@@ -538,7 +585,7 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
      "slug": "the-matrix-1999",
      "title": "The Matrix",
      "release_year": 1999,
-     "director": "Wachowski Brothers",
+     "director": "The Wachowskis",
      "genres": ["Action", "Sci-Fi"],
      "default_description_id": 1,
      "descriptions_count": 1,
@@ -706,150 +753,59 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
 
 ### Scenario 5: Movie Disambiguation
 
-**Objective:** Verify handling of ambiguous movie slugs.
+**Objective:** Verify that when a search matches multiple movies (e.g. same title, different years), the API returns all options and you can open a specific one by slug.
 
 **Steps:**
 
-1. **Search for ambiguous title (e.g., "Bad Boys"):**
+1. **Search for a title that has multiple matches (e.g. "Bad Boys"):**
 
    ```bash
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=bad+boys" \
      -H "Accept: application/json" | jq
    ```
 
-2. **If disambiguation occurs (300 status):**
+   **Expected:** Status **200**. Standard search shape: `results`, `total`, `local_count`, `external_count`, `match_type`, `confidence`. For multiple matches, `match_type` is `"ambiguous"` and `results` lists each film (`source`, `slug`, `title`, `release_year`, `director`, `has_description`). Use a slug from `results` in step 3.
+
+2. **Example response when multiple movies match (200, standard search structure):**
 
    ```json
    {
-     "error": "Multiple movies found",
-     "message": "Multiple movies match your search criteria...",
-     "match_type": "ambiguous",
-     "count": 2,
      "results": [
        {
+         "source": "local",
          "slug": "bad-boys-1995",
          "title": "Bad Boys",
-         "release_year": 1995
+         "release_year": 1995,
+         "director": "Michael Bay",
+         "has_description": true
        },
        {
+         "source": "local",
          "slug": "bad-boys-ii-2003",
          "title": "Bad Boys II",
-         "release_year": 2003
+         "release_year": 2003,
+         "director": "Michael Bay",
+         "has_description": true
        }
      ],
-     "hint": "Use the slug from options to access specific movie..."
+     "total": 2,
+     "local_count": 2,
+     "external_count": 0,
+     "match_type": "ambiguous",
+     "confidence": 0.9
    }
    ```
 
-3. **Select specific movie:**
+   **Note:** Search returns **200** for ambiguous matches (not 300). Status 300 with `error`/`message` is used elsewhere (e.g. GET /movies/{slug} when slug is ambiguous and no selection is made).
+
+3. **Open one of the movies by slug:**
 
    ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies/bad-boys?slug=bad-boys-ii-2003" \
+   curl -X GET "http://localhost:8000/api/v1/movies/bad-boys-ii-2003" \
      -H "Accept: application/json" | jq
    ```
 
-   - [ ] Selected movie is returned
-
----
-
-**Objective:** Verify bulk retrieval of multiple movies using GET endpoint.
-
-**Steps:**
-
-1. **Bulk retrieve by slugs (GET - RESTful, recommended):**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,inception-2010" \
-     -H "Accept: application/json" | jq
-   ```
-
-2. **Verify response format:**
-
-   ```json
-   {
-     "data": [
-       {
-         "id": 1,
-         "slug": "the-matrix-1999",
-         "title": "The Matrix",
-         "release_year": 1999,
-         "_links": {...}
-       },
-       {
-         "id": 2,
-         "slug": "inception-2010",
-         "title": "Inception",
-         "release_year": 2010,
-         "_links": {...}
-       }
-     ],
-     "not_found": [],
-     "count": 2,
-     "requested_count": 2
-   }
-   ```
-
-3. **Verify:**
-   - [ ] Status code: `200 OK`
-   - [ ] `data` array contains requested movies
-   - [ ] Movies are returned in the same order as requested slugs
-   - [ ] `not_found` array lists slugs that don't exist
-   - [ ] `count` matches number of found movies
-   - [ ] `requested_count` matches number of requested slugs
-
-4. **Test with include parameter:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999&include=descriptions,people,genres" \
-     -H "Accept: application/json" | jq
-   ```
-
-   - [ ] `descriptions` array included when requested
-   - [ ] `people` array included when requested
-   - [ ] `genres` array included when requested
-
-5. **Test with non-existent slugs:**
-
-   ```bash
-   curl -X GET "http://localhost:8000/api/v1/movies?slugs=the-matrix-1999,non-existent-12345" \
-     -H "Accept: application/json" | jq
-   ```
-
-   - [ ] Status code: `200 OK`
-   - [ ] `data` contains only found movies
-   - [ ] `not_found` contains `["non-existent-12345"]`
-   - [ ] `count` is 1 (only one movie found)
-   - [ ] `requested_count` is 2
-
-6. **Test validation (max 50 slugs):**
-
-   ```bash
-   # Create a comma-separated list of 51 slugs (over limit)
-   slugs=$(printf "slug-%d," {1..51} | sed 's/,$//')
-   curl -X GET "http://localhost:8000/api/v1/movies?slugs=$slugs" \
-     -H "Accept: application/json" | jq
-   ```
-
-   - [ ] Status code: `422 Unprocessable Entity`
-   - [ ] Error message indicates max 50 slugs allowed
-
-7. **Test with POST fallback (for long lists):**
-
-   ```bash
-   curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
-     -H "Content-Type: application/json" \
-     -H "Accept: application/json" \
-     -d '{
-       "slugs": ["the-matrix-1999", "inception-2010"],
-       "include": ["descriptions", "people"]
-     }' | jq
-   ```
-
-   - [ ] Status code: `200 OK`
-   - [ ] Same response format as GET endpoint
-   - [ ] Useful for lists > 50 slugs (URL length limit)
-
-**Note:** GET endpoint is RESTful and recommended. POST endpoint is available as fallback for very long lists (>50 slugs) where URL length may be an issue.
+   - [ ] The chosen movie is returned (e.g. "Bad Boys II", 2003).
 
 ---
 
@@ -1410,12 +1366,13 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
 
 **Steps:**
 
-1. **Generate description:**
+1. **Generate description:** (requires API key – use `X-API-Key` header; create key in Admin → API Keys if needed)
 
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
      -H "Accept: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "MOVIE",
        "slug": "the-matrix-1999",
@@ -1471,6 +1428,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "MOVIE",
        "slug": "the-matrix-1999",
@@ -1484,6 +1442,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "MOVIE",
        "slug": "the-matrix-1999",
@@ -1497,6 +1456,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "MOVIE",
        "slug": "the-matrix-1999",
@@ -1561,6 +1521,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "MOVIE",
        "slug": "the-matrix-1999",
@@ -1620,6 +1581,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "MOVIE",
        "slug": "the-matrix-1999",
@@ -1644,6 +1606,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "PERSON",
        "slug": "keanu-reeves",
@@ -1657,6 +1620,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{
        "entity_type": "PERSON",
        "slug": "keanu-reeves",
@@ -2791,6 +2755,124 @@ Same logic as Movie Reports:
 
 ---
 
+## Webhooks
+
+This section covers **outgoing webhooks** (admin UI and configuration) and **incoming webhooks** (API endpoints). For the full test case (TC-UI-010), see [MANUAL_TEST_PLANS.md](qa/MANUAL_TEST_PLANS.md#tc-ui-010-webhook-management).
+
+### Outgoing Webhooks (Admin UI)
+
+Outgoing webhooks are used to notify external URLs when events occur (e.g. movie generation completed). Configuration is via `config/webhooks.php` and `webhooks.outgoing_urls`. The admin panel provides a list and details view.
+
+**Admin UI:**
+
+| URL | Description |
+|-----|-------------|
+| `GET /admin/outgoing-webhooks` | List outgoing webhook delivery attempts |
+| `GET /admin/outgoing-webhooks/create` | Add webhook endpoint (subscription) – saves to `webhook_subscriptions` |
+| `GET /admin/outgoing-webhooks/{id}` | View webhook details (payload, response, status) |
+
+#### Create form: add webhook endpoint (subscription)
+
+The Create form at `/admin/outgoing-webhooks/create` adds a **webhook subscription**: a URL that will receive POST requests when the selected event occurs. Subscriptions are stored in `webhook_subscriptions` and are used **together with** URLs from `.env` (see below). Each event sends to **every** URL from env and from subscriptions (deduplicated by URL).
+
+| Field (label)     | Required | Allowed values / examples |
+|-------------------|----------|---------------------------|
+| Event type        | Yes      | From config; e.g. `movie.generation.completed` |
+| Webhook URL       | Yes      | Valid URL, max 500 chars; e.g. `https://example.com/webhook` |
+
+**Event types (from config):** The form offers a select of event types from `config/webhooks.php` → `outgoing_urls` keys (e.g. `movie.generation.completed`, `person.generation.completed`). After saving, you are redirected to the Outgoing Webhooks list (delivery history). The list page shows **delivery attempts** (`outgoing_webhooks`), not the list of subscriptions.
+
+**Gdzie się dodaje webhooki (adresy, na które system ma wysyłać powiadomienia)**
+
+Adresy są z **dwóch źródeł** (używane łącznie, bez duplikatów po URL):
+
+1. **Plik `api/.env`** (zmienne `WEBHOOK_URL_*`) – pierwsze źródło.
+2. **Formularz w panelu** (`/admin/outgoing-webhooks/create`) – zapis do tabeli `webhook_subscriptions` („subskrypcje”). Przy zdarzeniu wysyłka idzie do **każdego** URL z env oraz z subskrypcji.
+
+**Zmienne w .env:**
+
+| Chcesz powiadomienie gdy… | Zmienna w .env | Uwaga |
+|---------------------------|----------------|--------|
+| Zlecono generowanie (film) | ` ` | Obecnie używane przy **zleceniu** (request), nie po zakończeniu. |
+| Zlecono generowanie (osoba) | `WEBHOOK_URL_PERSON_GENERATION_COMPLETED` | jw. |
+| Ogólne „completed” | `WEBHOOK_URL_GENERATION_COMPLETED` | Fallback, gdy brak powyższych. |
+| „Failed” (film / osoba / ogólne) | `WEBHOOK_URL_MOVIE_GENERATION_FAILED`, `WEBHOOK_URL_PERSON_GENERATION_FAILED`, `WEBHOOK_URL_GENERATION_FAILED` | W configu są, ale **obecnie żaden kod nie wysyła** na te URL-e – brak eventów „generation failed”. |
+
+- **Przykład w .env:**  
+  `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://twoja-aplikacja.pl/webhook/moviemind`  
+  (jeden URL na linię; można mieć wiele URLi dopisując je w `config/webhooks.php` do tablicy).
+
+**1. Request i response (WEBHOOK_URL_* z env)**
+
+- **Request (MovieMind → Twój URL):** Metoda `POST`. Nagłówki: `Content-Type: application/json`, `User-Agent: MovieMind-API/1.0`, opcjonalnie `X-MovieMind-Webhook-Signature` (HMAC-SHA256 body, gdy ustawione `OUTGOING_WEBHOOK_SECRET`). Body: JSON, np. `{"entity_type":"MOVIE","slug":"the-matrix-1999","job_id":"uuid","locale":"en-US","context_tag":"modern"}`.
+- **Response (Twój serwer → MovieMind):** 2xx → rekord w `outgoing_webhooks` dostaje `status=sent`, zapisane `response_code`, `response_body`, `sent_at`. 4xx/5xx lub wyjątek → `status=failed` (potem ewentualnie `permanently_failed`), zapisane `error_message`, `response_code`, `response_body`; ustawiane `next_retry_at` i dispatch retry job.
+
+**2. Czy WEBHOOK_URL z env działają?**
+
+Tak. Listener bierze URL-e z `config('webhooks.outgoing_urls')` (z `env('WEBHOOK_URL_*')`) oraz z tabeli `webhook_subscriptions` (adresy dodane formularzem). Warunek: flaga `webhook_notifications` włączona; wysyłka idzie na każdy niepusty URL (env + subskrypcje), bez duplikatów.
+
+**3. Jak przetestować manualnie?**
+
+1. W `api/.env` ustaw np. `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://webhook.site/...` (lub inny odbiornik, np. RequestBin).
+2. Włącz flagę `webhook_notifications` (panel Admin → Feature Flags lub API).
+3. Wywołaj `POST /api/v1/generate` z body `{"entity_type":"MOVIE","slug":"the-matrix-1999"}` oraz nagłówkiem `X-API-Key: YOUR_API_KEY` (Accept: application/json).
+4. Sprawdź w panelu **Outgoing Webhooks** (`/admin/outgoing-webhooks`): pojawia się rekord z payloadem, statusem (sent/failed), response_code i response_body.
+5. Sprawdź u odbiornika (webhook.site itd.), że dostał POST z opisanym wyżej body i nagłówkami.
+
+**Test env + formularz (subskrypcje):**
+
+1. Ustaw w `.env` jeden URL (np. `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://webhook.site/abc`) i włącz `webhook_notifications`.
+2. W panelu wejdź na **Outgoing Webhooks** → **New Outgoing Webhook** (Create). Wypełnij Event type `movie.generation.completed` i drugi URL (np. inny adres na webhook.site lub RequestBin). Zapisz – nastąpi przekierowanie na listę.
+3. Wywołaj `POST /api/v1/generate` (film) z nagłówkiem `X-API-Key`.
+4. W panelu **Outgoing Webhooks** sprawdź, że w historii dostaw są **dwa** rekordy (jeden na URL z env, drugi na URL z formularza), o ile oba URLe są różne.
+5. U obu odbiorników sprawdź, że każdy dostał POST z tym samym body i nagłówkami.
+
+- **Ważne:** Żeby być informowanym **gdy opis został wygenerowany** i **gdy opis nie został wygenerowany**, aplikacja musiałaby wysyłać webhooki przy zakończeniu joba (sukces / błąd). Obecnie w kodzie jest tylko wysyłka przy **zleceniu** generowania (request). Realizacja „completed” i „failed” wymaga dopisania eventów (np. MovieGenerationCompleted, MovieGenerationFailed) i listenera – to osobne zadanie w backlogu.
+
+#### Kiedy webhook jest wysyłany (env + subskrypcje)
+
+- **Źródła URLi:** Aplikacja wysyła POST na **każdy** adres z: (1) `config('webhooks.outgoing_urls')` (z `.env`: `WEBHOOK_URL_*`) oraz (2) tabeli `webhook_subscriptions` (adresy dodane formularzem w panelu). Duplikaty po URL są usuwane.
+- **Formularz Create** (`/admin/outgoing-webhooks/create`): dodaje **subskrypcję** (event_type + URL). Po zapisie następne zdarzenia będą wysyłać też na ten URL (obok URLi z env).
+- **Kiedy wysyłka:** Gdy zachodzi zdarzenie (np. wywołanie `POST /api/v1/generate` dla filmu/osoby), listener zbiera URLe (env + subskrypcje dla danego event_type), a następnie dla każdego URL tworzy rekord w `outgoing_webhooks` i wysyła POST. Odpowiedź 2xx → status `sent`; 4xx/5xx → `failed` i ewentualny retry.
+
+**Przykład requestu, który dostaje Twój serwer:**
+
+- Metoda: `POST`
+- Nagłówki: `Content-Type: application/json`, `User-Agent: MovieMind-API/1.0`, opcjonalnie `X-MovieMind-Webhook-Signature` (podpis, jeśli w .env jest `OUTGOING_WEBHOOK_SECRET`).
+- Body (JSON), np.: `{"entity_type":"MOVIE","slug":"the-matrix-1999","job_id":"uuid","locale":"en-US","context_tag":"modern"}`
+
+**Odpowiedź Twojego serwera:**
+
+- **200 OK** (lub inny 2xx) → aplikacja ustawia status `sent`, zapisuje kod i body odpowiedzi.
+- **4xx/5xx lub timeout** → status `failed`, zapisuje błąd; po pewnym czasie aplikacja może ponowić wysyłkę (retry).
+
+**Steps (manual):**
+
+1. Log in to the admin panel (`/admin`).
+2. Navigate to **Outgoing Webhooks** (`/admin/outgoing-webhooks`).
+3. Verify the list loads (delivery history; may be empty).
+4. Open **Create** (`/admin/outgoing-webhooks/create`): form has **Event type** and **Webhook URL** only. Add a subscription and save – redirect to list; notification "Webhook endpoint added".
+5. If any delivery records exist, click **View** and verify payload, status, and response data.
+
+**Expected:**
+
+- List page returns 200; table shows event_type, url, status, attempts, response_code (delivery attempts).
+- Create page returns 200; form has Event type and Webhook URL; after save, redirect to list.
+- View page shows full delivery record including error_message when present.
+
+### Incoming Webhooks (API)
+
+The API exposes endpoints for incoming webhooks (e.g. billing providers). These may return 501 until implemented.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/webhooks/billing` | Billing provider webhook (e.g. Stripe) |
+| `POST` | `/api/v1/webhooks/notification` | Notification webhook |
+
+**Note:** If the implementation returns `501 Not Implemented`, document that and verify the response shape. See [BillingWebhooksTest](api/tests/Feature/BillingWebhooksTest.php) for current behaviour.
+
+---
+
 ## ⚡ Adaptive Rate Limiting
 
 ### Overview
@@ -2846,9 +2928,10 @@ then automatically adjusts rate limits to maintain stability.
    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix" \
      -H "Accept: application/json" -i | grep -i "rate"
    
-   # Generate endpoint
+   # Generate endpoint (requires X-API-Key)
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' \
      -i | grep -i "rate"
    
@@ -2933,10 +3016,11 @@ then automatically adjusts rate limits to maintain stability.
 2. **Generate system load:**
 
    ```bash
-   # Option A: Fill queue with jobs
+   # Option A: Fill queue with jobs (requires X-API-Key)
    for i in {1..1000}; do
      curl -X POST "http://localhost:8000/api/v1/generate" \
        -H "Content-Type: application/json" \
+       -H "X-API-Key: YOUR_API_KEY" \
        -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' -s > /dev/null
    done
    
@@ -3002,6 +3086,7 @@ then automatically adjusts rate limits to maintain stability.
    ```bash
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' \
      -w "%{http_code}\n" -o /dev/null -s
    # Should return: 202 (or 429 only if generate limit also exceeded)
@@ -3034,10 +3119,11 @@ then automatically adjusts rate limits to maintain stability.
 1. **Simulate critical system load:**
 
    ```bash
-   # Fill queue to maximum
+   # Fill queue to maximum (requires X-API-Key)
    for i in {1..2000}; do
      curl -X POST "http://localhost:8000/api/v1/generate" \
        -H "Content-Type: application/json" \
+       -H "X-API-Key: YOUR_API_KEY" \
        -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' -s > /dev/null
    done
    
@@ -3059,9 +3145,10 @@ then automatically adjusts rate limits to maintain stability.
      -H "Accept: application/json" -i | grep "X-RateLimit-Limit"
    # Should show: X-RateLimit-Limit: 20 (minimum)
    
-   # Generate endpoint (minimum: 2 req/min)
+   # Generate endpoint (minimum: 2 req/min; requires X-API-Key)
    curl -X POST "http://localhost:8000/api/v1/generate" \
      -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
      -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' \
      -i | grep "X-RateLimit-Limit"
    # Should show: X-RateLimit-Limit: 2 (minimum)
@@ -3097,10 +3184,11 @@ then automatically adjusts rate limits to maintain stability.
 1. **Generate load and verify reduction:**
 
    ```bash
-   # Generate load
+   # Generate load (requires X-API-Key)
    for i in {1..1000}; do
      curl -X POST "http://localhost:8000/api/v1/generate" \
        -H "Content-Type: application/json" \
+       -H "X-API-Key: YOUR_API_KEY" \
        -d '{"entity_type": "MOVIE", "slug": "the-matrix-1999"}' -s > /dev/null
    done
    

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
+use App\Events\MovieGenerationCompleted;
+use App\Events\MovieGenerationFailed;
 use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
 use App\Jobs\SendOutgoingWebhookJob;
+use App\Models\WebhookSubscription;
 use App\Services\OutgoingWebhookService;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
 use Laravel\Pennant\Feature;
 
 /**
@@ -18,68 +20,40 @@ use Laravel\Pennant\Feature;
  * Listens to:
  * - MovieGenerationRequested
  * - PersonGenerationRequested
- * - (Future: MovieGenerationCompleted, PersonGenerationCompleted, etc.)
+ * - MovieGenerationCompleted
+ * - MovieGenerationFailed
  */
 class SendOutgoingWebhookListener
 {
-    /**
-     * Handle incoming events and route to appropriate handler.
-     */
-    public function handle(MovieGenerationRequested|PersonGenerationRequested $event): void
+    public function handle(MovieGenerationRequested|PersonGenerationRequested|MovieGenerationCompleted|MovieGenerationFailed $event): void
     {
         if ($event instanceof MovieGenerationRequested) {
             $this->handleMovieGenerationRequested($event);
         } elseif ($event instanceof PersonGenerationRequested) {
             $this->handlePersonGenerationRequested($event);
+        } elseif ($event instanceof MovieGenerationCompleted) {
+            $this->handleMovieGenerationCompleted($event);
+        } elseif ($event instanceof MovieGenerationFailed) {
+            $this->handleMovieGenerationFailed($event);
         }
     }
 
-    /**
-     * Handle MovieGenerationRequested event.
-     */
     public function handleMovieGenerationRequested(MovieGenerationRequested $event): void
     {
-        Log::info('SendOutgoingWebhookListener: handleMovieGenerationRequested called', [
-            'slug' => $event->slug,
-            'job_id' => $event->jobId,
-        ]);
-
         if (! Feature::active('webhook_notifications')) {
-            Log::info('SendOutgoingWebhookListener: webhook_notifications feature flag is OFF');
-
             return;
         }
 
-        // Get outgoing URLs - use direct array access because keys contain dots
-        $outgoingUrls = Config::get('webhooks.outgoing_urls', []);
-        $urls = $outgoingUrls['movie.generation.completed'] ?? [];
-
-        // Fallback to generic generation.completed if movie-specific not configured
+        $urls = $this->getUrlsForEvent('movie.generation.requested', 'movie.generation.completed', 'generation.completed');
         if (empty($urls)) {
-            $urls = $outgoingUrls['generation.completed'] ?? [];
-        }
-
-        Log::info('SendOutgoingWebhookListener: URLs found', [
-            'movie_urls' => $outgoingUrls['movie.generation.completed'] ?? [],
-            'generic_urls' => $outgoingUrls['generation.completed'] ?? [],
-            'final_urls' => $urls,
-        ]);
-
-        if (empty($urls)) {
-            Log::info('SendOutgoingWebhookListener: No webhook URLs configured, skipping');
-
             return;
         }
 
+        $webhookService = app(OutgoingWebhookService::class);
         foreach ($urls as $url) {
             if (empty($url)) {
-                Log::warning('SendOutgoingWebhookListener: Empty URL in array, skipping', ['urls' => $urls]);
-
                 continue;
             }
-
-            // Create outgoing webhook and dispatch job
-            $webhookService = app(OutgoingWebhookService::class);
             $webhook = $webhookService->sendWebhook(
                 eventType: 'movie.generation.requested',
                 payload: [
@@ -91,8 +65,6 @@ class SendOutgoingWebhookListener
                 ],
                 url: $url
             );
-
-            // If webhook failed, dispatch retry job
             if ($webhook->isFailed()) {
                 SendOutgoingWebhookJob::dispatch($webhook->id)
                     ->delay($webhook->next_retry_at);
@@ -100,30 +72,20 @@ class SendOutgoingWebhookListener
         }
     }
 
-    /**
-     * Handle PersonGenerationRequested event.
-     */
     public function handlePersonGenerationRequested(PersonGenerationRequested $event): void
     {
         if (! Feature::active('webhook_notifications')) {
             return;
         }
 
-        // Get outgoing URLs - use direct array access because keys contain dots
-        $outgoingUrls = Config::get('webhooks.outgoing_urls', []);
-        $urls = $outgoingUrls['person.generation.completed'] ?? [];
-
-        // Fallback to generic generation.completed if person-specific not configured
+        $urls = $this->getUrlsForEvent('person.generation.completed', 'generation.completed');
         if (empty($urls)) {
-            $urls = $outgoingUrls['generation.completed'] ?? [];
+            return;
         }
-
         foreach ($urls as $url) {
             if (empty($url)) {
                 continue;
             }
-
-            // Create outgoing webhook and dispatch job
             $webhookService = app(OutgoingWebhookService::class);
             $webhook = $webhookService->sendWebhook(
                 eventType: 'person.generation.requested',
@@ -136,12 +98,108 @@ class SendOutgoingWebhookListener
                 ],
                 url: $url
             );
-
-            // If webhook failed, dispatch retry job
             if ($webhook->isFailed()) {
                 SendOutgoingWebhookJob::dispatch($webhook->id)
                     ->delay($webhook->next_retry_at);
             }
         }
+    }
+
+    public function handleMovieGenerationCompleted(MovieGenerationCompleted $event): void
+    {
+        if (! Feature::active('webhook_notifications')) {
+            return;
+        }
+
+        $urls = $this->getUrlsForEvent('movie.generation.completed', 'generation.completed');
+        if (empty($urls)) {
+            return;
+        }
+
+        $webhookService = app(OutgoingWebhookService::class);
+        foreach ($urls as $url) {
+            if (empty($url)) {
+                continue;
+            }
+            $webhook = $webhookService->sendWebhook(
+                eventType: 'movie.generation.completed',
+                payload: [
+                    'entity_type' => 'MOVIE',
+                    'job_id' => $event->jobId,
+                    'slug' => $event->slug,
+                    'entity_id' => $event->entityId,
+                    'description_id' => $event->descriptionId,
+                    'locale' => $event->locale,
+                    'context_tag' => $event->contextTag,
+                ],
+                url: $url
+            );
+            if ($webhook->isFailed()) {
+                SendOutgoingWebhookJob::dispatch($webhook->id)
+                    ->delay($webhook->next_retry_at);
+            }
+        }
+    }
+
+    public function handleMovieGenerationFailed(MovieGenerationFailed $event): void
+    {
+        if (! Feature::active('webhook_notifications')) {
+            return;
+        }
+
+        $urls = $this->getUrlsForEvent('movie.generation.failed', 'generation.failed');
+        if (empty($urls)) {
+            return;
+        }
+
+        $webhookService = app(OutgoingWebhookService::class);
+        foreach ($urls as $url) {
+            if (empty($url)) {
+                continue;
+            }
+            $webhook = $webhookService->sendWebhook(
+                eventType: 'movie.generation.failed',
+                payload: [
+                    'entity_type' => 'MOVIE',
+                    'job_id' => $event->jobId,
+                    'slug' => $event->slug,
+                    'error_message' => $event->errorMessage,
+                    'locale' => $event->locale,
+                    'context_tag' => $event->contextTag,
+                ],
+                url: $url
+            );
+            if ($webhook->isFailed()) {
+                SendOutgoingWebhookJob::dispatch($webhook->id)
+                    ->delay($webhook->next_retry_at);
+            }
+        }
+    }
+
+    /**
+     * @param  string  $primaryKey  Event type key (e.g. movie.generation.completed)
+     * @param  string  ...$fallbackKeys  Optional fallback keys if primary has no URLs
+     * @return array<int, string>
+     */
+    public function getUrlsForEvent(string $primaryKey, string ...$fallbackKeys): array
+    {
+        $outgoingUrls = Config::get('webhooks.outgoing_urls', []);
+        $fromConfig = $outgoingUrls[$primaryKey] ?? [];
+        foreach ($fallbackKeys as $key) {
+            if (! empty($fromConfig)) {
+                break;
+            }
+            $fromConfig = $outgoingUrls[$key] ?? [];
+        }
+        $fromConfig = is_array($fromConfig) ? array_filter($fromConfig) : [];
+
+        $fromSubscriptions = WebhookSubscription::where('event_type', $primaryKey)
+            ->pluck('url')
+            ->filter()
+            ->all();
+
+        $merged = array_values(array_unique(array_merge($fromConfig, $fromSubscriptions)));
+
+        return array_values(array_filter($merged, fn (mixed $url): bool => trim((string) $url) !== ''));
     }
 }

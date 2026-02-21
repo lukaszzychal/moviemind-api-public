@@ -102,6 +102,14 @@ return [
     ],
 
     // Admin / operations
+    'webhook_notifications' => [
+        'default' => env('FEATURE_WEBHOOK_NOTIFICATIONS', true),
+        'force' => env('FEATURE_WEBHOOK_NOTIFICATIONS_FORCE'),
+        'name' => 'Webhook Notifications',
+        'description' => 'Send outgoing webhooks when generation events occur (e.g. to webhook.site).',
+        'category' => 'operations',
+        'togglable' => true,
+    ],
     'debug_endpoints' => [
         'default' => env('FEATURE_DEBUG_ENDPOINTS', false),
         'force' => env('FEATURE_DEBUG_ENDPOINTS_FORCE'),

@@ -55,37 +55,18 @@ return [
     |
     | Format: 'event_type' => ['url1', 'url2', ...]
     |
-    | Example:
-    | 'outgoing_urls' => [
-    |     'generation.completed' => [
-    |         env('WEBHOOK_URL_GENERATION_COMPLETED'),
-    |     ],
-    |     'generation.failed' => [
-    |         env('WEBHOOK_URL_GENERATION_FAILED'),
-    |     ],
-    | ],
+    | In .env you can pass multiple URLs per variable (comma-separated):
+    |   WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://one.webhook.cool,https://two.webhook.cool
     |
     */
-
     'outgoing_urls' => [
-        'generation.completed' => array_filter([
-            env('WEBHOOK_URL_GENERATION_COMPLETED'),
-        ]),
-        'generation.failed' => array_filter([
-            env('WEBHOOK_URL_GENERATION_FAILED'),
-        ]),
-        'movie.generation.completed' => array_filter([
-            env('WEBHOOK_URL_MOVIE_GENERATION_COMPLETED'),
-        ]),
-        'movie.generation.failed' => array_filter([
-            env('WEBHOOK_URL_MOVIE_GENERATION_FAILED'),
-        ]),
-        'person.generation.completed' => array_filter([
-            env('WEBHOOK_URL_PERSON_GENERATION_COMPLETED'),
-        ]),
-        'person.generation.failed' => array_filter([
-            env('WEBHOOK_URL_PERSON_GENERATION_FAILED'),
-        ]),
+        'generation.completed' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_GENERATION_COMPLETED', ''))))),
+        'generation.failed' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_GENERATION_FAILED', ''))))),
+        'movie.generation.requested' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_MOVIE_GENERATION_REQUESTED', ''))))),
+        'movie.generation.completed' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_MOVIE_GENERATION_COMPLETED', ''))))),
+        'movie.generation.failed' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_MOVIE_GENERATION_FAILED', ''))))),
+        'person.generation.completed' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_PERSON_GENERATION_COMPLETED', ''))))),
+        'person.generation.failed' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBHOOK_URL_PERSON_GENERATION_FAILED', ''))))),
     ],
 
     /*

@@ -73,4 +73,13 @@ class AdminPanelTest extends TestCase
             ->get('/admin/outgoing-webhooks')
             ->assertSuccessful();
     }
+
+    public function test_admin_can_open_outgoing_webhook_create_page(): void
+    {
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->get('/admin/outgoing-webhooks/create')
+            ->assertSuccessful();
+    }
 }

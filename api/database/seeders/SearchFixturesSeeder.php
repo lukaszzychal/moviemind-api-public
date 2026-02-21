@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\RelationshipType;
 use App\Models\Movie;
+use App\Models\MovieRelationship;
 use App\Models\Person;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -25,6 +27,8 @@ class SearchFixturesSeeder extends Seeder
 
         $this->seedYearOnlyFixture();
         $this->seedMultipleActorsForMatrix();
+        $this->seedBadBoysDisambiguation();
+        $this->seedRelatedMovies();
     }
 
     /**
@@ -65,5 +69,54 @@ class SearchFixturesSeeder extends Seeder
                 'billing_order' => 2,
             ],
         ]);
+    }
+
+    /**
+     * Bad Boys (1995) and Bad Boys II (2003) for disambiguation Scenario 5.
+     * Ensures GET /movies/search?q=bad+boys returns both and
+     * GET /movies/bad-boys?slug=bad-boys-ii-2003 returns the movie (no generation queued).
+     */
+    private function seedBadBoysDisambiguation(): void
+    {
+        Movie::firstOrCreate(
+            ['slug' => 'bad-boys-1995'],
+            [
+                'title' => 'Bad Boys',
+                'release_year' => 1995,
+                'director' => 'Michael Bay',
+            ]
+        );
+        Movie::firstOrCreate(
+            ['slug' => 'bad-boys-ii-2003'],
+            [
+                'title' => 'Bad Boys II',
+                'release_year' => 2003,
+                'director' => 'Michael Bay',
+            ]
+        );
+    }
+
+    /**
+     * One related-movie link (The Matrix <-> Inception) so GET /movies/the-matrix-1999/related
+     * returns at least one result. See Scenario 8 and TC-MOVIE-006.
+     */
+    private function seedRelatedMovies(): void
+    {
+        $matrix = Movie::where('slug', 'the-matrix-1999')->first();
+        $inception = Movie::where('slug', 'inception-2010')->first();
+        if (! $matrix || ! $inception) {
+            return;
+        }
+
+        MovieRelationship::firstOrCreate(
+            [
+                'movie_id' => $matrix->id,
+                'related_movie_id' => $inception->id,
+            ],
+            [
+                'relationship_type' => RelationshipType::SAME_UNIVERSE,
+                'order' => 1,
+            ]
+        );
     }
 }
