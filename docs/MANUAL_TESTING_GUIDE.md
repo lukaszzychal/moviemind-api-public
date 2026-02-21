@@ -333,13 +333,13 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&year=1999" | jq
 
 ```bash
 # Limit local results to 5
-curl -X GET "http://localhost:8000/api/v1/movies/search?q=&local_limit=5" | jq
+curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&local_limit=5" | jq
 
 # Limit external results to 3
 curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&external_limit=3" | jq
 
 # Both limits
-curl -X GET "http://localhost:8000/api/v1/movies/search?q=&local_limit=5&external_limit=10" | jq
+curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&local_limit=5&external_limit=10" | jq
 ```
 
 **Get movie details:**
