@@ -272,6 +272,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
 **Prerequisites:**
 - API key with Free plan or higher
 - Movies exist in database
+- For **all** search use cases (actor-only, director-only, year-only, multiple actors, pagination), run `php artisan migrate --seed` so search fixtures are present. See [Search use cases and fixtures](SEARCH_USE_CASES_AND_FIXTURES.md) for the full matrix and expected results.
 
 **Steps:**
 1. Send `GET /api/v1/movies/search?q=matrix` with valid API key

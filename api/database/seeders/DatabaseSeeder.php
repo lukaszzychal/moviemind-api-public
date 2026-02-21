@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
                 MovieSeeder::class,
                 PeopleSeeder::class,
                 ActorSeeder::class, // Creates Keanu Reeves and links to The Matrix
+                SearchFixturesSeeder::class, // Data for every search use case (year-only, multiple actors)
             ]);
         }
     }

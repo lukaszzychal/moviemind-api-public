@@ -374,6 +374,9 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
 # Refresh "Inception" (2010) from TMDb source
 curl -X POST "http://localhost:8000/api/v1/movies/inception-2010/refresh" \
   -H "Accept: application/json" | jq
+
+curl -X GET "http://localhost:8000/api/v1/movies/inception-2010" | jq 
+
 ```
 
 **Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
@@ -415,6 +418,8 @@ Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku sn
 ### Scenario 2: Advanced Movie Search
 
 **Objective:** Verify advanced search with multiple criteria.
+
+**Prerequisites:** For predictable results (e.g. actor-only, year-only, multiple actors), run `php artisan migrate --seed` so the DB contains search fixtures (MovieSeeder, PeopleSeeder, ActorSeeder, SearchFixturesSeeder). Otherwise some cases may correctly return 0 results because the data is missing. See [Search use cases and fixtures](qa/SEARCH_USE_CASES_AND_FIXTURES.md) for the full matrix and required data.
 
 **Steps:**
 
