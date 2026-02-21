@@ -34,7 +34,7 @@ This document provides comprehensive manual testing instructions for all MovieMi
 
 - **Movies:** Search, retrieve, refresh, and relationships
 - **People:** Search, retrieve, refresh
-- **TV Series & TV Shows:** Search, retrieve, TMDb verification (see [dedicated guide](./TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md))
+- **TV Series & TV Shows:** Search, retrieve, TMDb verification (see [dedicated guide](qa/TMDB_VERIFICATION_TV.md))
 - **Generate:** AI description and bio generation
 - **Jobs:** Asynchronous job status tracking
 - **Movie Reports:** User error reporting and admin management
@@ -70,7 +70,12 @@ Ensure these are configured in `.env`:
 ```bash
 TMDB_API_KEY=your_tmdb_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
-QUEUE_CONNECTION=redis  # or database
+AI_SERVICE=real # or mock
+ADMIN_BASIC_AUTH_USER=admin     # basicAuth (http, Basic) - Login
+ADMIN_BASIC_AUTH_PASSWORD=secret # basicAuth (http, Basic) - Password
+ADMIN_API_TOKEN=your_token       # AdminToken (apiKey) - Name: X-Admin-Token
+# ApiKeyAuth (apiKey): Name: X-API-Key (Header) - Generated via --seed
+QUEUE_CONNECTION=redis
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 ```
@@ -139,6 +144,8 @@ export LOAD_FIXTURES=true  # or 'false' (load test fixtures)
 export DOCKER_COMPOSE_CMD="docker compose"
 ```
 
+> **Tip:** You can add `ADMIN_BASIC_AUTH_PASSWORD=password` to your `api/.env` file to automatically handle admin authentication without setting environment variables every time. The setup script will detect this and use it for admin operations.
+
 **After running the script:**
 
 - ✅ All Docker containers are running
@@ -167,6 +174,9 @@ export DOCKER_COMPOSE_CMD="docker compose"
 cd api
 php artisan serve
 # Server should start on http://localhost:8000
+
+# Or with Docker Compose:
+docker compose exec php php artisan serve
 ```
 
 **Verify API health:**
@@ -191,8 +201,13 @@ curl -X GET "https://api.themoviedb.org/3/movie/603?api_key=${TMDB_API_KEY}" \
 #### Step 2: Run Migrations
 
 ```bash
+# Run migrations via local PHP:
 cd api
 php artisan migrate
+
+# Or with Docker Compose:
+docker compose exec php php artisan migrate
+
 # Should show all migrations completed
 ```
 
@@ -202,8 +217,11 @@ php artisan migrate
 # Check if tables exist (PostgreSQL)
 psql -d moviemind -c "\dt"
 
-# Or check via Laravel tinker
+# Check via local Laravel tinker
 php artisan tinker
+
+# Or with Docker Compose:
+docker compose exec php php artisan tinker
 >>> Schema::hasTable('movies')
 # Should return: true
 ```
@@ -216,6 +234,9 @@ php artisan tinker
 cd api
 php artisan horizon
 # Horizon dashboard available at http://localhost:8000/horizon
+
+# Or with Docker Compose:
+docker compose exec php php artisan horizon
 ```
 
 **Option B: Standard Queue Worker**
@@ -245,6 +266,34 @@ curl -X GET "http://localhost:8000/api/v1/health/tmdb"
 
 # Note: Both endpoints verify API connectivity and configuration
 ```
+
+---
+
+## 🔐 Authentication & Authorization
+
+The API uses three types of authorization depending on the endpoint and environment.
+
+| Authorization Type | Header / Method | Used For | Example |
+|-------------------|-----------------|----------|---------|
+| **ApiKeyAuth** | `X-API-Key` | Public API (e.g., `/generate`, `/movies`) | `mm_abc123...` |
+| **AdminToken** | `X-Admin-Token` | Admin API (`/api/v1/admin/*`) | Token from `.env` |
+| **Basic Auth** | `Authorization` | Horizon Dashboard (Production only) | `Basic base64(user:pass)` |
+
+### Details
+
+1.  **ApiKeyAuth (Public API)**
+    *   Required for public API endpoints.
+    *   Header: `X-API-Key: <your_api_key>`
+
+2.  **AdminToken (Admin API)**
+    *   Required for all endpoints under `/api/v1/admin/`.
+    *   Header: `X-Admin-Token: <your_admin_token>`
+    *   Token is configured in `.env` file (`ADMIN_API_TOKEN`).
+
+3.  **Basic Auth (Horizon UI)**
+    *   Protects the Laravel Horizon dashboard (`/horizon`) in **Production** environment.
+    *   Credentials are configured via `HORIZON_BASIC_AUTH_USER` and `HORIZON_BASIC_AUTH_PASSWORD` in `.env`.
+    *   **Note:** In `local` environment, Basic Auth is disabled for Horizon.
 
 ---
 
@@ -315,12 +364,17 @@ curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
 
 **Refresh movie (⚠️ requires POST method):**
 
+Ten endpoint odświeża dane o filmie (np. The Matrix). Pobiera on jego najnowsze informacje za pomocą zewnętrznego API (z TMDb), aktualizuje nasz zapisany lokalnie snapshot oraz czyści pamięć podręczną (cache) aplikacji. Skutkiem tego jest to, że przy następnym zapytaniu z użyciem metody GET, API pobierze dla nas zaktualizowane i najświeższe dane.
+
 ```bash
 curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
   -H "Accept: application/json" | jq
 ```
 
 **Note:** This endpoint requires `POST` method. Using `GET` will return `405 Method Not Allowed`.
+
+**Troubleshooting (`{"error": "No TMDb snapshot found for this movie"}`):**
+Jeśli w odpowiedzi na powyższe zapytanie pojawi się opisany błąd o braku snapshotu, oznacza to, że odpytywany film nie posiada powiązanego rekordu przechowującego pierwotne pobrane dane z zewnętrznej bazy TMDb (z numerem ID wymaganym do odświeżania). Taki stan ma najczęściej miejsce w wygenerowanych testowych "seederach". W środowisku produkcyjnym, każdy film początkowo importowany z wyszukiwania i tworzony automatycznie dostaję taki snapshot nadany. By zademonstrować to ręcznie — wykonaj endpoint `/v1/movies/search` by zainicjować powstanie nowego filmu, wejdź na jego nowo poznany `slug`, a dopiero po tym odpytaj endpoint `/v1/movies/{nowy_slug}/refresh`. 
 
 ### Scenario 1: List All Movies
 
@@ -387,11 +441,69 @@ curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
      -H "Accept: application/json" | jq
    ```
 
-5. **Verify response:**
-   - [ ] Status code: `200 OK` (or `300` for disambiguation, `404` for not found)
-   - [ ] Results match search criteria
-   - [ ] Pagination works correctly
-   - [ ] Disambiguation handled properly (if multiple matches)
+5. **Search by actor:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?actor=Keanu%20Reeves" \
+     -H "Accept: application/json" | jq
+   ```
+
+6. **Search by multiple actors:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?actor[]=Keanu%20Reeves&actor[]=Laurence%20Fishburne" \
+     -H "Accept: application/json" | jq
+   ```
+
+7. **Search with sorting:**
+
+   ```bash
+   # Sort by title ascending
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=star&sort=title&order=asc" \
+     -H "Accept: application/json" | jq
+   
+   # Sort by release year descending
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=star&sort=release_year&order=desc" \
+     -H "Accept: application/json" | jq
+   ```
+
+8. **Search with local/external limits:**
+
+   ```bash
+   # Limit results from local DB to 5, external (TMDb) to 10
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&local_limit=5&external_limit=10" \
+     -H "Accept: application/json" | jq
+   ```
+
+9. **Combined advanced search:**
+
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/movies/search?q=action&year=2020&director=Nolan&page=1&per_page=10&sort=release_year&order=desc" \
+     -H "Accept: application/json" | jq
+   ```
+
+10. **Search with source filter (local only):**
+
+    ```bash
+    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&source=local" \
+      -H "Accept: application/json" | jq
+    ```
+
+11. **Search with source filter (external only):**
+
+    ```bash
+    curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&source=external" \
+      -H "Accept: application/json" | jq
+    ```
+
+12. **Verify response:**
+    - [ ] Status code: `200 OK` (or `300` for disambiguation, `404` for not found)
+    - [ ] Results match search criteria
+    - [ ] Pagination works correctly
+    - [ ] Disambiguation handled properly (if multiple matches)
+    - [ ] Sorting applied correctly
+    - [ ] Actor filters work as expected
+    - [ ] Source filters only return records from the requested source (local or external)
 
 ---
 
@@ -1095,8 +1207,8 @@ docker compose exec php php artisan tinker
 
 > **Status:** ✅ **Implemented**  
 > **Related Guides:** 
-> - [TMDb Verification Testing for TV Series & TV Shows](./TESTING_TMDB_VERIFICATION_TV_SERIES_TV_SHOWS.md)
-> - [Advanced Endpoints Testing Guide](./TESTING_TV_SERIES_ADVANCED_ENDPOINTS.md)
+> - [TMDb Verification Testing for TV Series & TV Shows](qa/TMDB_VERIFICATION_TV.md)
+> - [Advanced Endpoints Testing Guide](qa/TESTING_TV_SERIES_ADVANCED_ENDPOINTS.md)
 
 **Note:** TV Series and TV Shows endpoints are now implemented with TMDb verification and advanced endpoints (related, refresh, report, compare). For detailed testing instructions, see the dedicated guides above.
 
@@ -1270,7 +1382,7 @@ curl -X GET "http://localhost:8000/api/v1/tv-series/breaking-bad-2008" | jq
 
 ---
 
-**For detailed relationship testing, see:** [Relationships Testing Guide](./MANUAL_TESTING_RELATIONSHIPS.md)
+**For detailed relationship testing, see:** [Relationships Section](#movie-relationships)
 
 ---
 
@@ -3058,10 +3170,14 @@ then automatically adjusts rate limits to maintain stability.
 |--------|----------|-------------|---------------|
 | `GET` | `/api/v1/health/openai` | Check OpenAI API health | No |
 | `GET` | `/api/v1/health/tmdb` | Check TMDb API health | No |
-| `GET` | `/api/v1/admin/flags` | List feature flags | Yes |
-| `POST` | `/api/v1/admin/flags/{name}` | Set feature flag | Yes |
-| `GET` | `/api/v1/admin/flags/usage` | Get flag usage info | Yes |
-| `GET` | `/api/v1/admin/debug/config` | Debug configuration | Yes |
+| `GET` | `/api/v1/admin/flags` | List feature flags | Yes (Token) |
+| `POST` | `/api/v1/admin/flags/{name}` | Set feature flag | Yes (Token) |
+| `GET` | `/api/v1/admin/flags/usage` | Get flag usage info | Yes (Token) |
+| `GET` | `/api/v1/admin/debug/config` | Debug configuration | Yes (Token) |
+| `GET` | `/api/v1/admin/subscription-plans` | List subscription plans | Yes (Token) |
+| `GET` | `/api/v1/admin/subscription-plans/{id}` | Get plan details | Yes (Token) |
+| `POST` | `/api/v1/admin/subscription-plans/{id}/features` | Add feature to plan | Yes (Token) |
+| `DELETE` | `/api/v1/admin/subscription-plans/{id}/features/{feature}` | Remove feature from plan | Yes (Token) |
 
 ### Scenario 1: Health Check
 
@@ -3182,7 +3298,7 @@ then automatically adjusts rate limits to maintain stability.
 
 **Objective:** Verify feature flag management.
 
-**Prerequisites:** Admin authentication required (Basic Auth)
+**Prerequisites:** Admin API Token required (`X-Admin-Token`)
 
 **Steps:**
 
@@ -3190,7 +3306,7 @@ then automatically adjusts rate limits to maintain stability.
 
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/flags" \
-     -u "admin:password" \
+     -H "X-Admin-Token: your_admin_token" \
      -H "Accept: application/json" | jq
    ```
 
@@ -3198,7 +3314,7 @@ then automatically adjusts rate limits to maintain stability.
 
    ```bash
    curl -X POST "http://localhost:8000/api/v1/admin/flags/ai_description_generation" \
-     -u "admin:password" \
+     -H "X-Admin-Token: your_admin_token" \
      -H "Content-Type: application/json" \
      -d '{"state": "on"}' | jq
    ```
@@ -3207,7 +3323,7 @@ then automatically adjusts rate limits to maintain stability.
 
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/flags/usage" \
-     -u "admin:password" \
+     -H "X-Admin-Token: your_admin_token" \
      -H "Accept: application/json" | jq
    ```
 
@@ -3229,7 +3345,7 @@ then automatically adjusts rate limits to maintain stability.
 
    ```bash
    curl -X GET "http://localhost:8000/api/v1/admin/debug/config" \
-     -u "admin:password" \
+     -H "X-Admin-Token: your_admin_token" \
      -H "Accept: application/json" | jq
    ```
 
@@ -3248,6 +3364,62 @@ then automatically adjusts rate limits to maintain stability.
    - [ ] Status code: `200 OK`
    - [ ] Configuration values returned
    - [ ] Sensitive data (API keys) are **NOT** exposed
+
+
+
+---
+
+### Scenario 5: Subscription Plan Management (Admin)
+
+**Objective:** Verify managing subscription plan features (e.g., adding `ai_generate` to a plan).
+
+**Prerequisites:** Admin API Token required (`X-Admin-Token`).
+
+**Steps:**
+
+1.  **List all plans:**
+
+    ```bash
+    curl -X GET "http://localhost:8000/api/v1/admin/subscription-plans" \
+      -H "X-Admin-Token: your_admin_token" \
+      -H "Accept: application/json" | jq
+    ```
+
+    Note the `id` of the 'free' plan.
+
+2.  **Add `ai_generate` feature to Free plan:**
+
+    ```bash
+    # Replace {PLAN_ID} with actual ID from step 1
+    curl -X POST "http://localhost:8000/api/v1/admin/subscription-plans/{PLAN_ID}/features" \
+      -H "X-Admin-Token: your_admin_token" \
+      -H "Content-Type: application/json" \
+      -d '{"feature": "ai_generate"}' | jq
+    ```
+
+3.  **Verify feature addition:**
+
+    ```bash
+    curl -X GET "http://localhost:8000/api/v1/admin/subscription-plans/{PLAN_ID}" \
+      -H "X-Admin-Token: your_admin_token" \
+      -H "Accept: application/json" | jq
+    ```
+
+    - [ ] `features` array contains "ai_generate"
+
+4.  **Test feature access (with an API key on this plan):**
+    - Try accessing `/api/v1/generate` with a key on this plan.
+    - Should NOT return 403 Forbidden (unless other limits applied).
+
+5.  **Remove `ai_generate` feature:**
+
+    ```bash
+    curl -X DELETE "http://localhost:8000/api/v1/admin/subscription-plans/{PLAN_ID}/features/ai_generate" \
+      -H "X-Admin-Token: your_admin_token" \
+      -H "Accept: application/json" | jq
+    ```
+
+    - [ ] `features` array no longer contains "ai_generate"
 
 ---
 

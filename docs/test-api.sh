@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # MovieMind API Manual Testing Script
-# Usage: ./test-api.sh [base_url]
-# Example: ./test-api.sh http://localhost:8000
+# Usage: ./test-api.sh [base_url] [api_key]
+# Example: ./test-api.sh http://localhost:8000 mm_abc123...
+# Or via env: API_KEY=mm_abc123... ./test-api.sh
 
 BASE_URL="${1:-http://localhost:8000}"
 API_URL="${BASE_URL}/api/v1"
+API_KEY="${2:-$API_KEY}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -16,6 +18,11 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}=== MovieMind API Manual Testing ===${NC}\n"
 echo "Base URL: ${BASE_URL}"
+if [ -n "$API_KEY" ]; then
+    echo "API Key:  ******** (Set)"
+else
+    echo "API Key:  Not set (Some endpoints may fail)"
+fi
 echo ""
 
 # Helper function to make requests
@@ -28,17 +35,24 @@ make_request() {
     echo -e "${YELLOW}→ ${description}${NC}"
     echo "  ${method} ${endpoint}"
     
+    local headers=(-H "Accept: application/json")
+    
+    if [ -n "$API_KEY" ]; then
+        headers+=(-H "X-API-Key: ${API_KEY}")
+    fi
+    
     if [ -n "$data" ]; then
+        headers+=(-H "Content-Type: application/json")
         response=$(curl -s -w "\n%{http_code}" -X "$method" \
-            -H "Content-Type: application/json" \
-            -H "Accept: application/json" \
+            "${headers[@]}" \
             -d "$data" \
             "${API_URL}${endpoint}")
     else
         response=$(curl -s -w "\n%{http_code}" -X "$method" \
-            -H "Accept: application/json" \
+            "${headers[@]}" \
             "${API_URL}${endpoint}")
     fi
+
     
     http_code=$(echo "$response" | tail -n1)
     body=$(echo "$response" | sed '$d')

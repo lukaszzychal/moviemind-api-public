@@ -29,6 +29,14 @@ This document provides **complete manual testing guide** from basic setup to ful
 
 **Tip:** Copy cURL commands directly to your terminal. Replace `mm_your_api_key_here` with your actual API key.
 
+**Formatowanie odpowiedzi JSON:** Aby ładnie wyświetlić odpowiedź JSON w terminalu, dołącz na końcu polecenia `| jq`. Wymaga zainstalowanego narzędzia [jq](https://jqlang.github.io/jq/) (np. `brew install jq` na macOS). Przykład:
+```bash
+curl -X GET "http://localhost:8000/api/v1/health" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" | jq
+```
+Bez `jq` otrzymasz surowy JSON w jednej linii.
+
 ---
 
 ## 🎯 Overview
@@ -103,21 +111,21 @@ export API_KEY="mm_your_actual_api_key_here"
 ```bash
 curl -X GET "http://localhost:8000/api/v1/health" \
   -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/json"
+  -H "Accept: application/json" | jq
 ```
 
 **2. List Movies:**
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies" \
   -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/json"
+  -H "Accept: application/json" | jq
 ```
 
 **3. Get Specific Movie:**
 ```bash
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
   -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/json"
+  -H "Accept: application/json" | jq
 ```
 
 **4. Generate Description (Pro/Enterprise only):**

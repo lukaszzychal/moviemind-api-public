@@ -102,6 +102,13 @@ Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
         Route::get('/failed/stats', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failedStats']);
         Route::get('/processing-times', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'processingTimes']);
     });
+    Route::prefix('subscription-plans')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'index']);
+        Route::get('{id}', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'show']);
+        Route::get('{id}/features', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'getFeatures']);
+        Route::post('{id}/features', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'addFeature']);
+        Route::delete('{id}/features/{feature}', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'removeFeature']);
+    });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });
 

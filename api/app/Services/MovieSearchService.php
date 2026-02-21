@@ -58,6 +58,8 @@ class MovieSearchService
         $localLimit = $criteria['local_limit'] ?? $itemsPerPage;
         $externalLimit = $criteria['external_limit'] ?? $itemsPerPage;
 
+        $sourceFilter = $criteria['source'] ?? null;
+
         $cacheKey = $this->generateCacheKey($criteria);
 
         // Try to get from tagged cache first (for Redis/Memcached)
@@ -68,8 +70,13 @@ class MovieSearchService
             return $cachedResult;
         }
 
-        $localMovies = $this->searchLocal($searchQuery, $searchYear, $searchDirector, $searchActor, $localLimit);
-        $externalMovies = $this->searchTmdbIfEnabled($searchQuery, $searchYear, $searchDirector, $externalLimit);
+        $localMovies = ($sourceFilter === null || $sourceFilter === 'local')
+            ? $this->searchLocal($searchQuery, $searchYear, $searchDirector, $searchActor, $localLimit)
+            : [];
+
+        $externalMovies = ($sourceFilter === null || $sourceFilter === 'external')
+            ? $this->searchTmdbIfEnabled($searchQuery, $searchYear, $searchDirector, $externalLimit)
+            : [];
 
         // Generate unique slugs for external results, considering local results context
         if (! empty($externalMovies)) {
@@ -698,6 +705,7 @@ class MovieSearchService
         $sortOrder = $criteria['order'] ?? '';
         $localLimit = $criteria['local_limit'] ?? '';
         $externalLimit = $criteria['external_limit'] ?? '';
+        $sourceFilter = $criteria['source'] ?? '';
 
         $cacheKeyParts = [
             'movie:search',
@@ -710,6 +718,7 @@ class MovieSearchService
             $sortOrder,
             $localLimit,
             $externalLimit,
+            $sourceFilter,
         ];
 
         return implode(':', $cacheKeyParts);

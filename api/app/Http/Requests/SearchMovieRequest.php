@@ -36,6 +36,7 @@ class SearchMovieRequest extends FormRequest
             'order' => 'nullable|string|in:asc,desc',
             'local_limit' => 'nullable|integer|min:1|max:100',
             'external_limit' => 'nullable|integer|min:1|max:100',
+            'source' => 'nullable|string|in:local,external',
         ];
     }
 
@@ -118,6 +119,10 @@ class SearchMovieRequest extends FormRequest
 
         if (isset($validated['external_limit'])) {
             $criteria['external_limit'] = (int) $validated['external_limit'];
+        }
+
+        if (isset($validated['source'])) {
+            $criteria['source'] = $validated['source'];
         }
 
         return $criteria;

@@ -46,21 +46,120 @@ paths:
     get:
       tags: [Movies]
       summary: Search movies (Advanced)
+      description: Advanced movie search with multiple filter options (local database + TMDb)
       parameters:
         - in: query
-          name: query
-          required: true
+          name: q
+          required: false
           schema:
             type: string
+            maxLength: 255
+          description: Search query (title, director, genre, etc.)
+          example: Matrix
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+          description: Release year filter
+          example: 1999
+        - in: query
+          name: director
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Director name filter
+          example: Lana Wachowski
+        - in: query
+          name: actor
+          required: false
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          description: Actor name(s) filter. Can be single value or array (actor[]=Name1&actor[]=Name2)
+          example: Keanu Reeves
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [title, release_year, created_at]
+          description: Sort field
+        - in: query
+          name: order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort order
+        - in: query
+          name: local_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from local database
+        - in: query
+          name: external_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from TMDb API
+        - in: query
+          name: source
+          required: false
+          schema:
+            type: string
+            enum: [local, external]
+          description: Filter results by source (local database or external TMDb API)
+          example: local
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Movie'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Movie'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
   /v1/movies/bulk:
     post:
       tags: [Movies]
@@ -220,21 +319,123 @@ paths:
     get:
       tags: [People]
       summary: Search people (Advanced)
+      description: Advanced people search with multiple filter options (local database + TMDb)
       parameters:
         - in: query
-          name: query
-          required: true
+          name: q
+          required: false
           schema:
             type: string
+            maxLength: 255
+          description: Search query (name, role, etc.)
+          example: Tom Hanks
+        - in: query
+          name: birth_year
+          required: false
+          schema:
+            type: integer
+            minimum: 1800
+          description: Birth year filter
+          example: 1956
+        - in: query
+          name: birthplace
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Birthplace filter
+          example: Concord, California
+        - in: query
+          name: role
+          required: false
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          description: Role(s) filter (ACTOR, DIRECTOR, WRITER, PRODUCER). Can be single value or array
+          example: ACTOR
+        - in: query
+          name: movie
+          required: false
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          description: Movie slug(s) filter. Can be single value or array (movie[]=slug1&movie[]=slug2)
+          example: forrest-gump-1994
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [name, birth_year, created_at]
+          description: Sort field
+        - in: query
+          name: order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort order
+        - in: query
+          name: local_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from local database
+        - in: query
+          name: external_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from TMDb API
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Person'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
   /v1/people/bulk:
     post:
       tags: [People]
@@ -352,15 +553,62 @@ paths:
     get:
       tags: [TvSeries]
       summary: Search TV Series
+      description: Advanced TV series search with filters (local database + TMDb)
       parameters:
         - in: query
-          name: query
-          required: true
+          name: q
+          required: false
           schema:
             type: string
+            maxLength: 255
+          description: Search query (title, etc.)
+          example: Breaking Bad
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+            minimum: 1950
+          description: First air year filter
+          example: 2008
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvSeries'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
   /v1/tv-series/compare:
     get:
       tags: [TvSeries]
@@ -458,15 +706,62 @@ paths:
     get:
       tags: [TvShows]
       summary: Search TV Shows
+      description: Advanced TV shows search with filters (local database + TMDb)
       parameters:
         - in: query
-          name: query
-          required: true
+          name: q
+          required: false
           schema:
             type: string
+            maxLength: 255
+          description: Search query (title, etc.)
+          example: The Tonight Show
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+            minimum: 1950
+          description: First air year filter
+          example: 2014
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvShow'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
   /v1/tv-shows/compare:
     get:
       tags: [TvShows]
@@ -1213,23 +1508,43 @@ components:
     GenerateRequest:
       type: object
       required: [entity_type]
+      oneOf:
+        - required: [slug]
+        - required: [entity_id]
       properties:
         entity_type:
           type: string
           enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW]
+          description: |
+            Type of entity to generate content for.
+            Use `MOVIE` for movies.
+            Use `PERSON` for actors, directors, writers, producers.
+            Use `TV_SERIES` for scripted TV series (dramas, comedies, limited series).
+            Use `TV_SHOW` for unscripted TV shows (talk shows, reality, news, documentaries).
+          example: MOVIE
         slug:
           type: string
-          description: The slug of the entity (preferred)
+          maxLength: 255
+          description: Preferred identifier for the entity (e.g. `the-matrix-1999`). Required when `entity_id` is omitted.
+          example: the-matrix-1999
         entity_id:
           type: string
-          description: Legacy field for slug/ID
+          maxLength: 255
+          description: Alias for `slug` used by legacy clients (still accepted). Required when `slug` is omitted.
+          example: the-matrix-1999
         locale:
           type: string
+          maxLength: 10
+          description: Locale for generated content (ISO format, e.g., en-US, pl-PL)
           default: en-US
+          example: en-US
         context_tag:
           oneOf:
             - type: string
             - type: array
               items:
                 type: string
-          description: Single context tag or list of tags
+                maxLength: 64
+          description: Single context tag or array of context tags to influence generation style
+          example: modern
+

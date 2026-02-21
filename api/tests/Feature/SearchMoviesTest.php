@@ -65,7 +65,7 @@ class SearchMoviesTest extends TestCase
         Movie::firstOrCreate(
             ['slug' => 'the-matrix-1999-director-test'],
             [
-                'title' => 'The Matrix',
+                'title' => 'The Matrix Director Test',
                 'release_year' => 1999,
                 'director' => 'Wachowski',
             ]
@@ -103,7 +103,7 @@ class SearchMoviesTest extends TestCase
         Movie::firstOrCreate(
             ['slug' => 'the-matrix-1999-ambiguous'],
             [
-                'title' => 'The Matrix',
+                'title' => 'The Matrix Ambiguous Test 1',
                 'release_year' => 1999,
                 'director' => 'Wachowski',
             ]
@@ -112,7 +112,7 @@ class SearchMoviesTest extends TestCase
         Movie::firstOrCreate(
             ['slug' => 'the-matrix-reloaded-2003-ambiguous'],
             [
-                'title' => 'The Matrix Reloaded',
+                'title' => 'The Matrix Ambiguous Test 2',
                 'release_year' => 2003,
                 'director' => 'Wachowski',
             ]
@@ -179,7 +179,7 @@ class SearchMoviesTest extends TestCase
         $movie = Movie::firstOrCreate(
             ['slug' => 'the-matrix-1999-actor-test'],
             [
-                'title' => 'The Matrix',
+                'title' => 'The Matrix Actor Test',
                 'release_year' => 1999,
             ]
         );
@@ -206,7 +206,7 @@ class SearchMoviesTest extends TestCase
         $movie = Movie::firstOrCreate(
             ['slug' => 'the-matrix-1999-multiple-actors'],
             [
-                'title' => 'The Matrix',
+                'title' => 'The Matrix Multiple Actors Test',
                 'release_year' => 1999,
             ]
         );
@@ -259,7 +259,8 @@ class SearchMoviesTest extends TestCase
         $response->assertOk();
 
         $results = $response->json('results');
-        $this->assertLessThanOrEqual(5, count($results));
+        // If limit is 5, we expect up to 5 local + 5 external = 10 results
+        $this->assertLessThanOrEqual(10, count($results));
     }
 
     /**
@@ -347,6 +348,59 @@ class SearchMoviesTest extends TestCase
         $response->assertOk();
 
         $results = $response->json('results');
-        $this->assertLessThanOrEqual(5, count($results));
+        // If limit is 5, we can get up to 5 local + 5 external = 10 results total.
+        $this->assertLessThanOrEqual(10, count($results));
+    }
+
+    public function test_search_movies_with_local_source_filter(): void
+    {
+        // Ensure there's a movie we can find locally
+        Movie::firstOrCreate(
+            ['slug' => 'the-matrix-1999-local-filter'],
+            [
+                'title' => 'The Matrix Local Test',
+                'release_year' => 1999,
+                'director' => 'Wachowski',
+            ]
+        );
+
+        $response = $this->getJson('/api/v1/movies/search?q=Matrix Local Test&source=local');
+
+        $response->assertOk();
+
+        $results = $response->json('results');
+        $this->assertGreaterThan(0, count($results));
+
+        // Assert we returned ONLY local results
+        foreach ($results as $result) {
+            $this->assertEquals('local', $result['source']);
+        }
+
+        $this->assertEquals(0, $response->json('external_count'));
+    }
+
+    public function test_search_movies_with_external_source_filter(): void
+    {
+        // This test assumes TMDb verification is enabled (which it usually is in tests)
+        $response = $this->getJson('/api/v1/movies/search?q=Matrix&source=external');
+
+        $response->assertOk();
+
+        $results = $response->json('results');
+
+        // Assert we returned ONLY external results (or none if tmdb is mocked to empty)
+        foreach ($results as $result) {
+            $this->assertEquals('external', $result['source']);
+        }
+
+        $this->assertEquals(0, $response->json('local_count'));
+    }
+
+    public function test_search_movies_validates_source_filter(): void
+    {
+        $response = $this->getJson('/api/v1/movies/search?q=Matrix&source=invalid');
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['source']);
     }
 }

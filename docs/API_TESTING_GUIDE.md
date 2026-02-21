@@ -26,6 +26,16 @@
 - **Staging:** (ustaw w zmiennych środowiskowych)
 - **Produkcja:** (ustaw w zmiennych środowiskowych)
 
+### 🔐 Autoryzacja
+
+| Typ autoryzacji | Nagłówek | Gdzie używany | Przykład |
+|-----------------|----------|---------------|----------|
+| **ApiKeyAuth** | `X-API-Key` | Publiczne API (np. `/generate`) | `mm_abc123...` |
+| **AdminToken** | `X-Admin-Token` | Admin API (`/api/v1/admin/*`) | Token z `.env` |
+| **Basic Auth** | `Authorization` | Horizon Dashboard (tylko PROD) | `Basic base64(user:pass)` |
+
+> **Uwaga:** W środowisku lokalnym Basic Auth dla Horizon nie jest wymagane.
+
 ---
 
 ## 📥 Import kolekcji Postman
@@ -54,20 +64,31 @@ Po imporcie ustaw zmienne:
 chmod +x docs/test-api.sh
 
 # Uruchom testy (domyślnie: http://localhost:8000)
+# Bez klucza API (endpointy publiczne mogą zwrócić błąd 401)
 ./docs/test-api.sh
 
-# Lub z własnym URL
-./docs/test-api.sh http://staging.example.com
+# Z kluczem API (jako argument)
+./docs/test-api.sh http://localhost:8000 mm_twoj_klucz_api...
+
+# Z kluczem API (jako zmienna środowiskowa)
+API_KEY=mm_twoj_klucz_api... ./docs/test-api.sh
 ```
 
 ### Node.js Script
 
 ```bash
-# Uruchom testy (wymaga Node.js 18+ lub node-fetch)
+# Zainstaluj zależności (opcjonalnie, jeśli używasz starszego Node)
+npm install node-fetch
+
+# Uruchom testy
+# Bez klucza API
 node docs/test-api.js
 
-# Lub z własnym URL
-node docs/test-api.js http://staging.example.com
+# Z kluczem API (jako argument)
+node docs/test-api.js http://localhost:8000 mm_twoj_klucz_api...
+
+# Z kluczem API (jako zmienna środowiskowa)
+API_KEY=mm_twoj_klucz_api... node docs/test-api.js
 ```
 
 ---
@@ -79,10 +100,12 @@ node docs/test-api.js http://staging.example.com
 ```bash
 # Podstawowe
 curl -X GET "http://localhost:8000/api/v1/movies" \
+  -H "X-API-Key: <TWOJ_KLUCZ_API>" \
   -H "Accept: application/json"
 
 # Z wyszukiwaniem
 curl -X GET "http://localhost:8000/api/v1/movies?q=Matrix" \
+  -H "X-API-Key: <TWOJ_KLUCZ_API>" \
   -H "Accept: application/json" | jq
 ```
 
@@ -111,6 +134,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=Matrix&page=1&per_page
 ```bash
 # Podstawowe
 curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" \
+  -H "X-API-Key: <TWOJ_KLUCZ_API>" \
   -H "Accept: application/json" | jq
 
 # Z wyborem konkretnego opisu
@@ -127,6 +151,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/bad-boys?tmdb_id=9739" \
 ```bash
 # Pojedynczy context tag
 curl -X POST "http://localhost:8000/api/v1/generate" \
+  -H "X-API-Key: <TWOJ_KLUCZ_API>" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -320,7 +345,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=Matrix&year=1999&direc
 1. **Cache:** Odpowiedzi są cache'owane przez 1 godzinę
 2. **Rate Limiting:** Endpointy mogą mieć ograniczenia częstotliwości
 3. **Feature Flags:** Niektóre funkcje mogą być wyłączone przez feature flags
-4. **Admin Endpoints:** Wymagają autoryzacji Basic Auth
+4. **Admin Endpoints:** Wymagają nagłówka `X-Admin-Token` (zdefiniowanego w `.env`). Dashboard Horizon na produkcji wymaga Basic Auth.
 
 ---
 

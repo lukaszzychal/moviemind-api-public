@@ -60,10 +60,81 @@ class SubscriptionPlan extends Model
 
     /**
      * Check if the plan has a specific feature.
+     *
+     * Backward compatibility: 'generate' is treated as 'ai_generate' for /generate endpoint.
      */
     public function hasFeature(string $feature): bool
     {
-        return in_array($feature, $this->features ?? [], true);
+        $features = $this->getFeaturesAsArray();
+
+        if (in_array($feature, $features, true)) {
+            return true;
+        }
+
+        // Backward compatibility: plans with 'generate' can use ai_generate-protected endpoints
+        if ($feature === 'ai_generate' && in_array('generate', $features, true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Add a feature to the plan.
+     */
+    public function addFeature(string $feature): void
+    {
+        $features = $this->features ?? [];
+
+        if (! in_array($feature, $features, true)) {
+            $features[] = $feature;
+            $this->features = $features;
+            $this->save();
+        }
+    }
+
+    /**
+     * Remove a feature from the plan.
+     */
+    public function removeFeature(string $feature): void
+    {
+        $features = $this->features ?? [];
+        $key = array_search($feature, $features, true);
+
+        if ($key !== false) {
+            unset($features[$key]);
+            $this->features = array_values($features); // Reindex array
+            $this->save();
+        }
+    }
+
+    /**
+     * Normalize features to array (handles JSON cast, raw string, or CSV from DB).
+     * Uses raw attribute to handle cases where cast returns unexpected types.
+     */
+    private function getFeaturesAsArray(): array
+    {
+        $features = $this->getRawOriginal('features');
+
+        if ($features === null || $features === '') {
+            return [];
+        }
+
+        if (is_array($features)) {
+            return $features;
+        }
+
+        if (is_string($features)) {
+            $decoded = json_decode($features, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+
+            // Fallback: CSV string (e.g. "read,generate,context_tags")
+            return array_map('trim', explode(',', $features));
+        }
+
+        return [];
     }
 
     /**

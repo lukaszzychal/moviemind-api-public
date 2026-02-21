@@ -2,10 +2,11 @@
  * MovieMind API Manual Testing Script (Node.js)
  * 
  * Usage:
- *   node test-api.js [base_url]
+ *   node test-api.js [base_url] [api_key]
  * 
  * Example:
- *   node test-api.js http://localhost:8000
+ *   node test-api.js http://localhost:8000 mm_abc123...
+ *   API_KEY=mm_abc123... node test-api.js http://localhost:8000
  * 
  * Requirements:
  *   npm install node-fetch (or use native fetch in Node 18+)
@@ -13,6 +14,7 @@
 
 const BASE_URL = process.argv[2] || 'http://localhost:8000';
 const API_URL = `${BASE_URL}/api/v1`;
+const API_KEY = process.env.API_KEY || process.argv[3];
 
 // Colors for console output
 const colors = {
@@ -23,18 +25,27 @@ const colors = {
     red: '\x1b[31m',
 };
 
+if (API_KEY) {
+    console.log(`API Key:  ******** (Set)`);
+} else {
+    console.log(`API Key:  Not set (Some endpoints may fail)`);
+}
+
 // Helper function to make requests
 async function makeRequest(method, endpoint, data = null, description = '') {
     console.log(`${colors.yellow}→ ${description}${colors.reset}`);
     console.log(`  ${method} ${endpoint}`);
 
     try {
+        const headers = {
+            'Accept': 'application/json',
+            ...(data && { 'Content-Type': 'application/json' }),
+            ...(API_KEY && { 'X-API-Key': API_KEY }),
+        };
+
         const options = {
             method,
-            headers: {
-                'Accept': 'application/json',
-                ...(data && { 'Content-Type': 'application/json' }),
-            },
+            headers,
             ...(data && { body: JSON.stringify(data) }),
         };
 
@@ -44,8 +55,8 @@ async function makeRequest(method, endpoint, data = null, description = '') {
         const statusColor = response.status >= 200 && response.status < 300
             ? colors.green
             : response.status >= 300 && response.status < 400
-            ? colors.yellow
-            : colors.red;
+                ? colors.yellow
+                : colors.red;
 
         console.log(`  ${statusColor}✓ Status: ${response.status}${colors.reset}`);
         console.log(JSON.stringify(body, null, 2));
@@ -95,15 +106,15 @@ async function runTests() {
     // Extract job_id and check status
     if (generateResult && generateResult.body.job_id) {
         console.log(`${colors.blue}=== Job Status ===${colors.reset}`);
-        await makeRequest('GET', `/jobs/${generateResult.body.job_id}`, null, 
+        await makeRequest('GET', `/jobs/${generateResult.body.job_id}`, null,
             `Get job status: ${generateResult.body.job_id}`);
     }
 
     // 6. Disambiguation Example
     console.log(`${colors.blue}=== Disambiguation ===${colors.reset}`);
-    await makeRequest('GET', '/movies/bad-boys', null, 
+    await makeRequest('GET', '/movies/bad-boys', null,
         'Get movie: bad-boys (may trigger disambiguation)');
-    await makeRequest('GET', '/movies/bad-boys?slug=bad-boys-ii-2003', null, 
+    await makeRequest('GET', '/movies/bad-boys?slug=bad-boys-ii-2003', null,
         'Select from disambiguation: bad-boys (slug=bad-boys-ii-2003)');
 
     // 7. People

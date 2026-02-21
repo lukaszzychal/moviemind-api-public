@@ -222,10 +222,40 @@ Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
 ## 🔐 Autoryzacja i dostęp
 
-- **Public demo:** endpointy API są otwarte, aby ułatwić lokalne testy i warsztaty. Panel admin korzysta z autoryzacji Laravel z kontami demo (dane w `.env.demo`). Pozwala to prezentować feature flagi, CRUD i monitoring kolejek bez upubliczniania sekretów.
-- **Wersja komercyjna:** zawiera klucze API dla klientów, OAuth/JWT, limity zależne od subskrypcji, integracje billingowe oraz szczegółowe dzienniki audytu. Te elementy znajdują się w repo prywatnym.
+W projekcie wykorzystywane są trzy typy autoryzacji, zależnie od kontekstu i endpointu.
 
-Aby lokalnie przetestować logowanie, włącz konta demo i zaloguj się do panelu admin. Dostęp do wersji produkcyjnej wymaga zgody na repo prywatne.
+### Podsumowanie typów autoryzacji
+
+| Typ autoryzacji | Gdzie używany | Nagłówek / Metoda | Przykład |
+|-----------------|---------------|-------------------|----------|
+| **ApiKeyAuth** | `/api/v1/generate` i publiczne API | `X-API-Key` | `mm_abc123...` |
+| **AdminToken** | `/api/v1/admin/*` | `X-Admin-Token` | Token z `.env` |
+| **Basic Auth** | `/horizon` (produkcja) | HTTP Basic Auth | Username + Password |
+
+### Szczegóły
+
+1. **ApiKeyAuth (Public API)**
+   - Używany do autoryzacji zapytań publicznych, np. generowania opisów.
+   - Wymaga nagłówka `X-API-Key`.
+
+2. **AdminToken (Admin API)**
+   - Używany do zabezpieczenia endpointów administracyjnych.
+   - Wymaga nagłówka `X-Admin-Token`.
+   - Wartość tokena jest konfigurowana w pliku `.env`.
+
+3. **Basic Auth (Horizon UI)**
+   - Służy do zabezpieczenia panelu monitorowania kolejek Laravel Horizon.
+   - **Ważne:** Używane tylko na środowisku produkcyjnym (wymuszane przez middleware).
+   - W środowisku lokalnym (`local`) Basic Auth nie jest wymagane - możesz otworzyć `/horizon` bez logowania.
+
+> 💡 **Rekomendacja:** Dokumentacja Swagger może nie zawierać informacji o Basic Auth dla Horizon, ponieważ jest to osobny interfejs UI, a nie endpoint API REST.
+
+### Dostęp do wersji demo vs komercyjnej
+
+- **Public demo:** endpointy API są otwarte lub używają kluczy demonstracyjnych. Panel admin korzysta z uproszczonej autoryzacji.
+- **Wersja komercyjna:** może zawierać bardziej złożone mechanizmy, takie jak OAuth/JWT oraz limity zależne od subskrypcji.
+
+Aby lokalnie przetestować logowanie, upewnij się, że posiadasz odpowiednie klucze w pliku `.env`.
 
 ### Usuwanie ujawnionych sekretów z historii Git
 
@@ -292,6 +322,8 @@ Projekt objęty licencją MIT – szczegóły w pliku [LICENSE](LICENSE).
 ---
 
 ## ⚠️ Licencje API zewnętrznych
+
+> **Nota prawna:** Powyższe informacje są aktualne na dzień powstania dokumentacji. Warunki licencyjne dostawców zewnętrznych mogą ulec zmianie. Zalecamy samodzielną weryfikację aktualnych warunków bezpośrednio na stronach dostawców API przed wdrożeniem produkcyjnym.
 
 ### TMDB (The Movie Database)
 
