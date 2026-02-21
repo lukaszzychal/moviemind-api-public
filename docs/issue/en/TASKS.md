@@ -201,10 +201,23 @@ Every entry follows this structure:
 - `TASK-009` - Admin UI
 - `TASK-010` - Analytics/Monitoring Dashboards
 - `TASK-030` - Three-line test documentation
+- `TASK-053` - Full-text / fuzzy search (stemming, typo tolerance)
 
 ---
 
 ### ⏳ PENDING
+
+---
+
+#### `TASK-053` – Full-text / fuzzy search (stemming, typo tolerance)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low (Roadmap)
+- **Estimated time:** 8–16 h (depending on scope: movies / TV shows / people)
+- **Description:** Optional search enhancement: word variants (stemming) and typo tolerance (e.g. PostgreSQL trigrams).
+- **Details:**
+  - Mechanism documented in `docs/en/FULLTEXT_FUZZY_SEARCH.md` (and `docs/pl/`).
+  - Decision to implement (FTS/pg_trgm migrations, query changes in `MovieRepository` / `TvShowRepository` / `PersonRepository`) in a separate task.
+- **Dependencies:** None
 
 ---
 

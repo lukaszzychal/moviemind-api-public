@@ -91,16 +91,17 @@ class MovieSearchServiceTest extends TestCase
             'release_year' => 1999,
         ]);
 
-        $movie2003 = Movie::create([
+        Movie::create([
             'title' => 'The Matrix Reloaded',
             'slug' => 'the-matrix-reloaded-2003',
             'release_year' => 2003,
         ]);
 
         $movieRepository = $this->createMock(MovieRepository::class);
+        // Repository is called with year and returns only matching movies (filtering in DB)
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([$movie1999, $movie2003]));
+            ->willReturn(Collection::make([$movie1999]));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
 
@@ -108,7 +109,6 @@ class MovieSearchServiceTest extends TestCase
 
         $result = $service->search(['q' => 'Matrix', 'year' => 1999]);
 
-        // Should only return 1999 movie
         $this->assertEquals(1, $result->localCount);
         foreach ($result->results as $resultItem) {
             if ($resultItem['source'] === 'local' && isset($resultItem['release_year'])) {

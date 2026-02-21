@@ -25,6 +25,12 @@ class MovieSearchService
 
     private const CACHE_TTL_SECONDS_PRODUCTION = 3600; // 1 hour for production
 
+    /**
+     * Max items to fetch from local/external when pagination is used, so that
+     * cached result set can serve multiple pages (cache stores full list, we slice per request).
+     */
+    private const PAGINATION_FETCH_LIMIT = 100;
+
     private function getCacheTtl(): int
     {
         return app()->environment('local')
@@ -54,20 +60,27 @@ class MovieSearchService
         $currentPageNumber = $paginationInfo['current_page'];
         $isPaginationRequested = $paginationInfo['is_pagination_requested'];
 
-        // Determine limits for each source
-        $localLimit = $criteria['local_limit'] ?? $itemsPerPage;
-        $externalLimit = $criteria['external_limit'] ?? $itemsPerPage;
+        // When pagination is requested, fetch enough items so the requested page has data.
+        // Cache stores the full list; we slice per request.
+        $fetchLimit = $this->resolveFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
+        $localLimit = $criteria['local_limit'] ?? $fetchLimit;
+        $externalLimit = $criteria['external_limit'] ?? $fetchLimit;
 
         $sourceFilter = $criteria['source'] ?? null;
 
         $cacheKey = $this->generateCacheKey($criteria);
 
         // Try to get from tagged cache first (for Redis/Memcached)
-        $cachedResult = $this->getFromTaggedCache($cacheKey);
-        if ($cachedResult !== null) {
+        $cached = $this->getFromTaggedCache($cacheKey);
+        if ($cached !== null) {
             Log::debug('MovieSearchService: cache hit', ['criteria' => $criteria]);
 
-            return $cachedResult;
+            return $this->buildSearchResultFromCached(
+                $cached,
+                $currentPageNumber,
+                $itemsPerPage,
+                $isPaginationRequested
+            );
         }
 
         $localMovies = ($sourceFilter === null || $sourceFilter === 'local')
@@ -93,14 +106,25 @@ class MovieSearchService
         }
 
         $totalMoviesCount = count($allMovies);
-
-        $paginatedMovies = $this->applyPagination($allMovies, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
-        $paginationMetadata = $this->calculatePaginationMetadata($totalMoviesCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
-
         $matchType = $this->determineMatchType($allMovies, $localMovies, $externalMovies);
         $confidenceScore = $this->calculateConfidence($allMovies, $matchType);
 
-        $searchResult = new SearchResult(
+        // Cache full list so any page can be served from cache
+        $cachePayload = [
+            'all_movies' => $allMovies,
+            'total' => $totalMoviesCount,
+            'local_count' => count($localMovies),
+            'external_count' => count($externalMovies),
+            'match_type' => $matchType,
+            'confidence' => $confidenceScore,
+        ];
+        $this->putInTaggedCache($cacheKey, $cachePayload);
+
+        $resolved = $this->resolveEffectivePage($totalMoviesCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
+        $paginatedMovies = $this->applyPagination($allMovies, $resolved['effective_page'], $itemsPerPage, $isPaginationRequested);
+        $paginationMetadata = $this->calculatePaginationMetadataWithResolved($resolved, $itemsPerPage, $isPaginationRequested);
+
+        return new SearchResult(
             results: $paginatedMovies,
             total: $totalMoviesCount,
             localCount: count($localMovies),
@@ -111,41 +135,21 @@ class MovieSearchService
             perPage: $paginationMetadata['per_page'],
             totalPages: $paginationMetadata['total_pages']
         );
-
-        // Store in tagged cache (for Redis/Memcached) or regular cache (fallback)
-        $this->putInTaggedCache($cacheKey, $searchResult);
-
-        return $searchResult;
     }
 
     /**
      * Search for movies in local database.
+     * Repository filters by actor/director/year in DB when provided.
      *
      * @return array<int, array<string, mixed>>
      */
     private function searchLocal(?string $query, ?int $year, ?string $director, string|array|null $actor, int $limit): array
     {
-        $movies = $this->movieRepository->searchMovies($query, $limit);
+        $movies = $this->movieRepository->searchMovies($query, $limit, $actor, $director, $year);
 
-        $filteredMovies = $movies->filter(function (Movie $movie) use ($year, $director, $actor) {
-            if ($this->doesMovieMatchYearFilter($movie, $year) === false) {
-                return false;
-            }
-
-            if ($this->doesMovieMatchDirectorFilter($movie, $director) === false) {
-                return false;
-            }
-
-            if ($this->doesMovieMatchActorFilter($movie, $actor) === false) {
-                return false;
-            }
-
-            return true;
-        });
-
-        return $filteredMovies->map(function (Movie $movie) {
-            return $this->transformMovieToSearchResult($movie);
-        })->values()->toArray();
+        return $movies->map(fn (Movie $movie) => $this->transformMovieToSearchResult($movie))
+            ->values()
+            ->toArray();
     }
 
     /**
@@ -171,7 +175,7 @@ class MovieSearchService
 
         $movieDirector = $movie->director ?? '';
 
-        return strcasecmp($movieDirector, $filterDirector) === 0;
+        return stripos($movieDirector, $filterDirector) !== false;
     }
 
     /**
@@ -276,6 +280,15 @@ class MovieSearchService
             if ($year !== null) {
                 $transformedResults = array_filter($transformedResults, function (array $result) use ($year) {
                     return ($result['release_year'] ?? null) === $year;
+                });
+            }
+
+            // Filter by director if specified
+            if ($director !== null) {
+                $transformedResults = array_filter($transformedResults, function (array $result) use ($director) {
+                    $movieDirector = $result['director'] ?? '';
+
+                    return stripos($movieDirector, $director) !== false;
                 });
             }
 
@@ -518,19 +531,65 @@ class MovieSearchService
      */
     private function createSlugFromCriteria(string $query, ?int $year, ?string $director): string
     {
-        // Use Movie::generateSlug() logic but without checking for duplicates
         $baseSlug = \Illuminate\Support\Str::slug($query);
 
         if ($year !== null) {
             $baseSlug .= "-{$year}";
         }
 
-        if ($director !== null) {
-            $directorSlug = \Illuminate\Support\Str::slug($director);
-            $baseSlug .= "-{$directorSlug}";
+        return $baseSlug;
+    }
+
+    /**
+     * Resolve how many items to fetch so the requested page can be served.
+     * When pagination is requested we fetch at least current_page * per_page (capped).
+     */
+    private function resolveFetchLimit(
+        array $criteria,
+        int $itemsPerPage,
+        ?int $currentPageNumber,
+        bool $isPaginationRequested
+    ): int {
+        $explicitLocal = array_key_exists('local_limit', $criteria);
+        $explicitExternal = array_key_exists('external_limit', $criteria);
+        if ($explicitLocal || $explicitExternal) {
+            return $itemsPerPage;
+        }
+        if (! $isPaginationRequested || $currentPageNumber === null || $currentPageNumber <= 1) {
+            return $itemsPerPage;
         }
 
-        return $baseSlug;
+        return (int) min($currentPageNumber * $itemsPerPage, self::PAGINATION_FETCH_LIMIT);
+    }
+
+    /**
+     * Build SearchResult from cached payload (full list + metadata), applying pagination for this request.
+     *
+     * @param  array{all_movies: array<int, array<string, mixed>>, total: int, local_count: int, external_count: int, match_type: string, confidence: float}  $cached
+     */
+    private function buildSearchResultFromCached(
+        array $cached,
+        ?int $currentPageNumber,
+        int $itemsPerPage,
+        bool $isPaginationRequested
+    ): SearchResult {
+        $allMovies = $cached['all_movies'];
+        $total = $cached['total'];
+        $resolved = $this->resolveEffectivePage($total, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
+        $paginatedMovies = $this->applyPagination($allMovies, $resolved['effective_page'], $itemsPerPage, $isPaginationRequested);
+        $paginationMetadata = $this->calculatePaginationMetadataWithResolved($resolved, $itemsPerPage, $isPaginationRequested);
+
+        return new SearchResult(
+            results: $paginatedMovies,
+            total: $total,
+            localCount: $cached['local_count'],
+            externalCount: $cached['external_count'],
+            matchType: $cached['match_type'],
+            confidence: $cached['confidence'],
+            currentPage: $paginationMetadata['current_page'],
+            perPage: $paginationMetadata['per_page'],
+            totalPages: $paginationMetadata['total_pages']
+        );
     }
 
     /**
@@ -553,7 +612,24 @@ class MovieSearchService
     }
 
     /**
-     * Apply pagination to results if requested.
+     * Resolve effective page number (clamp to 1..total_pages) so out-of-range requests return last page.
+     *
+     * @return array{effective_page: int, total_pages: int}
+     */
+    private function resolveEffectivePage(int $totalCount, ?int $currentPage, int $itemsPerPage, bool $isPaginationRequested): array
+    {
+        $totalPages = $totalCount > 0 ? (int) ceil($totalCount / $itemsPerPage) : 1;
+        if (! $isPaginationRequested || $currentPage === null) {
+            return ['effective_page' => 1, 'total_pages' => $totalPages];
+        }
+
+        $effectivePage = min($currentPage, max(1, $totalPages));
+
+        return ['effective_page' => $effectivePage, 'total_pages' => $totalPages];
+    }
+
+    /**
+     * Apply pagination to results. Caller must pass effective page (e.g. from resolveEffectivePage).
      *
      * @param  array<int, array<string, mixed>>  $allResults
      * @return array<int, array<string, mixed>>
@@ -564,7 +640,7 @@ class MovieSearchService
         int $itemsPerPage,
         bool $isPaginationRequested
     ): array {
-        if (! $isPaginationRequested) {
+        if (! $isPaginationRequested || $currentPage === null) {
             return $allResults;
         }
 
@@ -574,7 +650,33 @@ class MovieSearchService
     }
 
     /**
-     * Calculate pagination metadata.
+     * Calculate pagination metadata from resolved page (effective page + total pages).
+     *
+     * @param  array{effective_page: int, total_pages: int}  $resolved
+     * @return array{current_page: int|null, per_page: int|null, total_pages: int|null}
+     */
+    private function calculatePaginationMetadataWithResolved(
+        array $resolved,
+        int $itemsPerPage,
+        bool $isPaginationRequested
+    ): array {
+        if (! $isPaginationRequested) {
+            return [
+                'current_page' => null,
+                'per_page' => null,
+                'total_pages' => null,
+            ];
+        }
+
+        return [
+            'current_page' => $resolved['effective_page'],
+            'per_page' => $itemsPerPage,
+            'total_pages' => $resolved['total_pages'],
+        ];
+    }
+
+    /**
+     * Calculate pagination metadata (used when resolved page is not precomputed).
      *
      * @return array{current_page: int|null, per_page: int|null, total_pages: int|null}
      */
@@ -592,40 +694,42 @@ class MovieSearchService
             ];
         }
 
-        $totalPages = (int) ceil($totalCount / $itemsPerPage);
+        $resolved = $this->resolveEffectivePage($totalCount, $currentPage, $itemsPerPage, true);
 
-        return [
-            'current_page' => $currentPage,
-            'per_page' => $itemsPerPage,
-            'total_pages' => $totalPages,
-        ];
+        return $this->calculatePaginationMetadataWithResolved($resolved, $itemsPerPage, true);
     }
 
     /**
      * Get from tagged cache if supported, otherwise from regular cache.
+     * Returns cache payload (array with all_movies, total, ...) or null. Old SearchResult entries are ignored.
+     *
+     * @return array{all_movies: array<int, array<string, mixed>>, total: int, local_count: int, external_count: int, match_type: string, confidence: float}|null
      */
-    private function getFromTaggedCache(string $cacheKey): ?SearchResult
+    private function getFromTaggedCache(string $cacheKey): ?array
     {
         try {
-            // Try tagged cache first (works with Redis, Memcached, DynamoDB)
-            return Cache::tags(['movie_search'])->get($cacheKey);
+            $value = Cache::tags(['movie_search'])->get($cacheKey);
         } catch (\BadMethodCallException $e) {
-            // Fallback to regular cache if tags not supported (database, file drivers)
-            return Cache::get($cacheKey);
+            $value = Cache::get($cacheKey);
         }
+        if ($value === null || ! is_array($value) || ! isset($value['all_movies'], $value['total'])) {
+            return null;
+        }
+
+        return $value;
     }
 
     /**
      * Store in tagged cache if supported, otherwise in regular cache.
+     *
+     * @param  array{all_movies: array<int, array<string, mixed>>, total: int, local_count: int, external_count: int, match_type: string, confidence: float}  $payload
      */
-    private function putInTaggedCache(string $cacheKey, SearchResult $searchResult): void
+    private function putInTaggedCache(string $cacheKey, array $payload): void
     {
         try {
-            // Try tagged cache first (works with Redis, Memcached, DynamoDB)
-            Cache::tags(['movie_search'])->put($cacheKey, $searchResult, now()->addSeconds($this->getCacheTtl()));
+            Cache::tags(['movie_search'])->put($cacheKey, $payload, now()->addSeconds($this->getCacheTtl()));
         } catch (\BadMethodCallException $e) {
-            // Fallback to regular cache if tags not supported (database, file drivers)
-            Cache::put($cacheKey, $searchResult, now()->addSeconds($this->getCacheTtl()));
+            Cache::put($cacheKey, $payload, now()->addSeconds($this->getCacheTtl()));
         }
     }
 

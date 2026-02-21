@@ -200,6 +200,77 @@ class SearchMoviesTest extends TestCase
             ]);
     }
 
+    public function test_search_movies_actor_only_returns_movies_with_that_actor(): void
+    {
+        $movie = Movie::firstOrCreate(
+            ['slug' => 'speed-1994-actor-only-test'],
+            [
+                'title' => 'Speed',
+                'release_year' => 1994,
+            ]
+        );
+
+        $person = \App\Models\Person::firstOrCreate(
+            ['slug' => 'keanu-reeves-actor-only-test'],
+            ['name' => 'Keanu Reeves']
+        );
+
+        $movie->people()->syncWithoutDetaching([$person->id => ['role' => 'ACTOR']]);
+
+        $response = $this->getJson('/api/v1/movies/search?actor=Keanu%20Reeves');
+
+        $response->assertOk()
+            ->assertJsonStructure(['results', 'total']);
+        $this->assertGreaterThanOrEqual(1, $response->json('total'));
+        $slugs = array_column($response->json('results'), 'slug');
+        $this->assertContains('speed-1994-actor-only-test', $slugs);
+    }
+
+    public function test_search_movies_director_only_returns_movies_with_that_director(): void
+    {
+        Movie::firstOrCreate(
+            ['slug' => 'director-only-test-1999'],
+            [
+                'title' => 'Director Only Test Movie',
+                'release_year' => 1999,
+                'director' => 'Wachowski Sisters',
+            ]
+        );
+
+        $response = $this->getJson('/api/v1/movies/search?director=Wachowski');
+
+        $response->assertOk()
+            ->assertJsonStructure(['results', 'total']);
+        $results = $response->json('results');
+        $this->assertGreaterThanOrEqual(1, $response->json('total'));
+        $slugs = array_column($results, 'slug');
+        $this->assertContains('director-only-test-1999', $slugs);
+    }
+
+    public function test_search_movies_year_only_returns_movies_from_that_year(): void
+    {
+        Movie::firstOrCreate(
+            ['slug' => 'year-only-test-1985'],
+            [
+                'title' => 'Year Only Test Movie',
+                'release_year' => 1985,
+            ]
+        );
+
+        $response = $this->getJson('/api/v1/movies/search?year=1985');
+
+        $response->assertOk()
+            ->assertJsonStructure(['results', 'total']);
+        $results = $response->json('results');
+        foreach ($results as $result) {
+            if (isset($result['release_year'])) {
+                $this->assertSame(1985, $result['release_year']);
+            }
+        }
+        $slugs = array_column($results, 'slug');
+        $this->assertContains('year-only-test-1985', $slugs);
+    }
+
     public function test_search_movies_with_multiple_actors(): void
     {
         // Create a movie with multiple actors for testing (use unique slugs to avoid conflicts)

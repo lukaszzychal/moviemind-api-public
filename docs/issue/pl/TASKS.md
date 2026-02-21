@@ -228,6 +228,7 @@ Każde zadanie ma następującą strukturę:
 - `TASK-009` - Admin UI
 - `TASK-010` - Analytics/Monitoring Dashboards
 - `TASK-030` - Dokumentacja testów "trzech linii"
+- `TASK-053` - Wyszukiwanie pełnotekstowe / tolerancja literówek (full-text / fuzzy search)
 - ~~`TASK-RAPI-006` - Usage Analytics Dashboard~~ ✅ COMPLETED
 
 ---
@@ -371,6 +372,18 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-01-27
 - **Ukończone:** 2025-01-27
 - **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-053` - Wyszukiwanie pełnotekstowe / tolerancja literówek (full-text / fuzzy search)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski (Roadmap)
+- **Szacowany czas:** 8-16h (w zależności od zakresu: filmy / seriale / osoby)
+- **Opis:** Opcjonalne rozszerzenie wyszukiwania: warianty słów (stemming) i tolerancja literówek (np. trigramy w PostgreSQL).
+- **Szczegóły:**
+  - Dokument opisujący mechanizm: `docs/en/FULLTEXT_FUZZY_SEARCH.md` (oraz `docs/pl/`).
+  - Decyzja o wdrożeniu (migracje FTS/pg_trgm, zmiana zapytań w `MovieRepository` / `TvShowRepository` / `PersonRepository`) w osobnym zadaniu.
+- **Zależności:** Brak
 
 ---
 
