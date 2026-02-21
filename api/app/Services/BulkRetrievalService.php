@@ -21,21 +21,24 @@ class BulkRetrievalService
      * @param  array<int, string>  $slugs  Array of slugs to retrieve
      * @param  array<int, string>  $include  Relations to include (descriptions, people, genres, etc.)
      * @param  callable  $formatter  Callback to format each entity (receives Model, returns array)
-     * @return array{data: array<int, array>, not_found: array<int, string>}
+     * @return array{data: array<int, array>, not_found: array<int, string>, count: int, requested_count: int}
      */
     public function retrieve(
-        MovieRepository|PersonRepository $repository, // @phpstan-ignore-line - Union type for repositories
+        MovieRepository|PersonRepository $repository,
         array $slugs,
         array $include,
         callable $formatter
     ): array {
         // Deduplicate slugs while preserving order
         $uniqueSlugs = array_values(array_unique($slugs));
+        $requestedCount = count($slugs);
 
         if (empty($uniqueSlugs)) {
             return [
                 'data' => [],
                 'not_found' => [],
+                'count' => 0,
+                'requested_count' => $requestedCount,
             ];
         }
 
@@ -62,6 +65,8 @@ class BulkRetrievalService
         return [
             'data' => $data,
             'not_found' => $notFound,
+            'count' => count($data),
+            'requested_count' => $requestedCount,
         ];
     }
 }

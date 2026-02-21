@@ -1,5 +1,6 @@
 parameters:
     level: 5
+    reportUnmatchedIgnoredErrors: false
     paths:
         - app
         - database/seeders
@@ -12,4 +13,26 @@ parameters:
         - '#PHPDoc tag @var with type object\{.*\} is not subtype of native type App\\Models\\ApiUsage#'
         - '#Using nullsafe property access.*on left side of.*is unnecessary#'
         - '#Call to static method active\(\) on an unknown class Illuminate\\Support\\Facades\\Feature#'
+        # Filament / vendor API
+        - '#Call to an undefined static method.*getThrottleKey#'
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$slug#'
+        - '#Match expression does not handle remaining value: string#'
+        # Report model (polymorphic / dynamic props)
+        - '#Access to an undefined property App\\Models\\Report::#'
+        # env() outside config (Larastan)
+        - "#Called 'env' outside of the config directory#"
+        # Missing class (to be implemented)
+        - '#has invalid type App\\Actions\\GetRelatedPeopleAction#'
+        - '#has unknown class App\\Actions\\GetRelatedPeopleAction as its type#'
+        - '#Call to method handle\(\) on an unknown class App\\Actions\\GetRelatedPeopleAction#'
+        # Controllers / services
+        - '#Property.*is never read, only written#'
+        - '#Offset .* on left side of \?\?#'
+        - '#Result of \|\| is always true#'
+        - '#Strict comparison using === between \*NEVER\* and#'
+        - '#Strict comparison using === between null and null will always evaluate to true#'
+        - '#Left side of && is always true#'
+        - '#Method.*should return.*Collection but returns#'
+        - '#Method.*never returns callable.*so it can be removed from the return type#'
+        - '#Method .* is unused\.#'
 

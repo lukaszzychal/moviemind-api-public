@@ -6,7 +6,6 @@ namespace App\Actions;
 
 use App\Models\Movie;
 use App\Models\MovieRelationship;
-use App\Services\HateoasService;
 use Illuminate\Http\Request;
 
 /**
@@ -21,9 +20,7 @@ use Illuminate\Http\Request;
  */
 class GetRelatedMoviesAction
 {
-    public function __construct(
-        private readonly HateoasService $hateoas
-    ) {}
+    public function __construct() {}
 
     /**
      * Handle the action.
@@ -55,7 +52,7 @@ class GetRelatedMoviesAction
                 ? $relationship->relatedMovie
                 : $relationship->movie;
 
-            if ($relatedMovie !== null) {
+            if ($relatedMovie instanceof Movie) {
                 $formattedMovies[] = [
                     'id' => $relatedMovie->id,
                     'slug' => $relatedMovie->slug,
@@ -133,7 +130,7 @@ class GetRelatedMoviesAction
     {
         if ($typeFilter === 'similar') {
             // If filtering by similar only, return empty collection
-            return collect();
+            return new \Illuminate\Database\Eloquent\Collection([]);
         }
 
         // Get relationships from database (both directions) ordered by order field
@@ -157,11 +154,11 @@ class GetRelatedMoviesAction
     {
         if ($typeFilter === 'collection') {
             // If filtering by collection only, return empty collection
-            return collect();
+            return new \Illuminate\Database\Eloquent\Collection([]);
         }
 
         // TODO: Implement TMDb similar movies retrieval
         // For now, return empty collection
-        return collect();
+        return new \Illuminate\Database\Eloquent\Collection([]);
     }
 }

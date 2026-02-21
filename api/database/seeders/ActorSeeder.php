@@ -42,7 +42,7 @@ class ActorSeeder extends Seeder
             $reeves->update(['default_bio_id' => $bio->id]);
         }
 
-        $matrix = Movie::where('title', 'The Matrix')->first();
+        $matrix = Movie::where('slug', 'the-matrix-1999')->first();
         if ($matrix) {
             $matrix->people()->syncWithoutDetaching([
                 $reeves->id => [

@@ -20,18 +20,17 @@ class MovieSeeder extends Seeder
             return;
         }
 
-        $matrix = Movie::firstOrCreate(
+        // Use fixed slugs so MANUAL_TESTING_GUIDE and TC-MOVIE-* scenarios pass (the-matrix-1999, inception-2010).
+        $matrix = Movie::updateOrCreate(
+            ['slug' => 'the-matrix-1999'],
             [
                 'title' => 'The Matrix',
                 'release_year' => 1999,
-            ],
-            [
-                'slug' => Movie::generateSlug('The Matrix', 1999, 'The Wachowskis'),
                 'director' => 'The Wachowskis',
             ]
         );
 
-        if ($matrix->wasRecentlyCreated) {
+        if (! $matrix->default_description_id) {
             $desc = MovieDescription::create([
                 'movie_id' => $matrix->id,
                 'locale' => Locale::EN_US,
@@ -48,18 +47,16 @@ class MovieSeeder extends Seeder
             ['tmdb_id' => 603, 'tmdb_type' => 'movie', 'raw_data' => ['id' => 603, 'title' => 'The Matrix'], 'fetched_at' => \Illuminate\Support\Carbon::now()]
         );
 
-        $inception = Movie::firstOrCreate(
+        $inception = Movie::updateOrCreate(
+            ['slug' => 'inception-2010'],
             [
                 'title' => 'Inception',
                 'release_year' => 2010,
-            ],
-            [
-                'slug' => Movie::generateSlug('Inception', 2010, 'Christopher Nolan'),
                 'director' => 'Christopher Nolan',
             ]
         );
 
-        if ($inception->wasRecentlyCreated) {
+        if (! $inception->default_description_id) {
             $desc2 = MovieDescription::create([
                 'movie_id' => $inception->id,
                 'locale' => Locale::EN_US,
