@@ -54,7 +54,7 @@ paths:
           schema:
             type: string
             maxLength: 255
-          description: Search query (title, director, genre, etc.)
+          description: Search query (title, director, genre, etc.). **Required** for fetching results from the external TMDb API.
           example: Matrix
         - in: query
           name: year
