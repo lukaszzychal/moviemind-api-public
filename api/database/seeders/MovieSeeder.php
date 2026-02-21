@@ -43,6 +43,11 @@ class MovieSeeder extends Seeder
             $matrix->update(['default_description_id' => $desc->id]);
         }
 
+        \App\Models\TmdbSnapshot::updateOrCreate(
+            ['entity_type' => 'MOVIE', 'entity_id' => $matrix->id],
+            ['tmdb_id' => 603, 'tmdb_type' => 'movie', 'raw_data' => ['id' => 603, 'title' => 'The Matrix'], 'fetched_at' => \Illuminate\Support\Carbon::now()]
+        );
+
         $inception = Movie::firstOrCreate(
             [
                 'title' => 'Inception',
@@ -65,6 +70,11 @@ class MovieSeeder extends Seeder
             ]);
             $inception->update(['default_description_id' => $desc2->id]);
         }
+
+        \App\Models\TmdbSnapshot::updateOrCreate(
+            ['entity_type' => 'MOVIE', 'entity_id' => $inception->id],
+            ['tmdb_id' => 27205, 'tmdb_type' => 'movie', 'raw_data' => ['id' => 27205, 'title' => 'Inception', 'overview' => 'A thief stealing corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.', 'release_date' => '2010-07-15'], 'fetched_at' => \Illuminate\Support\Carbon::now()]
+        );
 
         $attach = function (Movie $movie, array $names) {
             $ids = [];

@@ -345,7 +345,7 @@ curl -X GET "http://localhost:8000/api/v1/movies/search?q=matrix&local_limit=5&e
 **Get movie details:**
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq
+curl -X GET "http://localhost:8000/api/v1/movies/the-matrix-1999" | jq 
 ```
 
 **Bulk retrieve movies (RESTful - recommended):**
@@ -367,7 +367,12 @@ curl -X POST "http://localhost:8000/api/v1/movies/bulk" \
 Ten endpoint odświeża dane o filmie (np. The Matrix). Pobiera on jego najnowsze informacje za pomocą zewnętrznego API (z TMDb), aktualizuje nasz zapisany lokalnie snapshot oraz czyści pamięć podręczną (cache) aplikacji. Skutkiem tego jest to, że przy następnym zapytaniu z użyciem metody GET, API pobierze dla nas zaktualizowane i najświeższe dane.
 
 ```bash
+# Refresh "The Matrix" (1999) from TMDb source
 curl -X POST "http://localhost:8000/api/v1/movies/the-matrix-1999/refresh" \
+  -H "Accept: application/json" | jq
+
+# Refresh "Inception" (2010) from TMDb source
+curl -X POST "http://localhost:8000/api/v1/movies/inception-2010/refresh" \
   -H "Accept: application/json" | jq
 ```
 
