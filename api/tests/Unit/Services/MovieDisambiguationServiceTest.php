@@ -43,7 +43,7 @@ class MovieDisambiguationServiceTest extends TestCase
         $repository = new MovieRepository;
         $service = new MovieDisambiguationService($repository);
 
-        // Create multiple movies with same title but different years
+        // Create multiple movies with same title but different years (unique constraint: title + release_year)
         $movie1 = Movie::create([
             'slug' => 'the-matrix-1999',
             'title' => 'The Matrix',
@@ -56,12 +56,11 @@ class MovieDisambiguationServiceTest extends TestCase
             'release_year' => 2003,
         ]);
 
-        // Create movie without year in slug (ambiguous)
-        // Note: findAllByTitleSlug returns all movies matching the pattern, including this one
+        // Ambiguous slug (no year) - use distinct year to satisfy unique(title, release_year)
         $ambiguousMovie = Movie::create([
             'slug' => 'the-matrix',
             'title' => 'The Matrix',
-            'release_year' => 1999,
+            'release_year' => 2020,
         ]);
 
         // When slug doesn't contain year and multiple movies exist, should return meta

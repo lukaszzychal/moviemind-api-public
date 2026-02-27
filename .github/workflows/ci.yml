@@ -29,8 +29,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.3']
-        # PHP 8.2 removed: Composer/lockfile require >= 8.3. PHP 8.4 disabled due to Laravel 12 issue.
+        php-versions: ['8.3','8.4','8.5']
+        # PHP 8.2 removed: Composer/lockfile require >= 8.3.
 
     steps:
       - name: Checkout code
