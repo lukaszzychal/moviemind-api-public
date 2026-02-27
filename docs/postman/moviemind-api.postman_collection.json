@@ -746,6 +746,39 @@
       ]
     },
     {
+      "name": "Feedback",
+      "item": [
+        {
+          "name": "Submit feedback (public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Suggestion: add filter by release year in search. This is at least 10 chars.\",\n  \"category\": \"suggestion\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "feedback"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Feedback received. Thank you.\",\n  \"id\": \"01234567-89ab-cdef-0123-456789abcdef\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Admin",
       "item": [
         {
@@ -1049,39 +1082,6 @@
               "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
             }
           }
-        }
-      ]
-    },
-    {
-      "name": "Feedback",
-      "item": [
-        {
-          "name": "Submit feedback (public)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"message\": \"Suggestion: add filter by release year in search. This is at least 10 chars.\",\n  \"category\": \"suggestion\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/feedback",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "feedback"]
-            }
-          },
-          "response": [
-            {
-              "name": "201 Created",
-              "status": "Created",
-              "code": 201,
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"message\": \"Feedback received. Thank you.\",\n  \"id\": \"01234567-89ab-cdef-0123-456789abcdef\"\n}"
-            }
-          ]
         }
       ]
     },
