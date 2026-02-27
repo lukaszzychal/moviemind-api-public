@@ -19,7 +19,7 @@ class JobsDashboardTest extends TestCase
 
         // Bypass Admin API auth for tests
         config(['app.env' => 'local']);
-        putenv('ADMIN_AUTH_BYPASS_ENVS=local,staging');
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
     }
 
     public function test_overview_returns_queue_statistics(): void
@@ -39,7 +39,7 @@ class JobsDashboardTest extends TestCase
         DB::table('ai_jobs')->insert([
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 1,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440001',
                 'status' => 'DONE',
                 'created_at' => now(),
                 'updated_at' => now(),

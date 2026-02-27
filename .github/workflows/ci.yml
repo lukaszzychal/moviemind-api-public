@@ -322,6 +322,28 @@ jobs:
             echo 'ai_bio_generation: ' . (Laravel\Pennant\Feature::active('ai_bio_generation') ? 'ACTIVE' : 'INACTIVE') . PHP_EOL;
           "
 
+      - name: Get API key for Newman
+        id: api-key
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          JSON=$(php tests/setup_keys.php)
+          if echo "$JSON" | jq -e '.key' > /dev/null 2>&1; then
+            echo "API_KEY=$(echo "$JSON" | jq -r '.key')" >> $GITHUB_ENV
+          else
+            echo "Failed to get API key: $JSON"
+            exit 1
+          fi
+
       - name: Start API server
         working-directory: api
         env:
@@ -363,10 +385,12 @@ jobs:
           # Use npx to run newman without global installation
           # Note: newman will exit with non-zero code if tests fail
           # Admin API key is not needed because ADMIN_AUTH_BYPASS_ENVS includes 'testing'
+          # API key for /generate is from setup_keys.php (API_KEY env)
           npx --yes newman@latest run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
-            --env-var "ADMIN_API_KEY=not-needed-testing-bypass" \
+            --env-var "adminApiKey=not-needed-testing-bypass" \
+            --env-var "apiKey=$API_KEY" \
             --reporters cli,junit \
             --reporter-junit-export newman-results.xml \
             --timeout-request 10000 \

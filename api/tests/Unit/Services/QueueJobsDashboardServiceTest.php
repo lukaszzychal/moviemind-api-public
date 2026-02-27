@@ -137,7 +137,7 @@ class QueueJobsDashboardServiceTest extends TestCase
         DB::table('ai_jobs')->insert([
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 1,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440001',
                 'locale' => 'pl-PL',
                 'status' => 'PENDING',
                 'payload_json' => json_encode(['slug' => 'test-movie']),
@@ -146,7 +146,7 @@ class QueueJobsDashboardServiceTest extends TestCase
             ],
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 2,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440002',
                 'locale' => 'en-US',
                 'status' => 'DONE',
                 'payload_json' => json_encode(['slug' => 'test-movie-2']),
@@ -155,7 +155,7 @@ class QueueJobsDashboardServiceTest extends TestCase
             ],
             [
                 'entity_type' => 'PERSON',
-                'entity_id' => 1,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440001',
                 'locale' => 'pl-PL',
                 'status' => 'FAILED',
                 'payload_json' => json_encode(['slug' => 'test-person']),

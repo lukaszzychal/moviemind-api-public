@@ -25,7 +25,7 @@ return [
 
     'auth' => [
         'bypass_environments' => array_filter(
-            array_map('trim', explode(',', env('ADMIN_AUTH_BYPASS_ENVS', 'local,staging')))
+            array_map('trim', explode(',', env('ADMIN_AUTH_BYPASS_ENVS', 'local,staging,testing')))
         ),
         'allowed_emails' => array_filter(
             array_map('trim', explode(',', env('ADMIN_ALLOWED_EMAILS', '')))

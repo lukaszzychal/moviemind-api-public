@@ -194,21 +194,21 @@ class FailedJobsServiceTest extends TestCase
         DB::table('ai_jobs')->insert([
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 1,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440001',
                 'status' => 'DONE',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 2,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440002',
                 'status' => 'DONE',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 3,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440003',
                 'status' => 'FAILED',
                 'created_at' => now(),
                 'updated_at' => now(),

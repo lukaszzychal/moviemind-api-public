@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('ai_jobs', function (Blueprint $table) {
             $table->id();
             $table->string('entity_type', 16); // MOVIE, ACTOR
-            $table->unsignedBigInteger('entity_id');
+            $table->uuid('entity_id')->nullable();
             $table->string('locale', 10)->nullable();
             $table->string('status', 16)->default('PENDING'); // PENDING, DONE, FAILED
             $table->json('payload_json')->nullable();

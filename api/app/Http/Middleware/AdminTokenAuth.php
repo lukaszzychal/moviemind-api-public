@@ -15,6 +15,12 @@ class AdminTokenAuth
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $bypassEnvs = config('admin.auth.bypass_environments', []);
+
+        if (is_array($bypassEnvs) && app()->environment($bypassEnvs)) {
+            return $next($request);
+        }
+
         $token = $request->header('X-Admin-Token') ?? $request->bearerToken();
         $validToken = config('admin.api_token');
 
