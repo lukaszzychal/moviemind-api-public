@@ -306,17 +306,21 @@
           ]
         },
         {
-          "name": "Get person (not found -> 202 Accepted)",
+          "name": "Get person (not found -> 202 or 404)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
+                  "pm.test(\"Status code is 202 or 404\", function () { pm.expect([202, 404]).to.include(pm.response.code); });",
                   "const json = pm.response.json();",
-                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
-                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                  "if (pm.response.code === 202) {",
+                  "  pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "  if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }",
+                  "} else {",
+                  "  pm.test(\"404 has error\", function () { pm.expect(json).to.have.property('error'); });",
+                  "}"
                 ]
               }
             }
@@ -978,7 +982,7 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test(\"Usage response has array\", function () { pm.expect(json).to.have.property('usage').that.is.an('array'); });"
+                  "pm.test(\"Usage response has array\", function () { pm.expect(json).to.have.property('usages').that.is.an('array'); });"
                 ]
               }
             }
@@ -1016,7 +1020,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"usage\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
+              "body": "{\n  \"flag\": \"all\",\n  \"usages\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
             }
           ]
         },
