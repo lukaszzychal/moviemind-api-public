@@ -38,13 +38,19 @@ class RetryWebhookJobTest extends TestCase
             'next_retry_at' => now()->subMinute(),
         ]);
 
+        // WebhookService has no default processor for 'billing' - mock retryWebhook to simulate success
+        $webhookService = $this->createMock(WebhookService::class);
+        $webhookService->method('retryWebhook')->willReturnCallback(function (WebhookEvent $event) {
+            $event->update(['status' => 'processed']);
+        });
+
         // ACT: Dispatch and handle retry job
         $job = new RetryWebhookJob($webhookEvent->id);
-        $job->handle(app(WebhookService::class));
+        $job->handle($webhookService);
 
-        // ASSERT: Webhook should be processed (or failed again if processor fails)
+        // ASSERT: Webhook should be processed
         $webhookEvent->refresh();
-        $this->assertContains($webhookEvent->status, ['processed', 'failed', 'permanently_failed']);
+        $this->assertSame('processed', $webhookEvent->status);
     }
 
     public function test_retry_webhook_job_skips_if_webhook_not_found(): void

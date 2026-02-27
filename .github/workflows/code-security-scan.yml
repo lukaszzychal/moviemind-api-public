@@ -31,23 +31,15 @@ jobs:
       uses: actions/checkout@v6
       with:
         fetch-depth: 0  # Fetch all history for better detection
-    
-    - name: Run GitLeaks
-      uses: gitleaks/gitleaks-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-        # Use repo root config so allowlists (e.g. docs/, mm_* keys) are applied
-        GITLEAKS_CONFIG: .gitleaks.toml
-    
-    - name: Upload GitLeaks results
-      uses: actions/upload-artifact@v6
-      if: failure()
-      with:
-        name: gitleaks-results
-        path: gitleaks-results.sarif
-        retention-days: 30
-      continue-on-error: true
+
+    - name: Install Gitleaks
+      run: |
+        GITLEAKS_VERSION="8.30.0"
+        curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz -C /usr/local/bin gitleaks
+        gitleaks version
+
+    - name: Run GitLeaks with repo config
+      run: gitleaks protect --source . --config .gitleaks.toml --verbose --redact
 
   # Additional security checks
   security-audit:

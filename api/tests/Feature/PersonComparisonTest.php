@@ -35,15 +35,15 @@ class PersonComparisonTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movies
+        // Create movies (unique title+year to avoid conflict with seed data and unique constraint)
         $movie1 = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
 
         $movie2 = Movie::create([
-            'title' => 'Inception',
+            'title' => "Inception {$uniqueSuffix}",
             'slug' => "inception-2010-{$uniqueSuffix}",
             'release_year' => 2010,
         ]);
@@ -149,15 +149,15 @@ class PersonComparisonTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movies
+        // Create movies (unique title+year to avoid conflict with seed data and unique constraint)
         $movie1 = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
 
         $movie2 = Movie::create([
-            'title' => 'Inception',
+            'title' => "Inception {$uniqueSuffix}",
             'slug' => "inception-2010-{$uniqueSuffix}",
             'release_year' => 2010,
         ]);
@@ -272,16 +272,16 @@ class PersonComparisonTest extends TestCase
             'slug' => "leonardo-dicaprio-1974-{$uniqueSuffix}",
         ]);
 
-        // No common movies
+        // No common movies (unique title+year to avoid conflict with seed and unique constraint)
         $movie1 = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
         $movie1->people()->attach($person1->id, ['role' => 'ACTOR']);
 
         $movie2 = Movie::create([
-            'title' => 'Inception',
+            'title' => "Inception {$uniqueSuffix}",
             'slug' => "inception-2010-{$uniqueSuffix}",
             'release_year' => 2010,
         ]);
