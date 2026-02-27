@@ -47,6 +47,11 @@ regex = '''curl -H "X-API-Key: [^"]*"'''
 reason = "cURL example with placeholder API key"
 
 [[extend.allowlist.regexes]]
+regex = '''X-API-Key:\s*['"]?mm_[a-z0-9]{20,}['"]?'''
+reason = "X-API-Key header with MovieMind test key in docs/examples"
+caseInsensitive = true
+
+[[extend.allowlist.regexes]]
 regex = '''OPENAI_API_KEY=sk-[a-zA-Z0-9]{48}'''
 reason = "Example OpenAI API key in documentation"
 

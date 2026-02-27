@@ -37,6 +37,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        # Use repo root config so allowlists (e.g. docs/, mm_* keys) are applied
+        GITLEAKS_CONFIG: .gitleaks.toml
     
     - name: Upload GitLeaks results
       uses: actions/upload-artifact@v6
