@@ -45,8 +45,9 @@ jobs:
       if: failure()
       with:
         name: gitleaks-results
-        path: gitleaks-results.json
+        path: gitleaks-results.sarif
         retention-days: 30
+      continue-on-error: true
 
   # Additional security checks
   security-audit:

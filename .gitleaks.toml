@@ -103,6 +103,10 @@ path = '''docs/.*'''
 reason = "Documentation directory"
 
 [[extend.allowlist.paths]]
+path = '''docs/curl-generate-example\.sh'''
+reason = "Example cURL script with placeholder or test API key"
+
+[[extend.allowlist.paths]]
 path = '''docs/pre-commit-setup\.md'''
 reason = "Pre-commit setup documentation with examples"
 
