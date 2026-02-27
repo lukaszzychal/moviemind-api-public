@@ -2,7 +2,7 @@
   "info": {
     "name": "MovieMind API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "item": [
     {
@@ -970,6 +970,118 @@
               "body": "{\n  \"usage\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Feedback - list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length > 0 && json.data[0].id) {",
+                  "  pm.collectionVariables.set('feedbackId', json.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback"]
+            }
+          }
+        },
+        {
+          "name": "Feedback - get one",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+            }
+          }
+        },
+        {
+          "name": "Feedback - update status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"read\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+            }
+          }
+        },
+        {
+          "name": "Feedback - delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feedback",
+      "item": [
+        {
+          "name": "Submit feedback (public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Suggestion: add filter by release year in search. This is at least 10 chars.\",\n  \"category\": \"suggestion\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "feedback"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Feedback received. Thank you.\",\n  \"id\": \"01234567-89ab-cdef-0123-456789abcdef\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -1059,6 +1171,16 @@
     },
     {
       "key": "personBioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "feedbackId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminApiKey",
       "value": "",
       "type": "string"
     }

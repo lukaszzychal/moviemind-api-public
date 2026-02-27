@@ -19,6 +19,7 @@ tags:
   - name: Admin
   - name: Health
   - name: Webhooks
+  - name: Feedback
 paths:
   /v1/movies:
     get:
@@ -917,6 +918,47 @@ paths:
         '200':
           description: OK
 
+  /v1/feedback:
+    post:
+      tags: [Feedback]
+      summary: Submit application feedback (anonymous)
+      description: |
+        Submit anonymous feedback (no personal data). Rate limit same as report endpoints.
+        No authentication required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+                  description: Feedback text (required)
+                category:
+                  type: string
+                  enum: [bug, suggestion, other]
+                  description: Optional category
+      responses:
+        '201':
+          description: Feedback received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Feedback received. Thank you."
+                  id:
+                    type: string
+                    format: uuid
+        '422':
+          description: Validation error (e.g. message too short or invalid category)
+
   /v1/admin/debug/config:
     get:
       tags: [Debug]
@@ -1111,6 +1153,113 @@ paths:
         '200':
           description: OK
 
+  /v1/admin/feedback:
+    get:
+      tags: [Admin]
+      summary: List application feedback
+      description: Paginated list (20 per page). Requires X-Admin-Token or Bearer.
+      security:
+        - AdminToken: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApplicationFeedback'
+                  current_page: { type: integer }
+                  per_page: { type: integer }
+                  total: { type: integer }
+        '401':
+          description: Unauthorized (missing or invalid admin token)
+  /v1/admin/feedback/{id}:
+    get:
+      tags: [Admin]
+      summary: Get single feedback entry
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationFeedback'
+        '404':
+          description: Not found
+        '401':
+          description: Unauthorized
+    patch:
+      tags: [Admin]
+      summary: Update feedback status
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, read, archived]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationFeedback'
+        '404':
+          description: Not found
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Admin]
+      summary: Delete feedback entry
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No content
+        '404':
+          description: Not found
+        '401':
+          description: Unauthorized
+
   /v1/admin/analytics/overview:
     get:
       tags: [Admin]
@@ -1287,6 +1436,28 @@ components:
       in: header
       name: X-API-Key
   schemas:
+    ApplicationFeedback:
+      type: object
+      description: Anonymous application feedback (no personal data)
+      properties:
+        id:
+          type: string
+          format: uuid
+        message:
+          type: string
+        category:
+          type: string
+          nullable: true
+          enum: [bug, suggestion, other]
+        status:
+          type: string
+          enum: [pending, read, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Genre:
       type: object
       properties:

@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\ApiKeyController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\FlagController;
 use App\Http\Controllers\Admin\WebhookSubscriptionController;
+use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GenerateController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\JobsController;
@@ -51,6 +53,7 @@ Route::prefix('v1')->group(function () {
         'plan.feature:ai_generate',
     ]);
     Route::get('jobs/{id}', [JobsController::class, 'show']);
+    Route::post('feedback', [FeedbackController::class, 'store'])->middleware('adaptive.rate.limit:report');
     Route::get('health', [HealthController::class, 'health']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
     Route::get('health/tmdb', [HealthController::class, 'tmdb']);
@@ -115,6 +118,12 @@ Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
         Route::post('/', [WebhookSubscriptionController::class, 'store']);
         Route::patch('{id}', [WebhookSubscriptionController::class, 'update']);
         Route::delete('{id}', [WebhookSubscriptionController::class, 'destroy']);
+    });
+    Route::prefix('feedback')->group(function () {
+        Route::get('/', [AdminFeedbackController::class, 'index']);
+        Route::get('{id}', [AdminFeedbackController::class, 'show']);
+        Route::patch('{id}', [AdminFeedbackController::class, 'update']);
+        Route::delete('{id}', [AdminFeedbackController::class, 'destroy']);
     });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });

@@ -310,6 +310,15 @@ class NotificationWebhooksTest extends TestCase
 
 ### Testing Outgoing Webhooks
 
+**Manual testing:** To receive and inspect outgoing webhook requests without running your own server, you can use:
+
+- **[Webhook.cool](https://webhook.cool/)** – generates a unique URL; requests are visible in the browser (URLs expire after 7 days of inactivity).
+- **[Webhook.site](https://webhook.site/)** – similar service; view request history, optional account for more requests.
+
+Set `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED` (or another `WEBHOOK_URL_*`) in `.env` to the URL provided by either service, then trigger a generation; the POST will appear in the tester.
+
+**Automated testing (fake HTTP):**
+
 ```php
 use Illuminate\Support\Facades\Http;
 

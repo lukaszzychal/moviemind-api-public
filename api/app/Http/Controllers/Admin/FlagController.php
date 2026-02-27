@@ -22,6 +22,9 @@ class FlagController extends Controller
     {
         return response()->json([
             'data' => $this->featureFlagManager->allWithStatus(),
+            'meta' => [
+                'scope_note' => 'Only global (default) scope is effective. User scope is not implemented in API or application logic.',
+            ],
         ]);
     }
 

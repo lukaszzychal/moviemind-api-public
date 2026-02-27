@@ -21,10 +21,9 @@ parameters:
         - '#Access to an undefined property App\\Models\\Report::#'
         # env() outside config (Larastan)
         - "#Called 'env' outside of the config directory#"
-        # Missing class (to be implemented)
-        - '#has invalid type App\\Actions\\GetRelatedPeopleAction#'
-        - '#has unknown class App\\Actions\\GetRelatedPeopleAction as its type#'
-        - '#Call to method handle\(\) on an unknown class App\\Actions\\GetRelatedPeopleAction#'
+        # Collection value type covariance (PHPStan template)
+        - '#Method App\\Actions\\GetRelatedPeopleAction::getCollaborators\(\) should return.*Collection.*but returns#'
+        - '#Method App\\Actions\\GetRelatedPeopleAction::getSameName\(\) should return.*Collection.*but returns#'
         # Controllers / services
         - '#Property.*is never read, only written#'
         - '#Offset .* on left side of \?\?#'

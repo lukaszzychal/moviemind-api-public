@@ -6,11 +6,14 @@ export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  timeout: 60000,
   use: {
-    baseURL: 'http://localhost:8000',
+    // Use 127.0.0.1 to avoid IPv6 (::1) resolution; Docker/exposed ports often listen on IPv4 only.
+    // For admin login: start app with E2E override so APP_URL matches: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:8000',
     trace: 'on-first-retry',
   },
   projects: [

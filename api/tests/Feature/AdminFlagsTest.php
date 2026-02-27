@@ -29,7 +29,11 @@ class AdminFlagsTest extends TestCase
         $res = $this->getJson('/api/v1/admin/flags');
 
         // THEN: Should return OK with correct structure
-        $res->assertOk()->assertJsonStructure(['data' => [['name', 'active', 'description', 'category', 'default', 'togglable']]]);
+        $res->assertOk()
+            ->assertJsonStructure([
+                'data' => [['name', 'active', 'description', 'category', 'default', 'togglable']],
+                'meta' => ['scope_note'],
+            ]);
     }
 
     public function test_toggle_flag(): void

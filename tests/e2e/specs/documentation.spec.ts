@@ -23,9 +23,9 @@ test.describe('Documentation Routes', () => {
     // THEN: Should return 200 OK
     expect(response.status()).toBe(200);
 
-    // AND: Should have correct Content-Type
-    const contentType = response.headers()['content-type'];
-    expect(contentType).toContain('application/x-yaml') || expect(contentType).toContain('text/yaml');
+    // AND: Should have correct Content-Type (server may send application/x-yaml or text/yaml)
+    const contentType = response.headers()['content-type'] ?? '';
+    expect(contentType).toMatch(/application\/x-yaml|text\/yaml/);
 
     // AND: Should contain OpenAPI content
     const body = await response.text();

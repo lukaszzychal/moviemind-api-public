@@ -2,10 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Hash;
 
 class PrepareE2ETestCommand extends Command
 {
@@ -39,6 +41,14 @@ class PrepareE2ETestCommand extends Command
         // Always ensure admin user exists
         $this->info('Seeding admin user...');
         $this->call('db:seed', ['--class' => AdminUserSeeder::class]);
+
+        // Force known password for E2E so login tests succeed regardless of existing data
+        $email = env('ADMIN_EMAIL', 'admin@moviemind.local');
+        $password = env('ADMIN_PASSWORD', 'password123');
+        $user = User::where('email', $email)->first();
+        if ($user) {
+            $user->update(['password' => Hash::make($password)]);
+        }
 
         // Optionally run full seeder
         if ($this->option('seed')) {

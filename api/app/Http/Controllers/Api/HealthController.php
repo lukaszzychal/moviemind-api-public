@@ -203,10 +203,15 @@ class HealthController extends Controller
         try {
             DB::connection()->getPdo();
 
-            return response()->json([
+            $payload = [
                 'status' => 'ok',
                 'message' => 'Database connection established',
-            ]);
+            ];
+            if (app()->environment('local') || app()->environment('testing')) {
+                $payload['app_url'] = config('app.url');
+            }
+
+            return response()->json($payload);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',

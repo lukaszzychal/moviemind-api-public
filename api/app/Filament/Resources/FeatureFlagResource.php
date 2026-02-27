@@ -44,6 +44,7 @@ class FeatureFlagResource extends Resource
                     })
                     ->searchable()
                     ->default('__laravel_null')
+                    ->helperText('Only Global scope is effective. User scope is not implemented in API or application logic (see TASK-FF-001).')
                     // Force name to re-validate when scope changes
                     ->live()
                     ->required(),

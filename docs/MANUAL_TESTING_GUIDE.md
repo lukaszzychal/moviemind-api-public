@@ -2813,7 +2813,12 @@ Tak. Listener bierze URL-e z `config('webhooks.outgoing_urls')` (z `env('WEBHOOK
 
 **3. Jak przetestować manualnie?**
 
-1. W `api/.env` ustaw np. `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://webhook.site/...` (lub inny odbiornik, np. RequestBin).
+Do odbierania i podglądu requestów webhook możesz użyć publicznych testerów (wygeneruj unikalny URL i wklej go do `.env` lub formularza):
+
+- **[Webhook.cool](https://webhook.cool/)** – odbieraj i przeglądaj requesty; adresy wygasają po 7 dniach nieaktywności.
+- **[Webhook.site](https://webhook.site/)** – podobna funkcja, historia requestów, opcjonalnie konto i więcej requestów.
+
+1. W `api/.env` ustaw np. `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://webhook.site/...` lub URL z [webhook.cool](https://webhook.cool/) (lub inny odbiornik).
 2. Włącz flagę `webhook_notifications` (panel Admin → Feature Flags lub API).
 3. Wywołaj `POST /api/v1/generate` z body `{"entity_type":"MOVIE","slug":"the-matrix-1999"}` oraz nagłówkiem `X-API-Key: YOUR_API_KEY` (Accept: application/json).
 4. Sprawdź w panelu **Outgoing Webhooks** (`/admin/outgoing-webhooks`): pojawia się rekord z payloadem, statusem (sent/failed), response_code i response_body.
@@ -2821,8 +2826,8 @@ Tak. Listener bierze URL-e z `config('webhooks.outgoing_urls')` (z `env('WEBHOOK
 
 **Test env + formularz (subskrypcje):**
 
-1. Ustaw w `.env` jeden URL (np. `WEBHOOK_URL_MOVIE_GENERATION_COMPLETED=https://webhook.site/abc`) i włącz `webhook_notifications`.
-2. W panelu wejdź na **Outgoing Webhooks** → **New Outgoing Webhook** (Create). Wypełnij Event type `movie.generation.completed` i drugi URL (np. inny adres na webhook.site lub RequestBin). Zapisz – nastąpi przekierowanie na listę.
+1. Ustaw w `.env` jeden URL (np. z [webhook.site](https://webhook.site/) lub [webhook.cool](https://webhook.cool/)) i włącz `webhook_notifications`.
+2. W panelu wejdź na **Outgoing Webhooks** → **New Outgoing Webhook** (Create). Wypełnij Event type `movie.generation.completed` i drugi URL (np. drugi adres z webhook.site / webhook.cool). Zapisz – nastąpi przekierowanie na listę.
 3. Wywołaj `POST /api/v1/generate` (film) z nagłówkiem `X-API-Key`.
 4. W panelu **Outgoing Webhooks** sprawdź, że w historii dostaw są **dwa** rekordy (jeden na URL z env, drugi na URL z formularza), o ile oba URLe są różne.
 5. U obu odbiorników sprawdź, że każdy dostał POST z tym samym body i nagłówkami.

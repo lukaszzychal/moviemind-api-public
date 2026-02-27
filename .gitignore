@@ -35,6 +35,11 @@ jwt/
 .DS_Store
 Thumbs.db
 
+# E2E / Playwright
+playwright-report/
+test-results/
+tests/e2e/login-failure.png
+
 # MCP (Model Context Protocol)
 .mcp/
 

@@ -961,6 +961,86 @@ Every entry follows this structure:
 - **Documentation:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
+
+### Rate limiting, Circuit Breaker, Logging (backlog)
+
+#### `TASK-RATE-001` - Outbound rate limits audit (OpenAI, webhooks)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 4-6 hours
+- **Description:** Audit outbound rate limits (OpenAI, webhooks); clarify requirements and optionally implement a limiter for OpenAI.
+- **Details:** [RATE_LIMITING_STRATEGY.md](../../knowledge/technical/RATE_LIMITING_STRATEGY.md)
+- **Dependencies:** None
+- **Created:** 2025-02-21
+
+#### `TASK-RATE-002` - External API limits documentation (TMDb, TVMaze, OpenAI)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low
+- **Estimated time:** 2-3 hours
+- **Description:** Document external API limits (TMDb, TVMaze, OpenAI) in RATE_LIMITING_STRATEGY.md.
+- **Details:** [RATE_LIMITING_STRATEGY.md](../../knowledge/technical/RATE_LIMITING_STRATEGY.md)
+- **Dependencies:** None
+- **Created:** 2025-02-21
+
+#### `TASK-CB-001` - Circuit Breaker evaluation (Ganesha) for external APIs
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 6-10 hours
+- **Description:** Evaluate Circuit Breaker (e.g. Ganesha) for external APIs (TMDb, TVMaze, OpenAI) – analysis, PoC, decision.
+- **Details:** [CIRCUIT_BREAKER_ANALYSIS.md](../../knowledge/technical/CIRCUIT_BREAKER_ANALYSIS.md)
+- **Dependencies:** None
+- **Created:** 2025-02-21
+
+#### `TASK-CB-002` - Implement circuit breaker for chosen provider (optional)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low
+- **Estimated time:** 4-8 hours
+- **Description:** Implement circuit breaker for chosen provider (e.g. TMDb) after positive TASK-CB-001 outcome.
+- **Details:** [CIRCUIT_BREAKER_ANALYSIS.md](../../knowledge/technical/CIRCUIT_BREAKER_ANALYSIS.md)
+- **Dependencies:** TASK-CB-001
+- **Created:** 2025-02-21
+
+#### `TASK-LOG-001` - Logging policy
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 2-4 hours
+- **Description:** Define logging policy (format, levels, retention, what not to log) and add to LOGGING_AND_OBSERVABILITY.md.
+- **Details:** [LOGGING_AND_OBSERVABILITY.md](../../knowledge/technical/LOGGING_AND_OBSERVABILITY.md)
+- **Dependencies:** None
+- **Created:** 2025-02-21
+
+#### `TASK-LOG-002` - Log aggregation and container state evaluation
+- **Status:** ⏳ PENDING
+- **Priority:** 🟡 Medium
+- **Estimated time:** 4-6 hours
+- **Description:** Evaluate log aggregation and container state (Loki/ELK/CloudWatch, docker logs, health) – requirements, options, recommendation.
+- **Details:** [LOGGING_AND_OBSERVABILITY.md](../../knowledge/technical/LOGGING_AND_OBSERVABILITY.md)
+- **Dependencies:** None
+- **Created:** 2025-02-21
+
+#### `TASK-LOG-003` - Structured logging and/or aggregation implementation (optional)
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low
+- **Estimated time:** 6-12 hours
+- **Description:** Implement structured (JSON) logging and/or log aggregation pipeline after decision (TASK-LOG-001, TASK-LOG-002).
+- **Details:** [LOGGING_AND_OBSERVABILITY.md](../../knowledge/technical/LOGGING_AND_OBSERVABILITY.md)
+- **Dependencies:** TASK-LOG-001, TASK-LOG-002
+- **Created:** 2025-02-21
+
+---
+
+### Feature Flags (backlog)
+
+#### `TASK-FF-001` - Implement User scope for Feature Flags
+- **Status:** ⏳ PENDING
+- **Priority:** 🟢 Low
+- **Estimated time:** 4-8 hours
+- **Description:** Application currently uses only global (default) scope; user-scoped entries in DB/UI have no effect. Task: use `Feature::for($user)->active($name)` where per-user flag behaviour is required (e.g. API key / user context), extend Admin API to support scope (list/set per scope), and keep Filament consistent (User scope already selectable in UI).
+- **Details:** Scope exists in `features` table and in Filament; application code never calls `Feature::for($scope)`.
+- **Dependencies:** None
+- **Created:** 2025-02-21
+
+---
 ## 📚 Templates
 
 See [`TASK_TEMPLATE.pl.md`](../pl/TASK_TEMPLATE.md) or [`TASK_TEMPLATE.md`](./TASK_TEMPLATE.md) for the canonical structure.

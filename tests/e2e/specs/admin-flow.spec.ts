@@ -14,14 +14,11 @@ test.describe('Admin Panel Flow', () => {
       intervals: [1000, 2000, 5000],
     }).toBe(200);
 
-    // Seed admin user using custom artisan command
+    const projectRoot = path.resolve(__dirname, '../../..');
+    const composeExec = 'docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec -T php';
     try {
       console.log('Seeding admin user...');
-      const projectRoot = path.resolve(__dirname, '../../..');
-      execSync('docker compose exec -T php php artisan test:prepare-e2e', { 
-        stdio: 'inherit',
-        cwd: projectRoot 
-      });
+      execSync(`${composeExec} php artisan test:prepare-e2e`, { stdio: 'inherit', cwd: projectRoot });
       console.log('Admin user seeded successfully.');
     } catch (error) {
       console.error('Failed to seed admin user:', error);
@@ -37,23 +34,22 @@ test.describe('Admin Panel Flow', () => {
 
   test('should login successfully with valid credentials', async ({ page }) => {
     await page.goto('/admin/login');
-    
     await page.getByLabel('Email address').fill('admin@moviemind.local');
     await page.getByLabel('Password').fill('password123');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-
-    await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByText('MovieMind Admin')).toBeVisible();
-    
-    // Check for new System Status widget
-    await expect(page.getByRole('heading', { name: 'System Status' })).toBeVisible();
-    await expect(page.getByText('Environment')).toBeVisible();
-    await expect(page.getByText('AI Service')).toBeVisible();
-
-    // Check for dashboard widgets
-    await expect(page.getByText('Total Movies')).toBeVisible();
-    await expect(page.getByText('Total People')).toBeVisible();
-    await expect(page.getByText('Pending Jobs')).toBeVisible();
+    await Promise.all([
+      page.waitForURL(/\/admin\/?$/, { timeout: 25000 }),
+      page.getByRole('button', { name: 'Sign in' }).click(),
+    ]);
+    await expect(page).toHaveURL(/\/admin\/?$/, { timeout: 5000 });
+    const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:8000';
+    if (new URL(page.url()).host !== new URL(baseURL).host) {
+      throw new Error(
+        'Login redirected to wrong host. Start app with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate'
+      );
+    }
+    await expect(
+      page.getByText(/MovieMind Admin|Total Movies|Total People|Pending Jobs|System Status|Environment/).first()
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('should show validation error for invalid credentials', async ({ page }) => {

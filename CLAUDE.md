@@ -281,6 +281,7 @@ Before each commit you MUST run:
 - **Tools:** `docs/CODE_QUALITY_TOOLS.md`
 - **Architecture:** `docs/ARCHITECTURE_ANALYSIS.md`
 - **Cursor explanation:** `docs/CURSOR_RULES_EXPLANATION.md`
+- **Technical (rate limits, resilience, observability):** `docs/knowledge/technical/RATE_LIMITING_STRATEGY.md`, `docs/knowledge/technical/CIRCUIT_BREAKER_ANALYSIS.md`, `docs/knowledge/technical/LOGGING_AND_OBSERVABILITY.md`
 
 ---
 

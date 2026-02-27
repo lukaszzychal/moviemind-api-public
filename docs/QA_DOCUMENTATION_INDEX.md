@@ -27,6 +27,11 @@ Skrócony przewodnik techniczny: import kolekcji Postman, skrypty bash/node, kod
 📄 `docs/qa/AUTOMATED_TESTS.md`
 Informacje o strukturze i uruchamianiu testów automatycznych (PHPUnit).
 
+### 6. **Testy E2E – nagrywanie w Playwright (Codegen)**
+📄 `docs/qa/E2E_PLAYWRIGHT_RECORDING_GUIDE.md`  
+Instrukcja: w jakim języku są testy E2E, jak nagrywać scenariusze w przeglądarce i dopasować je do obecnego setupu (login, prepare-e2e).  
+Wersja PL: `docs/pl/E2E_PLAYWRIGHT_RECORDING_GUIDE.pl.md`
+
 ---
 
 ## 📋 Specjalistyczne Przewodniki Funkcjonalne (docs/qa/)
