@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.3','8.4','8.5']
+        php-versions: ['8.2','8.3','8.4','8.5']
         # PHP 8.2 removed: Composer/lockfile require >= 8.3.
 
     steps:
@@ -245,7 +245,7 @@ jobs:
           fi
 
   postman-tests:
-    name: Postman API Tests (Newman)
+    name: Postman API Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
