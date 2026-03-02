@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Movie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
 class SearchMoviesTest extends TestCase
@@ -457,14 +458,24 @@ class SearchMoviesTest extends TestCase
 
     public function test_search_movies_with_external_source_filter(): void
     {
-        // This test assumes TMDb verification is enabled (which it usually is in tests)
+        // In CI there is no TMDb API key; use fake so source=external returns 200 with external results
+        Feature::activate('tmdb_verification');
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovieSearchResults('matrix', [
+            [
+                'title' => 'The Matrix',
+                'release_date' => '1999-03-31',
+                'overview' => 'Summary',
+                'id' => 603,
+                'director' => 'The Wachowskis',
+            ],
+        ]);
+
         $response = $this->getJson('/api/v1/movies/search?q=Matrix&source=external');
 
         $response->assertOk();
 
         $results = $response->json('results');
-
-        // Assert we returned ONLY external results (or none if tmdb is mocked to empty)
         foreach ($results as $result) {
             $this->assertEquals('external', $result['source']);
         }

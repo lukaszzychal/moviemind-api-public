@@ -116,6 +116,13 @@ class ManualGuideMovieScenariosTest extends TestCase
 
     public function test_scenario_6_refresh_movie_returns_200(): void
     {
+        // In CI there is no TMDb API key; mock refresh so the endpoint returns 200 (MovieSeeder uses tmdb_id 603 for the-matrix-1999)
+        $this->mock(\App\Services\TmdbVerificationService::class, function ($mock) {
+            $mock->shouldReceive('refreshMovieDetails')
+                ->with(603)
+                ->andReturn(['id' => 603, 'title' => 'The Matrix', 'overview' => 'Synopsis']);
+        });
+
         $response = $this->postJson('/api/v1/movies/the-matrix-1999/refresh');
         $response->assertOk();
     }
@@ -153,6 +160,10 @@ class ManualGuideMovieScenariosTest extends TestCase
 
     public function test_scenario_health_check_returns_200(): void
     {
+        // In CI there is no OpenAI key; use fakes so /health returns 200
+        $this->fakeOpenAiClient();
+        $this->fakeEntityVerificationService();
+
         $response = $this->getJson('/api/v1/health');
         $response->assertOk();
     }
