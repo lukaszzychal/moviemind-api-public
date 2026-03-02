@@ -10,7 +10,7 @@
     "test:e2e": "playwright test --config=tests/e2e/playwright.config.ts"
   },
   "devDependencies": {
-    "@playwright/mcp": "^0.0.54",
+    "@playwright/mcp": "^0.0.68",
     "@playwright/test": "^1.57.0",
     "markdownlint-cli2": "^0.20.0"
   },
