@@ -31,11 +31,6 @@ return new class extends Migration
     {
         $driver = DB::connection()->getDriverName();
 
-        // SQLite is used in tests - skip migration as tables are created fresh with UUID
-        if ($driver === 'sqlite') {
-            return;
-        }
-
         // PostgreSQL/MySQL migration
         Schema::table('movie_descriptions', function (Blueprint $table) {
             // Drop foreign key constraint on movie_id

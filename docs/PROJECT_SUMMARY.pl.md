@@ -27,7 +27,7 @@ Gotowa do produkcji usługa API, która:
 
 ### Stack Technologiczny
 - **Backend:** Laravel 12 (PHP 8.2+)
-- **Baza danych:** PostgreSQL (produkcja), SQLite (testy)
+- **Baza danych:** PostgreSQL (produkcja i testy)
 - **Cache/Kolejka:** Redis + Laravel Horizon
 - **AI:** OpenAI API (gpt-4o-mini)
 - **Testowanie:** PHPUnit (Feature + Unit), Playwright (E2E)

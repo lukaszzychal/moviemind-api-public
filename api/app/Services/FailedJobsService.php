@@ -213,38 +213,14 @@ class FailedJobsService
             ->pluck('count', 'queue')
             ->toArray();
 
-        // Group by hour (last 24 hours)
-        // Use database-specific date formatting
-        $driver = config('database.default');
-        $isSqlite = $driver === 'sqlite' || str_contains($driver, 'sqlite');
-        $isPostgres = $driver === 'pgsql' || str_contains($driver, 'pgsql');
-
-        if ($isSqlite) {
-            $byHour = DB::table('failed_jobs')
-                ->where('failed_at', '>=', now()->subDay())
-                ->selectRaw("strftime('%Y-%m-%d %H:00:00', failed_at) as hour, COUNT(*) as count")
-                ->groupBy('hour')
-                ->orderBy('hour')
-                ->pluck('count', 'hour')
-                ->toArray();
-        } elseif ($isPostgres) {
-            $byHour = DB::table('failed_jobs')
-                ->where('failed_at', '>=', now()->subDay())
-                ->selectRaw("TO_CHAR(failed_at, 'YYYY-MM-DD HH24:00:00') as hour, COUNT(*) as count")
-                ->groupBy('hour')
-                ->orderBy('hour')
-                ->pluck('count', 'hour')
-                ->toArray();
-        } else {
-            // MySQL/MariaDB
-            $byHour = DB::table('failed_jobs')
-                ->where('failed_at', '>=', now()->subDay())
-                ->selectRaw("DATE_FORMAT(failed_at, '%Y-%m-%d %H:00:00') as hour, COUNT(*) as count")
-                ->groupBy('hour')
-                ->orderBy('hour')
-                ->pluck('count', 'hour')
-                ->toArray();
-        }
+        // Group by hour (last 24 hours) – PostgreSQL
+        $byHour = DB::table('failed_jobs')
+            ->where('failed_at', '>=', now()->subDay())
+            ->selectRaw("TO_CHAR(failed_at, 'YYYY-MM-DD HH24:00:00') as hour, COUNT(*) as count")
+            ->groupBy('hour')
+            ->orderBy('hour')
+            ->pluck('count', 'hour')
+            ->toArray();
 
         return [
             'total_failed' => $totalFailed,

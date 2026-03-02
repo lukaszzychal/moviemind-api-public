@@ -19,11 +19,12 @@ class ApiKeyManagementTest extends TestCase
     {
         parent::setUp();
         $this->artisan('migrate');
-        $this->artisan('db:seed');
+        $this->seed(\Database\Seeders\SubscriptionPlanSeeder::class);
+        // Do not run ApiKeySeeder so list counts match test-created keys only
 
         // Bypass Admin API auth for tests (testing API key management functionality, not auth)
         config(['app.env' => 'local']);
-        putenv('ADMIN_AUTH_BYPASS_ENVS=local,staging');
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
 
         $this->apiKeyService = new ApiKeyService;
     }

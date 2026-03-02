@@ -185,11 +185,7 @@ class HealthController extends Controller
         $result = $this->tvmazeVerificationService->health();
 
         $success = (bool) $result['success'];
-        $status = 200;
-
-        if (! $success) {
-            $status = array_key_exists('status', $result) ? (int) $result['status'] : 503;
-        }
+        $status = $success ? 200 : 503;
 
         return response()->json($result, $status);
     }

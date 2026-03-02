@@ -60,7 +60,13 @@ class ManualGuideMovieScenariosTest extends TestCase
 
     public function test_scenario_2_search_no_results_returns_404(): void
     {
-        $response = $this->getJson('/api/v1/movies/search?q=NonexistentMovieXYZ123');
+        $query = 'NonexistentMovieXYZ123';
+        $slug = \Illuminate\Support\Str::slug($query); // nonexistentmoviexyz123
+        $fake = $this->fakeEntityVerificationService();
+        $fake->setMovie($slug, null);
+        $fake->setMovieSearchResults($slug, []);
+
+        $response = $this->getJson('/api/v1/movies/search?q='.urlencode($query));
         $response->assertNotFound();
     }
 

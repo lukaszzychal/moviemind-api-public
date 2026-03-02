@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Pennant\Feature;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -21,20 +22,14 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/debug');
+        $response = $this->get('/');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'name',
-                'version',
+                'message',
                 'status',
-                'environment',
-                'ai_service',
-                'feature_flags' => [
-                    'active',
-                ],
-                'endpoints',
-                'documentation',
+                'version',
+                'api',
             ]);
     }
 
@@ -59,30 +54,33 @@ class ExampleTest extends TestCase
 
     public function test_debug_endpoint_includes_ai_service(): void
     {
-        $response = $this->getJson('/debug');
+        Feature::activate('debug_endpoints');
+
+        $response = $this->getJson('/api/v1/admin/debug/config');
 
         $response->assertOk();
         $data = $response->json();
 
-        $this->assertArrayHasKey('ai_service', $data);
-        $this->assertContains($data['ai_service'], ['mock', 'real']);
+        $this->assertArrayHasKey('environment', $data);
+        $this->assertArrayHasKey('is_mock', $data['environment']);
+        $this->assertArrayHasKey('is_real', $data['environment']);
+        $this->assertTrue(
+            $data['environment']['is_mock'] === true || $data['environment']['is_real'] === true,
+            'AI service should be mock or real'
+        );
     }
 
     public function test_debug_endpoint_includes_active_feature_flags(): void
     {
-        $response = $this->getJson('/debug');
+        Feature::activate('debug_endpoints');
+
+        $response = $this->getJson('/api/v1/admin/debug/config');
 
         $response->assertOk();
         $data = $response->json();
 
-        $this->assertArrayHasKey('feature_flags', $data);
-        $this->assertArrayHasKey('active', $data['feature_flags']);
-        $this->assertIsArray($data['feature_flags']['active']);
-
-        // Check structure of active flags
-        if (! empty($data['feature_flags']['active'])) {
-            $firstFlag = $data['feature_flags']['active'][0];
-            $this->assertArrayHasKey('name', $firstFlag);
-        }
+        $this->assertArrayHasKey('environment', $data);
+        $this->assertArrayHasKey('endpoints', $data);
+        $this->assertIsArray($data['endpoints']);
     }
 }

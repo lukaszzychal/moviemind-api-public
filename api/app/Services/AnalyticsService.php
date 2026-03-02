@@ -210,36 +210,14 @@ class AnalyticsService
             $query->where('plan_id', $filters['plan_id']);
         }
 
-        // Use database-specific date formatting
-        $driver = config('database.default');
-
-        $isSqlite = $driver === 'sqlite' || str_contains($driver, 'sqlite');
-        $isPgsql = $driver === 'pgsql';
-
-        if ($isSqlite) {
-            $dateExpr = match ($period) {
-                'daily' => "strftime('%Y-%m-%d', created_at)",
-                'weekly' => "strftime('%Y-%W', created_at)", // Week number
-                'monthly' => "strftime('%Y-%m', created_at)",
-                default => "strftime('%Y-%m-%d', created_at)",
-            };
-        } elseif ($isPgsql) {
-            $dateFormat = match ($period) {
-                'daily' => 'YYYY-MM-DD',
-                'weekly' => 'IYYY-IW', // ISO week for PostgreSQL
-                'monthly' => 'YYYY-MM',
-                default => 'YYYY-MM-DD',
-            };
-            $dateExpr = "to_char(created_at, '{$dateFormat}')";
-        } else {
-            $dateFormat = match ($period) {
-                'daily' => '%Y-%m-%d',
-                'weekly' => '%Y-%u', // ISO week
-                'monthly' => '%Y-%m',
-                default => '%Y-%m-%d',
-            };
-            $dateExpr = "DATE_FORMAT(created_at, '{$dateFormat}')";
-        }
+        // Date grouping – PostgreSQL
+        $dateFormat = match ($period) {
+            'daily' => 'YYYY-MM-DD',
+            'weekly' => 'IYYY-IW',
+            'monthly' => 'YYYY-MM',
+            default => 'YYYY-MM-DD',
+        };
+        $dateExpr = "to_char(created_at, '{$dateFormat}')";
 
         $results = $query->select(
             DB::raw("{$dateExpr} as period"),

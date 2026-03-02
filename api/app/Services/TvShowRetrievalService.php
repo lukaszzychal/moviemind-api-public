@@ -23,7 +23,7 @@ class TvShowRetrievalService
 {
     public function __construct(
         private readonly TvShowRepository $tvShowRepository,
-        private readonly TvmazeVerificationService $tvmazeVerificationService,
+        private readonly EntityVerificationServiceInterface $entityVerificationService,
         private readonly TmdbTvShowCreationService $tmdbTvShowCreationService,
         private readonly QueueTvShowGenerationAction $queueTvShowGenerationAction
     ) {}
@@ -126,7 +126,7 @@ class TvShowRetrievalService
             return $this->queueGenerationWithoutTmdb($slug, $validation);
         }
 
-        $tmdbData = $this->tvmazeVerificationService->verifyTvShow($slug);
+        $tmdbData = $this->entityVerificationService->verifyTvShow($slug);
 
         if ($tmdbData !== null) {
             return $this->handleTmdbExactMatch($tmdbData, $slug, $descriptionId, $validation);
@@ -243,7 +243,7 @@ class TvShowRetrievalService
      */
     private function handleTmdbSearch(string $slug, ?string $descriptionId, array $validation): TvShowRetrievalResult
     {
-        $searchResults = $this->tvmazeVerificationService->searchTvShows($slug, 5);
+        $searchResults = $this->entityVerificationService->searchTvShows($slug, 5);
 
         if (count($searchResults) > 1) {
             $options = $this->buildDisambiguationOptions($slug, $searchResults);

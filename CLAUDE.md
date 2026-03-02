@@ -17,7 +17,7 @@ MovieMind API is a RESTful API for generating and storing unique descriptions of
 ### Backend
 - **Framework:** Laravel 12
 - **PHP:** 8.2+
-- **Database:** PostgreSQL (production), SQLite (tests)
+- **Database:** PostgreSQL (production and tests)
 - **Cache:** Redis
 - **Queue:** Laravel Horizon (asynchronous processing)
 - **AI Integration:** OpenAI API (gpt-4o-mini)
@@ -58,6 +58,17 @@ docker compose exec php php artisan migrate
 docker compose exec php php artisan test
 docker compose exec php vendor/bin/pint
 ```
+
+**Run tests (mandatory: inside Docker):** Testy używają PostgreSQL (`DB_HOST=db`). Na hoście „db” nie istnieje, więc **nie uruchamiaj** `cd api && composer test` na hoście – dostaniesz błędy połączenia z bazą. Uruchamiaj testy **w kontenerze**:
+```bash
+# Z roota repozytorium (zalecane):
+docker compose exec php composer test
+
+# Lub bezpośrednio:
+docker compose exec php bash run-tests.sh
+```
+Testy uruchamiane są **równolegle** (`--parallel`) – Laravel tworzy osobne bazy testowe (np. `moviemind_test_1`, `moviemind_test_2`) dla każdego procesu. Użytkownik bazy (np. `moviemind` w Dockerze) musi mieć prawo tworzenia baz (CREATEDB).
+Z katalogu `api/` możesz też wejść do kontenera i tam uruchomić `composer test`. Pierwsze uruchomienie może trwać dłużej (migracje). Jeśli `docker compose exec php php artisan test` długo nic nie wyświetla – poczekaj ok. 30–60 s (RefreshDatabase + migracje), albo uruchom z `--verbose`.
 
 **Why Docker is required:**
 - Matches production environment (PostgreSQL, Redis, PHP-FPM, Nginx)
@@ -170,7 +181,7 @@ Database (save result)
 
 1. **Feature Tests** (`tests/Feature/`)
    - Test API endpoints
-   - Use test database (SQLite `:memory:`)
+   - Use test database (PostgreSQL via Docker; see docs/knowledge/reference/TESTING_DATABASE.md)
    - Example: `MovieControllerTest`, `GenerateApiTest`
 
 2. **Unit Tests** (`tests/Unit/`)

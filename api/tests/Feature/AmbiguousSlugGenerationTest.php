@@ -6,6 +6,8 @@ use App\Events\MovieGenerationRequested;
 use App\Events\PersonGenerationRequested;
 use App\Models\Movie;
 use App\Models\Person;
+use App\Models\SubscriptionPlan;
+use App\Services\ApiKeyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -17,13 +19,22 @@ class AmbiguousSlugGenerationTest extends TestCase
 {
     use RefreshDatabase;
 
+    private string $apiKey = '';
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->artisan('migrate');
+        $this->seed(\Database\Seeders\SubscriptionPlanSeeder::class);
         Queue::fake();
         config(['cache.default' => 'array']);
         Cache::flush();
+        $plan = SubscriptionPlan::where('name', 'pro')->first() ?? SubscriptionPlan::where('name', 'free')->first();
+        if (! $plan) {
+            $plan = SubscriptionPlan::factory()->create(['name' => 'pro', 'features' => ['read', 'generate']]);
+        }
+        $result = app(ApiKeyService::class)->createKey('AmbiguousSlugTest', $plan->id);
+        $this->apiKey = $result['key'];
     }
 
     public function test_generation_with_ambiguous_slug_finds_existing_movie(): void
@@ -48,7 +59,7 @@ class AmbiguousSlugGenerationTest extends TestCase
         Feature::activate('ai_description_generation');
 
         // Act: Try to generate with ambiguous slug (without year)
-        $response = $this->postJson('/api/v1/generate', [
+        $response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'MOVIE',
             'slug' => 'bad-boys',
             'locale' => 'en-US',
@@ -80,7 +91,7 @@ class AmbiguousSlugGenerationTest extends TestCase
         Feature::activate('ai_description_generation');
 
         // Act: Generate with exact slug
-        $response = $this->postJson('/api/v1/generate', [
+        $response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'MOVIE',
             'slug' => 'the-matrix-1999',
             'locale' => 'en-US',
@@ -101,7 +112,7 @@ class AmbiguousSlugGenerationTest extends TestCase
         Event::fake();
 
         // Act: Generate with slug that doesn't exist
-        $response = $this->postJson('/api/v1/generate', [
+        $response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'MOVIE',
             'slug' => 'new-movie-test',
             'locale' => 'en-US',
@@ -182,7 +193,7 @@ class AmbiguousSlugGenerationTest extends TestCase
         Feature::activate('ai_bio_generation');
 
         // Act: Try to generate with ambiguous slug (without birth year)
-        $response = $this->postJson('/api/v1/generate', [
+        $response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'PERSON',
             'entity_id' => 'john-smith', // Note: GenerateController uses entity_id as slug
             'locale' => 'en-US',
@@ -214,7 +225,7 @@ class AmbiguousSlugGenerationTest extends TestCase
         Event::fake();
 
         // Act: Generate with exact slug
-        $response = $this->postJson('/api/v1/generate', [
+        $response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'PERSON',
             'entity_id' => 'jane-doe', // Note: GenerateController uses entity_id as slug
             'locale' => 'en-US',
@@ -239,7 +250,7 @@ class AmbiguousSlugGenerationTest extends TestCase
 
         // Act: Generate with slug that doesn't exist (using format that passes validation)
         // Note: Slug must be 2-4 words to pass validation
-        $response = $this->postJson('/api/v1/generate', [
+        $response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'PERSON',
             'entity_id' => 'new-person-test', // Note: GenerateController uses entity_id as slug
             'locale' => 'en-US',

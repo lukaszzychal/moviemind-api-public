@@ -27,9 +27,10 @@ class MovieApiLocaleTest extends TestCase
     public function test_show_movie_with_locale_parameter_returns_localized_data(): void
     {
         // GIVEN: A movie with Polish locale
+        $slug = 'the-matrix-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-locale-test-1',
+            'title' => 'The Matrix '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -41,7 +42,7 @@ class MovieApiLocaleTest extends TestCase
         ]);
 
         // WHEN: Requesting movie with locale parameter
-        $response = $this->getJson('/api/v1/movies/the-matrix-1999-locale-test-1?locale=pl-PL');
+        $response = $this->getJson('/api/v1/movies/'.$slug.'?locale=pl-PL');
 
         // THEN: Should return localized data
         $response->assertOk()
@@ -62,9 +63,10 @@ class MovieApiLocaleTest extends TestCase
     public function test_show_movie_without_locale_returns_default_en_us(): void
     {
         // GIVEN: A movie with English locale
+        $slug = 'the-matrix-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-locale-test-2',
+            'title' => 'The Matrix '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -75,7 +77,7 @@ class MovieApiLocaleTest extends TestCase
         ]);
 
         // WHEN: Requesting movie without locale parameter
-        $response = $this->getJson('/api/v1/movies/the-matrix-1999-locale-test-2');
+        $response = $this->getJson('/api/v1/movies/'.$slug);
 
         // THEN: Should return default (en-US) or original title
         $response->assertOk();
@@ -86,9 +88,10 @@ class MovieApiLocaleTest extends TestCase
     public function test_show_movie_with_invalid_locale_falls_back_to_en_us(): void
     {
         // GIVEN: A movie with English locale
+        $slug = 'the-matrix-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-locale-test-3',
+            'title' => 'The Matrix '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -99,7 +102,7 @@ class MovieApiLocaleTest extends TestCase
         ]);
 
         // WHEN: Requesting movie with invalid locale parameter
-        $response = $this->getJson('/api/v1/movies/the-matrix-1999-locale-test-3?locale=invalid-locale');
+        $response = $this->getJson('/api/v1/movies/'.$slug.'?locale=invalid-locale');
 
         // THEN: Should fallback to en-US or return original title
         $response->assertOk();
@@ -110,9 +113,10 @@ class MovieApiLocaleTest extends TestCase
     public function test_show_movie_with_missing_locale_falls_back_to_en_us(): void
     {
         // GIVEN: A movie with only English locale
+        $slug = 'the-matrix-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-locale-test-4',
+            'title' => 'The Matrix '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -123,7 +127,7 @@ class MovieApiLocaleTest extends TestCase
         ]);
 
         // WHEN: Requesting movie with Polish locale (not exists)
-        $response = $this->getJson('/api/v1/movies/the-matrix-1999-locale-test-4?locale=pl-PL');
+        $response = $this->getJson('/api/v1/movies/'.$slug.'?locale=pl-PL');
 
         // THEN: Should fallback to en-US
         $response->assertOk();
@@ -135,9 +139,10 @@ class MovieApiLocaleTest extends TestCase
     public function test_search_movies_with_locale_parameter(): void
     {
         // GIVEN: Movies with locales
+        $slug = 'matrix-test-movie-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie1 = Movie::factory()->create([
-            'title' => 'Matrix Test Movie',
-            'slug' => 'matrix-test-movie-1999-locale-test-5',
+            'title' => 'Matrix Test Movie '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -148,22 +153,20 @@ class MovieApiLocaleTest extends TestCase
         ]);
 
         // WHEN: Searching with locale parameter
-        // Note: Search endpoint uses PostgreSQL-specific syntax that doesn't work with SQLite in tests
-        // This test verifies locale parameter is accepted without breaking the endpoint
-        // Full locale support in search would require additional implementation
         $response = $this->getJson('/api/v1/movies/search?q=Matrix&locale=pl-PL');
 
-        // THEN: Should handle locale parameter gracefully (may return error due to SQLite/PostgreSQL difference)
-        // The important thing is that locale parameter doesn't cause a different type of error
-        $this->assertTrue(in_array($response->status(), [200, 404, 500])); // Accept various statuses due to SQLite limitation
+        // THEN: Should return OK with search results (PostgreSQL)
+        $response->assertOk();
+        $this->assertArrayHasKey('results', $response->json());
     }
 
     public function test_list_movies_with_locale_parameter(): void
     {
         // GIVEN: Movies with locales
+        $slug = 'the-matrix-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-locale-test-6',
+            'title' => 'The Matrix '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -191,9 +194,10 @@ class MovieApiLocaleTest extends TestCase
     public function test_bulk_movies_with_locale_parameter(): void
     {
         // GIVEN: Movies with locales
+        $slug = 'the-matrix-1999-locale-'.str_replace('.', '-', uniqid('', true));
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-locale-test-7',
+            'title' => 'The Matrix '.$slug,
+            'slug' => $slug,
             'release_year' => 1999,
         ]);
 
@@ -205,7 +209,7 @@ class MovieApiLocaleTest extends TestCase
 
         // WHEN: Bulk retrieving with locale parameter
         $response = $this->postJson('/api/v1/movies/bulk', [
-            'slugs' => ['the-matrix-1999-locale-test-7'],
+            'slugs' => [$slug],
         ], ['locale' => 'pl-PL']);
 
         // Note: Bulk endpoint might not support locale in query string, test basic functionality

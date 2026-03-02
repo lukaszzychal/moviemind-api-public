@@ -12,14 +12,11 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * PostgreSQL-specific tests.
+ * Database feature tests (PostgreSQL).
  *
- * These tests verify features that are only available in PostgreSQL:
+ * These tests verify features that are available in PostgreSQL:
  * - Partial unique indexes
  * - JSON/JSONB operations
- * - Array types (if used)
- *
- * These tests are skipped in SQLite and should be run in CI with PostgreSQL.
  */
 class PostgreSQLSpecificTest extends TestCase
 {
@@ -30,11 +27,6 @@ class PostgreSQLSpecificTest extends TestCase
         parent::setUp();
         $this->artisan('migrate');
         $this->artisan('db:seed');
-
-        // Skip all tests in this class if not using PostgreSQL
-        if (DB::getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('This test suite requires PostgreSQL');
-        }
     }
 
     /**

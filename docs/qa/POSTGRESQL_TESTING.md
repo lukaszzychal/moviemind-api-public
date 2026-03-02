@@ -1,116 +1,59 @@
-# PostgreSQL-Specific Tests
+# PostgreSQL Testing
 
 ## Overview
 
-This document describes the PostgreSQL-specific test suite that verifies features available only in PostgreSQL, such as partial unique indexes and JSON/JSONB operations.
+All tests (unit and feature) run on **PostgreSQL**. The main CI job `test` and local test runs (via Docker) use the same database stack as production.
+
+This document describes how PostgreSQL is used for testing and how to run tests locally and in CI.
 
 ## Test Suite
 
-The `PostgreSQLSpecificTest` class (`api/tests/Feature/PostgreSQLSpecificTest.php`) contains tests that:
-
-- Verify partial unique index constraints for movie descriptions
-- Test JSON/JSONB operations in `ai_jobs` table
-- Validate versioning behavior with archived descriptions
-- Test race condition prevention with concurrent inserts
+- **Main test job (`test` in CI):** Runs the full PHPUnit suite (unit + feature tests) against PostgreSQL 16 (service container).
+- **`PostgreSQLSpecificTest`** (in `api/tests/Feature/PostgreSQLSpecificTest.php`): Tests database features such as partial unique indexes and JSON/JSONB. These tests **always run** (no skip) because the test environment is always PostgreSQL.
+- **Postman / other QA:** Can use the same or a dedicated PostgreSQL instance as documented in their workflows.
 
 ## Running Tests
 
 ### In CI (GitHub Actions)
 
-PostgreSQL-specific tests are automatically run in CI using the `test-postgresql` job, which:
+The `test` job in `.github/workflows/ci.yml`:
 
-- Uses PostgreSQL 16 service container
-- Runs all tests in `PostgreSQLSpecificTest` class
-- Verifies that partial unique indexes work correctly
+- Starts a PostgreSQL 16 service container
+- Sets `DB_CONNECTION=pgsql`, `DB_HOST=localhost`, `DB_DATABASE=moviemind_test`, etc.
+- Runs `composer test` (or equivalent) so all tests use PostgreSQL
 
-### Locally (Optional)
+The optional `test-postgresql` job (if present) may run an additional subset; the primary test run is the main `test` job.
 
-If you have PostgreSQL installed locally, you can run these tests:
-
-```bash
-# Set environment variables
-export DB_CONNECTION=pgsql
-export DB_HOST=127.0.0.1
-export DB_PORT=5432
-export DB_DATABASE=moviemind_test
-export DB_USERNAME=postgres
-export DB_PASSWORD=postgres
-
-# Run PostgreSQL-specific tests
-cd api
-php artisan test --filter=PostgreSQLSpecificTest
-```
-
-### Using Docker
-
-If you're using Docker Compose:
+### Locally (Docker required)
 
 ```bash
-# Start PostgreSQL container
-docker compose up -d postgres
-
-# Run tests
-cd api
-DB_CONNECTION=pgsql DB_HOST=localhost DB_PORT=5432 DB_DATABASE=moviemind_test DB_USERNAME=postgres DB_PASSWORD=postgres php artisan test --filter=PostgreSQLSpecificTest
+docker compose up -d
+docker compose exec php php artisan test
 ```
 
-## Test Coverage
+Ensure `.env` (used by the PHP container) has `DB_CONNECTION=pgsql`, `DB_HOST=db`, and valid credentials. The `api/phpunit.xml.dist` can override `DB_DATABASE=moviemind_test` for tests; other settings can come from `.env`.
 
-### 1. Partial Unique Index Tests
+### Without Docker
 
-- **`test_partial_unique_index_prevents_duplicate_active_descriptions`**: Verifies that only one active (non-archived) description can exist per `(movie_id, locale, context_tag)` combination.
-- **`test_partial_unique_index_allows_multiple_archived_descriptions`**: Verifies that archived descriptions don't violate the unique constraint, allowing version history.
-- **`test_partial_unique_index_allows_different_context_tags`**: Verifies that different context tags don't violate the unique constraint.
-- **`test_partial_unique_index_prevents_race_condition`**: Tests that partial unique index prevents race conditions in concurrent inserts.
+PostgreSQL must be running locally and reachable (e.g. `DB_HOST=127.0.0.1`). Create a database (e.g. `moviemind_test`) and set the same env vars as in `phpunit.xml.dist` or `.env`.
 
-### 2. JSON/JSONB Tests
+## Test Coverage (PostgreSQL)
 
-- **`test_jsonb_operations_in_ai_jobs`**: Verifies that JSON/JSONB columns work correctly in PostgreSQL, including nested JSON queries.
+- **Partial unique index** – e.g. only one active description per `(movie_id, locale, context_tag)`.
+- **JSON/JSONB** – e.g. `ai_jobs.payload_json` and JSON operators.
+- **Date/time** – e.g. `TO_CHAR` in analytics/failed jobs (no SQLite branch).
+- **Raw SQL** – e.g. `genres::text` in search; all such code paths are exercised on PostgreSQL.
 
-## Why These Tests Are Separate
+## Why PostgreSQL for All Tests
 
-These tests are separated from the main test suite because:
-
-1. **SQLite Limitations**: SQLite doesn't support partial unique indexes, so these tests would always be skipped locally.
-2. **Production Parity**: Running tests with PostgreSQL ensures that the test environment matches production.
-3. **Feature Verification**: These tests verify database-level constraints that are critical for data integrity.
-
-## Skipping in SQLite
-
-All tests in `PostgreSQLSpecificTest` automatically skip when running with SQLite:
-
-```php
-if (DB::getDriverName() !== 'pgsql') {
-    $this->markTestSkipped('This test suite requires PostgreSQL');
-}
-```
-
-This ensures that:
-- Local development with SQLite remains fast
-- Tests don't fail due to unsupported features
-- CI still verifies PostgreSQL-specific functionality
-
-## CI Integration
-
-The `test-postgresql` job in `.github/workflows/ci.yml`:
-
-- Runs in parallel with other test jobs
-- Uses PostgreSQL 16 service container
-- Only runs PostgreSQL-specific tests
-- Fails if any PostgreSQL-specific feature doesn't work
-
-## Maintenance
-
-When adding new PostgreSQL-specific features:
-
-1. Add tests to `PostgreSQLSpecificTest`
-2. Ensure tests skip in SQLite
-3. Verify tests pass in CI
-4. Update this documentation if needed
+- **Parity with production:** Same SQL dialect and features (partial indexes, JSONB, types).
+- **No dual code paths:** Migrations and application code no longer branch on SQLite vs PostgreSQL.
+- **Single CI setup:** One database for the main test job; no separate “PostgreSQL-only” test environment to maintain for the core suite.
 
 ## Related Files
 
-- `api/tests/Feature/PostgreSQLSpecificTest.php` - Test suite
-- `.github/workflows/ci.yml` - CI configuration
-- `api/database/migrations/2025_12_20_151647_add_versioning_to_movie_descriptions_table.php` - Migration with partial unique index
+- `api/phpunit.xml.dist` – test DB env vars
+- `api/tests/Feature/PostgreSQLSpecificTest.php` – database feature tests
+- `.github/workflows/ci.yml` – CI test job with PostgreSQL service
+- `docs/knowledge/reference/TESTING_DATABASE.md` – detailed test database configuration
 

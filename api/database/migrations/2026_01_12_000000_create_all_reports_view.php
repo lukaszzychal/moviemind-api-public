@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Drop view if exists to support SQLite which doesn't support OR REPLACE
+        // Drop view if exists (PostgreSQL)
         DB::statement('DROP VIEW IF EXISTS all_reports');
 
         DB::statement("

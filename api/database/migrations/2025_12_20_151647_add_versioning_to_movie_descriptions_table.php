@@ -30,13 +30,11 @@ return new class extends Migration
 
         // Create partial unique index (only for non-archived descriptions)
         // This ensures only one active description per (movie_id, locale, context_tag)
-        if (DB::getDriverName() !== 'sqlite') {
-            DB::statement('
-                CREATE UNIQUE INDEX movie_descriptions_unique_active 
-                ON movie_descriptions (movie_id, locale, context_tag) 
-                WHERE archived_at IS NULL
-            ');
-        }
+        DB::statement('
+            CREATE UNIQUE INDEX movie_descriptions_unique_active 
+            ON movie_descriptions (movie_id, locale, context_tag) 
+            WHERE archived_at IS NULL
+        ');
     }
 
     /**
@@ -45,9 +43,7 @@ return new class extends Migration
     public function down(): void
     {
         // Drop partial unique index
-        if (DB::getDriverName() !== 'sqlite') {
-            DB::statement('DROP INDEX IF EXISTS movie_descriptions_unique_active');
-        }
+        DB::statement('DROP INDEX IF EXISTS movie_descriptions_unique_active');
 
         Schema::table('movie_descriptions', function (Blueprint $table) {
             // Restore old unique constraint

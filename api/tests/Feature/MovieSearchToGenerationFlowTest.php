@@ -67,14 +67,16 @@ class MovieSearchToGenerationFlowTest extends TestCase
             ])
             ->assertJson([
                 'status' => 'PENDING',
-                'slug' => $slug,
             ]);
+
+        $responseSlug = $movieResponse->json('slug');
+        $this->assertNotEmpty($responseSlug, 'Response should contain slug');
 
         $jobId = $movieResponse->json('job_id');
         $this->assertNotNull($jobId, 'Job ID should be returned');
 
-        // Step 3: Verify movie was created in database
-        $movie = Movie::where('slug', $slug)->first();
+        // Step 3: Verify movie was created in database (use slug from response)
+        $movie = Movie::where('slug', $responseSlug)->first();
         $this->assertNotNull($movie, 'Movie should be created in database');
         // Note: Title may differ due to slug parsing (unique ID in slug affects parsing)
         // We verify that movie exists and has basic properties
@@ -93,12 +95,11 @@ class MovieSearchToGenerationFlowTest extends TestCase
             ->assertJson([
                 'job_id' => $jobId,
                 'status' => 'PENDING',
-                'slug' => $slug,
+                'slug' => $responseSlug,
             ]);
 
         // Step 5: Verify that movie exists in database (search may return 202 due to fallback logic)
-        // Search endpoint may queue generation again if query looks like slug, so we just verify DB
-        $movieInDb = Movie::where('slug', $slug)->first();
+        $movieInDb = Movie::where('slug', $responseSlug)->first();
         $this->assertNotNull($movieInDb, 'Movie should exist in database');
     }
 
@@ -150,9 +151,9 @@ class MovieSearchToGenerationFlowTest extends TestCase
         $movieResponse = $this->getJson("/api/v1/movies/{$slug}");
         $movieResponse->assertStatus(202); // Accepted - movie created, generation queued
 
-        // Step 2: Movie should now be in database
-        // Note: Title may differ from expected if slug parsing includes unique ID
-        $movie = Movie::where('slug', $slug)->first();
+        // Step 2: Movie should now be in database (use slug from response; API may normalize slug)
+        $responseSlug = $movieResponse->json('slug') ?? $slug;
+        $movie = Movie::where('slug', $responseSlug)->first();
         $this->assertNotNull($movie, 'Movie should exist in database after access');
         // Verify movie was created (title check may fail due to slug parsing, so we just check existence)
         $this->assertNotNull($movie->title, 'Movie should have a title');

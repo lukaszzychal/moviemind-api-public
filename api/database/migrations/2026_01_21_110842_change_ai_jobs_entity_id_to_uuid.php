@@ -18,13 +18,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $driver = DB::connection()->getDriverName();
-
-        // SQLite is used in tests - skip migration as tables are created fresh with UUID
-        if ($driver === 'sqlite') {
-            return;
-        }
-
         // PostgreSQL migration: change entity_id from bigint to uuid
         // If column is already uuid, skip
         if (Schema::hasColumn('ai_jobs', 'entity_id')) {
@@ -46,12 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        $driver = DB::connection()->getDriverName();
-
-        if ($driver === 'sqlite') {
-            return;
-        }
-
         // Change entity_id back to bigint (will lose data if UUIDs can't be converted)
         if (Schema::hasColumn('ai_jobs', 'entity_id')) {
             $columnType = DB::selectOne("

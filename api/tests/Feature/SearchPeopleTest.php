@@ -129,11 +129,15 @@ class SearchPeopleTest extends TestCase
 
         $results = $response->json('results');
         if (count($results) > 1) {
-            // Check if sorted by name ascending
+            // API sorts with strcasecmp; assert non-descending order (do not assert exact order vs PHP sort)
             $names = array_column($results, 'name');
-            $sortedNames = $names;
-            sort($sortedNames, SORT_NATURAL | SORT_FLAG_CASE);
-            $this->assertEquals($sortedNames, $names);
+            for ($i = 0; $i < count($names) - 1; $i++) {
+                $this->assertLessThanOrEqual(
+                    0,
+                    strcasecmp($names[$i], $names[$i + 1]),
+                    sprintf('Results should be sorted by name asc: "%s" should come before or equal to "%s"', $names[$i], $names[$i + 1])
+                );
+            }
         }
     }
 }

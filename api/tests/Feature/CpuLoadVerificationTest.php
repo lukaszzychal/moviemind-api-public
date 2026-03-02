@@ -19,6 +19,7 @@ class CpuLoadVerificationTest extends TestCase
     public function test_cpu_load_returns_array(): void
     {
         if (! function_exists('sys_getloadavg')) {
+            $this->expectNotToPerformAssertions();
             $this->markTestSkipped('sys_getloadavg() is not available on this system');
         }
 
@@ -34,6 +35,7 @@ class CpuLoadVerificationTest extends TestCase
     public function test_cpu_load_values_reasonable(): void
     {
         if (! function_exists('sys_getloadavg')) {
+            $this->expectNotToPerformAssertions();
             $this->markTestSkipped('sys_getloadavg() is not available on this system');
         }
 
@@ -51,6 +53,7 @@ class CpuLoadVerificationTest extends TestCase
     public function test_cpu_load_consistency(): void
     {
         if (! function_exists('sys_getloadavg')) {
+            $this->expectNotToPerformAssertions();
             $this->markTestSkipped('sys_getloadavg() is not available on this system');
         }
 

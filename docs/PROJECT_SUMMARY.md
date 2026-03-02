@@ -27,7 +27,7 @@ A production-ready API service that:
 
 ### Technology Stack
 - **Backend:** Laravel 12 (PHP 8.2+)
-- **Database:** PostgreSQL (production), SQLite (tests)
+- **Database:** PostgreSQL (production and tests)
 - **Cache/Queue:** Redis + Laravel Horizon
 - **AI:** OpenAI API (gpt-4o-mini)
 - **Testing:** PHPUnit (Feature + Unit), Playwright (E2E)

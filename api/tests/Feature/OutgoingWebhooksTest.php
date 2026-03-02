@@ -203,13 +203,14 @@ class OutgoingWebhooksTest extends TestCase
     {
         Feature::activate('webhook_notifications');
         Config::set('webhooks.outgoing_urls', [
+            'movie.generation.requested' => [],
             'movie.generation.completed' => [],
             'generation.completed' => [],
         ]);
 
         $subscriptionUrl = 'https://subscription-only.example/webhook';
         WebhookSubscription::create([
-            'event_type' => 'movie.generation.completed',
+            'event_type' => 'movie.generation.requested',
             'url' => $subscriptionUrl,
         ]);
 
@@ -236,12 +237,13 @@ class OutgoingWebhooksTest extends TestCase
         $formUrl = 'https://form.example/webhook';
         Feature::activate('webhook_notifications');
         Config::set('webhooks.outgoing_urls', [
-            'movie.generation.completed' => [$envUrl],
+            'movie.generation.requested' => [$envUrl],
+            'movie.generation.completed' => [],
             'generation.completed' => [],
         ]);
 
         WebhookSubscription::create([
-            'event_type' => 'movie.generation.completed',
+            'event_type' => 'movie.generation.requested',
             'url' => $formUrl,
         ]);
 

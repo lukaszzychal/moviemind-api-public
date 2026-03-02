@@ -23,7 +23,7 @@ class TvSeriesRetrievalService
 {
     public function __construct(
         private readonly TvSeriesRepository $tvSeriesRepository,
-        private readonly TvmazeVerificationService $tvmazeVerificationService,
+        private readonly EntityVerificationServiceInterface $entityVerificationService,
         private readonly TmdbTvSeriesCreationService $tmdbTvSeriesCreationService,
         private readonly QueueTvSeriesGenerationAction $queueTvSeriesGenerationAction
     ) {}
@@ -126,7 +126,7 @@ class TvSeriesRetrievalService
             return $this->queueGenerationWithoutTmdb($slug, $validation);
         }
 
-        $tmdbData = $this->tvmazeVerificationService->verifyTvSeries($slug);
+        $tmdbData = $this->entityVerificationService->verifyTvSeries($slug);
 
         if ($tmdbData !== null) {
             return $this->handleTmdbExactMatch($tmdbData, $slug, $descriptionId, $validation);
@@ -243,7 +243,7 @@ class TvSeriesRetrievalService
      */
     private function handleTmdbSearch(string $slug, ?string $descriptionId, array $validation): TvSeriesRetrievalResult
     {
-        $searchResults = $this->tvmazeVerificationService->searchTvSeries($slug, 5);
+        $searchResults = $this->entityVerificationService->searchTvSeries($slug, 5);
 
         if (count($searchResults) > 1) {
             $options = $this->buildDisambiguationOptions($slug, $searchResults);

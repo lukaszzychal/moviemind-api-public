@@ -17,7 +17,7 @@ MovieMind API to RESTful API do generowania i przechowywania unikalnych opisów 
 ### Backend
 - **Framework:** Laravel 12
 - **PHP:** 8.2+
-- **Baza danych:** PostgreSQL (produkcja), SQLite (testy)
+- **Baza danych:** PostgreSQL (produkcja i testy)
 - **Cache:** Redis
 - **Queue:** Laravel Horizon (asynchroniczne przetwarzanie)
 - **AI Integration:** OpenAI API (gpt-4o-mini)
@@ -134,7 +134,7 @@ Database (save result)
 
 1. **Feature Tests** (`tests/Feature/`)
    - Testują endpointy API
-   - Używają bazy testowej (SQLite `:memory:`)
+   - Używają bazy testowej (PostgreSQL, wymagany Docker – zobacz docs/knowledge/reference/TESTING_DATABASE.md)
    - Przykład: `MovieControllerTest`, `GenerateApiTest`
 
 2. **Unit Tests** (`tests/Unit/`)

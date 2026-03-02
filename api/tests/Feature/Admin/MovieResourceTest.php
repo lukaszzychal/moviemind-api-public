@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Filament\Resources\MovieResource;
 use App\Filament\Resources\MovieResource\Pages\ListMovies;
+use App\Jobs\MockGenerateMovieJob;
 use App\Jobs\RealGenerateMovieJob;
 use App\Models\Movie;
 use App\Models\User;
@@ -54,17 +55,11 @@ class MovieResourceTest extends TestCase
                 'context_tag' => 'short',
             ]);
 
-        // THEN: A generation job should be pushed to the queue
-        // Note: The exact job class depends on feature flags and configuration
-        // Assuming RealGenerateMovieJob or MockGenerateMovieJob based on test config
-        // For simplicity, we check if ANY job was pushed, or specific one if we know it
-
-        // Since we are in test env, it might use Mock job or Real job depending on setup
-        // Let's check if QueueMovieGenerationAction dispatched something
-        Queue::assertPushed(function ($job) use ($movie) {
-            // Check for either Real or Mock job
-            return str_contains(get_class($job), 'GenerateMovieJob') &&
-                   $job->movie->id === $movie->id;
-        });
+        // THEN: A generation job should be pushed (Real or Mock depending on AI_SERVICE)
+        $this->assertTrue(
+            Queue::pushed(RealGenerateMovieJob::class)->contains(fn (RealGenerateMovieJob $job) => $job->slug === $movie->slug)
+            || Queue::pushed(MockGenerateMovieJob::class)->contains(fn (MockGenerateMovieJob $job) => $job->slug === $movie->slug),
+            'Expected RealGenerateMovieJob or MockGenerateMovieJob to be pushed for movie slug: '.$movie->slug
+        );
     }
 }

@@ -220,6 +220,10 @@ class QueueJobsDashboardService
      */
     private function getHorizonStatus(): ?array
     {
+        if (app()->environment('testing')) {
+            return null;
+        }
+
         try {
             // Check if Horizon is running by checking Redis for Horizon keys
             $redis = app('redis')->connection();

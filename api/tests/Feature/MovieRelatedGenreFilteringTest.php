@@ -38,23 +38,23 @@ class MovieRelatedGenreFilteringTest extends TestCase
         $genreSciFi = Genre::firstOrCreate(['slug' => 'science-fiction'], ['name' => 'Science Fiction']);
         $genreAction = Genre::firstOrCreate(['slug' => 'action'], ['name' => 'Action']);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $mainMovie = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
         $mainMovie->genres()->attach($genreSciFi->id);
 
         $relatedMovie1 = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);
         $relatedMovie1->genres()->attach($genreSciFi->id);
 
         $relatedMovie2 = Movie::factory()->create([
-            'title' => 'Fast & Furious',
+            'title' => 'Fast & Furious '.$uniqueSuffix,
             'slug' => 'fast-furious-2001-'.$uniqueSuffix,
             'release_year' => 2001,
         ]);
@@ -95,9 +95,9 @@ class MovieRelatedGenreFilteringTest extends TestCase
         $genreAction = Genre::firstOrCreate(['slug' => 'action'], ['name' => 'Action']);
         $genreDrama = Genre::firstOrCreate(['slug' => 'drama'], ['name' => 'Drama']);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $mainMovie = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
@@ -105,7 +105,7 @@ class MovieRelatedGenreFilteringTest extends TestCase
 
         // Movie with both sci-fi and action
         $relatedMovie1 = Movie::factory()->create([
-            'title' => 'Blade Runner',
+            'title' => 'Blade Runner '.$uniqueSuffix,
             'slug' => 'blade-runner-1982-'.$uniqueSuffix,
             'release_year' => 1982,
         ]);
@@ -113,7 +113,7 @@ class MovieRelatedGenreFilteringTest extends TestCase
 
         // Movie with only sci-fi
         $relatedMovie2 = Movie::factory()->create([
-            'title' => '2001: A Space Odyssey',
+            'title' => '2001: A Space Odyssey '.$uniqueSuffix,
             'slug' => '2001-space-odyssey-1968-'.$uniqueSuffix,
             'release_year' => 1968,
         ]);
@@ -121,7 +121,7 @@ class MovieRelatedGenreFilteringTest extends TestCase
 
         // Movie with sci-fi and drama (not action)
         $relatedMovie3 = Movie::factory()->create([
-            'title' => 'Interstellar',
+            'title' => 'Interstellar '.$uniqueSuffix,
             'slug' => 'interstellar-2014-'.$uniqueSuffix,
             'release_year' => 2014,
         ]);
@@ -167,23 +167,23 @@ class MovieRelatedGenreFilteringTest extends TestCase
         $genreSciFi = Genre::firstOrCreate(['slug' => 'science-fiction'], ['name' => 'Science Fiction']);
         $genreAction = Genre::firstOrCreate(['slug' => 'action'], ['name' => 'Action']);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $mainMovie = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
         $mainMovie->genres()->attach($genreSciFi->id);
 
         $sequelMovie = Movie::factory()->create([
-            'title' => 'The Matrix Reloaded',
+            'title' => 'The Matrix Reloaded '.$uniqueSuffix,
             'slug' => 'the-matrix-reloaded-2003-'.$uniqueSuffix,
             'release_year' => 2003,
         ]);
         $sequelMovie->genres()->attach($genreSciFi->id);
 
         $actionMovie = Movie::factory()->create([
-            'title' => 'Fast & Furious',
+            'title' => 'Fast & Furious '.$uniqueSuffix,
             'slug' => 'fast-furious-2001-'.$uniqueSuffix,
             'release_year' => 2001,
         ]);
@@ -223,16 +223,16 @@ class MovieRelatedGenreFilteringTest extends TestCase
         $genreSciFi = Genre::firstOrCreate(['slug' => 'science-fiction'], ['name' => 'Science Fiction']);
         $genreAction = Genre::firstOrCreate(['slug' => 'action'], ['name' => 'Action']);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $mainMovie = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
         $mainMovie->genres()->attach($genreSciFi->id);
 
         $relatedMovie = Movie::factory()->create([
-            'title' => 'Fast & Furious',
+            'title' => 'Fast & Furious '.$uniqueSuffix,
             'slug' => 'fast-furious-2001-'.$uniqueSuffix,
             'release_year' => 2001,
         ]);
@@ -264,16 +264,16 @@ class MovieRelatedGenreFilteringTest extends TestCase
         // Given: Movie with genre
         $genreSciFi = Genre::firstOrCreate(['slug' => 'science-fiction'], ['name' => 'Science Fiction']);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $mainMovie = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
         $mainMovie->genres()->attach($genreSciFi->id);
 
         $relatedMovie = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);

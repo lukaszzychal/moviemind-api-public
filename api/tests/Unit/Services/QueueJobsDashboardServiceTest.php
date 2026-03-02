@@ -7,6 +7,7 @@ namespace Tests\Unit\Services;
 use App\Services\QueueJobsDashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Timeout;
 use Tests\TestCase;
 
 class QueueJobsDashboardServiceTest extends TestCase
@@ -131,6 +132,7 @@ class QueueJobsDashboardServiceTest extends TestCase
         $this->assertArrayHasKey('by_queue', $result);
     }
 
+    #[Timeout(15)]
     public function test_get_ai_jobs_statistics_aggregates_ai_jobs_data(): void
     {
         // ARRANGE: Create ai_jobs records

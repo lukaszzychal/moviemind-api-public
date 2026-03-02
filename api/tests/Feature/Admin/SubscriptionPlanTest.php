@@ -20,6 +20,10 @@ class SubscriptionPlanTest extends TestCase
         parent::setUp();
 
         Config::set('admin.api_token', $this->token);
+
+        // Bypass Admin API auth for tests (so requests without token also work in CI)
+        config(['app.env' => 'testing']);
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
     }
 
     public function test_list_plans(): void

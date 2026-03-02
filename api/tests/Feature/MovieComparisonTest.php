@@ -37,16 +37,16 @@ class MovieComparisonTest extends TestCase
         $genreSciFi = Genre::firstOrCreate(['slug' => 'science-fiction'], ['name' => 'Science Fiction']);
         $genreAction = Genre::firstOrCreate(['slug' => 'action'], ['name' => 'Action']);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
         $movie1->genres()->attach([$genreSciFi->id, $genreAction->id]);
 
         $movie2 = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);
@@ -81,16 +81,16 @@ class MovieComparisonTest extends TestCase
             'slug' => 'keanu-reeves-'.time(),
         ]);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
         $movie1->people()->attach($person->id, ['role' => 'ACTOR']);
 
         $movie2 = Movie::factory()->create([
-            'title' => 'John Wick',
+            'title' => 'John Wick '.$uniqueSuffix,
             'slug' => 'john-wick-2014-'.$uniqueSuffix,
             'release_year' => 2014,
         ]);
@@ -117,15 +117,15 @@ class MovieComparisonTest extends TestCase
     public function test_compare_movies_calculates_year_difference(): void
     {
         // Given: Two movies with different release years
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
 
         $movie2 = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);
@@ -154,9 +154,9 @@ class MovieComparisonTest extends TestCase
             'slug' => 'keanu-reeves-'.time(),
         ]);
 
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
@@ -164,7 +164,7 @@ class MovieComparisonTest extends TestCase
         $movie1->people()->attach($person->id, ['role' => 'ACTOR']);
 
         $movie2 = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);
@@ -191,9 +191,9 @@ class MovieComparisonTest extends TestCase
     public function test_compare_returns_404_when_first_movie_not_found(): void
     {
         // Given: One movie exists
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie2 = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);
@@ -211,10 +211,10 @@ class MovieComparisonTest extends TestCase
     public function test_compare_returns_404_when_second_movie_not_found(): void
     {
         // Given: One movie exists
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
-            'slug' => 'the-matrix-1999-'.time(),
+            'title' => 'The Matrix '.$uniqueSuffix,
+            'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
 
@@ -251,15 +251,15 @@ class MovieComparisonTest extends TestCase
     public function test_compare_returns_empty_arrays_when_no_common_elements(): void
     {
         // Given: Two movies with no common genres or people
-        $uniqueSuffix = time();
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
         ]);
 
         $movie2 = Movie::factory()->create([
-            'title' => 'Inception',
+            'title' => 'Inception '.$uniqueSuffix,
             'slug' => 'inception-2010-'.$uniqueSuffix,
             'release_year' => 2010,
         ]);

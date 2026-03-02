@@ -26,6 +26,22 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_TEST_KEY: test_pg_${{ github.run_id }}_${{ github.run_number }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+          POSTGRES_DB: moviemind_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +56,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          extensions: mbstring, dom, curl, libxml, zip, sqlite3, pdo_sqlite
+          extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
           coverage: xdebug
 
       - name: Cache Composer packages
@@ -48,7 +64,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: api/vendor
-          key: ${{ runner.os }}-php-${{ matrix.php-versions }}-${{ hashFiles('api/composer.lock') }}
+          key: ${{ runner.os }}-php-${{ matrix.php-versions }}-pgsql-${{ hashFiles('api/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-${{ matrix.php-versions }}-
 
@@ -81,9 +97,13 @@ jobs:
         working-directory: api
         env:
           APP_ENV: testing
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
-        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test --parallel
 
   test-postgresql:
     name: Test PostgreSQL-specific features

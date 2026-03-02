@@ -285,8 +285,7 @@ The dashboard integrates with Laravel Horizon for real-time queue metrics:
 
 The services support multiple database drivers:
 
-- **SQLite**: Uses `strftime()` for date formatting
-- **PostgreSQL**: Uses `TO_CHAR()` for date formatting
+- **PostgreSQL:** Uses `TO_CHAR()` for date formatting
 - **MySQL/MariaDB**: Uses `DATE_FORMAT()` for date formatting
 
 ## Performance Considerations

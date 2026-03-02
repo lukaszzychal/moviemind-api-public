@@ -6,11 +6,13 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\Timeout;
 use Tests\TestCase;
 
 /**
  * Performance/load test for search endpoint under concurrent requests.
  */
+#[Timeout(30)]
 class SearchPerformanceTest extends TestCase
 {
     use RefreshDatabase;

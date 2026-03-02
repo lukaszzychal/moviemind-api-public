@@ -57,7 +57,7 @@ This document outlines the comprehensive testing strategy for MovieMind API, inc
 **Characteristics:**
 - Mock external dependencies
 - Fast execution (< 1 second per test)
-- No database (or in-memory SQLite)
+- No database (or PostgreSQL test DB)
 - No HTTP requests
 
 ---
@@ -79,7 +79,7 @@ This document outlines the comprehensive testing strategy for MovieMind API, inc
 - `PlanBasedRateLimitTest` - Rate limiting
 
 **Characteristics:**
-- Use test database (SQLite in-memory)
+- Use test database (PostgreSQL, e.g. Docker/CI)
 - Real HTTP requests (via Laravel test client)
 - Mock external APIs (OpenAI, TMDB, TVmaze)
 - Slower execution (1-5 seconds per test)
@@ -135,7 +135,7 @@ docker compose exec php php artisan test --coverage
 ### Database
 
 **Test Database:**
-- SQLite in-memory (fast, isolated)
+- PostgreSQL test DB (fast, isolated via RefreshDatabase)
 - PostgreSQL (for PostgreSQL-specific tests)
 
 **Migrations:**

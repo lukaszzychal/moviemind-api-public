@@ -25,15 +25,15 @@ class MovieCastAutoCreationTest extends TestCase
 
     public function test_movie_generation_creates_director_person(): void
     {
-        // Use unique slug and title to avoid conflicts with seeded data
-        $uniqueSlug = 'test-movie-'.time().'-1999';
-        $uniqueTitle = 'Test Movie '.time();
+        // Slug must pass PreGenerationValidator and not exist in seed
+        $uniqueSlug = 'shutter-island-2010';
+        $uniqueTitle = 'Shutter Island '.time();
 
         $fake = $this->fakeOpenAiClient();
         $fake->setMovieResponse($uniqueSlug, [
             'success' => true,
             'title' => $uniqueTitle,
-            'release_year' => 1999,
+            'release_year' => 2010,
             'director' => 'Lana Wachowski',
             'description' => 'A computer hacker learns about the true nature of reality.',
             'genres' => ['Action', 'Sci-Fi'],
@@ -58,25 +58,25 @@ class MovieCastAutoCreationTest extends TestCase
         $this->assertNotNull($person);
         $this->assertEquals('Lana Wachowski', $person->name);
 
-        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 1999)->first();
+        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 2010)->first();
         $this->assertNotNull($movie);
         $this->assertEquals(1, $movie->people()->wherePivot('role', RoleType::DIRECTOR->value)->count());
     }
 
     public function test_movie_generation_creates_actors(): void
     {
-        $uniqueSlug = 'test-movie-actors-'.time().'-1999';
-        $uniqueTitle = 'Test Movie Actors '.time();
+        $uniqueSlug = 'departed-2006';
+        $uniqueTitle = 'Departed '.time();
 
         // Use unique actor names to avoid conflicts with seeded data
-        $actor1Name = 'Test Actor One '.time();
-        $actor2Name = 'Test Actor Two '.time();
+        $actor1Name = 'Actor One '.time();
+        $actor2Name = 'Actor Two '.time();
 
         $fake = $this->fakeOpenAiClient();
         $fake->setMovieResponse($uniqueSlug, [
             'success' => true,
             'title' => $uniqueTitle,
-            'release_year' => 1999,
+            'release_year' => 2006,
             'director' => 'Lana Wachowski',
             'description' => 'A computer hacker learns about the true nature of reality.',
             'genres' => ['Action', 'Sci-Fi'],
@@ -105,7 +105,7 @@ class MovieCastAutoCreationTest extends TestCase
         $this->assertDatabaseCount('people', $initialPeopleCount + 2);
         $this->assertDatabaseCount('movie_person', $initialMoviePersonCount + 2);
 
-        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 1999)->first();
+        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 2006)->first();
         $this->assertNotNull($movie);
 
         $actors = $movie->people()->wherePivot('role', RoleType::ACTOR->value)->get();
@@ -124,8 +124,8 @@ class MovieCastAutoCreationTest extends TestCase
 
     public function test_movie_generation_handles_existing_person(): void
     {
-        $uniqueSlug = 'test-movie-existing-'.time().'-1999';
-        $uniqueTitle = 'Test Movie Existing '.time();
+        $uniqueSlug = 'django-unchained-2012';
+        $uniqueTitle = 'Django Unchained '.time();
         $personName = 'Existing Person '.time();
 
         // Create existing person
@@ -139,7 +139,7 @@ class MovieCastAutoCreationTest extends TestCase
         $fake->setMovieResponse($uniqueSlug, [
             'success' => true,
             'title' => $uniqueTitle,
-            'release_year' => 1999,
+            'release_year' => 2012,
             'director' => 'Lana Wachowski',
             'description' => 'A computer hacker learns about the true nature of reality.',
             'genres' => ['Action', 'Sci-Fi'],
@@ -163,7 +163,7 @@ class MovieCastAutoCreationTest extends TestCase
         $this->assertDatabaseCount('people', $initialPeopleCount);
         $this->assertDatabaseCount('movie_person', $initialMoviePersonCount + 1);
 
-        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 1999)->first();
+        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 2012)->first();
         $this->assertNotNull($movie);
 
         $person = $movie->people()->first();
@@ -173,16 +173,16 @@ class MovieCastAutoCreationTest extends TestCase
 
     public function test_movie_generation_creates_director_and_actors(): void
     {
-        $uniqueSlug = 'test-movie-all-'.time().'-1999';
-        $uniqueTitle = 'Test Movie All '.time();
-        $directorName = 'Test Director '.time();
-        $actorName = 'Test Actor '.time();
+        $uniqueSlug = 'gravity-2013';
+        $uniqueTitle = 'Gravity '.time();
+        $directorName = 'Alfonso Cuaron '.time();
+        $actorName = 'Sandra Bullock '.time();
 
         $fake = $this->fakeOpenAiClient();
         $fake->setMovieResponse($uniqueSlug, [
             'success' => true,
             'title' => $uniqueTitle,
-            'release_year' => 1999,
+            'release_year' => 2013,
             'director' => $directorName,
             'description' => 'A computer hacker learns about the true nature of reality.',
             'genres' => ['Action', 'Sci-Fi'],
@@ -209,7 +209,7 @@ class MovieCastAutoCreationTest extends TestCase
         $this->assertDatabaseCount('people', $initialPeopleCount + 2);
         $this->assertDatabaseCount('movie_person', $initialMoviePersonCount + 2);
 
-        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 1999)->first();
+        $movie = Movie::where('title', $uniqueTitle)->where('release_year', 2013)->first();
         $this->assertNotNull($movie);
 
         $director = $movie->people()->wherePivot('role', RoleType::DIRECTOR->value)->first();

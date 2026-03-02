@@ -6,6 +6,9 @@ return [
     'default' => env('PENNANT_DEFAULT_STORE', 'database'),
 
     'stores' => [
+        'array' => [
+            'driver' => 'array',
+        ],
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_CONNECTION', null),

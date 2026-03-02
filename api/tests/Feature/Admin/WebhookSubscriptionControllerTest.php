@@ -24,6 +24,10 @@ class WebhookSubscriptionControllerTest extends TestCase
             'movie.generation.completed' => ['https://env.example.com'],
             'movie.generation.failed' => [],
         ]);
+
+        // Bypass Admin API auth for tests (so requests without token also work in CI)
+        config(['app.env' => 'testing']);
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
     }
 
     public function test_list_returns_combined_urls_with_source(): void
@@ -50,6 +54,10 @@ class WebhookSubscriptionControllerTest extends TestCase
 
     public function test_list_requires_admin_token(): void
     {
+        // Disable bypass so endpoint requires token
+        config(['app.env' => 'production']);
+        config(['admin.auth.bypass_environments' => []]);
+
         $response = $this->getJson('/api/v1/admin/webhook-subscriptions');
         $response->assertUnauthorized();
     }

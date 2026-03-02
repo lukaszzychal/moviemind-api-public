@@ -20,7 +20,7 @@ class AiMetricsControllerTest extends TestCase
 
         // Bypass Admin API auth for tests
         config(['app.env' => 'local']);
-        putenv('ADMIN_AUTH_BYPASS_ENVS=local,staging');
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
     }
 
     public function test_token_usage_endpoint_returns_statistics(): void

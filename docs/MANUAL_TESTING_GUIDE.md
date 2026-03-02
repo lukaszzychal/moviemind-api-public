@@ -54,10 +54,10 @@ For which sections are covered by PHPUnit and E2E/Playwright, see [TEST_COVERAGE
 ### Required Tools
 
 - **API Server:** Laravel application running (`php artisan serve` or Docker)
-- **Database:** PostgreSQL (production) or SQLite (testing) with migrations applied
+- **Database:** PostgreSQL (production) or same PostgreSQL for testing (Docker); migrations applied
 - **Queue Worker:** Laravel Horizon or `php artisan queue:work` running
 - **API Testing Tool:** curl, Postman, Insomnia, or browser with developer tools
-- **Database Access:** psql, SQLite CLI, or database GUI (optional, for verification)
+- **Database Access:** psql or database GUI (optional, for verification)
 - **Log Access:** Access to `storage/logs/laravel.log` or Horizon dashboard
 
 ### Required Knowledge

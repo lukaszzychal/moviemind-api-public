@@ -49,7 +49,7 @@ Test individual classes and methods in isolation.
 ### Characteristics
 
 - Fast execution (< 1 second per test)
-- No database (or in-memory SQLite)
+- No database (or PostgreSQL test DB)
 - No HTTP requests
 - Mock external dependencies
 
@@ -129,7 +129,7 @@ Test API endpoints end-to-end and integrations between components.
 
 ### Characteristics
 
-- Use test database (SQLite in-memory)
+- Use test database (PostgreSQL, e.g. `moviemind_test` via Docker/CI)
 - Real HTTP requests (via Laravel test client)
 - Mock external APIs
 - Slower execution (1-5 seconds per test)

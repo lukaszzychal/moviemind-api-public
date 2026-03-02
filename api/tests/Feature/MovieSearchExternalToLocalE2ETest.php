@@ -51,6 +51,7 @@ class MovieSearchExternalToLocalE2ETest extends TestCase
 
         $foundExternal = collect($results)->firstWhere('source', 'external');
         if (! $foundExternal) {
+            $this->assertTrue(true, 'Skipped - could not find external result.');
             $this->markTestSkipped('Could not find external result for the query, might already be in DB or TMDB issue');
 
             return;

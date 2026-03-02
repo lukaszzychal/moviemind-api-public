@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\Genre;
 use App\Models\Movie;
 use App\Models\MovieRelationship;
 use Illuminate\Http\Request;
@@ -15,6 +16,10 @@ use Illuminate\Http\Request;
  * - ?type=collection - Only collection relationships (sequels, prequels, etc.)
  * - ?type=similar - Only similar movies (from TMDB API, cached)
  * - ?type=all or no filter - Both collection and similar movies
+ *
+ * Supports filtering by genre:
+ * - ?genre=slug - Only related movies that have this genre
+ * - ?genres[]=slug1&genres[]=slug2 - Only related movies that have all these genres (AND)
  *
  * @author MovieMind API Team
  */
@@ -34,6 +39,7 @@ class GetRelatedMoviesAction
     public function handle(Movie $movie, Request $request): array
     {
         $typeFilter = $this->normalizeTypeFilter($request->query('type'));
+        $genreSlugs = $this->normalizeGenreFilter($request->query('genre'), $request->query('genres'));
 
         // Get collection relationships (from database)
         $collectionRelationships = $this->getCollectionRelationships($movie, $typeFilter);
@@ -53,6 +59,9 @@ class GetRelatedMoviesAction
                 : $relationship->movie;
 
             if ($relatedMovie instanceof Movie) {
+                if ($genreSlugs !== null && ! $this->movieHasGenres($relatedMovie, $genreSlugs)) {
+                    continue;
+                }
                 $formattedMovies[] = [
                     'id' => $relatedMovie->id,
                     'slug' => $relatedMovie->slug,
@@ -160,5 +169,48 @@ class GetRelatedMoviesAction
         // TODO: Implement TMDb similar movies retrieval
         // For now, return empty collection
         return new \Illuminate\Database\Eloquent\Collection([]);
+    }
+
+    /**
+     * Normalize genre filter from request (?genre=slug or ?genres[]=slug).
+     *
+     * @param  mixed  $genre  Single genre slug
+     * @param  mixed  $genres  Array of genre slugs
+     * @return array<string>|null Normalized array of genre slugs, or null if no filter
+     */
+    private function normalizeGenreFilter(mixed $genre, mixed $genres): ?array
+    {
+        if ($genres !== null && is_array($genres)) {
+            $slugs = array_map('strtolower', array_map('trim', $genres));
+
+            return array_values(array_filter($slugs));
+        }
+        if ($genre !== null && $genre !== '') {
+            return [strtolower(trim((string) $genre))];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if movie has all of the given genres (by slug, case-insensitive).
+     *
+     * @param  array<string>  $genreSlugs
+     */
+    private function movieHasGenres(Movie $movie, array $genreSlugs): bool
+    {
+        if (count($genreSlugs) === 0) {
+            return true;
+        }
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Genre> $genres */
+        $genres = $movie->genres()->get();
+        $movieSlugs = $genres->map(fn (Genre $g) => strtolower($g->slug))->toArray();
+        foreach ($genreSlugs as $slug) {
+            if (! in_array($slug, $movieSlugs, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

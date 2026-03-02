@@ -6,7 +6,6 @@ namespace App\Repositories;
 
 use App\Models\Movie;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class MovieRepository
 {
@@ -25,17 +24,10 @@ class MovieRepository
     ): Collection {
         return Movie::query()
             ->when($query !== null && $query !== '', function ($builder) use ($query) {
-                $driver = DB::getDriverName();
-                $genresColumn = match ($driver) {
-                    'pgsql' => 'genres::text',
-                    'sqlite' => 'CAST(genres AS TEXT)',
-                    default => 'genres',
-                };
-
                 $pattern = '%'.$query.'%';
                 $builder->whereRaw('LOWER(title) LIKE LOWER(?)', [$pattern])
                     ->orWhereRaw('LOWER(director) LIKE LOWER(?)', [$pattern])
-                    ->orWhereRaw("LOWER({$genresColumn}) LIKE LOWER(?)", [$pattern]);
+                    ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern]);
             })
             ->when($actor !== null && $actor !== [], function ($builder) use ($actor) {
                 $names = is_array($actor) ? $actor : [$actor];

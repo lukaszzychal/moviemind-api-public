@@ -22,7 +22,7 @@ Utworzono testy funkcjonalne w `api/tests/Feature/Admin/SubscriptionPlanTest.php
 - Usuwanie funkcji
 - Weryfikację uprawnień (z użyciem tokena admina)
 
-Poprawiono również migrację `2026_01_27_174000_add_id_to_features_table.php`, aby działała poprawnie z bazą SQLite używaną w testach.
+Poprawiono również migrację `2026_01_27_174000_add_id_to_features_table.php`, aby działała poprawnie z bazą PostgreSQL używaną w testach i produkcji.
 
 ### 4. Skrypt Instalasji (`setup-local-testing.sh`)
 Zaktualizowano skrypt `scripts/setup-local-testing.sh`:
