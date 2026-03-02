@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Events\MovieGenerationRequested;
+use App\Listeners\SendOutgoingWebhookListener;
 use App\Models\OutgoingWebhook;
+use App\Models\WebhookSubscription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -195,5 +197,124 @@ class OutgoingWebhooksTest extends TestCase
         // Both URLs should receive webhooks (at least 2, may be more from other tests)
         $sentCount = count(Http::recorded());
         $this->assertGreaterThanOrEqual(2, $sentCount, 'Expected at least 2 HTTP requests for this test');
+    }
+
+    public function test_webhook_sent_to_subscription_url_when_no_env_url(): void
+    {
+        Feature::activate('webhook_notifications');
+        Config::set('webhooks.outgoing_urls', [
+            'movie.generation.requested' => [],
+            'movie.generation.completed' => [],
+            'generation.completed' => [],
+        ]);
+
+        $subscriptionUrl = 'https://subscription-only.example/webhook';
+        WebhookSubscription::create([
+            'event_type' => 'movie.generation.requested',
+            'url' => $subscriptionUrl,
+        ]);
+
+        Http::fake([
+            $subscriptionUrl => Http::response(['status' => 'ok'], 200),
+        ]);
+
+        Event::dispatch(new MovieGenerationRequested(
+            slug: 'the-matrix-1999',
+            jobId: '550e8400-e29b-41d4-a716-446655440000'
+        ));
+
+        $this->assertDatabaseHas('outgoing_webhooks', [
+            'event_type' => 'movie.generation.requested',
+            'url' => $subscriptionUrl,
+            'status' => 'sent',
+        ]);
+        Http::assertSent(fn ($request) => $request->url() === $subscriptionUrl);
+    }
+
+    public function test_webhook_sent_to_both_env_and_subscription_urls(): void
+    {
+        $envUrl = 'https://env.example/webhook';
+        $formUrl = 'https://form.example/webhook';
+        Feature::activate('webhook_notifications');
+        Config::set('webhooks.outgoing_urls', [
+            'movie.generation.requested' => [$envUrl],
+            'movie.generation.completed' => [],
+            'generation.completed' => [],
+        ]);
+
+        WebhookSubscription::create([
+            'event_type' => 'movie.generation.requested',
+            'url' => $formUrl,
+        ]);
+
+        Http::fake([
+            $envUrl => Http::response(['status' => 'ok'], 200),
+            $formUrl => Http::response(['status' => 'ok'], 200),
+        ]);
+
+        Event::dispatch(new MovieGenerationRequested(
+            slug: 'the-matrix-1999',
+            jobId: '550e8400-e29b-41d4-a716-446655440000'
+        ));
+
+        $this->assertDatabaseHas('outgoing_webhooks', [
+            'url' => $envUrl,
+            'event_type' => 'movie.generation.requested',
+        ]);
+        $this->assertDatabaseHas('outgoing_webhooks', [
+            'url' => $formUrl,
+            'event_type' => 'movie.generation.requested',
+        ]);
+        Http::assertSent(fn ($r) => $r->url() === $envUrl);
+        Http::assertSent(fn ($r) => $r->url() === $formUrl);
+    }
+
+    public function test_webhook_sent_once_when_same_url_in_env_and_subscription(): void
+    {
+        Feature::activate('webhook_notifications');
+        $uniqueId = 'same-'.uniqid();
+        $sameUrl = "https://{$uniqueId}.example/webhook";
+        Config::set('webhooks.outgoing_urls', [
+            'movie.generation.completed' => [$sameUrl],
+            'generation.completed' => [],
+        ]);
+
+        WebhookSubscription::create([
+            'event_type' => 'movie.generation.completed',
+            'url' => $sameUrl,
+        ]);
+
+        Http::fake([$sameUrl => Http::response(['status' => 'ok'], 200)]);
+
+        Event::dispatch(new MovieGenerationRequested(
+            slug: 'the-matrix-1999',
+            jobId: '550e8400-e29b-41d4-a716-446655440000'
+        ));
+
+        $this->assertDatabaseHas('outgoing_webhooks', [
+            'event_type' => 'movie.generation.requested',
+            'url' => $sameUrl,
+            'status' => 'sent',
+        ]);
+        // Deduplication is implemented in getUrlsForEvent (env + subscriptions merged, array_unique).
+        Http::assertSent(fn ($request) => $request->url() === $sameUrl);
+    }
+
+    public function test_get_urls_for_event_deduplicates_same_url_from_env_and_subscription(): void
+    {
+        $sameUrl = 'https://dedupe.example/webhook';
+        Config::set('webhooks.outgoing_urls', [
+            'movie.generation.completed' => [$sameUrl],
+            'generation.completed' => [],
+        ]);
+        WebhookSubscription::create([
+            'event_type' => 'movie.generation.completed',
+            'url' => $sameUrl,
+        ]);
+
+        $listener = app(SendOutgoingWebhookListener::class);
+        $urls = $listener->getUrlsForEvent('movie.generation.completed', 'generation.completed');
+
+        $this->assertSame([$sameUrl], $urls, 'Same URL in env and subscription must appear once');
     }
 }

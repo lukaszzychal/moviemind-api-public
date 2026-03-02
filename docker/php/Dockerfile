@@ -16,9 +16,10 @@
 FROM php:8.3-fpm-alpine AS base
 
 # System dependencies
+# Added libzip-dev for zip extension (required by Filament/OpenSpout)
 RUN apk add --no-cache \
     bash git unzip curl libpq-dev icu-dev oniguruma-dev linux-headers \
-    freetype-dev libjpeg-turbo-dev libpng-dev \
+    freetype-dev libjpeg-turbo-dev libpng-dev libzip-dev \
     wget
 
 # Install PECL and Redis extension
@@ -29,8 +30,9 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
  && apk del .build-deps
 
 # PHP extensions
+# Added zip extension
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install -j$(nproc) pdo pdo_pgsql intl mbstring gd opcache pcntl
+ && docker-php-ext-install -j$(nproc) pdo pdo_pgsql intl mbstring gd opcache pcntl zip
 
 # Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
@@ -57,10 +59,10 @@ COPY api/composer.json api/composer.lock* ./
 
 # Install Composer dependencies
 # Use --no-scripts to avoid running Laravel commands during build
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction || \
-    composer install --optimize-autoloader --no-scripts --no-interaction \
+# Removed error suppression to see actual composer errors
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction \
  && rm -rf /tmp/composer-cache /tmp/composer \
- && composer clear-cache || true
+ && composer clear-cache
 
 # ----------------------------------------------------------------------------
 # Stage 3: Local/Dev - PHP-FPM only (for docker-compose with separate Nginx)

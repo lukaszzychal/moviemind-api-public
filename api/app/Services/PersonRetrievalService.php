@@ -442,6 +442,19 @@ class PersonRetrievalService
         return 'person:'.$slug.':'.$suffix;
     }
 
+    public function putCache(string $slug, ?string $bioId, array $data): void
+    {
+        $cacheKey = $this->generateCacheKey($slug, $bioId);
+        // Cache for 1 hour (same as controller's CACHE_TTL_SECONDS)
+        Cache::put($cacheKey, $data, now()->addHour());
+    }
+
+    public function forgetCache(string $slug, ?string $bioId = null): void
+    {
+        $cacheKey = $this->generateCacheKey($slug, $bioId);
+        Cache::forget($cacheKey);
+    }
+
     /**
      * Invalidate person search cache when a new person is created.
      * Uses tagged cache if supported, otherwise clears all search cache keys.

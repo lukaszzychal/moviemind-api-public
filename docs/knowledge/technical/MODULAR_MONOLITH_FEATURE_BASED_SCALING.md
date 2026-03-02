@@ -3755,6 +3755,673 @@ kubectl get deployment metrics-server -n kube-system
 
 ---
 
+## Cloud Platform Examples
+
+### Azure
+
+#### Azure App Service (Container Instances)
+
+**Przykład: Azure App Service z wieloma slotami**
+
+```yaml
+# azure-app-service.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: moviemind-api-config
+data:
+  APP_ENV: production
+  DB_CONNECTION: pgsql
+  DB_HOST: moviemind-db.postgres.database.azure.com
+  REDIS_HOST: moviemind-redis.redis.cache.windows.net
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api-full
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: api
+        image: moviemind-api:latest
+        envFrom:
+        - configMapRef:
+            name: moviemind-api-config
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: FEATURE_AI_BIO
+          value: "true"
+        - name: FEATURE_ADVANCED_SEARCH
+          value: "false"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api-ai
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: api
+        image: moviemind-api:latest
+        envFrom:
+        - configMapRef:
+            name: moviemind-api-config
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: FEATURE_AI_BIO
+          value: "false"
+        - name: FEATURE_ADVANCED_SEARCH
+          value: "false"
+```
+
+**Azure Container Instances (ACI) z Application Gateway**
+
+```bash
+# Utwórz resource group
+az group create --name moviemind-rg --location westeurope
+
+# Utwórz Azure Container Registry
+az acr create --resource-group moviemind-rg --name moviemindacr --sku Basic
+
+# Zbuduj i wypchnij obraz
+az acr build --registry moviemindacr --image moviemind-api:latest .
+
+# Utwórz Container Instances
+az container create \
+  --resource-group moviemind-rg \
+  --name moviemind-api-1 \
+  --image moviemindacr.azurecr.io/moviemind-api:latest \
+  --registry-login-server moviemindacr.azurecr.io \
+  --registry-username moviemindacr \
+  --registry-password <password> \
+  --environment-variables \
+    INSTANCE_ID=api-1 \
+    FEATURE_AI_DESCRIPTION=true \
+    FEATURE_AI_BIO=true \
+    FEATURE_ADVANCED_SEARCH=false \
+    DB_HOST=moviemind-db.postgres.database.azure.com \
+    REDIS_HOST=moviemind-redis.redis.cache.windows.net \
+  --cpu 1 \
+  --memory 1 \
+  --ports 8000
+
+# Utwórz Application Gateway dla load balancing
+az network application-gateway create \
+  --resource-group moviemind-rg \
+  --name moviemind-agw \
+  --location westeurope \
+  --capacity 2 \
+  --sku Standard_v2 \
+  --public-ip-address moviemind-ip
+```
+
+**Azure Kubernetes Service (AKS)**
+
+```yaml
+# aks-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: moviemind-api
+  template:
+    metadata:
+      labels:
+        app: moviemind-api
+    spec:
+      containers:
+      - name: api
+        image: moviemindacr.azurecr.io/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: DB_HOST
+          value: "moviemind-db.postgres.database.azure.com"
+        - name: REDIS_HOST
+          value: "moviemind-redis.redis.cache.windows.net"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: moviemind-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: moviemind-api
+  ports:
+  - port: 80
+    targetPort: 8000
+```
+
+**Deployment do AKS:**
+
+```bash
+# Utwórz AKS cluster
+az aks create \
+  --resource-group moviemind-rg \
+  --name moviemind-aks \
+  --node-count 3 \
+  --enable-addons monitoring \
+  --attach-acr moviemindacr
+
+# Pobierz credentials
+az aks get-credentials --resource-group moviemind-rg --name moviemind-aks
+
+# Wdróż aplikację
+kubectl apply -f aks-deployment.yaml
+
+# Sprawdź status
+kubectl get pods
+kubectl get services
+```
+
+---
+
+### Google Cloud Platform (GCP)
+
+#### Cloud Run (Serverless Containers)
+
+**Przykład: Cloud Run z wieloma usługami**
+
+```yaml
+# cloud-run-service-full.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: moviemind-api-full
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "3"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: gcr.io/moviemind-project/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          value: "cloud-run-full"
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: FEATURE_AI_BIO
+          value: "true"
+        - name: FEATURE_ADVANCED_SEARCH
+          value: "false"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: host
+        resources:
+          limits:
+            cpu: "2"
+            memory: 2Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+---
+# cloud-run-service-ai.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: moviemind-api-ai
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "2"
+        autoscaling.knative.dev/maxScale: "5"
+    spec:
+      containers:
+      - image: gcr.io/moviemind-project/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          value: "cloud-run-ai"
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: FEATURE_AI_BIO
+          value: "false"
+        - name: FEATURE_ADVANCED_SEARCH
+          value: "false"
+```
+
+**Deployment do Cloud Run:**
+
+```bash
+# Zbuduj i wypchnij obraz
+gcloud builds submit --tag gcr.io/moviemind-project/moviemind-api:latest
+
+# Wdróż usługę full
+gcloud run deploy moviemind-api-full \
+  --image gcr.io/moviemind-project/moviemind-api:latest \
+  --platform managed \
+  --region europe-west1 \
+  --min-instances 3 \
+  --max-instances 10 \
+  --cpu 2 \
+  --memory 2Gi \
+  --set-env-vars INSTANCE_ID=cloud-run-full,FEATURE_AI_DESCRIPTION=true,FEATURE_AI_BIO=true,FEATURE_ADVANCED_SEARCH=false \
+  --set-secrets DB_HOST=db-credentials:host,REDIS_HOST=redis-credentials:host
+
+# Wdróż usługę AI-only
+gcloud run deploy moviemind-api-ai \
+  --image gcr.io/moviemind-project/moviemind-api:latest \
+  --platform managed \
+  --region europe-west1 \
+  --min-instances 2 \
+  --max-instances 5 \
+  --cpu 1 \
+  --memory 1Gi \
+  --set-env-vars INSTANCE_ID=cloud-run-ai,FEATURE_AI_DESCRIPTION=true,FEATURE_AI_BIO=false,FEATURE_ADVANCED_SEARCH=false
+
+# Skonfiguruj Load Balancer
+gcloud compute backend-services create moviemind-backend \
+  --global \
+  --load-balancing-scheme EXTERNAL
+
+# Dodaj backendy
+gcloud compute backend-services add-backend moviemind-backend \
+  --global \
+  --network-endpoint-group moviemind-api-full-neg \
+  --network-endpoint-group-region europe-west1
+
+gcloud compute backend-services add-backend moviemind-backend \
+  --global \
+  --network-endpoint-group moviemind-api-ai-neg \
+  --network-endpoint-group-region europe-west1
+```
+
+#### Google Kubernetes Engine (GKE)
+
+```yaml
+# gke-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: moviemind-api
+  template:
+    metadata:
+      labels:
+        app: moviemind-api
+    spec:
+      containers:
+      - name: api
+        image: gcr.io/moviemind-project/moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: host
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: moviemind-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: moviemind-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+```
+
+**Deployment do GKE:**
+
+```bash
+# Utwórz GKE cluster
+gcloud container clusters create moviemind-cluster \
+  --num-nodes 3 \
+  --machine-type n1-standard-2 \
+  --region europe-west1 \
+  --enable-autoscaling \
+  --min-nodes 3 \
+  --max-nodes 10
+
+# Pobierz credentials
+gcloud container clusters get-credentials moviemind-cluster --region europe-west1
+
+# Wdróż aplikację
+kubectl apply -f gke-deployment.yaml
+
+# Sprawdź status
+kubectl get pods
+kubectl get hpa
+```
+
+---
+
+### Amazon Web Services (AWS)
+
+#### AWS ECS (Elastic Container Service)
+
+**Przykład: ECS Task Definition z Feature Flags**
+
+```json
+{
+  "family": "moviemind-api-full",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "containerDefinitions": [
+    {
+      "name": "moviemind-api",
+      "image": "moviemind-api:latest",
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "INSTANCE_ID",
+          "value": "ecs-full"
+        },
+        {
+          "name": "FEATURE_AI_DESCRIPTION",
+          "value": "true"
+        },
+        {
+          "name": "FEATURE_AI_BIO",
+          "value": "true"
+        },
+        {
+          "name": "FEATURE_ADVANCED_SEARCH",
+          "value": "false"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:region:account:secret:db-credentials:host::"
+        },
+        {
+          "name": "REDIS_HOST",
+          "valueFrom": "arn:aws:secretsmanager:region:account:secret:redis-credentials:host::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/moviemind-api",
+          "awslogs-region": "eu-west-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8000/health/instance || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3
+      }
+    }
+  ]
+}
+```
+
+**ECS Service Definition:**
+
+```json
+{
+  "serviceName": "moviemind-api-full",
+  "cluster": "moviemind-cluster",
+  "taskDefinition": "moviemind-api-full",
+  "desiredCount": 3,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": ["subnet-12345", "subnet-67890"],
+      "securityGroups": ["sg-12345"],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:region:account:targetgroup/moviemind-api/12345",
+      "containerName": "moviemind-api",
+      "containerPort": 8000
+    }
+  ],
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 100
+  },
+  "healthCheckGracePeriodSeconds": 60
+}
+```
+
+**Deployment do ECS:**
+
+```bash
+# Zarejestruj task definition
+aws ecs register-task-definition --cli-input-json file://task-definition.json
+
+# Utwórz service
+aws ecs create-service --cli-input-json file://service-definition.json
+
+# Skaluj service
+aws ecs update-service \
+  --cluster moviemind-cluster \
+  --service moviemind-api-full \
+  --desired-count 5
+
+# Sprawdź status
+aws ecs describe-services \
+  --cluster moviemind-cluster \
+  --services moviemind-api-full
+```
+
+#### AWS EKS (Elastic Kubernetes Service)
+
+```yaml
+# eks-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moviemind-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: moviemind-api
+  template:
+    metadata:
+      labels:
+        app: moviemind-api
+    spec:
+      containers:
+      - name: api
+        image: moviemind-api:latest
+        env:
+        - name: INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FEATURE_AI_DESCRIPTION
+          value: "true"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: host
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: moviemind-api
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: moviemind-api
+  ports:
+  - port: 80
+    targetPort: 8000
+```
+
+**Deployment do EKS:**
+
+```bash
+# Utwórz EKS cluster
+eksctl create cluster \
+  --name moviemind-cluster \
+  --region eu-west-1 \
+  --node-type t3.medium \
+  --nodes 3 \
+  --nodes-min 3 \
+  --nodes-max 10
+
+# Wdróż aplikację
+kubectl apply -f eks-deployment.yaml
+
+# Sprawdź status
+kubectl get pods
+kubectl get services
+```
+
+#### AWS Lambda (Serverless)
+
+**Przykład: Lambda z Feature Flags (dla mniejszych obciążeń)**
+
+```yaml
+# lambda-function.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MovieMindAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: moviemind-api
+      Runtime: provided.al2
+      Handler: bootstrap
+      CodeUri: ./api
+      MemorySize: 1024
+      Timeout: 30
+      Environment:
+        Variables:
+          INSTANCE_ID: lambda
+          FEATURE_AI_DESCRIPTION: "true"
+          FEATURE_AI_BIO: "true"
+          FEATURE_ADVANCED_SEARCH: "false"
+          DB_HOST: !Ref DatabaseEndpoint
+          REDIS_HOST: !Ref RedisEndpoint
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+      VpcConfig:
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+```
+
+**Deployment do Lambda:**
+
+```bash
+# Zbuduj obraz dla Lambda
+docker build -t moviemind-api-lambda -f Dockerfile.lambda .
+
+# Utwórz ECR repository
+aws ecr create-repository --repository-name moviemind-api
+
+# Wypchnij obraz
+aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin <account>.dkr.ecr.eu-west-1.amazonaws.com
+docker tag moviemind-api-lambda:latest <account>.dkr.ecr.eu-west-1.amazonaws.com/moviemind-api:latest
+docker push <account>.dkr.ecr.eu-west-1.amazonaws.com/moviemind-api:latest
+
+# Wdróż przez SAM
+sam build
+sam deploy --guided
+```
+
+---
+
+### Porównanie Cloud Platforms
+
+| Platforma | Usługa | Auto-scaling | Load Balancing | Koszt (miesięcznie) | Idealne dla |
+|-----------|--------|--------------|----------------|---------------------|-------------|
+| **Azure** | App Service | ✅ Tak | ✅ Application Gateway | $50-200 | Małe/Średnie |
+| **Azure** | AKS | ✅ HPA | ✅ Load Balancer | $100-500 | Duże/Enterprise |
+| **GCP** | Cloud Run | ✅ Automatyczne | ✅ Cloud Load Balancer | $30-150 | Małe/Średnie |
+| **GCP** | GKE | ✅ HPA | ✅ Load Balancer | $100-400 | Duże/Enterprise |
+| **AWS** | ECS Fargate | ✅ Service Auto-scaling | ✅ ALB/NLB | $80-300 | Średnie/Duże |
+| **AWS** | EKS | ✅ HPA | ✅ ELB | $150-600 | Duże/Enterprise |
+| **AWS** | Lambda | ✅ Automatyczne | ✅ API Gateway | $10-50 | Małe obciążenia |
+
+---
+
 ## Zarządzanie Feature Flags
 
 ### Database-Driven Flags

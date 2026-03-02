@@ -5,10 +5,13 @@ namespace App\Jobs;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
+use App\Events\MovieGenerationCompleted;
+use App\Events\MovieGenerationFailed;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Repositories\MovieRepository;
 use App\Services\JobErrorFormatter;
+use App\Services\JobStatusService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,8 +47,17 @@ class MockGenerateMovieJob implements ShouldQueue
 
     public function handle(): void
     {
+        Log::info('MockGenerateMovieJob started', [
+            'slug' => $this->slug,
+            'job_id' => $this->jobId,
+            'locale' => $this->locale,
+            'context_tag' => $this->contextTag,
+        ]);
+
         /** @var MovieRepository $movieRepository */
         $movieRepository = app(MovieRepository::class);
+        /** @var JobStatusService $jobStatusService */
+        $jobStatusService = app(JobStatusService::class);
 
         try {
             $existing = $movieRepository->findBySlugForJob($this->slug, $this->existingMovieId);
@@ -71,6 +83,8 @@ class MockGenerateMovieJob implements ShouldQueue
             $this->updateCache('FAILED', error: $errorData);
 
             throw $e;
+        } finally {
+            $jobStatusService->releaseGenerationSlot('MOVIE', $this->slug, $this->locale, $this->contextTag);
         }
     }
 
@@ -234,6 +248,32 @@ class MockGenerateMovieJob implements ShouldQueue
         }
 
         Cache::put($this->cacheKey(), $payload, now()->addMinutes(15));
+
+        /** @var JobStatusService $jobStatusService */
+        $jobStatusService = app(JobStatusService::class);
+        if ($status === 'DONE' && $id !== null) {
+            $jobStatusService->markDone($this->jobId, 'MOVIE', $id, $slug ?? $this->slug);
+            event(new MovieGenerationCompleted(
+                $this->jobId,
+                $slug ?? $this->slug,
+                $id,
+                $locale ?? $this->locale,
+                $contextTag ?? $this->contextTag,
+                $descriptionId
+            ));
+        } elseif ($status === 'FAILED') {
+            $errorMessage = $error['message'] ?? 'Unknown error';
+            $jobStatusService->markFailed($this->jobId, 'MOVIE', $errorMessage);
+            event(new MovieGenerationFailed(
+                $this->jobId,
+                $this->slug,
+                $errorMessage,
+                $this->locale,
+                $this->contextTag
+            ));
+        } else {
+            $jobStatusService->updateStatus($this->jobId, $payload);
+        }
     }
 
     private function resolveLocale(): Locale
@@ -387,6 +427,10 @@ class MockGenerateMovieJob implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
+        /** @var JobStatusService $jobStatusService */
+        $jobStatusService = app(JobStatusService::class);
+        $jobStatusService->releaseGenerationSlot('MOVIE', $this->slug, $this->locale, $this->contextTag);
+
         Log::error('MockGenerateMovieJob permanently failed', [
             'slug' => $this->slug,
             'job_id' => $this->jobId,

@@ -228,6 +228,7 @@ Każde zadanie ma następującą strukturę:
 - `TASK-009` - Admin UI
 - `TASK-010` - Analytics/Monitoring Dashboards
 - `TASK-030` - Dokumentacja testów "trzech linii"
+- `TASK-053` - Wyszukiwanie pełnotekstowe / tolerancja literówek (full-text / fuzzy search)
 - ~~`TASK-RAPI-006` - Usage Analytics Dashboard~~ ✅ COMPLETED
 
 ---
@@ -371,6 +372,18 @@ Każde zadanie ma następującą strukturę:
 - **Utworzone:** 2025-01-27
 - **Ukończone:** 2025-01-27
 - **Dokumentacja:** `docs/issue/RAPIDAPI_INTEGRATION_PLAN.md`
+
+---
+
+#### `TASK-053` - Wyszukiwanie pełnotekstowe / tolerancja literówek (full-text / fuzzy search)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski (Roadmap)
+- **Szacowany czas:** 8-16h (w zależności od zakresu: filmy / seriale / osoby)
+- **Opis:** Opcjonalne rozszerzenie wyszukiwania: warianty słów (stemming) i tolerancja literówek (np. trigramy w PostgreSQL).
+- **Szczegóły:**
+  - Dokument opisujący mechanizm: `docs/en/FULLTEXT_FUZZY_SEARCH.md` (oraz `docs/pl/`).
+  - Decyzja o wdrożeniu (migracje FTS/pg_trgm, zmiana zapytań w `MovieRepository` / `TvShowRepository` / `PersonRepository`) w osobnym zadaniu.
+- **Zależności:** Brak
 
 ---
 
@@ -1798,6 +1811,86 @@ Każde zadanie ma następującą strukturę:
 - **Dokumentacja:** [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.md), [`docs/tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md`](../../tasks/TASK_016_PHPSTAN_AUTO_FIX.en.md)
 
 ---
+
+### Rate limiting, Circuit Breaker, Logging (backlog)
+
+#### `TASK-RATE-001` - Audyt limitów wychodzących (OpenAI, webhooki)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4-6 godzin
+- **Opis:** Audyt limitów wychodzących – OpenAI, webhooki; doprecyzowanie potrzeb i ewentualna implementacja limitu dla OpenAI.
+- **Szczegóły:** [RATE_LIMITING_STRATEGY.md](../../knowledge/technical/RATE_LIMITING_STRATEGY.md)
+- **Zależności:** Brak
+- **Utworzone:** 2025-02-21
+
+#### `TASK-RATE-002` - Dokumentacja limitów zewnętrznych API (TMDb, TVMaze, OpenAI)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 2-3 godziny
+- **Opis:** Uzupełnić dokumentację limitów zewnętrznych API (TMDb, TVMaze, OpenAI) w RATE_LIMITING_STRATEGY.md.
+- **Szczegóły:** [RATE_LIMITING_STRATEGY.md](../../knowledge/technical/RATE_LIMITING_STRATEGY.md)
+- **Zależności:** Brak
+- **Utworzone:** 2025-02-21
+
+#### `TASK-CB-001` - Ocena wdrożenia Circuit Breaker (Ganesha) dla zewnętrznych API
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 6-10 godzin
+- **Opis:** Ocena wdrożenia Circuit Breaker (np. Ganesha) dla zewnętrznych API (TMDb, TVMaze, OpenAI) – analiza, PoC, decyzja.
+- **Szczegóły:** [CIRCUIT_BREAKER_ANALYSIS.md](../../knowledge/technical/CIRCUIT_BREAKER_ANALYSIS.md)
+- **Zależności:** Brak
+- **Utworzone:** 2025-02-21
+
+#### `TASK-CB-002` - Implementacja circuit breakera dla wybranego providera (opcjonalne)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 4-8 godzin
+- **Opis:** Implementacja circuit breakera dla wybranego providera (np. TMDb) po pozytywnej ocenie TASK-CB-001.
+- **Szczegóły:** [CIRCUIT_BREAKER_ANALYSIS.md](../../knowledge/technical/CIRCUIT_BREAKER_ANALYSIS.md)
+- **Zależności:** TASK-CB-001
+- **Utworzone:** 2025-02-21
+
+#### `TASK-LOG-001` - Polityka logowania
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 2-4 godziny
+- **Opis:** Zdefiniować politykę logowania (format, poziomy, retencja, co nie logować) i dopisać do LOGGING_AND_OBSERVABILITY.md.
+- **Szczegóły:** [LOGGING_AND_OBSERVABILITY.md](../../knowledge/technical/LOGGING_AND_OBSERVABILITY.md)
+- **Zależności:** Brak
+- **Utworzone:** 2025-02-21
+
+#### `TASK-LOG-002` - Ocena agregacji logów i stanu kontenerów
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟡 Średni
+- **Szacowany czas:** 4-6 godzin
+- **Opis:** Ocena agregacji logów i stanu kontenerów (Loki/ELK/CloudWatch, docker logs, health) – wymagania, opcje, rekomendacja.
+- **Szczegóły:** [LOGGING_AND_OBSERVABILITY.md](../../knowledge/technical/LOGGING_AND_OBSERVABILITY.md)
+- **Zależności:** Brak
+- **Utworzone:** 2025-02-21
+
+#### `TASK-LOG-003` - Wdrożenie structured logging i/lub agregacji (opcjonalne)
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 6-12 godzin
+- **Opis:** Wdrożenie structured logging (JSON) i/lub pipeline agregacji logów po decyzji (TASK-LOG-001, TASK-LOG-002).
+- **Szczegóły:** [LOGGING_AND_OBSERVABILITY.md](../../knowledge/technical/LOGGING_AND_OBSERVABILITY.md)
+- **Zależności:** TASK-LOG-001, TASK-LOG-002
+- **Utworzone:** 2025-02-21
+
+---
+
+### Feature Flags (backlog)
+
+#### `TASK-FF-001` - Wdrożenie scope User dla Feature Flags
+- **Status:** ⏳ PENDING
+- **Priorytet:** 🟢 Niski
+- **Szacowany czas:** 4-8 godzin
+- **Opis:** Obecnie aplikacja używa tylko scope Global (default); wpisy dla scope User w DB/UI nie mają wpływu na zachowanie. Zadanie: używać `Feature::for($user)->active($name)` tam, gdzie ma mieć znaczenie flaga per użytkownik (np. kontekst API key / użytkownik), rozszerzyć Admin API o obsługę scope (list/set per scope), oraz zachować spójność z Filament (scope User już wybieralny w UI).
+- **Szczegóły:** Scope jest w tabeli `features` i w Filament; w kodzie nigdzie nie wywołujemy `Feature::for($scope)`.
+- **Zależności:** Brak
+- **Utworzone:** 2025-02-21
+
+---
 ## 📚 **Szablony**
 
 ### **Szablon dla nowego zadania:**
@@ -1841,7 +1934,7 @@ Każde zadanie ma następującą strukturę:
 
 ## 📊 **Statystyki**
 
-- **Aktywne:** 14 (11 + 3 RapidAPI tasks)
+- **Aktywne:** 22 (14 + 7 backlog: rate limit, circuit breaker, logging + 1 Feature Flags)
 - **Zakończone:** 39 (32 + 7 RapidAPI tasks)
 - **Odroczone:** 1 (TASK-031)
 - **Anulowane:** 1
@@ -1849,5 +1942,5 @@ Każde zadanie ma następującą strukturę:
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-27 (TASK-040: ukończona kompleksowa analiza TOON vs JSON vs CSV z dokumentacją, artykułem, tutorialem i rekomendacjami)
+**Ostatnia aktualizacja:** 2025-02-21 (dodano dokumenty: RATE_LIMITING_STRATEGY, CIRCUIT_BREAKER_ANALYSIS, LOGGING_AND_OBSERVABILITY; zadania TASK-RATE-001/002, TASK-CB-001/002, TASK-LOG-001/002/003)
 

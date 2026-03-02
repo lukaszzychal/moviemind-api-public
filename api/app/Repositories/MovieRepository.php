@@ -1,27 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories;
 
 use App\Models\Movie;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class MovieRepository
 {
-    public function searchMovies(?string $query, int $limit = 50): Collection
-    {
+    /**
+     * Search movies by text query and/or actor, director, year.
+     * When only actor/director/year is set (no query), filters in DB by those criteria.
+     *
+     * @param  string|array|null  $actor  Single name or list of names (movie must have at least one matching ACTOR)
+     */
+    public function searchMovies(
+        ?string $query,
+        int $limit = 50,
+        string|array|null $actor = null,
+        ?string $director = null,
+        ?int $year = null
+    ): Collection {
         return Movie::query()
-            ->when($query, function ($builder) use ($query) {
-                $driver = DB::getDriverName();
-                $genresColumn = match ($driver) {
-                    'pgsql' => 'genres::text',
-                    'sqlite' => 'CAST(genres AS TEXT)',
-                    default => 'genres',
-                };
-
-                $builder->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"])
-                    ->orWhereRaw('LOWER(director) LIKE LOWER(?)', ["%$query%"])
-                    ->orWhereRaw("LOWER({$genresColumn}) LIKE LOWER(?)", ["%$query%"]);
+            ->when($query !== null && $query !== '', function ($builder) use ($query) {
+                $pattern = '%'.$query.'%';
+                $builder->whereRaw('LOWER(title) LIKE LOWER(?)', [$pattern])
+                    ->orWhereRaw('LOWER(director) LIKE LOWER(?)', [$pattern])
+                    ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern]);
+            })
+            ->when($actor !== null && $actor !== [], function ($builder) use ($actor) {
+                $names = is_array($actor) ? $actor : [$actor];
+                $builder->whereHas('people', function ($q) use ($names) {
+                    $q->where('movie_person.role', 'ACTOR');
+                    $q->where(function ($q2) use ($names) {
+                        foreach ($names as $name) {
+                            $q2->orWhereRaw('LOWER(people.name) LIKE LOWER(?)', ['%'.trim((string) $name).'%']);
+                        }
+                    });
+                });
+            })
+            ->when($director !== null && $director !== '', function ($builder) use ($director) {
+                $builder->whereRaw('LOWER(director) LIKE LOWER(?)', ['%'.trim($director).'%']);
+            })
+            ->when($year !== null, function ($builder) use ($year) {
+                $builder->where('release_year', $year);
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')

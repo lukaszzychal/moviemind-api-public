@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('movies', function (Blueprint $table) {
-            // Use UUID for primary key (UUIDv7 via HasUuids trait)
             $table->uuid('id')->primary();
             $table->string('title');
             $table->smallInteger('release_year')->nullable();
@@ -17,6 +16,9 @@ return new class extends Migration
             $table->json('genres')->nullable();
             $table->uuid('default_description_id')->nullable()->index();
             $table->timestamps();
+
+            // Add unique constraint to prevent duplicate movies
+            $table->unique(['title', 'release_year']);
         });
     }
 

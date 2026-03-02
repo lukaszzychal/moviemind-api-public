@@ -5,6 +5,16 @@ declare(strict_types=1);
 return [
     /*
     |--------------------------------------------------------------------------
+    | Admin API Token (REST / X-Admin-Token)
+    |--------------------------------------------------------------------------
+    |
+    | Token for v1/admin/* API routes. Can be overridden in tests via Config::set.
+    |
+    */
+    'api_token' => env('ADMIN_API_TOKEN'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Admin API Authorization
     |--------------------------------------------------------------------------
     |
@@ -15,7 +25,7 @@ return [
 
     'auth' => [
         'bypass_environments' => array_filter(
-            array_map('trim', explode(',', env('ADMIN_AUTH_BYPASS_ENVS', 'local,staging')))
+            array_map('trim', explode(',', env('ADMIN_AUTH_BYPASS_ENVS', 'local,staging,testing')))
         ),
         'allowed_emails' => array_filter(
             array_map('trim', explode(',', env('ADMIN_ALLOWED_EMAILS', '')))

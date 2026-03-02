@@ -136,7 +136,7 @@ return [
     */
     'logging' => [
         'enabled' => true,    // Enable logging of rate limit changes
-        'channel' => 'default', // Log channel
+        'channel' => env('LOG_CHANNEL', 'stack'), // Log channel (must exist in config/logging.php)
         'level' => 'info',    // Log level (info, warning, etc.)
     ],
 ];

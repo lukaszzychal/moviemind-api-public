@@ -280,21 +280,21 @@ check_admin_auth() {
 enable_flag() {
     local flag_name=$1
     local auth_required=$2
-    local auth_string=$3
+    local admin_token=$3
     
     print_info "Włączanie flagi: ${flag_name}..."
     
-    local curl_cmd="curl -s -w \"\n%{http_code}\" -X POST \"${ADMIN_ENDPOINT}/flags/${flag_name}\" \
+    local curl_cmd="curl -s -w \"\\n%{http_code}\" -X POST \"${ADMIN_ENDPOINT}/flags/${flag_name}\" \
         -H \"Content-Type: application/json\" \
         -d '{\"state\": \"on\"}'"
     
     if [ "$auth_required" = "1" ]; then
-        if [ -z "$auth_string" ]; then
-            print_error "Autoryzacja wymagana, ale nie podano danych logowania"
-            print_warning "Ustaw ADMIN_BASIC_AUTH_PASSWORD w .env lub użyj: export ADMIN_AUTH=\"user:password\""
+        if [ -z "$admin_token" ]; then
+            print_error "Autoryzacja wymagana, ale nie podano tokena admina"
+            print_warning "Ustaw ADMIN_API_TOKEN w .env"
             return 1
         fi
-        curl_cmd="${curl_cmd} -u \"${auth_string}\""
+        curl_cmd="${curl_cmd} -H \"X-Admin-Token: ${admin_token}\""
     fi
     
     response=$(eval "$curl_cmd" 2>/dev/null || echo "")
@@ -325,18 +325,29 @@ reset_database() {
     if $DOCKER_COMPOSE_CMD exec -T php php artisan migrate:fresh --force; then
         print_success "Baza danych wyczyszczona i migracje uruchomione"
         
-        # Debug: Show LOAD_FIXTURES value
-        echo "DEBUG: LOAD_FIXTURES=$LOAD_FIXTURES"
-        
         # Load test fixtures (seeders) if --seed option is provided
         if [ "$LOAD_FIXTURES" = "true" ]; then
             print_info "Ładowanie przykładowych danych testowych (seeders)..."
-            if $DOCKER_COMPOSE_CMD exec -T php php artisan db:seed --force; then
+            
+            # Capture output to extract API Key
+            seeder_output=$($DOCKER_COMPOSE_CMD exec -T php php artisan db:seed --force)
+            exit_code=$?
+            
+            # Print output to console (streaming/buffered)
+            echo "$seeder_output"
+            
+            if [ $exit_code -eq 0 ]; then
                 print_success "Przykładowe dane załadowane"
                 print_info "Załadowane dane:"
                 print_info "  • Filmy: The Matrix (1999), Inception (2010)"
                 print_info "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
                 print_info "  • Gatunki: Action, Sci-Fi, Thriller"
+                
+                # Extract API Key
+                DEMO_API_KEY=$(echo "$seeder_output" | grep -o "Plaintext key: [a-zA-Z0-9_-]*" | head -n 1 | awk '{print $3}')
+                if [ -n "$DEMO_API_KEY" ]; then
+                    print_success "Przechwycono domyślny klucz API: $DEMO_API_KEY"
+                fi
             else
                 print_warning "Nie udało się załadować przykładowych danych (seeders)"
                 print_warning "Możesz załadować je ręcznie: docker compose exec php php artisan db:seed"
@@ -611,27 +622,23 @@ main() {
     # Step 6: Check admin auth
     print_header "🔐 Konfiguracja autoryzacji"
     auth_required=0
-    auth_string=""
+    admin_token=""
     
     if check_admin_auth; then
         auth_required=1
-        # Try to get auth from environment or prompt
-        if [ -n "$ADMIN_AUTH" ]; then
-            auth_string="$ADMIN_AUTH"
-            print_info "Używam danych autoryzacji z zmiennej ADMIN_AUTH"
-        elif [ -f "${API_DIR}/.env" ]; then
-            # Try to read from .env (if ADMIN_BASIC_AUTH_PASSWORD is set)
-            password=$(grep "^ADMIN_BASIC_AUTH_PASSWORD=" "${API_DIR}/.env" 2>/dev/null | cut -d '=' -f2- | tr -d '"' | tr -d "'" || echo "")
-            if [ -n "$password" ]; then
-                auth_string="admin:${password}"
-                print_info "Używam hasła z .env"
+        # Try to get token from .env
+        if [ -f "${API_DIR}/.env" ]; then
+            # Extract ADMIN_API_TOKEN from .env
+            admin_token=$(grep "^ADMIN_API_TOKEN=" "${API_DIR}/.env" 2>/dev/null | cut -d '=' -f2- | sed 's/#.*//' | tr -d '"' | tr -d "'" | xargs)
+            
+            if [ -n "$admin_token" ]; then
+                print_info "Używam tokena admina z .env (${admin_token:0:8}***)"
             fi
         fi
         
-        if [ -z "$auth_string" ]; then
-            print_warning "Autoryzacja wymagana, ale nie znaleziono danych logowania"
-            print_info "Możesz ustawić: export ADMIN_AUTH=\"admin:password\""
-            print_info "Lub dodać ADMIN_BASIC_AUTH_PASSWORD do ${API_DIR}/.env"
+        if [ -z "$admin_token" ]; then
+            print_warning "Autoryzacja wymagana, ale nie znaleziono tokena admina"
+            print_info "Dodaj ADMIN_API_TOKEN do ${API_DIR}/.env"
             print_warning "Próbuję kontynuować bez autoryzacji..."
         fi
     fi
@@ -644,7 +651,7 @@ main() {
     error_count=0
     
     for flag in "${REQUIRED_FLAGS[@]}"; do
-        if enable_flag "$flag" "$auth_required" "$auth_string"; then
+        if enable_flag "$flag" "$auth_required" "$admin_token"; then
             if [ $? -eq 0 ]; then
                 ((success_count++))
             else
@@ -672,74 +679,111 @@ main() {
     if [ $error_count -gt 0 ]; then
         print_warning "Błędy podczas włączania flag: ${error_count}"
     fi
+
+    echo ""
+    print_header "🔑 Dane Dostępowe"
+    
+    if [ -n "$DEMO_API_KEY" ]; then
+        print_success "Twoj Klucz API: ${DEMO_API_KEY}"
+        export DEMO_API_KEY
+        
+        # Auto-enable features for demo key's plan (Free)
+        if [ -f "${API_DIR}/.env" ]; then
+            ADMIN_TOKEN=$(grep "^ADMIN_API_TOKEN=" "${API_DIR}/.env" 2>/dev/null | cut -d '=' -f2- | tr -d '"' | tr -d "'" | xargs)
+            if [ -n "$ADMIN_TOKEN" ]; then
+                print_info "Konfigurowanie funkcji subskrypcji..."
+                
+                # Get Free plan ID
+                FREE_PLAN_ID=$(curl -s -H "X-Admin-Token: $ADMIN_TOKEN" "${API_ENDPOINT}/admin/subscription-plans" | jq -r '.data[] | select(.name=="free") | .id')
+                
+                if [ -n "$FREE_PLAN_ID" ] && [ "$FREE_PLAN_ID" != "null" ]; then
+                    print_info "Znaleziono plan Free: $FREE_PLAN_ID. Dodaję funkcję ai_generate..."
+                    curl -s -X POST "${API_ENDPOINT}/admin/subscription-plans/${FREE_PLAN_ID}/features" \
+                        -H "X-Admin-Token: $ADMIN_TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d '{"feature":"ai_generate"}' > /dev/null
+                    print_success "Funkcja ai_generate dodana do planu Free (dla klucza demo)"
+                else
+                    print_warning "Nie znaleziono planu Free. Pomijam konfigurację funkcji."
+                fi
+            else
+                print_warning "Brak tokena admina (ADMIN_API_TOKEN). Pomijam konfigurację funkcji subskrypcji."
+            fi
+        fi
+    else
+        if [ "$LOAD_FIXTURES" = "true" ]; then
+            print_warning "Nie udało się przechwycić klucza API z logów."
+        else
+            print_warning "Brak klucza API (użyj --seed aby wygenerować demo)"
+        fi
+        DEMO_API_KEY="<TWOJ_KLUCZ>"
+    fi
     
     print_header "✅ Środowisko Docker gotowe do testów!"
     
     echo ""
-    print_info "Możesz teraz testować API:"
-    echo "  • GET  ${API_ENDPOINT}/movies"
-    echo "  • GET  ${API_ENDPOINT}/movies/the-matrix-1999"
-    echo "  • GET  ${API_ENDPOINT}/movies/inception-2010"
-    echo "  • GET  ${API_ENDPOINT}/people/keanu-reeves"
-    echo "  • POST ${API_ENDPOINT}/generate"
+    print_info "Możesz teraz testować API. Skopiuj poniższe polecenie aby ustawić klucz API w terminalu:"
+    echo -e "${GREEN}export API_KEY=\"${DEMO_API_KEY}\"${NC}"
     echo ""
+    
     print_info "Przykładowe dane dostępne w bazie:"
     echo "  • Filmy: The Matrix (1999), Inception (2010)"
     echo "  • Osoby: Keanu Reeves, The Wachowskis, Christopher Nolan"
-    echo "  • Gatunki: Action, Sci-Fi, Thriller"
     echo ""
     print_info "Sprawdź status flag:"
-    echo "  • GET  ${ADMIN_ENDPOINT}/flags"
+    # Extract ADMIN_API_TOKEN for display
+    DISPLAY_ADMIN_TOKEN=$(grep "^ADMIN_API_TOKEN=" "${API_DIR}/.env" 2>/dev/null | cut -d '=' -f2- | tr -d '"' | tr -d "'" | xargs)
+    echo "  • curl -s -H \"X-Admin-Token: ${DISPLAY_ADMIN_TOKEN:-<TOKEN>}\" ${ADMIN_ENDPOINT}/flags | jq"
     echo ""
     print_info "Przydatne komendy Docker:"
     echo "  • Logi: $DOCKER_COMPOSE_CMD logs -f"
     echo "  • Status: $DOCKER_COMPOSE_CMD ps"
     echo "  • Zatrzymanie: $DOCKER_COMPOSE_CMD down"
-    echo "  • Restart: $DOCKER_COMPOSE_CMD restart"
     echo ""
     
     # API Endpoints Reference
-    print_header "📚 API Endpoints Reference"
+    print_header "📚 API Endpoints Reference (z użyciem jq)"
+    echo "Większość endpointów publicznych wymaga nagłówka X-API-Key."
+    echo ""
     
     echo -e "${YELLOW}📽️  MOVIES${NC}"
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/movies"
     echo "  Description: List all movies (with optional ?q=search query)"
-    echo "  Example: ${API_ENDPOINT}/movies?q=Matrix"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" \"${API_ENDPOINT}/movies?q=Matrix\" | jq"
     echo ""
     
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/movies/search"
     echo "  Description: Advanced movie search (local + TMDb)"
     echo "  Query params: ?q=title&year=1999&director=Name&actor[]=Name1&actor[]=Name2&page=1&per_page=20"
-    echo "  Example: ${API_ENDPOINT}/movies/search?q=Matrix&year=1999&page=1&per_page=10"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" \"${API_ENDPOINT}/movies/search?q=Matrix&year=1999&page=1&per_page=10\" | jq"
     echo ""
     
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/movies/{slug}"
     echo "  Description: Get movie by slug (may return disambiguation if ambiguous)"
     echo "  Query params: ?description_id=123 (optional)"
-    echo "  Example: ${API_ENDPOINT}/movies/the-matrix-1999"
-    echo "  Example: ${API_ENDPOINT}/movies/matrix?tmdb_id=603 (select from disambiguation)"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" ${API_ENDPOINT}/movies/the-matrix-1999 | jq"
     echo ""
     
     echo -e "${GREEN}POST${NC} ${API_ENDPOINT}/movies/{slug}/refresh"
     echo "  Description: Refresh movie metadata from TMDb"
-    echo "  Example: curl -X POST ${API_ENDPOINT}/movies/the-matrix-1999/refresh"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" -X POST ${API_ENDPOINT}/movies/the-matrix-1999/refresh | jq"
     echo ""
     
     echo -e "${YELLOW}👤 PEOPLE${NC}"
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/people"
     echo "  Description: List all people (with optional ?q=search query)"
-    echo "  Example: ${API_ENDPOINT}/people?q=Keanu"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" \"${API_ENDPOINT}/people?q=Keanu\" | jq"
     echo ""
     
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/people/{slug}"
     echo "  Description: Get person by slug"
     echo "  Query params: ?bio_id=123 (optional)"
-    echo "  Example: ${API_ENDPOINT}/people/keanu-reeves"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" ${API_ENDPOINT}/people/keanu-reeves | jq"
     echo ""
     
     echo -e "${GREEN}POST${NC} ${API_ENDPOINT}/people/{slug}/refresh"
     echo "  Description: Refresh person metadata from TMDb"
-    echo "  Example: curl -X POST ${API_ENDPOINT}/people/keanu-reeves/refresh"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" -X POST ${API_ENDPOINT}/people/keanu-reeves/refresh | jq"
     echo ""
     
     echo -e "${YELLOW}🤖 GENERATION${NC}"
@@ -749,41 +793,47 @@ main() {
     echo "  Optional body fields: \"locale\":\"en-US\", \"context_tag\":\"DEFAULT\""
     echo "  entity_type: MOVIE | ACTOR | PERSON"
     echo "  context_tag: DEFAULT | modern | critical | humorous"
-    echo "  Example: curl -X POST ${API_ENDPOINT}/generate -H 'Content-Type: application/json' -d '{\"entity_type\":\"MOVIE\",\"slug\":\"the-matrix-1999\",\"locale\":\"en-US\",\"context_tag\":\"DEFAULT\"}'"
+    echo "  Example: curl -s -X POST \"${API_ENDPOINT}/generate\" \\"
+    echo "    -H \"X-API-Key: \$API_KEY\" \\"
+    echo "    -H \"Content-Type: application/json\" \\"
+    echo "    -d '{\"entity_type\":\"MOVIE\",\"slug\":\"the-matrix-1999\",\"locale\":\"en-US\",\"context_tag\":\"DEFAULT\"}' | jq"
     echo ""
     
     echo -e "${YELLOW}📋 JOBS${NC}"
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/jobs/{id}"
     echo "  Description: Get generation job status"
-    echo "  Example: ${API_ENDPOINT}/jobs/7bec7007-7e93-4db5-afe4-0a96c490a16d"
+    echo "  Example: curl -s -H \"X-API-Key: \$API_KEY\" ${API_ENDPOINT}/jobs/7bec7007-7e93-4db5-afe4-0a96c490a16d | jq"
     echo ""
     
     echo -e "${YELLOW}🏥 HEALTH${NC}"
     echo -e "${GREEN}GET${NC}  ${API_ENDPOINT}/health/openai"
     echo "  Description: Check OpenAI API connectivity"
-    echo "  Example: ${API_ENDPOINT}/health/openai"
+    echo "  Example: curl -s \"${API_ENDPOINT}/health/openai\" | jq"
     echo ""
     
-    echo -e "${YELLOW}🔐 ADMIN (requires Basic Auth)${NC}"
+    echo -e "${YELLOW}🔐 ADMIN (requires Admin Token)${NC}"
     echo -e "${GREEN}GET${NC}  ${ADMIN_ENDPOINT}/flags"
     echo "  Description: List all feature flags"
-    echo "  Example: curl -u admin:password ${ADMIN_ENDPOINT}/flags"
+    echo "  Example: curl -s -H \"X-Admin-Token: \$ADMIN_API_TOKEN\" ${ADMIN_ENDPOINT}/flags | jq"
     echo ""
     
     echo -e "${GREEN}POST${NC} ${ADMIN_ENDPOINT}/flags/{name}"
     echo "  Description: Set feature flag state"
     echo "  Body: {\"state\":\"on\"} or {\"state\":\"off\"}"
-    echo "  Example: curl -u admin:password -X POST ${ADMIN_ENDPOINT}/flags/ai_description_generation -H 'Content-Type: application/json' -d '{\"state\":\"on\"}'"
+    echo "  Example: curl -s -X POST ${ADMIN_ENDPOINT}/flags/ai_description_generation \\"
+    echo "    -H \"X-Admin-Token: \$ADMIN_API_TOKEN\" \\"
+    echo "    -H \"Content-Type: application/json\" \\"
+    echo "    -d '{\"state\":\"on\"}' | jq"
     echo ""
     
     echo -e "${GREEN}GET${NC}  ${ADMIN_ENDPOINT}/flags/usage"
     echo "  Description: Get feature flags usage statistics"
-    echo "  Example: curl -u admin:password ${ADMIN_ENDPOINT}/flags/usage"
+    echo "  Example: curl -s -H \"X-Admin-Token: \$ADMIN_API_TOKEN\" ${ADMIN_ENDPOINT}/flags/usage | jq"
     echo ""
     
     echo -e "${GREEN}GET${NC}  ${ADMIN_ENDPOINT}/debug/config"
     echo "  Description: Get debug configuration (development only)"
-    echo "  Example: curl -u admin:password ${ADMIN_ENDPOINT}/debug/config"
+    echo "  Example: curl -s -H \"X-Admin-Token: \$ADMIN_API_TOKEN\" ${ADMIN_ENDPOINT}/debug/config | jq"
     echo ""
     
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

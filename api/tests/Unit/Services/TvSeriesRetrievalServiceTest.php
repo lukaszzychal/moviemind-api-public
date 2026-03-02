@@ -9,8 +9,8 @@ use App\Enums\Locale;
 use App\Models\TvSeries;
 use App\Models\TvSeriesDescription;
 use App\Repositories\TvSeriesRepository;
-use App\Services\EntityVerificationServiceInterface;
 use App\Services\TmdbTvSeriesCreationService;
+use App\Services\TvmazeVerificationService;
 use App\Services\TvSeriesRetrievalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -114,7 +114,7 @@ class TvSeriesRetrievalServiceTest extends TestCase
         Feature::define('ai_description_generation', true);
         Feature::define('tmdb_verification', true);
 
-        $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
+        $tmdbService = $this->createMock(TvmazeVerificationService::class);
         $tmdbService->expects($this->once())
             ->method('verifyTvSeries')
             ->with('test-slug')
@@ -141,7 +141,7 @@ class TvSeriesRetrievalServiceTest extends TestCase
     {
         return new TvSeriesRetrievalService(
             new TvSeriesRepository,
-            $this->createMock(EntityVerificationServiceInterface::class),
+            $this->createMock(TvmazeVerificationService::class),
             $this->createMock(TmdbTvSeriesCreationService::class),
             $this->createMock(QueueTvSeriesGenerationAction::class)
         );

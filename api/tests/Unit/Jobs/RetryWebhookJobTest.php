@@ -27,10 +27,10 @@ class RetryWebhookJobTest extends TestCase
         // ARRANGE: Create failed webhook ready for retry
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => [
                 'event' => 'subscription.created',
-                'data' => ['rapidapi_user_id' => 'user-123', 'plan' => 'basic'],
+                'data' => ['plan' => 'free'],
             ],
             'status' => 'failed',
             'attempts' => 1,
@@ -38,13 +38,19 @@ class RetryWebhookJobTest extends TestCase
             'next_retry_at' => now()->subMinute(),
         ]);
 
+        // WebhookService has no default processor for 'billing' - mock retryWebhook to simulate success
+        $webhookService = $this->createMock(WebhookService::class);
+        $webhookService->method('retryWebhook')->willReturnCallback(function (WebhookEvent $event) {
+            $event->update(['status' => 'processed']);
+        });
+
         // ACT: Dispatch and handle retry job
         $job = new RetryWebhookJob($webhookEvent->id);
-        $job->handle(app(WebhookService::class));
+        $job->handle($webhookService);
 
-        // ASSERT: Webhook should be processed (or failed again if processor fails)
+        // ASSERT: Webhook should be processed
         $webhookEvent->refresh();
-        $this->assertContains($webhookEvent->status, ['processed', 'failed', 'permanently_failed']);
+        $this->assertSame('processed', $webhookEvent->status);
     }
 
     public function test_retry_webhook_job_skips_if_webhook_not_found(): void
@@ -65,7 +71,7 @@ class RetryWebhookJobTest extends TestCase
         // ARRANGE: Permanently failed webhook
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data'],
             'status' => 'permanently_failed',
             'attempts' => 3,
@@ -86,7 +92,7 @@ class RetryWebhookJobTest extends TestCase
         // ARRANGE: Failed webhook not ready for retry yet
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data'],
             'status' => 'failed',
             'attempts' => 1,

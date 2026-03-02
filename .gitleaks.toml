@@ -3,7 +3,9 @@
 title = "MovieMind API GitLeaks Configuration"
 
 [extend]
-useDefault = false  # Disable default rules to avoid false positives with test keys
+# IMPORTANT: useDefault = true is required to detect GitHub tokens (ghp_, github_pat_, etc.)
+# Allowlist below ensures test keys (mm_*) are still ignored
+useDefault = true  # Enable default rules (includes GitHub token detection)
 
 # Custom regex patterns
 [extend.regexes]
@@ -43,6 +45,11 @@ reason = "Docker Compose example database URL"
 [[extend.allowlist.regexes]]
 regex = '''curl -H "X-API-Key: [^"]*"'''
 reason = "cURL example with placeholder API key"
+
+[[extend.allowlist.regexes]]
+regex = '''X-API-Key:\s*['"]?mm_[a-z0-9]{20,}['"]?'''
+reason = "X-API-Key header with MovieMind test key in docs/examples"
+caseInsensitive = true
 
 [[extend.allowlist.regexes]]
 regex = '''OPENAI_API_KEY=sk-[a-zA-Z0-9]{48}'''
@@ -96,12 +103,26 @@ path = '''docs/.*'''
 reason = "Documentation directory"
 
 [[extend.allowlist.paths]]
+path = '''docs/curl-generate-example\.sh'''
+reason = "Example cURL script with placeholder or test API key"
+
+[[extend.allowlist.paths]]
 path = '''docs/pre-commit-setup\.md'''
 reason = "Pre-commit setup documentation with examples"
 
 [[extend.allowlist.paths]]
 path = '''api/tests/.*'''
 reason = "Test files with fake API keys for testing"
+
+[[extend.allowlist.regexes]]
+regex = '''GITHUB_PERSONAL_ACCESS_TOKEN.*YOUR_GITHUB_PERSONAL_ACCESS_TOKEN_HERE'''
+reason = "Placeholder GitHub token in example files"
+caseInsensitive = true
+
+[[extend.allowlist.regexes]]
+regex = '''GITHUB_PERSONAL_ACCESS_TOKEN.*YOUR.*HERE'''
+reason = "Placeholder GitHub token patterns"
+caseInsensitive = true
 
 # Custom rules
 [[extend.rules]]
@@ -132,12 +153,60 @@ regex = '''redis://[^:]+:[^@]+@[^/]+'''
 tags = ["database", "redis", "password"]
 entropy = 3.0
 
+[[extend.rules]]
+id = "github-personal-access-token"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[a-zA-Z0-9]{36,}'''
+tags = ["key", "api", "github", "token"]
+entropy = 4.0
+
+[[extend.rules]]
+id = "github-fine-grained-token"
+description = "GitHub Fine-Grained Personal Access Token"
+regex = '''github_pat_[a-zA-Z0-9_]{82}'''
+tags = ["key", "api", "github", "token"]
+entropy = 4.0
+
+[[extend.rules]]
+id = "github-oauth-token"
+description = "GitHub OAuth Token"
+regex = '''gho_[a-zA-Z0-9]{36}'''
+tags = ["key", "api", "github", "token", "oauth"]
+entropy = 4.0
+
+[[extend.rules]]
+id = "github-user-to-server-token"
+description = "GitHub User-to-Server Token"
+regex = '''ghu_[a-zA-Z0-9]{36}'''
+tags = ["key", "api", "github", "token"]
+entropy = 4.0
+
+[[extend.rules]]
+id = "github-server-to-server-token"
+description = "GitHub Server-to-Server Token"
+regex = '''ghs_[a-zA-Z0-9]{36}'''
+tags = ["key", "api", "github", "token"]
+entropy = 4.0
+
+[[extend.rules]]
+id = "github-refresh-token"
+description = "GitHub Refresh Token"
+regex = '''ghr_[a-zA-Z0-9]{76}'''
+tags = ["key", "api", "github", "token", "refresh"]
+entropy = 4.0
+
 # Severity levels
 [extend.severity]
 movie-mind-api-key = "high"
 openai-api-key-detailed = "high"
 postgres-connection-string = "medium"
 redis-password = "medium"
+github-personal-access-token = "high"
+github-fine-grained-token = "high"
+github-oauth-token = "high"
+github-user-to-server-token = "high"
+github-server-to-server-token = "high"
+github-refresh-token = "high"
 
 # Disable generic-api-key rule completely (too many false positives with test keys)
 [[extend.allowlist.rules]]

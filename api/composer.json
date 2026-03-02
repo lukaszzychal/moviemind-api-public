@@ -3,12 +3,16 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "filament/filament": "^3.2",
         "laravel/framework": "^12.0",
-        "laravel/horizon": "^5.39",
+        "laravel/horizon": "^5.43",
         "laravel/pennant": "^1.18",
         "laravel/tinker": "^2.10.1",
         "lukaszzychal/tmdb-client-php": "^1.0",
@@ -16,6 +20,7 @@
         "symfony/uid": "^7.4"
     },
     "require-dev": {
+        "brianium/paratest": "^7.0",
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.7",
         "laravel/pail": "^1.2.2",
@@ -73,6 +78,11 @@
         "docker:up": [
             "docker compose up -d"
         ],
+        "env-reload": [
+            "cd .. && docker compose up -d --force-recreate php horizon",
+            "cd .. && docker compose exec -T php php artisan config:clear",
+            "cd .. && docker compose restart nginx"
+        ],
         "docker:down": [
             "docker compose down -v"
         ],
@@ -90,11 +100,12 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "bash run-tests.sh"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
@@ -113,15 +124,14 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": [
-                "laravel/horizon"
-            ]
+            "dont-discover": []
         }
     },
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "process-timeout": 0,
         "platform": {
             "php": "8.3.0"
         },

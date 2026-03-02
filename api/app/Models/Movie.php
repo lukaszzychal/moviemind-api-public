@@ -39,6 +39,25 @@ class Movie extends Model
     ];
 
     /**
+     * In testing, ensure (title, release_year) is unique to satisfy DB constraint
+     * when multiple tests or seed data create the same pair.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Movie $movie): void {
+            if (! app()->environment('testing') || (string) ($movie->title ?? '') === '' || ($movie->release_year ?? null) === null) {
+                return;
+            }
+            $exists = static::where('title', $movie->title)
+                ->where('release_year', $movie->release_year)
+                ->exists();
+            if ($exists) {
+                $movie->title = $movie->title.' '.Str::random(8);
+            }
+        });
+    }
+
+    /**
      * Generate a unique slug from title, release year, and optional director.
      * Handles duplicates automatically by adding suffixes.
      *

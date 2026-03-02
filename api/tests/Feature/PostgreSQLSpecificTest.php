@@ -12,14 +12,11 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * PostgreSQL-specific tests.
+ * Database feature tests (PostgreSQL).
  *
- * These tests verify features that are only available in PostgreSQL:
+ * These tests verify features that are available in PostgreSQL:
  * - Partial unique indexes
  * - JSON/JSONB operations
- * - Array types (if used)
- *
- * These tests are skipped in SQLite and should be run in CI with PostgreSQL.
  */
 class PostgreSQLSpecificTest extends TestCase
 {
@@ -30,11 +27,6 @@ class PostgreSQLSpecificTest extends TestCase
         parent::setUp();
         $this->artisan('migrate');
         $this->artisan('db:seed');
-
-        // Skip all tests in this class if not using PostgreSQL
-        if (DB::getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('This test suite requires PostgreSQL');
-        }
     }
 
     /**
@@ -206,10 +198,12 @@ class PostgreSQLSpecificTest extends TestCase
      */
     public function test_jsonb_operations_in_ai_jobs(): void
     {
+        $entityUuid = '550e8400-e29b-41d4-a716-446655440000';
+
         // Create a job with JSON payload
         $payload = [
             'entity_type' => 'MOVIE',
-            'entity_id' => 123,
+            'entity_id' => $entityUuid,
             'locale' => 'en-US',
             'context_tag' => 'modern',
             'metadata' => [
@@ -221,7 +215,7 @@ class PostgreSQLSpecificTest extends TestCase
 
         $jobId = DB::table('ai_jobs')->insertGetId([
             'entity_type' => 'MOVIE',
-            'entity_id' => 123,
+            'entity_id' => $entityUuid,
             'locale' => 'en-US',
             'status' => 'PENDING',
             'payload_json' => json_encode($payload),

@@ -111,7 +111,7 @@ Full commercial product with real AI integration, billing, and SaaS features.
 | Component      | Functionality            | Difference vs Public |
 | -------------- | ------------------------ | -------------------- |
 | AI Integration | OpenAI GPT-4o, Claude    | Mock → Real AI       |
-| Billing        | RapidAPI plans, webhooks | None → Full billing  |
+| Billing        | Local API keys (demo), Stripe/PayPal (production) | Local → Full billing  |
 | Rate Limiting  | Free/pro/enterprise plans| None → Advanced      |
 | Monitoring     | Prometheus, Grafana      | Basic → Full         |
 | Security       | OAuth, JWT, encryption   | Basic → Enterprise   |
@@ -121,7 +121,7 @@ Full commercial product with real AI integration, billing, and SaaS features.
 
 ```php
 // Laravel - Single service (Public + Admin)
-POST /admin/billing/webhook   # RapidAPI billing
+POST /admin/billing/webhook   # Billing webhooks (prepared for Stripe/PayPal)
 GET  /admin/analytics/usage   # Usage statistics
 POST /admin/ai/regenerate     # Force regeneration
 GET  /admin/health/detailed   # Health check
@@ -203,8 +203,8 @@ Deliverables:
 Goal: Bridge from showcase to commercial deployment
 
 Tasks:
-- [ ] RapidAPI integration — staging publish with mock billing
-- [ ] Subscription plans — plan matrix, rate-limit policies, feature gating
+- [x] Subscription plans — plan matrix, rate-limit policies, feature gating (✅ Completed - local API keys)
+- [ ] Billing provider integration — Stripe/PayPal integration for production (optional)
 - [ ] Style packs & recommendation — highlight advanced AI capabilities
 - [ ] Usage analytics — dashboards for AI cost, request volume, locales
 - [ ] Production playbooks — deployment runbooks, security checklist
@@ -248,7 +248,7 @@ Client → Laravel API → Redis Cache → PostgreSQL
 
 ### Public edge evolution (optional future)
 If you ever need:
-- RapidAPI deployment → Place an API Gateway (Kong, Tyk) in front of Laravel
+- API Gateway deployment → Place an API Gateway (Kong, Tyk) in front of Laravel (optional)
 - High scale (>10k req/min) → Scale Laravel horizontally (Octane, Redis caching)
 - Python team → Let them integrate via queue/SDK without owning a separate API
 
@@ -323,19 +323,23 @@ glossary_terms(id, term, locale, policy, notes, examples[])
 
 ## Monetization
 
-### RapidAPI Plans
+### Subscription Plans (Local API Keys for Portfolio/Demo)
 
 | Plan       | Limit                 | Price      | Features                   |
 | ---------- | --------------------- | ---------- | -------------------------- |
 | Free       | 100 requests/month    | $0         | Basic data, cache          |
-| Pro        | 10 000 requests/month | $29/month  | AI generation, style packs |
-| Enterprise | Unlimited             | $199/month | Webhooks, dedicated models |
+| Pro        | 10 000 requests/month | Demo         | AI generation, style packs |
+| Enterprise | Unlimited             | Demo        | Webhooks, dedicated models |
 
-### Billing Model
-- Pay-per-use — usage-based payment
-- Subscription — monthly subscription
-- Enterprise — corporate license
-- Webhook billing — webhook-based billing
+**Note:** For portfolio/demo, subscriptions are managed locally via API keys in the admin panel. For production, Stripe/PayPal can be integrated. RapidAPI has been removed from the project.
+
+### Billing Model (Portfolio/Demo)
+- **Local API keys** — subscription management via admin panel
+- **Subscription plans** — free/pro/enterprise plans with limits
+- **Rate limiting** — plan-based rate limiting
+- **Webhook billing** — prepared for future providers (Stripe, PayPal)
+
+**Note:** For production, Stripe/PayPal can be integrated. RapidAPI has been removed from the project.
 
 ### Pricing Strategy
 - Competitive pricing
@@ -450,12 +454,12 @@ Phase 1 (MVP): Everything in Laravel — Current
 - Laravel Horizon for async jobs
 
 Phase 2 (optional, if needed): Harden the public edge
-- RapidAPI deployment → Add an API Gateway (Kong/Tyk) in front of Laravel
+- API Gateway deployment → Add an API Gateway (Kong/Tyk) in front of Laravel (optional)
 - High scale (>10k req/min) → Scale Laravel horizontally (Octane, cache, read replicas)
 - Python team → Integrate via queues (RabbitMQ) or SDK instead of a separate API
 
 When to split?
-- Publishing API on RapidAPI
+- Publishing API via API Gateway (optional)
 - >10k requests/minute
 - Need advanced Python AI pipelines
 - Have separate Python team

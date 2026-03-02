@@ -21,6 +21,19 @@ class SetFlagRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            /** @var \App\Services\FeatureFlag\FeatureFlagManager $manager */
+            $manager = app(\App\Services\FeatureFlag\FeatureFlagManager::class);
+            $flagName = $this->route('name');
+
+            if (! $manager->isTogglable($flagName)) {
+                $validator->errors()->add('name', "The feature flag '{$flagName}' cannot be toggled manually.");
+            }
+        });
+    }
+
     public function wantsActivation(): bool
     {
         return $this->input('state') === 'on';

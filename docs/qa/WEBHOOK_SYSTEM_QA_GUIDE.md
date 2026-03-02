@@ -257,7 +257,7 @@ curl -X POST http://localhost:8000/api/v1/webhooks/billing \
   -d '{
     "event": "subscription.created",
     "data": {
-      "rapidapi_user_id": "user-test-123",
+      "api_key_id": "api-key-test-123",
       "plan": "basic"
     },
     "idempotency_key": "test-sub-created-1"
@@ -287,7 +287,7 @@ curl -X POST http://localhost:8000/api/v1/webhooks/billing \
   -d '{
     "event": "subscription.created",
     "data": {
-      "rapidapi_user_id": "user-test-123",
+      "api_key_id": "api-key-test-123",
       "plan": "basic"
     },
     "idempotency_key": "test-sub-created-1"
@@ -447,7 +447,7 @@ docker compose exec php tail -f storage/logs/laravel.log | grep -i webhook
 ## 🔗 Related Documentation
 
 - [Webhook System Technical Guide](../knowledge/technical/WEBHOOK_SYSTEM.md)
-- [RapidAPI Webhooks Guide](../../RAPIDAPI_WEBHOOKS.md)
+- [Billing Webhooks Guide](../../business/SUBSCRIPTION_SYSTEM.md)
 - [ADR-008: Webhook Architecture](../../adr/008-webhook-system-architecture.md)
 
 ---

@@ -26,7 +26,7 @@ class AdminPersonReportVerificationTest extends TestCase
 
         // Bypass Admin API auth for tests
         config(['app.env' => 'local']);
-        putenv('ADMIN_AUTH_BYPASS_ENVS=local,staging');
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
         Queue::fake();
     }
 

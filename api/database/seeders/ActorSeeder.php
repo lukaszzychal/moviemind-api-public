@@ -15,35 +15,34 @@ class ActorSeeder extends Seeder
 {
     public function run(): void
     {
-        // Prevent seeding test data in production/staging
         if (app()->environment('production', 'staging')) {
             $this->command->warn('ActorSeeder: Skipping test data in production/staging environment');
 
             return;
         }
+
         $reeves = Person::firstOrCreate(
-            ['name' => 'Keanu Reeves'],
+            ['slug' => Str::slug('Keanu Reeves')],
             [
-                'slug' => Str::slug('Keanu Reeves'),
+                'name' => 'Keanu Reeves',
                 'birth_date' => '1964-09-02',
                 'birthplace' => 'Beirut, Lebanon',
             ]
         );
 
-        $bio = PersonBio::firstOrCreate([
-            'person_id' => $reeves->id,
-            'locale' => Locale::EN_US,
-            'context_tag' => ContextTag::MODERN,
-        ], [
-            'text' => 'Canadian actor known for The Matrix and John Wick franchises.',
-            'origin' => DescriptionOrigin::GENERATED,
-            'ai_model' => 'mock',
-        ]);
+        if ($reeves->wasRecentlyCreated) {
+            $bio = PersonBio::create([
+                'person_id' => $reeves->id,
+                'locale' => Locale::EN_US,
+                'text' => 'Canadian actor known for The Matrix and John Wick franchises.',
+                'context_tag' => ContextTag::MODERN,
+                'origin' => DescriptionOrigin::GENERATED,
+                'ai_model' => 'mock',
+            ]);
+            $reeves->update(['default_bio_id' => $bio->id]);
+        }
 
-        $reeves->update(['default_bio_id' => $bio->id]);
-
-        // Link Keanu Reeves to The Matrix as an actor
-        $matrix = Movie::where('title', 'The Matrix')->first();
+        $matrix = Movie::where('slug', 'the-matrix-1999')->first();
         if ($matrix) {
             $matrix->people()->syncWithoutDetaching([
                 $reeves->id => [

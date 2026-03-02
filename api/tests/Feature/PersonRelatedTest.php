@@ -71,15 +71,15 @@ class PersonRelatedTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movies
+        // Create movies (unique title/release_year to avoid conflict with seed)
         $movie1 = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
 
         $movie2 = Movie::create([
-            'title' => 'The Matrix Reloaded',
+            'title' => "The Matrix Reloaded {$uniqueSuffix}",
             'slug' => "the-matrix-reloaded-2003-{$uniqueSuffix}",
             'release_year' => 2003,
         ]);
@@ -161,9 +161,9 @@ class PersonRelatedTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movie
+        // Create movie (unique title to avoid conflict with seed)
         $movie = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
@@ -274,9 +274,9 @@ class PersonRelatedTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movie
+        // Create movie (unique title to avoid conflict with seed)
         $movie = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
@@ -329,9 +329,9 @@ class PersonRelatedTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movie
+        // Create movie (unique title to avoid conflict with seed)
         $movie = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);
@@ -419,21 +419,21 @@ class PersonRelatedTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movies
+        // Create movies (unique titles to avoid conflict with seed)
         $movie1 = Movie::create([
-            'title' => 'Movie 1',
+            'title' => "Movie 1 {$uniqueSuffix}",
             'slug' => "movie-1-2000-{$uniqueSuffix}",
             'release_year' => 2000,
         ]);
 
         $movie2 = Movie::create([
-            'title' => 'Movie 2',
+            'title' => "Movie 2 {$uniqueSuffix}",
             'slug' => "movie-2-2001-{$uniqueSuffix}",
             'release_year' => 2001,
         ]);
 
         $movie3 = Movie::create([
-            'title' => 'Movie 3',
+            'title' => "Movie 3 {$uniqueSuffix}",
             'slug' => "movie-3-2002-{$uniqueSuffix}",
             'release_year' => 2002,
         ]);
@@ -490,9 +490,9 @@ class PersonRelatedTest extends TestCase
     {
         $uniqueSuffix = time().'-'.rand(1000, 9999);
 
-        // Create movie
+        // Create movie (unique title to avoid conflict with seed)
         $movie = Movie::create([
-            'title' => 'The Matrix',
+            'title' => "The Matrix {$uniqueSuffix}",
             'slug' => "the-matrix-1999-{$uniqueSuffix}",
             'release_year' => 1999,
         ]);

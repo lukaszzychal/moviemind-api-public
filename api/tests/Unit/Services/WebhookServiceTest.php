@@ -32,7 +32,7 @@ class WebhookServiceTest extends TestCase
         // ACT: Process webhook
         $webhookEvent = $this->service->processWebhook(
             eventType: 'billing',
-            source: 'rapidapi',
+            source: 'test',
             payload: $payload,
             idempotencyKey: $idempotencyKey,
             processor: fn (array $p) => null, // Successful processor
@@ -43,7 +43,7 @@ class WebhookServiceTest extends TestCase
         $this->assertInstanceOf(WebhookEvent::class, $webhookEvent);
         $this->assertTrue($webhookEvent->isProcessed());
         $this->assertEquals('billing', $webhookEvent->event_type);
-        $this->assertEquals('rapidapi', $webhookEvent->source);
+        $this->assertEquals('test', $webhookEvent->source);
         $this->assertEquals($idempotencyKey, $webhookEvent->idempotency_key);
         $this->assertEquals($payload, $webhookEvent->payload);
     }
@@ -54,7 +54,7 @@ class WebhookServiceTest extends TestCase
         $idempotencyKey = 'test-key-123';
         $firstWebhook = $this->service->processWebhook(
             eventType: 'billing',
-            source: 'rapidapi',
+            source: 'test',
             payload: ['test' => 'data'],
             idempotencyKey: $idempotencyKey,
             processor: fn (array $p) => null,
@@ -63,7 +63,7 @@ class WebhookServiceTest extends TestCase
         // ACT: Process same webhook again
         $secondWebhook = $this->service->processWebhook(
             eventType: 'billing',
-            source: 'rapidapi',
+            source: 'test',
             payload: ['test' => 'different'],
             idempotencyKey: $idempotencyKey,
             processor: fn (array $p) => null,
@@ -82,7 +82,7 @@ class WebhookServiceTest extends TestCase
         // ACT: Process webhook with failing processor
         $webhookEvent = $this->service->processWebhook(
             eventType: 'billing',
-            source: 'rapidapi',
+            source: 'test',
             payload: ['test' => 'data'],
             idempotencyKey: 'test-key-123',
             processor: fn (array $p) => throw new \RuntimeException('Processing failed'),
@@ -103,7 +103,7 @@ class WebhookServiceTest extends TestCase
         // ACT: Process webhook with failing processor
         $webhookEvent = $this->service->processWebhook(
             eventType: 'billing',
-            source: 'rapidapi',
+            source: 'test',
             payload: ['test' => 'data'],
             idempotencyKey: 'test-key-123',
             processor: fn (array $p) => throw new \RuntimeException('Processing failed'),
@@ -125,7 +125,7 @@ class WebhookServiceTest extends TestCase
         // ARRANGE: Create failed webhook
         $webhookEvent = WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data'],
             'status' => 'failed',
             'attempts' => 1,
@@ -147,7 +147,7 @@ class WebhookServiceTest extends TestCase
         // ARRANGE: Create failed webhooks
         WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data1'],
             'status' => 'failed',
             'attempts' => 1,
@@ -156,7 +156,7 @@ class WebhookServiceTest extends TestCase
         ]);
         WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data2'],
             'status' => 'failed',
             'attempts' => 2,
@@ -165,7 +165,7 @@ class WebhookServiceTest extends TestCase
         ]);
         WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data3'],
             'status' => 'processed',
             'attempts' => 0,
@@ -186,7 +186,7 @@ class WebhookServiceTest extends TestCase
         // ARRANGE: Create permanently failed webhook
         WebhookEvent::create([
             'event_type' => 'billing',
-            'source' => 'rapidapi',
+            'source' => 'test',
             'payload' => ['test' => 'data'],
             'status' => 'permanently_failed',
             'attempts' => 3,

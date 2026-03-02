@@ -65,8 +65,12 @@ class OutgoingWebhookServiceTest extends TestCase
             url: 'https://example.com/webhook'
         );
 
-        // ASSERT: Payload stored correctly
-        $this->assertEquals($payload, $webhook->payload);
+        // ASSERT: Payload stored with original data plus event info
+        $this->assertSame($payload['entity_type'], $webhook->payload['entity_type']);
+        $this->assertSame($payload['entity_id'], $webhook->payload['entity_id']);
+        $this->assertSame($payload['job_id'], $webhook->payload['job_id']);
+        $this->assertSame('generation.completed', $webhook->payload['event']);
+        $this->assertSame('completed', $webhook->payload['event_kind']);
     }
 
     public function test_send_webhook_signs_request_when_secret_configured(): void

@@ -106,11 +106,11 @@ $plan->isUnlimited(); // true jeśli monthly_limit === 0
 ```php
 // PRZED (z limitami)
 Route::get('movies/{slug}', [MovieController::class, 'show'])
-    ->middleware(['rapidapi.auth', 'plan.rate.limit']);
+    ->middleware(['api.key.auth', 'plan.rate.limit']);
 
 // PO (bez limitów)
 Route::get('movies/{slug}', [MovieController::class, 'show'])
-    ->middleware(['rapidapi.auth']); // tylko autoryzacja
+    ->middleware(['api.key.auth']); // tylko autoryzacja
 ```
 
 ---

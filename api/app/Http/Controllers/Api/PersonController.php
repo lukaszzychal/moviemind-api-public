@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\GetRelatedPeopleAction;
 use App\Actions\QueuePersonGenerationAction;
 use App\Enums\Locale;
 use App\Helpers\SlugValidator;
@@ -15,6 +16,7 @@ use App\Http\Responses\PersonResponseFormatter;
 use App\Models\Person;
 use App\Models\PersonReport;
 use App\Repositories\PersonRepository;
+use App\Services\BulkRetrievalService;
 use App\Services\EntityVerificationServiceInterface;
 use App\Services\HateoasService;
 use App\Services\PersonComparisonService;
@@ -23,12 +25,9 @@ use App\Services\PersonRetrievalService;
 use App\Services\PersonSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class PersonController extends Controller
 {
-    private const CACHE_TTL_SECONDS = 3600;
-
     public function __construct(
         private readonly PersonRepository $personRepository,
         private readonly HateoasService $hateoas,
@@ -38,7 +37,9 @@ class PersonController extends Controller
         private readonly PersonRetrievalService $personRetrievalService,
         private readonly PersonResponseFormatter $responseFormatter,
         private readonly PersonReportService $personReportService,
-        private readonly PersonComparisonService $personComparisonService
+        private readonly PersonComparisonService $personComparisonService,
+        private readonly BulkRetrievalService $bulkRetrievalService,
+        private readonly GetRelatedPeopleAction $getRelatedPeopleAction
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -60,94 +61,57 @@ class PersonController extends Controller
     /**
      * Handle bulk retrieve via GET /people?slugs=...
      */
+    /**
+     * Handle bulk retrieve via GET /people?slugs=...
+     */
     private function handleBulkRetrieve(Request $request): JsonResponse
     {
-        // Parse slugs from query parameter (comma-separated string or array)
         $slugsParam = $request->query('slugs');
-
-        // Handle null slugs parameter
         if ($slugsParam === null) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
-                ],
-            ], 422);
+            return response()->json(['errors' => ['slugs' => ['The slugs field is required and cannot be empty.']]], 422);
         }
 
-        // Parse slugs (handle both array and comma-separated string)
-        // Empty string will result in array with one empty element after explode
         $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
         $slugs = array_map('trim', $slugs);
         $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
 
-        // Validate slugs after filtering (empty string or empty array after filtering)
         if (empty($slugs)) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
-                ],
-            ], 422);
+            return response()->json(['errors' => ['slugs' => ['The slugs field is required and cannot be empty.']]], 422);
         }
 
         if (count($slugs) > 50) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => ['The slugs field must not have more than 50 items.'],
-                ],
-            ], 422);
+            return response()->json(['errors' => ['slugs' => ['The slugs field must not have more than 50 items.']]], 422);
         }
 
-        // Validate slug format
         foreach ($slugs as $slug) {
             if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json([
-                    'errors' => [
-                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
-                    ],
-                ], 422);
+                return response()->json(['errors' => ['slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.']]], 422);
             }
         }
 
-        // Parse include parameter
+        // Parse include
         $includeParam = $request->query('include');
         $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
         $include = array_map('trim', $include);
-        $include = array_filter($include, fn ($item) => $item !== '');
-
-        // Validate include values
         $allowedInclude = ['bios', 'movies'];
         foreach ($include as $item) {
             if (! in_array($item, $allowedInclude, true)) {
-                return response()->json([
-                    'errors' => [
-                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
-                    ],
-                ], 422);
+                return response()->json(['errors' => ['include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.']]], 422);
             }
         }
 
-        // Find people
-        $people = $this->personRepository->findBySlugs($slugs, $include);
+        $result = $this->bulkRetrievalService->retrieve(
+            $this->personRepository,
+            $slugs,
+            $include,
+            function (Person $person) {
+                return PersonResource::make($person)->additional([
+                    '_links' => $this->hateoas->personLinks($person),
+                ])->resolve();
+            }
+        );
 
-        // Format people as resources
-        $data = $people->map(function (Person $person) {
-            $resource = PersonResource::make($person)->additional([
-                '_links' => $this->hateoas->personLinks($person),
-            ]);
-
-            return $resource->resolve();
-        })->toArray();
-
-        // Find which slugs were not found
-        $foundSlugs = $people->pluck('slug')->toArray();
-        $notFound = array_values(array_diff($slugs, $foundSlugs));
-
-        return response()->json([
-            'data' => $data,
-            'not_found' => $notFound,
-            'count' => count($data),
-            'requested_count' => count($slugs),
-        ], 200);
+        return response()->json($result, 200);
     }
 
     /**
@@ -158,28 +122,18 @@ class PersonController extends Controller
         $slugs = $request->getSlugs();
         $include = $request->getInclude();
 
-        // Find people
-        $people = $this->personRepository->findBySlugs($slugs, $include);
+        $result = $this->bulkRetrievalService->retrieve(
+            $this->personRepository,
+            $slugs,
+            $include,
+            function (Person $person) {
+                return PersonResource::make($person)->additional([
+                    '_links' => $this->hateoas->personLinks($person),
+                ])->resolve();
+            }
+        );
 
-        // Format people as resources
-        $data = $people->map(function (Person $person) {
-            $resource = PersonResource::make($person)->additional([
-                '_links' => $this->hateoas->personLinks($person),
-            ]);
-
-            return $resource->resolve();
-        })->toArray();
-
-        // Find which slugs were not found
-        $foundSlugs = $people->pluck('slug')->toArray();
-        $notFound = array_values(array_diff($slugs, $foundSlugs));
-
-        return response()->json([
-            'data' => $data,
-            'not_found' => $notFound,
-            'count' => count($data),
-            'requested_count' => count($slugs),
-        ], 200);
+        return response()->json($result, 200);
     }
 
     public function search(SearchPersonRequest $request): JsonResponse
@@ -211,9 +165,8 @@ class PersonController extends Controller
 
         // Cache successful responses (but not disambiguation - they should be fresh)
         if ($result->isFound() && ! $result->isCached() && ! $result->isDisambiguation()) {
-            $cacheKey = $this->cacheKey($slug, $bioId);
             $responseData = json_decode($response->getContent(), true);
-            Cache::put($cacheKey, $responseData, now()->addSeconds(self::CACHE_TTL_SECONDS));
+            $this->personRetrievalService->putCache($slug, $bioId, $responseData);
         }
 
         return $response;
@@ -226,20 +179,6 @@ class PersonController extends Controller
         ]);
 
         return $resource->resolve();
-    }
-
-    /**
-     * Generate cache key for person response.
-     *
-     * @param  string  $slug  Person slug
-     * @param  string|null  $bioId  Bio ID (UUID) or null
-     * @return string Cache key
-     */
-    private function cacheKey(string $slug, ?string $bioId = null): string
-    {
-        $suffix = $bioId !== null ? 'bio:'.$bioId : 'bio:default';
-
-        return 'person:'.$slug.':'.$suffix;
     }
 
     /**
@@ -446,265 +385,13 @@ class PersonController extends Controller
             return $this->responseFormatter->formatNotFound();
         }
 
-        // Parse type filter: collaborators, same_name, or all (default)
-        $typeFilter = $request->query('type', 'all');
-        $typeFilter = strtolower((string) $typeFilter);
-
-        // Parse collaborator role filter
-        $collaboratorRole = $request->query('collaborator_role');
-        if ($collaboratorRole !== null) {
-            $collaboratorRole = strtoupper((string) $collaboratorRole);
-            // Validate role
-            if (! in_array($collaboratorRole, ['ACTOR', 'DIRECTOR', 'WRITER', 'PRODUCER'], true)) {
-                return $this->responseFormatter->formatError('Invalid collaborator_role. Must be one of: ACTOR, DIRECTOR, WRITER, PRODUCER', 422);
-            }
+        try {
+            $result = $this->getRelatedPeopleAction->handle($person, $request);
+        } catch (\InvalidArgumentException $e) {
+            return $this->responseFormatter->formatError($e->getMessage(), 422);
         }
 
-        // Parse limit
-        $limit = (int) $request->query('limit', 20);
-        $limit = max(1, min(100, $limit)); // Clamp between 1 and 100
-
-        // Build cache key
-        $cacheKey = $this->buildRelatedCacheKey($slug, $typeFilter, $collaboratorRole, $limit);
-
-        // Try to get from cache
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            return response()->json($cached);
-        }
-
-        $collaborators = [];
-        $sameName = [];
-
-        // Collaborators - people who worked together in same movies, different roles
-        if ($typeFilter === 'all' || $typeFilter === 'collaborators') {
-            $collaborators = $this->getCollaborators($person, $collaboratorRole, $limit);
-        }
-
-        // Same Name - people with same name (disambiguation)
-        if ($typeFilter === 'all' || $typeFilter === 'same_name') {
-            $sameName = $this->getSameNamePeople($person, $limit);
-        }
-
-        // Combine results
-        $allRelatedPeople = array_merge($collaborators, $sameName);
-
-        // Build response
-        $response = [
-            'person' => [
-                'id' => $person->id,
-                'slug' => $person->slug,
-                'name' => $person->name,
-            ],
-            'related_people' => $allRelatedPeople,
-            'count' => count($allRelatedPeople),
-            'filters' => [
-                'type' => $typeFilter,
-                'collaborator_role' => $collaboratorRole,
-                'collaborators_count' => count($collaborators),
-                'same_name_count' => count($sameName),
-            ],
-            '_links' => [
-                'self' => [
-                    'href' => url("/api/v1/people/{$slug}/related"),
-                ],
-                'person' => [
-                    'href' => url("/api/v1/people/{$slug}"),
-                ],
-                'collaborators' => [
-                    'href' => url("/api/v1/people/{$slug}/related?type=collaborators"),
-                ],
-                'same_name' => [
-                    'href' => url("/api/v1/people/{$slug}/related?type=same_name"),
-                ],
-            ],
-        ];
-
-        // Cache response (TTL: 1 hour)
-        Cache::put($cacheKey, $response, now()->addHour());
-
-        return response()->json($response);
-    }
-
-    /**
-     * Get collaborators for a person (people who worked together in same movies, different roles).
-     *
-     * @param  Person  $person  The person to find collaborators for
-     * @param  string|null  $collaboratorRole  Optional role filter (ACTOR, DIRECTOR, WRITER, PRODUCER)
-     * @param  int  $limit  Maximum number of collaborators to return
-     * @return array<int, array<string, mixed>>
-     */
-    private function getCollaborators(Person $person, ?string $collaboratorRole, int $limit): array
-    {
-        // Get all movies this person worked on
-        $personMovies = $person->movies()->pluck('movies.id');
-
-        if ($personMovies->isEmpty()) {
-            return [];
-        }
-
-        // Find other people who worked on the same movies, but in different roles
-        /** @var \Illuminate\Database\Eloquent\Builder<Person> $queryBuilder */
-        $queryBuilder = Person::whereHas('movies', function ($q) use ($personMovies, $person, $collaboratorRole) {
-            $q->whereIn('movies.id', $personMovies)
-                ->where('movie_person.person_id', '!=', $person->id);
-
-            // Filter by collaborator role if specified
-            if ($collaboratorRole !== null) {
-                $q->where('movie_person.role', $collaboratorRole);
-            }
-        })
-            ->with(['movies' => function ($query) use ($personMovies) {
-                $query->whereIn('movies.id', $personMovies)
-                    ->withPivot(['role', 'character_name', 'job']);
-            }]);
-
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Person> $query */
-        $query = $queryBuilder->get();
-
-        // Group by person and count collaborations
-        /** @var array<string, array{person: Person, collaborations: array<int, array<string, mixed>>, collaborations_count: int, person_role: string|null}> $collaboratorsMap */
-        $collaboratorsMap = [];
-        foreach ($query as $collaborator) {
-            $collaborations = [];
-            $personRole = null;
-
-            foreach ($collaborator->movies as $movie) {
-                /** @var \App\Models\Movie $movie */
-                /** @var \Illuminate\Database\Eloquent\Relations\Pivot|null $moviePivot */
-                $moviePivot = $movie->pivot;
-
-                // Get person's role in this movie
-                $personMoviePivot = $person->movies()->where('movies.id', $movie->id)->first()?->pivot;
-                /** @var \Illuminate\Database\Eloquent\Relations\Pivot|null $personMoviePivot */
-                /** @phpstan-ignore-next-line */
-                $personRoleInMovie = $personMoviePivot !== null ? $personMoviePivot->role : null;
-
-                // Get collaborator's role in this movie
-                /** @phpstan-ignore-next-line */
-                $collaboratorRoleInMovie = $moviePivot !== null ? $moviePivot->role : null;
-
-                // Only include if roles are different
-                if ($personRoleInMovie !== $collaboratorRoleInMovie) {
-                    $collaborations[] = [
-                        'movie_id' => $movie->id,
-                        'movie_slug' => $movie->slug,
-                        'movie_title' => $movie->title ?? '',
-                        'person_role' => $personRoleInMovie,
-                        'collaborator_role' => $collaboratorRoleInMovie,
-                    ];
-
-                    if ($personRole === null) {
-                        $personRole = $personRoleInMovie;
-                    }
-                }
-            }
-
-            if (! empty($collaborations)) {
-                $collaboratorsMap[$collaborator->id] = [
-                    'person' => $collaborator,
-                    'collaborations' => $collaborations,
-                    'collaborations_count' => count($collaborations),
-                    'person_role' => $personRole,
-                ];
-            }
-        }
-
-        // Sort by collaborations count (desc) and limit
-        /** @phpstan-ignore-next-line */
-        uasort($collaboratorsMap, function (array $a, array $b): int {
-            return $b['collaborations_count'] <=> $a['collaborations_count'];
-        });
-
-        $collaboratorsMap = array_slice($collaboratorsMap, 0, $limit, true);
-
-        // Format response
-        $result = [];
-        foreach ($collaboratorsMap as $data) {
-            /** @var Person $collaborator */
-            $collaborator = $data['person'];
-            $collaborations = $data['collaborations'];
-            $personRole = $data['person_role'];
-            $collaboratorRoleInFirst = $collaborations[0]['collaborator_role'] ?? null;
-
-            $result[] = [
-                'id' => $collaborator->id,
-                'slug' => $collaborator->slug,
-                'name' => $collaborator->name,
-                'relationship_type' => 'COLLABORATOR',
-                'relationship_label' => $collaboratorRoleInFirst !== null
-                    ? "Collaborator ({$collaboratorRoleInFirst})"
-                    : 'Collaborator',
-                'collaborations' => $collaborations,
-                'collaborations_count' => count($collaborations),
-                '_links' => [
-                    'self' => [
-                        'href' => url("/api/v1/people/{$collaborator->slug}"),
-                    ],
-                ],
-            ];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get people with same name (disambiguation).
-     *
-     * @param  Person  $person  The person to find same name people for
-     * @param  int  $limit  Maximum number of people to return
-     * @return array<int, array<string, mixed>>
-     */
-    private function getSameNamePeople(Person $person, int $limit): array
-    {
-        // Extract base slug (name part without year/suffix)
-        $parsed = Person::parseSlug($person->slug);
-        $baseSlug = \Illuminate\Support\Str::slug($parsed['name']);
-
-        // Find all people with same name slug
-        $sameNamePeople = $this->personRepository->findAllByNameSlug($baseSlug)
-            ->where('id', '!=', $person->id) // Exclude current person
-            ->take($limit);
-
-        $result = [];
-        foreach ($sameNamePeople as $sameNamePerson) {
-            $result[] = [
-                'id' => $sameNamePerson->id,
-                'slug' => $sameNamePerson->slug,
-                'name' => $sameNamePerson->name,
-                'birth_date' => $sameNamePerson->birth_date?->format('Y-m-d'),
-                'birthplace' => $sameNamePerson->birthplace,
-                'relationship_type' => 'SAME_NAME',
-                'relationship_label' => 'Same Name',
-                '_links' => [
-                    'self' => [
-                        'href' => url("/api/v1/people/{$sameNamePerson->slug}"),
-                    ],
-                ],
-            ];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Build cache key for related people endpoint.
-     *
-     * @param  string  $slug  Person slug
-     * @param  string  $typeFilter  Type filter (collaborators, same_name, all)
-     * @param  string|null  $collaboratorRole  Optional collaborator role filter
-     * @param  int  $limit  Result limit
-     * @return string Cache key
-     */
-    private function buildRelatedCacheKey(string $slug, string $typeFilter, ?string $collaboratorRole, int $limit): string
-    {
-        $parts = ['person_related', $slug, $typeFilter];
-        if ($collaboratorRole !== null) {
-            $parts[] = $collaboratorRole;
-        }
-        $parts[] = "limit_{$limit}";
-
-        return implode(':', $parts);
+        return response()->json($result);
     }
 
     /**
@@ -741,7 +428,7 @@ class PersonController extends Controller
         ]);
 
         // Invalidate cache
-        Cache::forget($this->cacheKey($slug, null));
+        $this->personRetrievalService->forgetCache($slug);
 
         return $this->responseFormatter->formatRefreshSuccess($slug, $person->id);
     }

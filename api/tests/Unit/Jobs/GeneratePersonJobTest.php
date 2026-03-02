@@ -63,6 +63,8 @@ class GeneratePersonJobTest extends TestCase
 
     public function test_job_appends_bio_for_existing_person(): void
     {
+        Feature::deactivate('ai_generation_baseline_locking');
+
         $person = Person::create([
             'name' => 'Keanu Reeves',
             'slug' => 'keanu-reeves',
@@ -162,6 +164,8 @@ class GeneratePersonJobTest extends TestCase
 
     public function test_subsequent_job_does_not_override_default_bio_if_baseline_has_changed(): void
     {
+        Feature::deactivate('ai_generation_baseline_locking');
+
         $person = Person::create([
             'name' => 'Keanu Reeves',
             'slug' => 'keanu-reeves',

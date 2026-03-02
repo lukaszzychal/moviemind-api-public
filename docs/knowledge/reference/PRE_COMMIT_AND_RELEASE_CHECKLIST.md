@@ -109,9 +109,9 @@ cd api && vendor/bin/phpstan analyse --memory-limit=2G 2>&1 | tee ../docs/logs/p
 
 ### 4. PHPUnit (tests)
 ```bash
-cd api && php artisan test
+cd api && composer test
 ```
-All tests must pass.
+Or from `api/`: `composer test` or `php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test` (same limits as CI). All tests must pass.
 
 ### 5. Markdownlint (Markdown formatting) - **AUTOMATICALLY IN PRE-COMMIT HOOK**
 

@@ -396,7 +396,7 @@ curl -X POST "http://localhost:8000/api/v1/movies/bulk?locale=pl-PL" \
 
 3. **Bulk Endpoint:** Locale parameter is accepted but may not localize bulk results. Individual movie details in bulk response may not include localized fields.
 
-4. **SQLite Tests:** Some tests use SQLite which doesn't support PostgreSQL-specific syntax (e.g., `genres::text`). This is a test environment limitation, not a production issue.
+4. **Test database:** All tests use PostgreSQL (same as production); no SQLite-specific limitations.
 
 ---
 

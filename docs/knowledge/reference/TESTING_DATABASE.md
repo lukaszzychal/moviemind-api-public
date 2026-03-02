@@ -1,28 +1,28 @@
-# Jak działają testy w CI bez uruchomionej bazy danych?
+# Baza danych dla testów (PostgreSQL)
 
 ## Krótka odpowiedź
 
-**Baza działa w pamięci!** Używamy **SQLite `:memory:`** - nie potrzebujemy zewnętrznego serwera bazy danych.
+**Wszystkie testy używają PostgreSQL.** Lokalnie wymagany jest Docker z serwisem `db` (PostgreSQL). W CI używany jest service container PostgreSQL 16.
 
-## Szczegóły
+## Konfiguracja
 
-### 1. Konfiguracja w `phpunit.xml`
+### 1. `phpunit.xml.dist`
 
 ```xml
-<env name="DB_CONNECTION" value="sqlite"/>
-<env name="DB_DATABASE" value=":memory:"/>
+<env name="DB_CONNECTION" value="pgsql"/>
+<env name="DB_HOST" value="db"/>
+<env name="DB_PORT" value="5432"/>
+<env name="DB_DATABASE" value="moviemind_test"/>
+<env name="DB_USERNAME" value="moviemind"/>
+<env name="DB_PASSWORD" value="moviemind"/>
 ```
 
-**`:memory:`** to specjalna nazwa bazy SQLite - oznacza bazę w pamięci RAM:
-- ✅ Szybka (RAM jest najszybsza)
-- ✅ Automatycznie tworzona przed testem
-- ✅ Automatycznie usuwana po teście
-- ✅ Nie zostawia śladów na dysku
-- ✅ Nie potrzebuje zewnętrznego serwera
+- **Lokalnie (Docker):** `DB_HOST=db` to nazwa serwisu PostgreSQL w `docker-compose.yml`.
+- **W CI:** Zmienne są nadpisywane przez workflow (`DB_HOST=localhost`, `DB_USERNAME=postgres`, `DB_PASSWORD=...`).
 
-### 2. RefreshDatabase Trait
+### 2. RefreshDatabase
 
-Wszystkie testy Feature używają:
+Feature testy używają:
 
 ```php
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,126 +30,44 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class MoviesApiTest extends TestCase
 {
     use RefreshDatabase;
-    
+
     protected function setUp(): void
     {
         parent::setUp();
-        $this->artisan('migrate');      // Uruchamia migracje
-        $this->artisan('db:seed');      // Uruchamia seedery
+        $this->artisan('migrate');
+        $this->artisan('db:seed');
     }
 }
 ```
 
-**RefreshDatabase** automatycznie:
-1. Tworzy bazę przed każdym testem
-2. Uruchamia wszystkie migracje
-3. Może uruchomić seedery (jeśli `setUp()` ma `db:seed`)
-4. Czyści bazę po teście
+**RefreshDatabase** przy pierwszym teście wykonuje `migrate:fresh`. Baza `moviemind_test` musi istnieć (tworzy ją PostgreSQL w Docker/CI).
 
-### 3. Jak to działa w CI?
+### 3. Uruchomienie testów
 
-```yaml
-- name: Run unit/feature tests
-  working-directory: api
-  run: composer test
-```
-
-**Proces:**
-1. PHPUnit ładuje `phpunit.xml`
-2. Ustawia `DB_CONNECTION=sqlite` i `DB_DATABASE=:memory:`
-3. Dla każdego testu Feature:
-   - Tworzy nową bazę w pamięci
-   - Uruchamia migracje (`$this->artisan('migrate')`)
-   - Uruchamia seedery (`$this->artisan('db:seed')`)
-   - Wykonuje test
-   - Czyści bazę
-4. Następny test zaczyna od nowa
-
-### 4. Dlaczego to działa?
-
-**SQLite** to:
-- Wbudowana biblioteka PHP (nie serwer)
-- Działa w tym samym procesie co PHP
-- Nie wymaga instalacji, konfiguracji, czy uruchomienia serwera
-- Idealna do testów
-
-## Porównanie: Pamięć vs Plik vs Serwer
-
-| Typ | Szybkość | Setup | Dla testów? |
-|-----|----------|-------|-------------|
-| `:memory:` | ⚡ Najszybsza | ✅ Zero setup | ✅ Idealna |
-| Plik SQLite | 🐢 Wolniejsza | ✅ Zero setup | ✅ OK |
-| PostgreSQL/MySQL | 🚀 Szybka | ❌ Wymaga serwera | ⚠️ Zbyt skomplikowane |
-
-## Dlaczego nie używać prawdziwej bazy w CI?
-
-❌ **Wymaga:**
-- Instalacji MySQL/PostgreSQL
-- Konfiguracji serwera
-- Tworzenia użytkowników
-- Dłuższy czas wykonania
-- Więcej zasobów
-
-✅ **SQLite `:memory:`:**
-- Zero konfiguracji
-- Szybka
-- Wystarczająca do testów funkcjonalnych
-
-## Czy można używać prawdziwej bazy w testach?
-
-**Tak**, ale nie jest potrzebne:
-
-```php
-// W phpunit.xml zamiast :memory:
-<env name="DB_CONNECTION" value="mysql"/>
-<env name="DB_DATABASE" value="test_db"/>
-```
-
-Ale to wymaga:
-- Uruchomionego MySQL/PostgreSQL w CI
-- Więcej czasu na setup
-- Często niepotrzebne - SQLite pokrywa 95% przypadków
-
-## Aktualna konfiguracja w projekcie
-
-```xml
-<!-- api/phpunit.xml -->
-<env name="DB_CONNECTION" value="sqlite"/>
-<env name="DB_DATABASE" value=":memory:"/>
-```
-
-**Rezultat:**
-- ✅ Testy działają w CI bez setupu bazy
-- ✅ Każdy test ma czystą bazę
-- ✅ Migracje uruchamiane automatycznie
-- ✅ Seedery uruchamiane w `setUp()`
-
-## Sprawdzenie lokalne
+**Lokalnie (wymagany Docker):**
 
 ```bash
-# Sprawdź czy SQLite jest dostępne
-php -r "echo extension_loaded('sqlite3') ? 'SQLite OK' : 'SQLite missing';"
-
-# Uruchom testy
-php artisan test
-
-# Sprawdź co się dzieje
-php artisan test --verbose
+docker compose up -d
+docker compose exec php php artisan test
 ```
+
+Albo z katalogu `api`: `composer test` (skrypt uruchamia testy w kontenerze).
+
+**W CI:** Job `test` w `.github/workflows/ci.yml` uruchamia PostgreSQL 16 jako service container i ustawia zmienne środowiskowe dla bazy testowej.
 
 ## Wymagania
 
-- ✅ PHP z rozszerzeniem `sqlite3` (standardowo włączone)
-- ✅ Migracje w `database/migrations/`
-- ✅ Seedery w `database/seeders/`
+- **Lokalnie:** Docker Compose z serwisem PostgreSQL (`db`). W `.env` (używanym przez kontener) ustawione `DB_CONNECTION=pgsql`, `DB_HOST=db`, oraz dane dostępowe do bazy.
+- **CI:** Service container PostgreSQL 16, rozszerzenia PHP `pdo_pgsql`, `pgsql`.
 
-## Podsumowanie
+## Dlaczego PostgreSQL dla testów?
 
-**Testy w CI działają bez zewnętrznej bazy, bo:**
-1. Używamy SQLite `:memory:` (baza w RAM)
-2. RefreshDatabase automatycznie tworzy bazę przed testem
-3. Migracje uruchamiane są w `setUp()` każdego testu
-4. SQLite nie wymaga serwera - to biblioteka w PHP
+- Jedna baza dla testów i produkcji – brak różnic składni (np. partial unique index, `genres::text`, TO_CHAR).
+- Testy weryfikują te same zapytania i ograniczenia co produkcja.
+- Brak osobnej konfiguracji SQLite i gałęzi w migracjach/serwisach.
 
-**To standardowe rozwiązanie w Laravel!** 🎯
+## Powiązane pliki
 
+- `api/phpunit.xml.dist` – zmienne środowiskowe dla testów
+- `.github/workflows/ci.yml` – job `test` z service container PostgreSQL
+- `docs/qa/POSTGRESQL_TESTING.md` – opis testów i CI

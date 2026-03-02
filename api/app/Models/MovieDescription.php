@@ -86,4 +86,23 @@ class MovieDescription extends Model
     {
         return $this->belongsTo(Movie::class);
     }
+
+    /**
+     * Get AI generation metrics for this description's movie (helper method).
+     * This is a more direct way to get metrics by accessing the movie's slug.
+     */
+    public function getAiMetrics(): \Illuminate\Database\Eloquent\Collection
+    {
+        if (! $this->relationLoaded('movie')) {
+            $this->load('movie');
+        }
+
+        if (! $this->movie || ! $this->movie->slug) {
+            return collect();
+        }
+
+        return \App\Models\AiGenerationMetric::where('entity_type', 'MOVIE')
+            ->where('entity_slug', $this->movie->slug)
+            ->get();
+    }
 }

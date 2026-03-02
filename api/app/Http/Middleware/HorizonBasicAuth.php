@@ -56,6 +56,15 @@ class HorizonBasicAuth
             return $this->unauthorized();
         }
 
+        // Mark request as authenticated via Basic Auth for Gate to check
+        $request->attributes->set('horizon.basic_auth_verified', true);
+        $request->attributes->set('horizon.basic_auth_email', mb_strtolower($username));
+
+        \Illuminate\Support\Facades\Log::info('HorizonBasicAuth: Middleware passed, setting attributes', [
+            'email' => mb_strtolower($username),
+            'attributes_set' => true,
+        ]);
+
         return $next($request);
     }
 

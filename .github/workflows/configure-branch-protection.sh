@@ -19,7 +19,7 @@ fi
 # Configure branch protection
 gh api repos/$REPO/branches/$BRANCH/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["Test PHP 8.2","Test PHP 8.3","Security & Lint","Postman API Tests (Newman)"]}' \
+  --field required_status_checks='{"strict":true,"contexts":["Test PHP 8.2","Test PHP 8.3","Security & Lint","Postman API Tests"]}' \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
   --field restrictions=null \

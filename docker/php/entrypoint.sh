@@ -67,8 +67,8 @@ fi
 echo "🧹 Clearing cache early (helps with Railway)..."
 php artisan cache:clear || echo "⚠️  Cache clear failed (non-critical)"
 
-# Cache configuration for production (only if not in local/dev)
-if [ "${APP_ENV}" != "local" ] && [ "${APP_ENV}" != "dev" ]; then
+# Cache configuration only when explicitly production (do not cache in local/dev/staging)
+if [ "${APP_ENV}" = "production" ]; then
     echo "🧹 Clearing all caches before compilation..."
     php artisan cache:clear || echo "⚠️  Cache clear failed (non-critical)"
     php artisan config:clear || echo "⚠️  Config clear failed (non-critical)"

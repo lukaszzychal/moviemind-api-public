@@ -14,7 +14,9 @@
 
 ## 🎯 Project Overview
 
-MovieMind API is a RESTful service that generates and stores unique descriptions for movies, series, and actors using AI technology. Unlike traditional movie databases that copy content from IMDb or TMDb, MovieMind creates original, AI-generated content with support for multiple languages and contextual styling.
+MovieMind API is a **portfolio/demo project** that demonstrates a RESTful service for generating and storing unique descriptions for movies, series, and actors using AI technology. Unlike traditional movie databases that copy content from IMDb or TMDb, MovieMind creates original, AI-generated content with support for multiple languages and contextual styling.
+
+**Note:** This is a portfolio project with full functionality for demonstration purposes. For production deployment, commercial licenses may be required (see [Third-Party API Licenses](#-third-party-api-licenses) below).
 
 ## ✨ Key Features
 
@@ -234,7 +236,7 @@ See docker-compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres,
 | AI generation | `AI_SERVICE=mock` (deterministic showcase) and `AI_SERVICE=real` using OpenAI | Multi-provider routing, cost controls, hallucination guardrails |
 | Admin experience | Admin UI with feature flags, content CRUD, demo accounts | Full operations console with billing, analytics, audit trails |
 | Authentication | Demo auth for admin + open public API for easy testing | API keys per plan, OAuth/JWT, rate limiting by tier |
-| Webhooks | Simulator endpoints + request inspector for demos | Production billing/webhook processors (RapidAPI/Stripe, partner events) |
+| Webhooks | Simulator endpoints + request inspector for demos | Production billing/webhook processors (Stripe, PayPal, partner events) |
 | Monitoring | Telescope dashboards, sample Grafana dashboards | Advanced metrics, SLA monitors, on-call alerting |
 | Localization | Sample multilingual content + glossary showcase | Full translation pipeline, locale-specific prompts |
 | Documentation | OpenAPI spec, architecture notes, portfolio walkthrough | Commercial runbooks, deployment playbooks, vendor docs |
@@ -310,7 +312,7 @@ After changing the environment variables, run `php artisan config:clear` (or res
 
 ## 🤝 Contributing
 
-This is a public demonstration repository. For commercial features and full functionality, see the private repository.
+This is a **portfolio/demo repository** showcasing full API functionality with local API key management. All features are available for demonstration, including subscription plans, rate limiting, and webhook systems. For production deployment, billing providers (Stripe, PayPal) can be integrated.
 
 ### Development Workflow (Trunk-Based)
 
@@ -324,10 +326,33 @@ This is a public demonstration repository. For commercial features and full func
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
+## ⚠️ Third-Party API Licenses
+
+### TMDB (The Movie Database)
+
+**Portfolio/Demo Use:**
+- ✅ Non-commercial use allowed (with attribution)
+- Attribution required: TMDB logo + text + link
+
+**Production Use:**
+- ❌ **Commercial license REQUIRED**
+- Contact: sales@themoviedb.org
+- Estimated costs: ~$149/month (small apps) to $42,000/year (enterprise)
+- See: [`docs/LEGAL_TMDB_LICENSE.md`](docs/LEGAL_TMDB_LICENSE.md) for full details
+
+### TVmaze
+
+**Portfolio & Production Use:**
+- ✅ Commercial use allowed (free, CC BY-SA license)
+- Attribution required: Link to TVmaze
+- See: [`docs/LEGAL_TVMAZE_LICENSE.md`](docs/LEGAL_TVMAZE_LICENSE.md) for full details
+
 ## 🔗 Related Projects
 
 - **Private Repository**: Full commercial version with billing, webhooks, and admin panel
-- **RapidAPI Marketplace**: Production API deployment
+- **API Gateway** (optional): Production API deployment through API Gateway (Kong, Tyk, etc.)
 - **Documentation Site**: Comprehensive API documentation
 
 ## 📞 Support

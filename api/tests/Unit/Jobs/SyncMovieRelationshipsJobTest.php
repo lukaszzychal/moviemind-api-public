@@ -46,6 +46,7 @@ class SyncMovieRelationshipsJobTest extends TestCase
      */
     public function test_job_handles_missing_movie_gracefully(): void
     {
+        $this->expectNotToPerformAssertions();
         // Given: Movie does not exist
         $nonExistentMovieId = (string) \Illuminate\Support\Str::uuid();
 
@@ -74,6 +75,7 @@ class SyncMovieRelationshipsJobTest extends TestCase
      */
     public function test_job_handles_missing_snapshot_gracefully(): void
     {
+        $this->expectNotToPerformAssertions();
         // Given: Movie exists but has no snapshot
         $movie = Movie::create([
             'title' => 'Test Movie',

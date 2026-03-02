@@ -20,7 +20,7 @@ class SubscriptionPlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->slug(),
+            'name' => fake()->unique()->slug(3, false),
             'display_name' => fake()->words(2, true),
             'description' => fake()->sentence(),
             'monthly_limit' => fake()->numberBetween(100, 10000),

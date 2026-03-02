@@ -26,13 +26,27 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_TEST_KEY: test_pg_${{ github.run_id }}_${{ github.run_number }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+          POSTGRES_DB: moviemind_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.2', '8.3']
-        # PHP 8.4 temporarily disabled due to Laravel 12 stack overflow issue in Stopwatch.php
-        # See: https://github.com/laravel/framework/issues/XXXXX
-        # TODO: Re-enable when Laravel 12 fixes PHP 8.4 compatibility
+        php-versions: ['8.3','8.4','8.5']
+        # PHP 8.2 removed: Composer/lockfile require >= 8.3.
 
     steps:
       - name: Checkout code
@@ -42,7 +56,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          extensions: mbstring, dom, curl, libxml, zip, sqlite3, pdo_sqlite
+          extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
           coverage: xdebug
 
       - name: Cache Composer packages
@@ -50,7 +64,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: api/vendor
-          key: ${{ runner.os }}-php-${{ matrix.php-versions }}-${{ hashFiles('api/composer.lock') }}
+          key: ${{ runner.os }}-php-${{ matrix.php-versions }}-pgsql-${{ hashFiles('api/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-${{ matrix.php-versions }}-
 
@@ -83,8 +97,12 @@ jobs:
         working-directory: api
         env:
           APP_ENV: testing
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
         run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test
 
   test-postgresql:
@@ -146,6 +164,18 @@ jobs:
           php artisan key:generate --force
           php artisan config:clear
 
+      - name: Run migrations and seed
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+        run: php artisan migrate --force && php artisan db:seed
+
       - name: Setup PHPUnit configuration
         working-directory: api
         run: |
@@ -162,7 +192,7 @@ jobs:
           DB_DATABASE: moviemind_test
           DB_USERNAME: postgres
           DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
-        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test --filter=PostgreSQLSpecificTest
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test --filter='Tests\\Feature\\PostgreSQLSpecificTest'
 
   security:
     name: Security & Lint
@@ -215,7 +245,7 @@ jobs:
           fi
 
   postman-tests:
-    name: Postman API Tests (Newman)
+    name: Postman API Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -312,10 +342,33 @@ jobs:
             echo 'ai_bio_generation: ' . (Laravel\Pennant\Feature::active('ai_bio_generation') ? 'ACTIVE' : 'INACTIVE') . PHP_EOL;
           "
 
+      - name: Get API key for Newman
+        id: api-key
+        working-directory: api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          JSON=$(php tests/setup_keys.php)
+          if echo "$JSON" | jq -e '.key' > /dev/null 2>&1; then
+            echo "API_KEY=$(echo "$JSON" | jq -r '.key')" >> $GITHUB_ENV
+          else
+            echo "Failed to get API key: $JSON"
+            exit 1
+          fi
+
       - name: Start API server
         working-directory: api
         env:
           APP_ENV: testing
+          ADMIN_AUTH_BYPASS_ENVS: "testing,local,staging"
           DB_CONNECTION: pgsql
           DB_HOST: localhost
           DB_PORT: 5432
@@ -334,18 +387,30 @@ jobs:
           php artisan cache:clear
           php artisan serve --host=0.0.0.0 --port=8000 > /tmp/php-server.log 2>&1 &
           echo "Waiting for server to start..."
-          sleep 15
-          curl -f http://localhost:8000/up || (cat /tmp/php-server.log && exit 1)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/up > /dev/null 2>&1; then
+              echo "Server is up after ${i}s"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Server failed to start"
+              cat /tmp/php-server.log
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Run Newman tests
         run: |
           # Use npx to run newman without global installation
           # Note: newman will exit with non-zero code if tests fail
           # Admin API key is not needed because ADMIN_AUTH_BYPASS_ENVS includes 'testing'
+          # API key for /generate is from setup_keys.php (API_KEY env)
           npx --yes newman@latest run docs/postman/moviemind-api.postman_collection.json \
             -e docs/postman/environments/local.postman_environment.json \
             --env-var "baseUrl=http://localhost:8000" \
-            --env-var "ADMIN_API_KEY=not-needed-testing-bypass" \
+            --env-var "adminApiKey=not-needed-testing-bypass" \
+            --env-var "apiKey=$API_KEY" \
             --reporters cli,junit \
             --reporter-junit-export newman-results.xml \
             --timeout-request 10000 \

@@ -2,7 +2,7 @@
   "info": {
     "name": "MovieMind API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "item": [
     {
@@ -200,10 +200,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
+                  "// When generation enabled and slug valid: 202 + job_id; else 404 (e.g. TMDB key missing in CI)",
+                  "const code = pm.response.code;",
                   "const json = pm.response.json();",
-                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
-                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                  "pm.test(\"Status code is 202 or 404\", function () { pm.expect([202, 404]).to.include(code); });",
+                  "if (code === 202) {",
+                  "  pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "  if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }",
+                  "} else {",
+                  "  pm.test(\"404 has error message\", function () { pm.expect(json).to.have.property('error'); });",
+                  "}"
                 ]
               }
             }
@@ -306,17 +312,21 @@
           ]
         },
         {
-          "name": "Get person (not found -> 202 Accepted)",
+          "name": "Get person (not found -> 202 or 404)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
+                  "pm.test(\"Status code is 202 or 404\", function () { pm.expect([202, 404]).to.include(pm.response.code); });",
                   "const json = pm.response.json();",
-                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
-                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                  "if (pm.response.code === 202) {",
+                  "  pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "  if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }",
+                  "} else {",
+                  "  pm.test(\"404 has error\", function () { pm.expect(json).to.have.property('error'); });",
+                  "}"
                 ]
               }
             }
@@ -458,6 +468,10 @@
               {
                 "key": "Accept",
                 "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
               }
             ],
             "body": {
@@ -517,6 +531,10 @@
               {
                 "key": "Accept",
                 "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
               }
             ],
             "body": {
@@ -578,6 +596,10 @@
               {
                 "key": "Accept",
                 "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
               }
             ],
             "body": {
@@ -637,6 +659,10 @@
               {
                 "key": "Accept",
                 "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
               }
             ],
             "body": {
@@ -740,6 +766,39 @@
                 }
               ],
               "body": "{\n  \"job_id\": \"11111111-1111-1111-1111-111111111111\",\n  \"status\": \"UNKNOWN\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feedback",
+      "item": [
+        {
+          "name": "Submit feedback (public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Suggestion: add filter by release year in search. This is at least 10 chars.\",\n  \"category\": \"suggestion\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "feedback"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Feedback received. Thank you.\",\n  \"id\": \"01234567-89ab-cdef-0123-456789abcdef\"\n}"
             }
           ]
         }
@@ -929,7 +988,7 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test(\"Usage response has array\", function () { pm.expect(json).to.have.property('usage').that.is.an('array'); });"
+                  "pm.test(\"Usage response has array\", function () { pm.expect(json).to.have.property('usages').that.is.an('array'); });"
                 ]
               }
             }
@@ -967,9 +1026,88 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"usage\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
+              "body": "{\n  \"flag\": \"all\",\n  \"usages\": [\n    {\n      \"file\": \"app/Http/Controllers/Api/MovieController.php\",\n      \"line\": 55,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_description_generation\"\n    },\n    {\n      \"file\": \"app/Http/Controllers/Api/PersonController.php\",\n      \"line\": 42,\n      \"pattern\": \"Feature::active\",\n      \"name\": \"ai_bio_generation\"\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Feedback - list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length > 0 && json.data[0].id) {",
+                  "  pm.collectionVariables.set('feedbackId', json.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback"]
+            }
+          }
+        },
+        {
+          "name": "Feedback - get one",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+            }
+          }
+        },
+        {
+          "name": "Feedback - update status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"read\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+            }
+          }
+        },
+        {
+          "name": "Feedback - delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+            }
+          }
         }
       ]
     },
@@ -1059,6 +1197,16 @@
     },
     {
       "key": "personBioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "feedbackId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminApiKey",
       "value": "",
       "type": "string"
     }

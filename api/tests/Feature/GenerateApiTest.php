@@ -10,8 +10,10 @@ use App\Events\TvSeriesGenerationRequested;
 use App\Events\TvShowGenerationRequested;
 use App\Models\Movie;
 use App\Models\Person;
+use App\Models\SubscriptionPlan;
 use App\Models\TvSeries;
 use App\Models\TvShow;
+use App\Services\ApiKeyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -32,6 +34,8 @@ class GenerateApiTest extends TestCase
 
     private $tvShow = null;
 
+    private string $apiKey = '';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +43,12 @@ class GenerateApiTest extends TestCase
         Queue::fake();
         $this->artisan('migrate');
         $this->artisan('db:seed');
+        $plan = SubscriptionPlan::where('name', 'pro')->first() ?? SubscriptionPlan::where('name', 'free')->first();
+        if (! $plan) {
+            $plan = SubscriptionPlan::factory()->create(['name' => 'pro', 'features' => ['read', 'generate']]);
+        }
+        $result = app(ApiKeyService::class)->createKey('GenerateApiTest', $plan->id);
+        $this->apiKey = $result['key'];
     }
 
     public function test_generate_movie_blocked_when_flag_off(): void
@@ -404,7 +414,7 @@ class GenerateApiTest extends TestCase
             'entity_id' => $slug,
         ], $options);
 
-        $this->response = $this->postJson('/api/v1/generate', $payload);
+        $this->response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', $payload);
 
         return $this;
     }
@@ -416,7 +426,7 @@ class GenerateApiTest extends TestCase
             'entity_id' => $slug,
         ], $options);
 
-        $this->response = $this->postJson('/api/v1/generate', $payload);
+        $this->response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', $payload);
 
         return $this;
     }
@@ -428,7 +438,7 @@ class GenerateApiTest extends TestCase
             'entity_id' => $slug,
         ], $options);
 
-        $this->response = $this->postJson('/api/v1/generate', $payload);
+        $this->response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', $payload);
 
         return $this;
     }
@@ -440,14 +450,14 @@ class GenerateApiTest extends TestCase
             'entity_id' => $slug,
         ], $options);
 
-        $this->response = $this->postJson('/api/v1/generate', $payload);
+        $this->response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', $payload);
 
         return $this;
     }
 
     private function whenGeneratingWithEntityType(string $entityType, string $entityId): self
     {
-        $this->response = $this->postJson('/api/v1/generate', [
+        $this->response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => $entityType,
             'entity_id' => $entityId,
         ]);
@@ -457,7 +467,7 @@ class GenerateApiTest extends TestCase
 
     private function whenGeneratingMovieWithInvalidEntityId($entityId): self
     {
-        $this->response = $this->postJson('/api/v1/generate', [
+        $this->response = $this->withHeader('X-API-Key', $this->apiKey)->postJson('/api/v1/generate', [
             'entity_type' => 'MOVIE',
             'entity_id' => $entityId,
         ]);

@@ -7,6 +7,7 @@ namespace Tests\Unit\Services;
 use App\Services\QueueJobsDashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Timeout;
 use Tests\TestCase;
 
 class QueueJobsDashboardServiceTest extends TestCase
@@ -131,13 +132,14 @@ class QueueJobsDashboardServiceTest extends TestCase
         $this->assertArrayHasKey('by_queue', $result);
     }
 
+    #[Timeout(15)]
     public function test_get_ai_jobs_statistics_aggregates_ai_jobs_data(): void
     {
         // ARRANGE: Create ai_jobs records
         DB::table('ai_jobs')->insert([
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 1,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440001',
                 'locale' => 'pl-PL',
                 'status' => 'PENDING',
                 'payload_json' => json_encode(['slug' => 'test-movie']),
@@ -146,7 +148,7 @@ class QueueJobsDashboardServiceTest extends TestCase
             ],
             [
                 'entity_type' => 'MOVIE',
-                'entity_id' => 2,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440002',
                 'locale' => 'en-US',
                 'status' => 'DONE',
                 'payload_json' => json_encode(['slug' => 'test-movie-2']),
@@ -155,7 +157,7 @@ class QueueJobsDashboardServiceTest extends TestCase
             ],
             [
                 'entity_type' => 'PERSON',
-                'entity_id' => 1,
+                'entity_id' => '550e8400-e29b-41d4-a716-446655440001',
                 'locale' => 'pl-PL',
                 'status' => 'FAILED',
                 'payload_json' => json_encode(['slug' => 'test-person']),

@@ -170,20 +170,21 @@ class AdminBasicAuthTest extends TestCase
 
         $response = $this->getJson('/api/v1/admin/flags');
 
+        // Real admin routes use admin.token (AdminTokenAuth), not Basic Auth
         $response->assertStatus(401)
-            ->assertHeader('WWW-Authenticate', 'Basic realm="Admin API"');
+            ->assertJson(['message' => 'Unauthorized']);
     }
 
     public function test_admin_endpoints_allow_access_with_valid_credentials(): void
     {
         config(['app.env' => 'production']);
         config(['admin.auth.bypass_environments' => []]);
-        config(['admin.auth.allowed_emails' => ['admin@example.com']]);
-        config(['admin.auth.basic_auth_password' => 'test-password']);
+        config(['admin.api_token' => 'test-admin-token']);
 
-        $response = $this->withBasicAuth('admin@example.com', 'test-password')
+        $response = $this->withHeader('X-Admin-Token', 'test-admin-token')
             ->getJson('/api/v1/admin/flags');
 
+        // Real admin routes use token auth (AdminTokenAuth)
         $response->assertOk()
             ->assertJsonStructure(['data' => [['name', 'active', 'description', 'category', 'default', 'togglable']]]);
     }
@@ -191,7 +192,7 @@ class AdminBasicAuthTest extends TestCase
     public function test_admin_endpoints_bypass_auth_in_local(): void
     {
         config(['app.env' => 'local']);
-        config(['admin.auth.bypass_environments' => ['local', 'staging']]);
+        config(['admin.auth.bypass_environments' => ['local', 'staging', 'testing']]);
 
         $response = $this->getJson('/api/v1/admin/flags');
 

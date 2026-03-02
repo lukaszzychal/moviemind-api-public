@@ -23,7 +23,7 @@ class TvSeriesRetrievalService
 {
     public function __construct(
         private readonly TvSeriesRepository $tvSeriesRepository,
-        private readonly EntityVerificationServiceInterface $tmdbVerificationService,
+        private readonly EntityVerificationServiceInterface $entityVerificationService,
         private readonly TmdbTvSeriesCreationService $tmdbTvSeriesCreationService,
         private readonly QueueTvSeriesGenerationAction $queueTvSeriesGenerationAction
     ) {}
@@ -121,12 +121,12 @@ class TvSeriesRetrievalService
      */
     private function attemptToFindOrCreateTvSeriesFromTmdb(string $slug, ?string $descriptionId, array $validation): TvSeriesRetrievalResult
     {
-        // If tmdb_verification is disabled, allow generation without TMDB check
-        if (! Feature::active('tmdb_verification')) {
+        // If tvmaze_verification is disabled, allow generation without TVmaze check
+        if (! Feature::active('tvmaze_verification')) {
             return $this->queueGenerationWithoutTmdb($slug, $validation);
         }
 
-        $tmdbData = $this->tmdbVerificationService->verifyTvSeries($slug);
+        $tmdbData = $this->entityVerificationService->verifyTvSeries($slug);
 
         if ($tmdbData !== null) {
             return $this->handleTmdbExactMatch($tmdbData, $slug, $descriptionId, $validation);
@@ -243,7 +243,7 @@ class TvSeriesRetrievalService
      */
     private function handleTmdbSearch(string $slug, ?string $descriptionId, array $validation): TvSeriesRetrievalResult
     {
-        $searchResults = $this->tmdbVerificationService->searchTvSeries($slug, 5);
+        $searchResults = $this->entityVerificationService->searchTvSeries($slug, 5);
 
         if (count($searchResults) > 1) {
             $options = $this->buildDisambiguationOptions($slug, $searchResults);

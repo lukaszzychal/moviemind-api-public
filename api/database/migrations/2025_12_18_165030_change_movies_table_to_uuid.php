@@ -33,14 +33,6 @@ return new class extends Migration
     {
         $driver = DB::connection()->getDriverName();
 
-        // SQLite doesn't support ALTER COLUMN TYPE directly
-        // For SQLite (tests), skip this migration - tables will be created with UUID from start
-        if ($driver === 'sqlite') {
-            // SQLite is used in tests - skip migration as tables are created fresh
-            // The original create_movies_table migration should be updated to use UUID
-            return;
-        }
-
         // PostgreSQL/MySQL migration
         // IMPORTANT: Must drop all foreign keys that reference movies.id BEFORE changing the primary key
 

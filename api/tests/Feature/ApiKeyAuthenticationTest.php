@@ -21,8 +21,8 @@ class ApiKeyAuthenticationTest extends TestCase
         $this->artisan('migrate');
         $this->apiKeyService = new ApiKeyService;
 
-        // Create a test route protected by rapidapi.auth middleware
-        Route::middleware(['rapidapi.auth'])->get('/test-rapidapi-auth', function () {
+        // Create a test route protected by api.key.auth middleware
+        Route::middleware(['api.key.auth'])->get('/test-rapidapi-auth', function () {
             return response()->json(['message' => 'Authorized']);
         });
     }
@@ -39,7 +39,7 @@ class ApiKeyAuthenticationTest extends TestCase
             ->assertHeader('WWW-Authenticate', 'Bearer');
     }
 
-    public function test_middleware_accepts_x_rapidapi_key_header(): void
+    public function test_middleware_accepts_x_api_key_header(): void
     {
         $result = $this->apiKeyService->createKey('Test Key');
         $plaintextKey = $result['key'];
@@ -138,7 +138,7 @@ class ApiKeyAuthenticationTest extends TestCase
         $apiKey = $result['apiKey'];
 
         // Create a route that checks request attributes
-        Route::middleware(['rapidapi.auth'])->get('/test-rapidapi-attributes', function () {
+        Route::middleware(['api.key.auth'])->get('/test-rapidapi-attributes', function () {
             $apiKeyId = request()->attributes->get('api_key_id');
             $apiKeyModel = request()->attributes->get('api_key');
 
@@ -159,7 +159,7 @@ class ApiKeyAuthenticationTest extends TestCase
             ]);
     }
 
-    public function test_middleware_prioritizes_x_rapidapi_key_over_authorization(): void
+    public function test_middleware_prioritizes_x_api_key_over_authorization(): void
     {
         $result1 = $this->apiKeyService->createKey('Key 1');
         $result2 = $this->apiKeyService->createKey('Key 2');

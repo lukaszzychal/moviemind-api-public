@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\ApiKeyController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\FlagController;
+use App\Http\Controllers\Admin\WebhookSubscriptionController;
+use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GenerateController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\JobsController;
@@ -43,17 +46,28 @@ Route::prefix('v1')->group(function () {
     Route::get('tv-shows/{slug}/related', [TvShowController::class, 'related']);
     Route::post('tv-shows/{slug}/refresh', [TvShowController::class, 'refresh']);
     Route::post('tv-shows/{slug}/report', [TvShowController::class, 'report'])->middleware('adaptive.rate.limit:report');
-    Route::post('generate', [GenerateController::class, 'generate'])->middleware('adaptive.rate.limit:generate');
+    Route::post('generate', [GenerateController::class, 'generate'])->middleware([
+        'adaptive.rate.limit:generate',
+        'api.key.auth',
+        'plan.rate.limit',
+        'plan.feature:ai_generate',
+    ]);
     Route::get('jobs/{id}', [JobsController::class, 'show']);
+    Route::post('feedback', [FeedbackController::class, 'store'])->middleware('adaptive.rate.limit:report');
+    Route::get('health', [HealthController::class, 'health']);
     Route::get('health/openai', [HealthController::class, 'openAi']);
     Route::get('health/tmdb', [HealthController::class, 'tmdb']);
+    Route::get('health/tvmaze', [HealthController::class, 'tvmaze']);
     Route::get('health/instance', [HealthController::class, 'instance']);
+    Route::get('health/db', [HealthController::class, 'database']);
 });
 
-Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
+Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
     Route::prefix('flags')->group(function () {
         Route::get('/', [FlagController::class, 'index']);
-        Route::post('{name}', [FlagController::class, 'setFlag']); // body: {state:on|off}
+        Route::get('overrides', [FlagController::class, 'overrides']); // New endpoint
+        Route::post('{name}', [FlagController::class, 'setFlag']);
+        Route::delete('{name}', [FlagController::class, 'resetFlag']);
         Route::get('usage', [FlagController::class, 'usage']);
     });
     Route::prefix('instances')->group(function () {
@@ -91,6 +105,25 @@ Route::prefix('v1/admin')->middleware('admin.basic')->group(function () {
         Route::get('/failed', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failed']);
         Route::get('/failed/stats', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failedStats']);
         Route::get('/processing-times', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'processingTimes']);
+    });
+    Route::prefix('subscription-plans')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'index']);
+        Route::get('{id}', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'show']);
+        Route::get('{id}/features', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'getFeatures']);
+        Route::post('{id}/features', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'addFeature']);
+        Route::delete('{id}/features/{feature}', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'removeFeature']);
+    });
+    Route::prefix('webhook-subscriptions')->group(function () {
+        Route::get('/', [WebhookSubscriptionController::class, 'index']);
+        Route::post('/', [WebhookSubscriptionController::class, 'store']);
+        Route::patch('{id}', [WebhookSubscriptionController::class, 'update']);
+        Route::delete('{id}', [WebhookSubscriptionController::class, 'destroy']);
+    });
+    Route::prefix('feedback')->group(function () {
+        Route::get('/', [AdminFeedbackController::class, 'index']);
+        Route::get('{id}', [AdminFeedbackController::class, 'show']);
+        Route::patch('{id}', [AdminFeedbackController::class, 'update']);
+        Route::delete('{id}', [AdminFeedbackController::class, 'destroy']);
     });
     Route::get('debug/config', [HealthController::class, 'debugConfig']);
 });

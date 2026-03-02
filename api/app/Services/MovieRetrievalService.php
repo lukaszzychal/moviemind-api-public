@@ -34,14 +34,14 @@ class MovieRetrievalService
      * @param  string  $slug  Movie slug
      * @param  string|null  $descriptionId  Description ID (UUID) or null
      */
-    public function retrieveMovie(string $slug, ?string $descriptionId): MovieRetrievalResult
+    public function retrieveMovie(string $slug, ?string $descriptionId, ?string $locale = null): MovieRetrievalResult
     {
         // Parse slug to check if it contains year
         $parsed = Movie::parseSlug($slug);
         $titleSlug = \Illuminate\Support\Str::slug($parsed['title']);
 
         // Check cache first for exact slug match (before disambiguation logic)
-        $cacheKey = $this->generateCacheKey($slug, $descriptionId);
+        $cacheKey = $this->generateCacheKey($slug, $descriptionId, $locale);
         if ($cachedData = Cache::get($cacheKey)) {
             return MovieRetrievalResult::fromCache($cachedData);
         }
@@ -279,6 +279,16 @@ class MovieRetrievalService
             return $this->handleSingleTmdbResult($searchResults[0], $slug, $descriptionId, $validation);
         }
 
+        // TMDB search returned empty - if verification is required, return not found
+        if (Feature::active('tmdb_verification')) {
+            return MovieRetrievalResult::notFound();
+        }
+
+        // Otherwise allow generation without TMDB data (slug already validated)
+        if (Feature::active('ai_description_generation')) {
+            return $this->queueGenerationWithoutTmdb($slug, $validation);
+        }
+
         return MovieRetrievalResult::notFound();
     }
 
@@ -431,11 +441,35 @@ class MovieRetrievalService
      * @param  string|null  $descriptionId  Description ID (UUID) or null
      * @return string Cache key
      */
-    private function generateCacheKey(string $slug, ?string $descriptionId): string
+    /**
+     * Generate cache key for movie.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  string|null  $descriptionId  Description ID (UUID) or null
+     * @param  string|null  $locale  Locale code (e.g. en-US)
+     * @return string Cache key
+     */
+    private function generateCacheKey(string $slug, ?string $descriptionId, ?string $locale = null): string
     {
         $suffix = $descriptionId !== null ? 'desc:'.$descriptionId : 'desc:default';
+        if ($locale !== null) {
+            $suffix .= ':lang:'.$locale;
+        }
 
         return 'movie:'.$slug.':'.$suffix;
+    }
+
+    public function putCache(string $slug, ?string $descriptionId, ?string $locale, array $data): void
+    {
+        $cacheKey = $this->generateCacheKey($slug, $descriptionId, $locale);
+        // Cache for 1 hour
+        Cache::put($cacheKey, $data, now()->addHour());
+    }
+
+    public function forgetCache(string $slug, ?string $descriptionId = null, ?string $locale = null): void
+    {
+        $cacheKey = $this->generateCacheKey($slug, $descriptionId, $locale);
+        Cache::forget($cacheKey);
     }
 
     /**

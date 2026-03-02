@@ -32,31 +32,31 @@ class MovieCollectionTest extends TestCase
      */
     public function test_get_collection_returns_collection_with_movies(): void
     {
-        // Given: Movies in the same collection (use unique slugs to avoid conflicts with seeder)
-        $uniqueSuffix = time();
+        // Given: Movies in the same collection (use unique slugs/titles to avoid unique constraint)
+        $uniqueSuffix = uniqid('', true);
         $movie1 = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
             'tmdb_id' => 603,
         ]);
 
         $movie2 = Movie::factory()->create([
-            'title' => 'The Matrix Reloaded',
+            'title' => 'The Matrix Reloaded '.$uniqueSuffix,
             'slug' => 'the-matrix-reloaded-2003-'.$uniqueSuffix,
             'release_year' => 2003,
             'tmdb_id' => 604,
         ]);
 
         $movie3 = Movie::factory()->create([
-            'title' => 'The Matrix Revolutions',
+            'title' => 'The Matrix Revolutions '.$uniqueSuffix,
             'slug' => 'the-matrix-revolutions-2003-'.$uniqueSuffix,
             'release_year' => 2003,
             'tmdb_id' => 605,
         ]);
 
-        // Create TMDb snapshots with belongs_to_collection
-        $collectionId = 234;
+        // Create TMDb snapshots with belongs_to_collection (use unique id so seed data doesn't add extra movies)
+        $collectionId = 99901;
         $collectionName = 'The Matrix Collection';
 
         TmdbSnapshot::create([
@@ -132,9 +132,10 @@ class MovieCollectionTest extends TestCase
     public function test_get_collection_returns_404_when_movie_has_no_collection(): void
     {
         // Given: A movie without collection
+        $suffix = uniqid('', true);
         $movie = Movie::factory()->create([
-            'title' => 'Standalone Movie',
-            'slug' => 'standalone-movie-2020',
+            'title' => 'Standalone Movie '.$suffix,
+            'slug' => 'standalone-movie-2020-'.$suffix,
             'release_year' => 2020,
         ]);
 
@@ -164,9 +165,10 @@ class MovieCollectionTest extends TestCase
     public function test_get_collection_returns_404_when_no_snapshot(): void
     {
         // Given: A movie without TMDb snapshot
+        $suffix = uniqid('', true);
         $movie = Movie::factory()->create([
-            'title' => 'Movie Without Snapshot',
-            'slug' => 'movie-without-snapshot-2020',
+            'title' => 'Movie Without Snapshot '.$suffix,
+            'slug' => 'movie-without-snapshot-2020-'.$suffix,
             'release_year' => 2020,
         ]);
 
@@ -194,16 +196,16 @@ class MovieCollectionTest extends TestCase
      */
     public function test_collection_response_includes_hateoas_links(): void
     {
-        // Given: A movie with collection (use unique slug to avoid conflicts with seeder)
-        $uniqueSuffix = time();
+        // Given: A movie with collection (use unique slug/title to avoid unique constraint)
+        $uniqueSuffix = uniqid('', true);
         $movie = Movie::factory()->create([
-            'title' => 'The Matrix',
+            'title' => 'The Matrix '.$uniqueSuffix,
             'slug' => 'the-matrix-1999-'.$uniqueSuffix,
             'release_year' => 1999,
             'tmdb_id' => 603,
         ]);
 
-        $collectionId = 234;
+        $collectionId = 99902;
         TmdbSnapshot::create([
             'entity_type' => 'MOVIE',
             'entity_id' => $movie->id,

@@ -10,15 +10,34 @@ use App\Services\JobStatusService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
+/**
+ * Action for queueing movie generation jobs.
+ *
+ * Note: This action may receive TMDB data for movie verification.
+ * ⚠️ TMDB License: Commercial license required for production use.
+ * See: docs/LEGAL_TMDB_LICENSE.md
+ */
 class QueueMovieGenerationAction
 {
     public function __construct(
         private readonly JobStatusService $jobStatusService
     ) {}
 
+    /**
+     * Queue movie generation job.
+     *
+     * @param  string  $slug  Movie slug
+     * @param  null|float|string  $confidence  Confidence level
+     * @param  Movie|null  $existingMovie  Existing movie (if any)
+     * @param  string|null  $locale  Locale for generation
+     * @param  string|null  $contextTag  Context tag for generation
+     * @param  array|null  $tmdbData  TMDB verification data (if available)
+     *                                ⚠️ Note: TMDB requires commercial license for production use
+     * @return array Job status response
+     */
     public function handle(
         string $slug,
-        ?float $confidence = null,
+        null|float|string $confidence = null,
         ?Movie $existingMovie = null,
         ?string $locale = null,
         ?string $contextTag = null,
@@ -31,6 +50,7 @@ class QueueMovieGenerationAction
             'existing_movie_id' => $existingMovie?->id,
             'existing_movie_slug' => $existingMovie?->slug,
         ]);
+        $confidence = is_string($confidence) ? (float) $confidence : $confidence; // Ensure confidence is float or null
         $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
         $normalizedContextTag = $this->normalizeContextTag($contextTag);
 

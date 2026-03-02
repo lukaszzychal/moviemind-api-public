@@ -1,11 +1,8 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Laravel\Horizon\Horizon;
 use Laravel\Horizon\HorizonApplicationServiceProvider;
 
@@ -27,55 +24,63 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      * Register the Horizon gate.
      *
      * This gate determines who can access Horizon in non-local environments.
-     *
-     * Security rules:
-     * - Local and staging environments can bypass authorization
-     * - Production MUST require authorization (allowed_emails must be set)
-     * - Production MUST NOT be in bypass_environments
      */
     protected function gate(): void
     {
         Gate::define('viewHorizon', function ($user = null) {
-            $currentEnv = config('app.env');
-            $bypassEnvironments = collect(config('horizon.auth.bypass_environments', []))
-                ->map(fn ($env) => trim((string) $env))
-                ->filter()
-                ->all();
+            $bypassEnvs = config('horizon.auth.bypass_environments', []);
+            $allowedEmails = config('horizon.auth.allowed_emails', []);
+            $env = config('app.env', app()->environment());
 
-            // Security safeguard: Production should NEVER bypass authorization
-            // Even if accidentally configured, we enforce authentication in production
-            if ($currentEnv === 'production' && in_array('production', $bypassEnvironments, true)) {
-                Log::warning('Horizon: Production environment is in bypass_environments. This is a security risk!', [
-                    'environment' => $currentEnv,
-                    'bypass_environments' => $bypassEnvironments,
-                ]);
-                // Force authentication even if production is in bypass list
-                $bypassEnvironments = array_filter($bypassEnvironments, fn ($env) => $env !== 'production');
+            // 1. Production never bypasses: always require auth (allowed_emails or Basic Auth)
+            if ($env === 'production') {
+                $request = request();
+                if ($request && $request->attributes->get('horizon.basic_auth_verified')) {
+                    return true;
+                }
+
+                $email = optional($user)->email ?? null;
+                if ($email === null) {
+                    return false;
+                }
+
+                $allowedEmails = array_map('strtolower', $allowedEmails);
+
+                return in_array(strtolower($email), $allowedEmails);
             }
 
-            if (in_array($currentEnv, $bypassEnvironments, true)) {
+            // 2. Non-production: allow bypass environments
+            if (in_array($env, $bypassEnvs)) {
                 return true;
             }
 
-            $authorizedEmails = collect(config('horizon.auth.allowed_emails', []))
-                ->map(fn ($email) => mb_strtolower(trim($email)))
-                ->filter()
-                ->all();
-
-            // Security safeguard: Production MUST have authorized emails configured
-            if ($currentEnv === 'production' && empty($authorizedEmails)) {
-                Log::error('Horizon: Production environment requires HORIZON_ALLOWED_EMAILS to be set!', [
-                    'environment' => $currentEnv,
-                ]);
-
-                return false;
+            // 3. Check Basic Auth middleware
+            $request = request();
+            if ($request && $request->attributes->get('horizon.basic_auth_verified')) {
+                return true;
             }
 
-            if (empty($authorizedEmails)) {
+            // 4. Check allowed emails
+            $email = optional($user)->email ?? null;
+            if ($email === null) {
                 return false;
             }
+            $allowedEmails = array_map('strtolower', $allowedEmails);
 
-            return in_array(mb_strtolower(optional($user)->email ?? ''), $authorizedEmails, true);
+            return in_array(strtolower($email), $allowedEmails);
+        });
+    }
+
+    /**
+     * Configure the Horizon authorization services.
+     */
+    protected function authorization(): void
+    {
+        $this->gate();
+
+        Horizon::auth(function ($request) {
+            // We defer entirely to the Gate, which handles environment checks and Basic Auth
+            return Gate::check('viewHorizon', [$request->user()]);
         });
     }
 }

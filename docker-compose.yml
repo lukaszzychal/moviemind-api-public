@@ -10,12 +10,14 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./api:/var/www/html:cached
+    env_file:
+      - ./api/.env
     environment:
       APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-1}
       APP_URL: http://localhost:8000
       QUEUE_CONNECTION: redis
-      AI_SERVICE: ${AI_SERVICE:-mock}
+      AI_SERVICE: ${AI_SERVICE:-real}
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
@@ -51,22 +53,24 @@ services:
       dockerfile: docker/php/Dockerfile
       target: local
     container_name: moviemind-horizon
-    command: sh -lc "php artisan horizon"
+    command: php artisan horizon
     working_dir: /var/www/html
     volumes:
       - ./api:/var/www/html:cached
+    env_file:
+      - ./api/.env
     environment:
-      QUEUE_CONNECTION: redis
-      REDIS_HOST: redis
-      AI_SERVICE: ${AI_SERVICE:-mock}
       APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-1}
+      QUEUE_CONNECTION: redis
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: ${DB_DATABASE:-moviemind}
       DB_USERNAME: ${DB_USERNAME:-moviemind}
       DB_PASSWORD: ${DB_PASSWORD:-moviemind}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
       OPENAI_URL: "${OPENAI_URL:-https://api.openai.com/v1/chat/completions}"
@@ -74,9 +78,8 @@ services:
       OPENAI_BACKOFF_ENABLED: "${OPENAI_BACKOFF_ENABLED:-true}"
       OPENAI_BACKOFF_INTERVALS: "${OPENAI_BACKOFF_INTERVALS:-20,60,180}"
     depends_on:
-      - php
-      - db
       - redis
+      - db
 
   db:
     image: postgres:15
@@ -95,7 +98,7 @@ services:
     container_name: moviemind-redis
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - redis_data:/data
 

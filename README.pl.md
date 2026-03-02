@@ -14,7 +14,9 @@
 
 ## 🎯 Przegląd projektu
 
-MovieMind API to usługa REST, która generuje i przechowuje unikalne opisy filmów, seriali i aktorów przy użyciu technologii AI. W przeciwieństwie do klasycznych baz (IMDb, TMDb) MovieMind dostarcza oryginalne treści, obsługując wiele języków oraz różne style narracji.
+MovieMind API to **projekt portfolio/demo**, który demonstruje usługę REST do generowania i przechowywania unikalnych opisów filmów, seriali i aktorów przy użyciu technologii AI. W przeciwieństwie do klasycznych baz (IMDb, TMDb) MovieMind dostarcza oryginalne treści, obsługując wiele języków oraz różne style narracji.
+
+**Uwaga:** To projekt portfolio z pełną funkcjonalnością do celów demonstracyjnych. Dla wdrożenia produkcyjnego mogą być wymagane licencje komercyjne (zobacz [Licencje API zewnętrznych](#-licencje-api-zewnętrznych) poniżej).
 
 ## ✨ Kluczowe funkcje
 
@@ -211,7 +213,7 @@ Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 | Generowanie AI | `AI_SERVICE=mock` (deterministyczne demo) i `AI_SERVICE=real` z OpenAI | Multi-provider, kontrola kosztów, strażnicy halucynacji |
 | Doświadczenie admina | Panel admin z flagami, CRUD, konta demo | Pełna konsola operacyjna z billingiem, analityką, audytem |
 | Autoryzacja | Demo auth dla admina + otwarte API publiczne | Klucze na plan, OAuth/JWT, limity wg poziomów |
-| Webhooki | Symulator endpointów + inspektor żądań | Produkcyjne procesory webhooków (RapidAPI/Stripe, partnerzy) |
+| Webhooki | Symulator endpointów + inspektor żądań | Produkcyjne procesory webhooków (Stripe/PayPal, partnerzy) |
 | Monitoring | Dashboardy Telescope, przykładowe Grafana | Zaawansowane metryki, SLA, alerty on-call |
 | Lokalizacja | Przykładowe treści wielojęzyczne + glosariusz | Pełna ścieżka tłumaczeń, prompty per locale |
 | Dokumentacja | OpenAPI, notatki architektoniczne, przewodnik portfolio | Komercyjne runbooki, playbooki wdrożeniowe, dokumenty dla vendorów |
@@ -220,10 +222,40 @@ Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
 ## 🔐 Autoryzacja i dostęp
 
-- **Public demo:** endpointy API są otwarte, aby ułatwić lokalne testy i warsztaty. Panel admin korzysta z autoryzacji Laravel z kontami demo (dane w `.env.demo`). Pozwala to prezentować feature flagi, CRUD i monitoring kolejek bez upubliczniania sekretów.
-- **Wersja komercyjna:** zawiera klucze API dla klientów, OAuth/JWT, limity zależne od subskrypcji, integracje billingowe oraz szczegółowe dzienniki audytu. Te elementy znajdują się w repo prywatnym.
+W projekcie wykorzystywane są trzy typy autoryzacji, zależnie od kontekstu i endpointu.
 
-Aby lokalnie przetestować logowanie, włącz konta demo i zaloguj się do panelu admin. Dostęp do wersji produkcyjnej wymaga zgody na repo prywatne.
+### Podsumowanie typów autoryzacji
+
+| Typ autoryzacji | Gdzie używany | Nagłówek / Metoda | Przykład |
+|-----------------|---------------|-------------------|----------|
+| **ApiKeyAuth** | `/api/v1/generate` i publiczne API | `X-API-Key` | `mm_abc123...` |
+| **AdminToken** | `/api/v1/admin/*` | `X-Admin-Token` | Token z `.env` |
+| **Basic Auth** | `/horizon` (produkcja) | HTTP Basic Auth | Username + Password |
+
+### Szczegóły
+
+1. **ApiKeyAuth (Public API)**
+   - Używany do autoryzacji zapytań publicznych, np. generowania opisów.
+   - Wymaga nagłówka `X-API-Key`.
+
+2. **AdminToken (Admin API)**
+   - Używany do zabezpieczenia endpointów administracyjnych.
+   - Wymaga nagłówka `X-Admin-Token`.
+   - Wartość tokena jest konfigurowana w pliku `.env`.
+
+3. **Basic Auth (Horizon UI)**
+   - Służy do zabezpieczenia panelu monitorowania kolejek Laravel Horizon.
+   - **Ważne:** Używane tylko na środowisku produkcyjnym (wymuszane przez middleware).
+   - W środowisku lokalnym (`local`) Basic Auth nie jest wymagane - możesz otworzyć `/horizon` bez logowania.
+
+> 💡 **Rekomendacja:** Dokumentacja Swagger może nie zawierać informacji o Basic Auth dla Horizon, ponieważ jest to osobny interfejs UI, a nie endpoint API REST.
+
+### Dostęp do wersji demo vs komercyjnej
+
+- **Public demo:** endpointy API są otwarte lub używają kluczy demonstracyjnych. Panel admin korzysta z uproszczonej autoryzacji.
+- **Wersja komercyjna:** może zawierać bardziej złożone mechanizmy, takie jak OAuth/JWT oraz limity zależne od subskrypcji.
+
+Aby lokalnie przetestować logowanie, upewnij się, że posiadasz odpowiednie klucze w pliku `.env`.
 
 ### Usuwanie ujawnionych sekretów z historii Git
 
@@ -287,10 +319,35 @@ To publiczne repo demonstracyjne. Pełne funkcje komercyjne dostępne są w repo
 
 Projekt objęty licencją MIT – szczegóły w pliku [LICENSE](LICENSE).
 
+---
+
+## ⚠️ Licencje API zewnętrznych
+
+> **Nota prawna:** Powyższe informacje są aktualne na dzień powstania dokumentacji. Warunki licencyjne dostawców zewnętrznych mogą ulec zmianie. Zalecamy samodzielną weryfikację aktualnych warunków bezpośrednio na stronach dostawców API przed wdrożeniem produkcyjnym.
+
+### TMDB (The Movie Database)
+
+**Użycie portfolio/demo:**
+- ✅ Użycie niekomercyjne dozwolone (z atrybucją)
+- Wymagana atrybucja: logo TMDB + tekst + link
+
+**Użycie produkcyjne:**
+- ❌ **Wymagana licencja komercyjna**
+- Kontakt: sales@themoviedb.org
+- Szacunkowe koszty: ~$149/miesiąc (małe aplikacje) do $42,000/rok (enterprise)
+- Szczegóły: [`docs/LEGAL_TMDB_LICENSE.md`](docs/LEGAL_TMDB_LICENSE.md)
+
+### TVmaze
+
+**Użycie portfolio i produkcyjne:**
+- ✅ Użycie komercyjne dozwolone (darmowe, licencja CC BY-SA)
+- Wymagana atrybucja: link do TVmaze
+- Szczegóły: [`docs/LEGAL_TVMAZE_LICENSE.md`](docs/LEGAL_TVMAZE_LICENSE.md)
+
 ## 🔗 Powiązane projekty
 
 - **Repo prywatne**: pełna wersja z billingiem, webhookami i panelem admin
-- **RapidAPI Marketplace**: publikacja produkcyjna API
+- **Billing Provider Integration**: opcjonalna integracja z Stripe/PayPal dla produkcji
 - **Strona dokumentacji**: rozbudowane materiały API
 
 ## 📞 Wsparcie

@@ -6,10 +6,12 @@
   "scripts": {
     "markdownlint": "markdownlint-cli2 '**/*.md'",
     "markdownlint:fix": "markdownlint-cli2-fix '**/*.md'",
-    "markdownlint:check": "markdownlint-cli2 '**/*.md'"
+    "markdownlint:check": "markdownlint-cli2 '**/*.md'",
+    "test:e2e": "playwright test --config=tests/e2e/playwright.config.ts"
   },
   "devDependencies": {
     "@playwright/mcp": "^0.0.54",
+    "@playwright/test": "^1.57.0",
     "markdownlint-cli2": "^0.20.0"
   },
   "engines": {

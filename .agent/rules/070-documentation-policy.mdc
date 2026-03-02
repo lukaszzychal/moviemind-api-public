@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+
+# Documentation policy (ADR + Knowledge Base)
+
+Create ADR only for important architectural decisions with real trade-offs:
+- technology choice
+- major pattern/strategy change
+- contract changes with consequences
+
+Create Knowledge docs for:
+- reusable solutions
+- non-trivial debugging findings
+- technical analyses needed later
+
+Do not create documentation for trivial tasks.
+When creating docs: keep them short, follow the project template, and link the related task.

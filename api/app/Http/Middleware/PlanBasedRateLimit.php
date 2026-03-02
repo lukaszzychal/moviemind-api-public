@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
  * - Monthly limit (from subscription plan)
  * - Per-minute rate limit (from subscription plan)
  *
- * This middleware should be used AFTER RapidApiAuth middleware
+ * This middleware should be used AFTER ApiKeyAuth middleware
  * to ensure API key is available in request attributes.
  */
 class PlanBasedRateLimit
@@ -37,11 +37,11 @@ class PlanBasedRateLimit
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Get API key from request attributes (set by RapidApiAuth middleware)
+        // Get API key from request attributes (set by ApiKeyAuth middleware)
         $apiKey = $request->attributes->get('api_key');
 
         if ($apiKey === null || ! ($apiKey instanceof ApiKey)) {
-            // If no API key, allow request (RapidApiAuth should have handled this)
+            // If no API key, allow request (ApiKeyAuth should have handled this)
             return $next($request);
         }
 

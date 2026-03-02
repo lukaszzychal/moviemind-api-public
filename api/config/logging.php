@@ -58,6 +58,13 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        // Production: file (daily rotation) + stderr (so Docker/container runtime captures logs)
+        'production' => [
+            'driver' => 'stack',
+            'channels' => ['daily', 'stderr'],
+            'ignore_exceptions' => false,
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
