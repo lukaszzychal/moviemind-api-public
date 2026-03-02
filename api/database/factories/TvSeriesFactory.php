@@ -23,7 +23,8 @@ class TvSeriesFactory extends Factory
     {
         $title = $this->faker->words(3, true);
         $firstAirYear = $this->faker->year();
-        $firstAirDate = $this->faker->dateTimeBetween("{$firstAirYear}-01-01", "{$firstAirYear}-12-31");
+        $endOfRange = (int) $firstAirYear === (int) date('Y') ? 'now' : "{$firstAirYear}-12-31";
+        $firstAirDate = $this->faker->dateTimeBetween("{$firstAirYear}-01-01", $endOfRange);
 
         return [
             'title' => ucwords($title),
