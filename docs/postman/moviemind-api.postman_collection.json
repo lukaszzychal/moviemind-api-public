@@ -200,10 +200,16 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 202\", function () { pm.response.to.have.status(202); });",
+                  "// When generation enabled and slug valid: 202 + job_id; else 404 (e.g. TMDB key missing in CI)",
+                  "const code = pm.response.code;",
                   "const json = pm.response.json();",
-                  "pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
-                  "if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }"
+                  "pm.test(\"Status code is 202 or 404\", function () { pm.expect([202, 404]).to.include(code); });",
+                  "if (code === 202) {",
+                  "  pm.test(\"Response has job id\", function () { pm.expect(json).to.have.property('job_id'); });",
+                  "  if (json.job_id) { pm.collectionVariables.set('jobId', json.job_id); }",
+                  "} else {",
+                  "  pm.test(\"404 has error message\", function () { pm.expect(json).to.have.property('error'); });",
+                  "}"
                 ]
               }
             }

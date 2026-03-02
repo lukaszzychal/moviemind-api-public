@@ -182,6 +182,7 @@ class HtmlSanitizerTest extends TestCase
 
     public function test_sanitize_does_not_log_safe_content(): void
     {
+        $this->expectNotToPerformAssertions();
         Log::shouldReceive('warning')
             ->never();
 

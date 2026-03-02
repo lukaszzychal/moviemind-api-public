@@ -123,6 +123,7 @@ class PreGenerationValidatorTest extends TestCase
 
     public function test_movie_job_bypasses_pre_validation_when_hallucination_guard_off(): void
     {
+        $this->expectNotToPerformAssertions();
         Feature::activate('ai_description_generation');
         Feature::deactivate('hallucination_guard');
 

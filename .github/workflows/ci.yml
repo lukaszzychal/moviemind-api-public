@@ -103,7 +103,7 @@ jobs:
           DB_DATABASE: moviemind_test
           DB_USERNAME: postgres
           DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
-        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test --parallel
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test
 
   test-postgresql:
     name: Test PostgreSQL-specific features
