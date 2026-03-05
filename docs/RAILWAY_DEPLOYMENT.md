@@ -53,6 +53,23 @@ railway variables set AI_SERVICE=real
 - `DB_HOST=postgres-xxx.railway.internal` (ustawiane automatycznie przez Railway)
 - `REDIS_HOST=redis-xxx.railway.internal` (ustawiane automatycznie przez Railway)
 
+### 3. Publiczny staging – wymagane zabezpieczenia
+
+Staging ma odzwierciedlać produkcję i jest dostępny na publicznym adresie. **Nie** używaj bypassu auth na stagingu.
+
+- **ADMIN_AUTH_BYPASS_ENVS** – musi być **puste** (nie wpisuj `staging`). W przeciwnym razie endpointy `/api/v1/admin/*` są dostępne bez tokenu.
+- **HORIZON_AUTH_BYPASS_ENVS** – musi być **puste** (nie wpisuj `staging`). W przeciwnym razie dashboard `/horizon` jest dostępny bez logowania.
+
+**Wymagane zmienne na publicznym stagingu:**
+
+- **ADMIN_API_TOKEN** – silny, losowy token (np. 64 znaki). Używany w nagłówku `X-Admin-Token` lub `Authorization: Bearer <token>` przy wywołaniach Admin API.
+- **HORIZON_BASIC_AUTH_PASSWORD** – silne hasło (min. 32 znaki). Logowanie do Horizon (username = email z listy).
+- **HORIZON_ALLOWED_EMAILS** – adresy e-mail (po przecinku) uprawnione do dostępu do Horizon.
+- **ADMIN_ALLOWED_EMAILS** – adresy e-mail uprawnione do Admin API (gdzie używane Basic Auth).
+- **ADMIN_BASIC_AUTH_PASSWORD** – silne hasło dla Admin API (gdzie używane Basic Auth).
+
+Wzoruj się na `env/staging.env.example` (zgodny z `env/production.env.example`, tylko APP_ENV, APP_URL i DB_DATABASE różne).
+
 ---
 
 ## 🚀 Proces wdrożenia
@@ -203,6 +220,7 @@ curl https://moviemind-api-staging.up.railway.app/
 - [ ] Utworzony GitHub Release
 - [ ] Zmiany zmergowane do `main`
 - [ ] Railway deployment zakończony pomyślnie
+- [ ] **Staging:** ADMIN_AUTH_BYPASS_ENVS i HORIZON_AUTH_BYPASS_ENVS puste; ustawione ADMIN_API_TOKEN, HORIZON_BASIC_AUTH_PASSWORD, HORIZON_ALLOWED_EMAILS
 - [ ] Migracje uruchomione (przez Railway Web UI Shell)
 - [ ] Endpoint `/api/v1/health/openai` działa
 - [ ] Endpoint `/api/v1/movies/search` działa (test z parametrami)

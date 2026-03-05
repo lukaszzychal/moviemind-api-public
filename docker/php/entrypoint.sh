@@ -6,24 +6,72 @@ echo "=========================================="
 echo "APP_ENV: ${APP_ENV:-production}"
 echo "APP_DEBUG: ${APP_DEBUG:-0}"
 
+# On Railway (and similar), Postgres often exposes only DATABASE_URL. Derive DB_* for the wait loop and Laravel.
+if [ -n "$DATABASE_URL" ] && { [ -z "$DB_HOST" ] || [ "$DB_HOST" = "db" ]; }; then
+    echo "ℹ️  Using DATABASE_URL for database connection (Railway/cloud)"
+    # Parse postgres://user:pass@host:port/dbname (or postgresql://)
+    _url="${DATABASE_URL#*://}"   # remove scheme
+    _url="${_url#*@}"              # remove user:pass@
+    _host="${_url%%:*}"
+    _rest="${_url#*:}"
+    _port="${_rest%%/*}"
+    _db="${_rest#*/}"
+    _db="${_db%%\?*}"
+    export DB_HOST="${DB_HOST:-$_host}"
+    export DB_PORT="${DB_PORT:-$_port}"
+    export DB_DATABASE="${DB_DATABASE:-$_db}"
+    # username and password from URL (optional; Laravel can use URL for connection)
+    if echo "$DATABASE_URL" | grep -q '@'; then
+        _userpass="${DATABASE_URL#*://}"
+        _userpass="${_userpass%%@*}"
+        export DB_USERNAME="${DB_USERNAME:-${_userpass%%:*}}"
+        export DB_PASSWORD="${DB_PASSWORD:-${_userpass#*:}}"
+    fi
+fi
+
 # Wait for database to be ready (max 30 seconds)
-echo "⏳ Waiting for database connection..."
+echo "⏳ Waiting for database connection... [${DB_HOST}:${DB_PORT}]"
+echo "   Check: DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD or DATABASE_URL (e.g. from Railway Postgres)"
+echo "   Attempt 0/30... waiting 1 second"
+sleep 1
+
 MAX_ATTEMPTS=30
 ATTEMPT=0
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-    # Try to connect to database using a simple query
-    if php -r "try { \$pdo = new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); \$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); echo 'connected'; } catch (Exception \$e) { exit(1); }" 2>/dev/null; then
+    # Try to connect to database using a simple query (use DATABASE_URL in PHP if set and DB_* missing)
+    if php -r "
+        \$url = getenv('DATABASE_URL');
+        if (\$url && (getenv('DB_HOST') === false || getenv('DB_HOST') === '' || getenv('DB_HOST') === 'db')) {
+            \$parsed = parse_url(\$url);
+            \$host = \$parsed['host'] ?? 'localhost';
+            \$port = \$parsed['port'] ?? 5432;
+            \$db   = ltrim(\$parsed['path'] ?? 'laravel', '/');
+            \$user = \$parsed['user'] ?? 'postgres';
+            \$pass = \$parsed['pass'] ?? '';
+            \$dsn  = \"pgsql:host=\$host;port=\$port;dbname=\$db\";
+        } else {
+            \$dsn  = 'pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname='.getenv('DB_DATABASE');
+            \$user = getenv('DB_USERNAME');
+            \$pass = getenv('DB_PASSWORD');
+        }
+        try {
+            \$pdo = new PDO(\$dsn, \$user, \$pass);
+            \$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            echo 'connected';
+        } catch (Exception \$e) { exit(1); }
+    " 2>/dev/null; then
         echo "✅ Database connection established"
         break
     fi
-    
+
     ATTEMPT=$((ATTEMPT + 1))
     if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
         echo "❌ ERROR: Could not connect to database after ${MAX_ATTEMPTS} attempts"
+        echo "   Check: DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD or DATABASE_URL (e.g. from Railway Postgres)"
         exit 1
     fi
-    
+
     echo "   Attempt ${ATTEMPT}/${MAX_ATTEMPTS}... waiting 1 second"
     sleep 1
 done
