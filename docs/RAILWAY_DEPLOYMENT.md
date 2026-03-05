@@ -68,6 +68,14 @@ Staging ma odzwierciedlać produkcję i jest dostępny na publicznym adresie. **
 - **ADMIN_ALLOWED_EMAILS** – adresy e-mail uprawnione do Admin API (gdzie używane Basic Auth).
 - **ADMIN_BASIC_AUTH_PASSWORD** – silne hasło dla Admin API (gdzie używane Basic Auth).
 
+**Logowanie do panelu admina (https://.../admin):**
+
+- **ADMIN_EMAIL** – adres e-mail użytkownika do logowania w panelu (np. `admin@example.com`). Używane przez `AdminUserSeeder`.
+- **ADMIN_NAME** – wyświetlana nazwa (np. `Admin User`).
+- **ADMIN_PASSWORD** – hasło do logowania. Ustaw silne hasło w Railway (Variables).
+
+Po pierwszym wdrożeniu lub po `migrate:fresh` musisz uruchomić seeder, który utworzy użytkownika w tabeli `users` (patrz sekcja „Utworzenie użytkownika admina” poniżej).
+
 Wzoruj się na `env/staging.env.example` (zgodny z `env/production.env.example`, tylko APP_ENV, APP_URL i DB_DATABASE różne).
 
 ---
@@ -153,6 +161,16 @@ railway ssh -s moviemind-api-staging "php artisan migrate --force"
 railway ssh -s moviemind-api-staging "php artisan migrate:fresh --force"
 ```
 
+### Utworzenie użytkownika admina (panel /admin)
+
+Po `migrate:fresh` lub przy pierwszym wdrożeniu baza nie zawiera użytkowników. Aby móc logować się do panelu admina (`/admin/login`), ustaw w Railway Variables: **ADMIN_EMAIL**, **ADMIN_NAME**, **ADMIN_PASSWORD**, a następnie uruchom seeder:
+
+```bash
+railway ssh -s moviemind-api-staging -e staging "php artisan db:seed --class=AdminUserSeeder --force"
+```
+
+Seeder utworzy użytkownika w tabeli `users` z podanym emailem i hasłem. Loguj się na `/admin/login` tym adresem e-mail i hasłem.
+
 **Jeśli `railway ssh` zwraca błąd "Device not configured" na macOS:**
 - Sprawdź czy Railway CLI jest zaktualizowane: `railway --version`
 - Spróbuj użyć pełnej ścieżki: `railway ssh -s moviemind-api-staging -e staging`
@@ -221,6 +239,7 @@ curl https://moviemind-api-staging.up.railway.app/
 - [ ] Zmiany zmergowane do `main`
 - [ ] Railway deployment zakończony pomyślnie
 - [ ] **Staging:** ADMIN_AUTH_BYPASS_ENVS i HORIZON_AUTH_BYPASS_ENVS puste; ustawione ADMIN_API_TOKEN, HORIZON_BASIC_AUTH_PASSWORD, HORIZON_ALLOWED_EMAILS
+- [ ] **Panel /admin:** ustawione ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD; po migrate:fresh uruchomiony `db:seed --class=AdminUserSeeder --force`
 - [ ] Migracje uruchomione (przez Railway Web UI Shell)
 - [ ] Endpoint `/api/v1/health/openai` działa
 - [ ] Endpoint `/api/v1/movies/search` działa (test z parametrami)
@@ -235,12 +254,12 @@ Jeśli potrzebujesz czystej bazy danych:
 
 1. **Uwaga:** To usunie wszystkie dane!
 
-2. Przez Railway Web UI Shell:
+2. Przez Railway Web UI Shell (lub `railway ssh`):
    ```bash
-   cd api
    php artisan migrate:fresh --force
-   php artisan db:seed --force  # Tylko jeśli APP_ENV != staging/production
+   php artisan db:seed --class=AdminUserSeeder --force   # Tworzy użytkownika do logowania w /admin
    ```
+   Upewnij się, że w Variables są ustawione **ADMIN_EMAIL** i **ADMIN_PASSWORD** – seeder tworzy użytkownika na ich podstawie.
 
 3. Lub ręcznie przez Railway Dashboard:
    - Usuń baze danych PostgreSQL
@@ -285,5 +304,5 @@ curl https://moviemind-api-staging.up.railway.app/api/v1/movies/search?q=matrix
 
 ---
 
-**Ostatnia aktualizacja:** 2025-12-28
+**Ostatnia aktualizacja:** 2026-03-05
 
