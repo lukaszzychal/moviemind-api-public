@@ -50,7 +50,7 @@ railway variables set AI_SERVICE=real
 - `OPENAI_API_KEY=...`
 - `TMDB_API_KEY=...`
 - `DB_CONNECTION=pgsql`
-- `DB_HOST=postgres-xxx.railway.internal` (ustawiane automatycznie przez Railway)
+- `DB_HOST` / `DATABASE_URL` – z serwisu Postgres (Reference w Variables). Dla wewnętrznego hosta (`*.railway.internal`) ustaw **`DB_SSLMODE=disable`** (unika błędów SSL).
 - `REDIS_HOST=redis-xxx.railway.internal` (ustawiane automatycznie przez Railway)
 
 ### 3. Publiczny staging – wymagane zabezpieczenia

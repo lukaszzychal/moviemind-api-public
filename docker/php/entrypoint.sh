@@ -39,10 +39,11 @@ MAX_ATTEMPTS=30
 ATTEMPT=0
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-    # Try to connect to database using a simple query (use DATABASE_URL in PHP if set and DB_* missing)
-    if php -r "
+    # Try to connect (Railway internal Postgres needs sslmode=disable to avoid SSL EOF errors)
+    CONNECT_OUT=$(php -r "
         \$url = getenv('DATABASE_URL');
-        if (\$url && (getenv('DB_HOST') === false || getenv('DB_HOST') === '' || getenv('DB_HOST') === 'db')) {
+        \$host = getenv('DB_HOST');
+        if (\$url && (\$host === false || \$host === '' || \$host === 'db')) {
             \$parsed = parse_url(\$url);
             \$host = \$parsed['host'] ?? 'localhost';
             \$port = \$parsed['port'] ?? 5432;
@@ -51,23 +52,36 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             \$pass = \$parsed['pass'] ?? '';
             \$dsn  = \"pgsql:host=\$host;port=\$port;dbname=\$db\";
         } else {
-            \$dsn  = 'pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname='.getenv('DB_DATABASE');
+            \$port = getenv('DB_PORT') ?: 5432;
+            \$db   = getenv('DB_DATABASE');
             \$user = getenv('DB_USERNAME');
             \$pass = getenv('DB_PASSWORD');
+            \$dsn  = \"pgsql:host=\$host;port=\$port;dbname=\$db\";
+        }
+        if (strpos(\$host, 'railway.internal') !== false) {
+            \$dsn .= ';sslmode=disable';
         }
         try {
             \$pdo = new PDO(\$dsn, \$user, \$pass);
             \$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             echo 'connected';
-        } catch (Exception \$e) { exit(1); }
-    " 2>/dev/null; then
+        } catch (Exception \$e) {
+            echo 'ERROR: ' . \$e->getMessage();
+            exit(1);
+        }
+    " 2>&1) || true
+    if [ "$CONNECT_OUT" = "connected" ]; then
         echo "✅ Database connection established"
         break
+    fi
+    if [ $ATTEMPT -eq 0 ] && [ -n "$CONNECT_OUT" ]; then
+        echo "   First attempt failed: $CONNECT_OUT"
     fi
 
     ATTEMPT=$((ATTEMPT + 1))
     if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
         echo "❌ ERROR: Could not connect to database after ${MAX_ATTEMPTS} attempts"
+        echo "   Last error: $CONNECT_OUT"
         echo "   Check: DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD or DATABASE_URL (e.g. from Railway Postgres)"
         exit 1
     fi
