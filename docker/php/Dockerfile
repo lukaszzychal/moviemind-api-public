@@ -22,10 +22,9 @@ RUN apk add --no-cache \
     freetype-dev libjpeg-turbo-dev libpng-dev libzip-dev \
     wget
 
-# Install PECL and Redis extension
-# Note: PECL will handle Redis dependencies automatically
+# Install PECL Redis extension (pin version to avoid "REST info xml" flakiness from pecl.php.net)
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
- && pecl install redis \
+ && pecl install redis-6.0.2 \
  && docker-php-ext-enable redis \
  && apk del .build-deps
 
