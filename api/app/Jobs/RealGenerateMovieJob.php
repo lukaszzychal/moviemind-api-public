@@ -189,32 +189,26 @@ class RealGenerateMovieJob implements ShouldQueue
         $locale = $this->resolveLocale();
         $contextTag = $this->determineContextTag($movie, $locale);
 
-        // Use generateMovieDescription if context_tag is specified, otherwise use generateMovie
-        if ($this->contextTag !== null || $contextTag !== ContextTag::DEFAULT->value) {
-            // Generate description with specific context tag
-            $aiResponse = $openAiClient->generateMovieDescription(
-                $movie->title,
-                $movie->release_year,
-                $movie->director ?? 'Unknown Director',
-                $contextTag,
-                $locale->value,
-                $this->tmdbData
-            );
+        // Always use generateMovieDescription so locale and context_tag from the request are respected
+        $aiResponse = $openAiClient->generateMovieDescription(
+            $movie->title,
+            $movie->release_year,
+            $movie->director ?? 'Unknown Director',
+            $contextTag,
+            $locale->value,
+            $this->tmdbData
+        );
 
-            // Convert to format expected by rest of method
-            if ($aiResponse['success'] === true) {
-                $aiResponse = [
-                    'success' => true,
-                    'title' => $movie->title,
-                    'release_year' => $movie->release_year,
-                    'director' => $movie->director,
-                    'description' => $aiResponse['description'] ?? null,
-                    'model' => $aiResponse['model'] ?? 'openai-gpt-4',
-                ];
-            }
-        } else {
-            // Use generateMovie for default context (backward compatibility)
-            $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
+        // Convert to format expected by rest of method
+        if ($aiResponse['success'] === true) {
+            $aiResponse = [
+                'success' => true,
+                'title' => $movie->title,
+                'release_year' => $movie->release_year,
+                'director' => $movie->director,
+                'description' => $aiResponse['description'] ?? null,
+                'model' => $aiResponse['model'] ?? 'openai-gpt-4',
+            ];
         }
 
         if ($aiResponse['success'] === false) {
@@ -971,7 +965,20 @@ class RealGenerateMovieJob implements ShouldQueue
             }
         }
 
-        $aiResponse = $openAiClient->generateMovie($this->slug, $this->tmdbData);
+        $locale = $this->resolveLocale();
+        $contextTagForPrompt = 'default';
+        if ($this->contextTag !== null) {
+            $normalized = $this->normalizeContextTag($this->contextTag);
+            if ($normalized !== null) {
+                $contextTagForPrompt = $normalized;
+            }
+        }
+        $aiResponse = $openAiClient->generateMovie(
+            $this->slug,
+            $this->tmdbData,
+            $locale->value,
+            $contextTagForPrompt
+        );
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';

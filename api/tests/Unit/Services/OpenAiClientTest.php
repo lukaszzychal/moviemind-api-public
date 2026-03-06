@@ -105,6 +105,52 @@ class OpenAiClientTest extends TestCase
         $this->assertEquals('Network error', $result['error']);
     }
 
+    public function test_generate_movie_prompt_includes_locale_and_context_tag(): void
+    {
+        $tmdbData = [
+            'title' => 'The Matrix',
+            'release_date' => '1999-03-31',
+            'overview' => 'A computer hacker learns about the true nature of reality.',
+            'id' => 603,
+        ];
+
+        Http::fake([
+            'api.openai.com/v1/chat/completions' => function ($request) {
+                $payload = $request->data();
+                $systemMessage = $payload['messages'][0]['content'];
+                $userMessage = $payload['messages'][1]['content'];
+
+                $this->assertStringContainsString('pl-PL', $systemMessage, 'System prompt should include requested locale');
+                $this->assertStringContainsString('pl-PL', $userMessage, 'User prompt should include requested locale');
+                $this->assertStringContainsString('critical', strtolower($systemMessage), 'System prompt should include context tag');
+                $this->assertStringContainsString('critical', strtolower($userMessage), 'User prompt should include context tag');
+                $this->assertStringContainsString('STRICT', $systemMessage, 'System prompt should include STRICT style instructions');
+                $this->assertStringContainsString('analytical', strtolower($systemMessage), 'System prompt should include critical-style wording');
+
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => json_encode([
+                                    'title' => 'The Matrix',
+                                    'release_year' => 1999,
+                                    'director' => 'Lana Wachowski',
+                                    'description' => 'Krytyczna analiza filmu.',
+                                    'genres' => ['Action', 'Sci-Fi'],
+                                    'cast' => [],
+                                ]),
+                            ],
+                        ],
+                    ],
+                ], 200);
+            },
+        ]);
+
+        $result = $this->client->generateMovie('the-matrix', $tmdbData, 'pl-PL', 'critical');
+        $this->assertTrue($result['success']);
+        $this->assertEquals('Krytyczna analiza filmu.', $result['description']);
+    }
+
     public function test_generate_person_returns_error_when_api_key_missing(): void
     {
         config(['services.openai.api_key' => '']);
@@ -199,15 +245,21 @@ class OpenAiClientTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertEquals('The Matrix', $result['title']);
-        // Missing fields should not be present or be null
+        // Missing fields should not be present or be null (runtime can be null when JSON omits them)
+        /** @var mixed $releaseYear */
+        $releaseYear = $result['release_year'] ?? null;
         if (array_key_exists('release_year', $result)) {
-            $this->assertNull($result['release_year']);
+            $this->assertNull($releaseYear);
         }
+        /** @var mixed $director */
+        $director = $result['director'] ?? null;
         if (array_key_exists('director', $result)) {
-            $this->assertNull($result['director']);
+            $this->assertNull($director);
         }
+        /** @var mixed $description */
+        $description = $result['description'] ?? null;
         if (array_key_exists('description', $result)) {
-            $this->assertNull($result['description']);
+            $this->assertNull($description);
         }
         $this->assertEquals([], $result['genres'] ?? []);
     }

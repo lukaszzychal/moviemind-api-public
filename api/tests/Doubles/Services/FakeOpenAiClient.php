@@ -108,7 +108,7 @@ class FakeOpenAiClient implements OpenAiClientInterface
     /**
      * {@inheritDoc}
      */
-    public function generateMovie(string $slug, ?array $tmdbData = null): array
+    public function generateMovie(string $slug, ?array $tmdbData = null, ?string $locale = null, ?string $contextTag = null): array
     {
         if (isset($this->movieResponses[$slug])) {
             return $this->movieResponses[$slug];
