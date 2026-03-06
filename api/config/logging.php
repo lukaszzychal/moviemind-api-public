@@ -58,10 +58,10 @@ return [
             'ignore_exceptions' => false,
         ],
 
-        // Production: file (daily rotation) + stderr (so Docker/container runtime captures logs)
+        // Production/staging: stderr only (container runtime captures logs, avoids file permission issues)
         'production' => [
             'driver' => 'stack',
-            'channels' => ['daily', 'stderr'],
+            'channels' => ['stderr'],
             'ignore_exceptions' => false,
         ],
 
