@@ -38,27 +38,33 @@ interface OpenAiClientInterface
      *
      * @param  string  $slug  Person slug
      * @param  array{name: string, birthday: string, place_of_birth: string, id: int, biography?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @param  string  $locale  Locale (pl-PL, en-US, etc.) – language for the biography
+     * @param  string  $contextTag  Context tag (modern, critical, humorous, default) – style of the biography
      * @return array{success: bool, name?: string, birth_date?: string, birthplace?: string, biography?: string, model?: string, error?: string}
      */
-    public function generatePerson(string $slug, ?array $tmdbData = null): array;
+    public function generatePerson(string $slug, ?array $tmdbData = null, string $locale = 'en-US', string $contextTag = 'default'): array;
 
     /**
      * Generate TV series information from a slug using AI.
      *
      * @param  string  $slug  TV Series slug
      * @param  array{name: string, first_air_date: string, overview: string, id: int}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @param  string  $locale  Locale (pl-PL, en-US, etc.) – language for the description
+     * @param  string  $contextTag  Context tag (modern, critical, humorous, default) – style of the description
      * @return array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, model?: string, error?: string}
      */
-    public function generateTvSeries(string $slug, ?array $tmdbData = null): array;
+    public function generateTvSeries(string $slug, ?array $tmdbData = null, string $locale = 'en-US', string $contextTag = 'default'): array;
 
     /**
      * Generate TV show information from a slug using AI.
      *
      * @param  string  $slug  TV Show slug
      * @param  array{name: string, first_air_date: string, overview: string, id: int}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @param  string  $locale  Locale (pl-PL, en-US, etc.) – language for the description
+     * @param  string  $contextTag  Context tag (modern, critical, humorous, default) – style of the description
      * @return array{success: bool, title?: string, first_air_year?: int, description?: string, genres?: array, show_type?: string, model?: string, error?: string}
      */
-    public function generateTvShow(string $slug, ?array $tmdbData = null): array;
+    public function generateTvShow(string $slug, ?array $tmdbData = null, string $locale = 'en-US', string $contextTag = 'default'): array;
 
     /**
      * Perform a lightweight health check against the OpenAI API.
