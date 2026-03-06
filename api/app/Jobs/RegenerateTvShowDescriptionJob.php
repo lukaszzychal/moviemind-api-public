@@ -66,10 +66,10 @@ class RegenerateTvShowDescriptionJob implements ShouldQueue
             return;
         }
 
-        // Generate new description using AI
-        // Note: generateTvShow doesn't support context_tag/locale directly,
-        // so we use the method and preserve original context_tag/locale
-        $result = $openAiClient->generateTvShow($tvShow->slug, null);
+        // Generate new description using AI (same locale and context_tag as the description being regenerated)
+        $localeValue = $description->locale->value;
+        $contextTag = $description->context_tag !== null ? $description->context_tag->value : 'default';
+        $result = $openAiClient->generateTvShow($tvShow->slug, null, $localeValue, $contextTag);
 
         if (! $result['success'] || empty($result['description'])) {
             Log::error('Failed to generate new description', [

@@ -164,7 +164,9 @@ class RealGenerateTvShowJob implements ShouldQueue
                 }
 
                 // Call AI to generate TV show data
-                $aiResponse = $openAiClient->generateTvShow($this->slug, $this->tmdbData);
+                $locale = $this->resolveLocale();
+                $contextTagForPrompt = $this->contextTag !== null ? ($this->normalizeContextTag($this->contextTag) ?? 'default') : 'default';
+                $aiResponse = $openAiClient->generateTvShow($this->slug, $this->tmdbData, $locale->value, $contextTagForPrompt);
 
                 if ($aiResponse['success'] === false) {
                     $error = $aiResponse['error'] ?? 'Unknown error';
@@ -298,7 +300,6 @@ class RealGenerateTvShowJob implements ShouldQueue
                     ]);
                 }
 
-                $locale = $this->resolveLocale();
                 $contextTag = $this->determineContextTag($tvShow, $locale);
 
                 $description = $this->persistDescription($tvShow, $locale, $contextTag, [
@@ -328,7 +329,9 @@ class RealGenerateTvShowJob implements ShouldQueue
         $tvShow->loadMissing('descriptions');
 
         // Call AI to generate description
-        $aiResponse = $openAiClient->generateTvShow($this->slug, $this->tmdbData);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($tvShow, $locale);
+        $aiResponse = $openAiClient->generateTvShow($this->slug, $this->tmdbData, $locale->value, $contextTag);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
@@ -352,8 +355,6 @@ class RealGenerateTvShowJob implements ShouldQueue
         }
 
         $descriptionText = $validation['sanitized'];
-
-        $locale = $this->resolveLocale();
         $willUpdateBaseline = $this->shouldUpdateBaseline($tvShow, $locale);
 
         $description = $willUpdateBaseline
@@ -365,7 +366,7 @@ class RealGenerateTvShowJob implements ShouldQueue
             : $this->persistDescription(
                 $tvShow,
                 $locale,
-                $this->determineContextTag($tvShow, $locale),
+                $contextTag,
                 [
                     'text' => (string) $descriptionText,
                     'origin' => DescriptionOrigin::GENERATED,

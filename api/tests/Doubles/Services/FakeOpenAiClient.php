@@ -143,7 +143,7 @@ class FakeOpenAiClient implements OpenAiClientInterface
     /**
      * {@inheritDoc}
      */
-    public function generatePerson(string $slug, ?array $tmdbData = null): array
+    public function generatePerson(string $slug, ?array $tmdbData = null, string $locale = 'en-US', string $contextTag = 'default'): array
     {
         if (isset($this->personResponses[$slug])) {
             return $this->personResponses[$slug];
@@ -159,7 +159,7 @@ class FakeOpenAiClient implements OpenAiClientInterface
     /**
      * {@inheritDoc}
      */
-    public function generateTvSeries(string $slug, ?array $tmdbData = null): array
+    public function generateTvSeries(string $slug, ?array $tmdbData = null, string $locale = 'en-US', string $contextTag = 'default'): array
     {
         if (isset($this->tvSeriesResponses[$slug])) {
             return $this->tvSeriesResponses[$slug];
@@ -175,7 +175,7 @@ class FakeOpenAiClient implements OpenAiClientInterface
     /**
      * {@inheritDoc}
      */
-    public function generateTvShow(string $slug, ?array $tmdbData = null): array
+    public function generateTvShow(string $slug, ?array $tmdbData = null, string $locale = 'en-US', string $contextTag = 'default'): array
     {
         if (isset($this->tvShowResponses[$slug])) {
             return $this->tvShowResponses[$slug];

@@ -66,11 +66,14 @@ class RegeneratePersonBioJob implements ShouldQueue
             return;
         }
 
-        // Generate new bio using AI
-        $contextTag = ($bio->context_tag !== null) ? $bio->context_tag->value : 'DEFAULT';
+        // Generate new bio using AI (same locale and context_tag as the bio being regenerated)
+        $contextTag = ($bio->context_tag !== null) ? $bio->context_tag->value : 'default';
+        $localeValue = $bio->locale->value;
         $result = $openAiClient->generatePerson(
             $person->slug,
-            null // No TMDb data for regeneration
+            null, // No TMDb data for regeneration
+            $localeValue,
+            $contextTag
         );
 
         if (! $result['success'] || empty($result['biography'])) {

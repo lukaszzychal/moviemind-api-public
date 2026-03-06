@@ -166,7 +166,9 @@ class RealGeneratePersonJob implements ShouldQueue
     private function refreshExistingPerson(Person $person, OpenAiClientInterface $openAiClient): void
     {
         $person->loadMissing('bios');
-        $aiResponse = $openAiClient->generatePerson($this->slug, $this->tmdbData);
+        $locale = $this->resolveLocale();
+        $contextTag = $this->determineContextTag($person, $locale);
+        $aiResponse = $openAiClient->generatePerson($this->slug, $this->tmdbData, $locale->value, $contextTag);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';
@@ -260,7 +262,7 @@ class RealGeneratePersonJob implements ShouldQueue
             : $this->persistBio(
                 $person,
                 $locale,
-                $this->determineContextTag($person, $locale),
+                $contextTag,
                 [
                     'text' => (string) $biography,
                     'origin' => DescriptionOrigin::GENERATED,
@@ -509,7 +511,9 @@ class RealGeneratePersonJob implements ShouldQueue
             }
         }
 
-        $aiResponse = $openAiClient->generatePerson($this->slug, $this->tmdbData);
+        $locale = $this->resolveLocale();
+        $contextTagForPrompt = $this->contextTag !== null ? ($this->normalizeContextTag($this->contextTag) ?? 'default') : 'default';
+        $aiResponse = $openAiClient->generatePerson($this->slug, $this->tmdbData, $locale->value, $contextTagForPrompt);
 
         if ($aiResponse['success'] === false) {
             $error = $aiResponse['error'] ?? 'Unknown error';

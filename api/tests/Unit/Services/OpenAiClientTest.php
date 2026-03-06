@@ -396,4 +396,141 @@ class OpenAiClientTest extends TestCase
         $result = $this->client->generatePerson('test-person');
         $this->assertTrue($result['success']);
     }
+
+    public function test_generate_person_prompt_includes_locale(): void
+    {
+        Http::fake([
+            'api.openai.com/v1/chat/completions' => function ($request) {
+                $payload = $request->data();
+                $systemMessage = $payload['messages'][0]['content'];
+                $userMessage = $payload['messages'][1]['content'];
+
+                $this->assertStringContainsString('pl-PL', $systemMessage, 'System prompt should include requested locale');
+                $this->assertStringContainsString('pl-PL', $userMessage, 'User prompt should include requested locale');
+                $this->assertStringContainsString('language', strtolower($systemMessage));
+                $this->assertStringContainsString('language', strtolower($userMessage), 'User prompt should include language instruction');
+
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => json_encode([
+                                    'name' => 'Test Person',
+                                    'birth_date' => '1990-01-01',
+                                    'birthplace' => 'Warsaw',
+                                    'biography' => 'Test biography in Polish.',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ], 200);
+            },
+        ]);
+
+        $result = $this->client->generatePerson('test-person', null, 'pl-PL');
+        $this->assertTrue($result['success']);
+        $this->assertEquals('Test biography in Polish.', $result['biography']);
+    }
+
+    public function test_generate_person_prompt_includes_context_tag(): void
+    {
+        Http::fake([
+            'api.openai.com/v1/chat/completions' => function ($request) {
+                $payload = $request->data();
+                $systemMessage = $payload['messages'][0]['content'];
+                $userMessage = $payload['messages'][1]['content'];
+
+                $this->assertStringContainsString('humorous', strtolower($systemMessage), 'System prompt should include context tag style');
+                $this->assertStringContainsString('humorous', strtolower($userMessage), 'User prompt should include context tag style');
+                $this->assertStringContainsString('witty', strtolower($systemMessage));
+
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => json_encode([
+                                    'name' => 'Test Person',
+                                    'birth_date' => '1990-01-01',
+                                    'birthplace' => 'Warsaw',
+                                    'biography' => 'A witty biography.',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ], 200);
+            },
+        ]);
+
+        $result = $this->client->generatePerson('test-person', null, 'en-US', 'humorous');
+        $this->assertTrue($result['success']);
+    }
+
+    public function test_generate_tv_series_prompt_includes_locale_and_context_tag(): void
+    {
+        Http::fake([
+            'api.openai.com/v1/chat/completions' => function ($request) {
+                $payload = $request->data();
+                $systemMessage = $payload['messages'][0]['content'];
+                $userMessage = $payload['messages'][1]['content'];
+
+                $this->assertStringContainsString('pl-PL', $systemMessage, 'System prompt should include locale');
+                $this->assertStringContainsString('pl-PL', $userMessage, 'User prompt should include locale');
+                $this->assertStringContainsString('critical', strtolower($systemMessage), 'System prompt should include context tag');
+                $this->assertStringContainsString('critical', strtolower($userMessage), 'User prompt should include context tag');
+
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => json_encode([
+                                    'title' => 'Test Series',
+                                    'first_air_year' => 2020,
+                                    'description' => 'A critical overview.',
+                                    'genres' => ['Drama'],
+                                ]),
+                            ],
+                        ],
+                    ],
+                ], 200);
+            },
+        ]);
+
+        $result = $this->client->generateTvSeries('test-series', null, 'pl-PL', 'critical');
+        $this->assertTrue($result['success']);
+    }
+
+    public function test_generate_tv_show_prompt_includes_locale_and_context_tag(): void
+    {
+        Http::fake([
+            'api.openai.com/v1/chat/completions' => function ($request) {
+                $payload = $request->data();
+                $systemMessage = $payload['messages'][0]['content'];
+                $userMessage = $payload['messages'][1]['content'];
+
+                $this->assertStringContainsString('en-US', $systemMessage, 'System prompt should include locale');
+                $this->assertStringContainsString('en-US', $userMessage, 'User prompt should include locale');
+                $this->assertStringContainsString('modern', strtolower($systemMessage), 'System prompt should include context tag');
+                $this->assertStringContainsString('modern', strtolower($userMessage), 'User prompt should include context tag');
+
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => json_encode([
+                                    'title' => 'Test Show',
+                                    'first_air_year' => 2021,
+                                    'description' => 'A modern description.',
+                                    'genres' => ['Talk'],
+                                    'show_type' => 'TALK_SHOW',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ], 200);
+            },
+        ]);
+
+        $result = $this->client->generateTvShow('test-show', null, 'en-US', 'modern');
+        $this->assertTrue($result['success']);
+    }
 }
