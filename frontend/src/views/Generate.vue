@@ -14,12 +14,7 @@ const loading = ref(false)
 const error = ref(null)
 const result = ref(null)
 
-const API_KEY_STORAGE = 'moviemind_api_key'
-
-onMounted(() => {
-  const stored = localStorage.getItem(API_KEY_STORAGE)
-  if (stored) apiKey.value = stored
-})
+// Local storage removed due to security alert: Clear text storage of sensitive information
 
 const entityTypes = [
   { value: 'MOVIE', label: 'Movie' },
@@ -64,9 +59,7 @@ async function submit () {
       context_tag: contextTag.value,
     }
     const data = await postGenerate(body, apiKey.value.trim())
-    if (route.query.save_key !== '0') {
-      localStorage.setItem(API_KEY_STORAGE, apiKey.value.trim())
-    }
+// persistence removed for security reasons
     result.value = data
     if (data.job_id) {
       router.push({ name: 'Job', params: { id: data.job_id } })
