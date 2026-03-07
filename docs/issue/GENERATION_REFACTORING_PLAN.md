@@ -1,6 +1,6 @@
 # Plan refaktoryzacji: generowanie opisów (Movie, Person, TV Series, TV Show)
 
-**Status:** PLAN  
+**Status:** ZAKOŃCZONY  
 **Cel:** Uprościć i ujednolicić kod generowania treści AI dla Movie, Person, TvSeries i TvShow – mniej duplikacji, czytelniejsza struktura, ewentualne abstrakcje tam, gdzie się opłaca.
 
 ---
@@ -115,7 +115,7 @@
    - Mock jobi analogicznie (wspólna logika mocka dla TV lub osobna, zależnie od tego, jak bardzo się różnią).  
    - Po wdrożeniu: usunąć zduplikowany kod z obu jobów (np. po ok. 200–250 linii mniej w sumie).
 
-4. **Faza 4 – opcjonalnie**  
+4. **Faza 4 – opcjonalnie (✅ Zrobione)**  
    - Trait/helper dla cache i baseline w jobach (jeśli po Fazie 2–3 wciąż będzie wyraźna duplikacja).  
    - OpenAiClient: `buildLocaleAndStyleInstructions()` jeśli ułatwi to utrzymanie promptów.
 
