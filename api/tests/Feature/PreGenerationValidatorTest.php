@@ -93,8 +93,16 @@ class PreGenerationValidatorTest extends TestCase
         $jobId = 'test-job-valid';
         $job = new RealGenerateMovieJob('the-matrix-1999', $jobId);
 
-        // Mock OpenAiClient to return valid response
+        // Mock OpenAiClient to return valid response for both code paths:
+        // - refreshExistingMovie() uses generateMovieDescription()
+        // - new movie path uses generateMovie()
         $mockClient = $this->createMock(\App\Services\OpenAiClientInterface::class);
+        $mockClient->method('generateMovieDescription')
+            ->willReturn([
+                'success' => true,
+                'description' => 'A computer hacker learns about the true nature of reality.',
+                'model' => 'openai-gpt-4',
+            ]);
         $mockClient->method('generateMovie')
             ->willReturn([
                 'success' => true,
@@ -131,8 +139,14 @@ class PreGenerationValidatorTest extends TestCase
         $jobId = 'test-job-bypass';
         $job = new RealGenerateMovieJob('test-123-random', $jobId);
 
-        // Mock OpenAiClient
+        // Mock OpenAiClient for both code paths (generateMovieDescription + generateMovie)
         $mockClient = $this->createMock(\App\Services\OpenAiClientInterface::class);
+        $mockClient->method('generateMovieDescription')
+            ->willReturn([
+                'success' => true,
+                'description' => 'Test description',
+                'model' => 'openai-gpt-4',
+            ]);
         $mockClient->method('generateMovie')
             ->willReturn([
                 'success' => true,

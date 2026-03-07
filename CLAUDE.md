@@ -22,6 +22,10 @@ MovieMind API is a RESTful API for generating and storing unique descriptions of
 - **Queue:** Laravel Horizon (asynchronous processing)
 - **AI Integration:** OpenAI API (gpt-4o-mini)
 
+### Frontend
+- **Stack:** Vue 3, Vite, Tailwind CSS (SPA in `frontend/`)
+- **CI:** `.github/workflows/frontend.yml` (lint + build on `frontend/**`)
+
 ### Development Tools
 - **Tests:** PHPUnit (Feature Tests + Unit Tests)
 - **Formatting:** Laravel Pint (PSR-12)
@@ -82,7 +86,7 @@ Z katalogu `api/` możesz też wejść do kontenera i tam uruchomić `composer t
 
 ### Main Structure
 ```
-api/                          # Laravel application
+api/                          # Laravel application (backend)
 ├── app/
 │   ├── Enums/               # Enumerations (Language, EntityType, etc.)
 │   ├── Events/              # Laravel Events
@@ -106,7 +110,22 @@ api/                          # Laravel application
 └── tests/
     ├── Feature/             # Feature tests (API endpoints)
     └── Unit/                # Unit tests (classes, services)
+
+frontend/                    # Vue 3 + Vite + Tailwind (SPA for API)
+├── src/
+│   ├── App.vue
+│   ├── main.js
+│   ├── style.css            # Tailwind directives
+│   └── config.js            # VITE_API_BASE_URL etc.
+├── public/
+├── index.html
+├── package.json
+├── vite.config.js           # Dev proxy /api → backend
+├── tailwind.config.js
+└── README.md                # Setup, dev, build
 ```
+
+The frontend is a separate app that consumes the MovieMind API. Run it with `cd frontend && npm run dev` (see `frontend/README.md`). CI: `.github/workflows/frontend.yml` runs lint and build on changes under `frontend/`.
 
 ---
 

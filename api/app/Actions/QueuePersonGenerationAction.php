@@ -2,9 +2,9 @@
 
 namespace App\Actions;
 
-use App\Enums\ContextTag;
 use App\Enums\Locale;
 use App\Events\PersonGenerationRequested;
+use App\Helpers\GenerationRequestNormalizer;
 use App\Models\Person;
 use App\Services\JobStatusService;
 use Illuminate\Support\Facades\Log;
@@ -30,8 +30,8 @@ class QueuePersonGenerationAction
             'context_tag' => $contextTag,
             'existing_person' => $existingPerson,
         ]);
-        $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
-        $normalizedContextTag = $this->normalizeContextTag($contextTag);
+        $normalizedLocale = GenerationRequestNormalizer::normalizeLocale($locale) ?? Locale::EN_US->value;
+        $normalizedContextTag = GenerationRequestNormalizer::normalizeContextTag($contextTag);
 
         $existingPerson ??= Person::where('slug', $slug)->first();
 
@@ -75,7 +75,7 @@ class QueuePersonGenerationAction
                     'message' => 'Generation already queued for person slug',
                     'slug' => $slug,
                     'confidence' => $confidence,
-                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                     'locale' => $normalizedLocale,
                     'context_tag' => $normalizedContextTag,
                 ];
@@ -98,7 +98,7 @@ class QueuePersonGenerationAction
                         'message' => 'Generation already queued for person slug',
                         'slug' => $slug,
                         'confidence' => $confidence,
-                        'confidence_level' => $this->confidenceLabel($confidence),
+                        'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                         'locale' => $normalizedLocale,
                         'context_tag' => $normalizedContextTag,
                     ];
@@ -142,7 +142,7 @@ class QueuePersonGenerationAction
                     'message' => 'Generation queued for person by slug',
                     'slug' => $slug,
                     'confidence' => $confidence,
-                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                     'locale' => $normalizedLocale,
                 ];
 
@@ -192,7 +192,7 @@ class QueuePersonGenerationAction
             'message' => 'Generation queued for person by slug',
             'slug' => $slug,
             'confidence' => $confidence,
-            'confidence_level' => $this->confidenceLabel($confidence),
+            'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
             'locale' => $normalizedLocale,
         ];
 
@@ -226,7 +226,7 @@ class QueuePersonGenerationAction
             'message' => 'Generation already queued for person slug',
             'slug' => $slug,
             'confidence' => $confidence,
-            'confidence_level' => $this->confidenceLabel(is_numeric($confidence) ? (float) $confidence : null),
+            'confidence_level' => GenerationRequestNormalizer::confidenceLabel(is_numeric($confidence) ? (float) $confidence : null),
             'locale' => $existingJob['locale'] ?? $locale ?? Locale::EN_US->value,
         ];
 
@@ -242,54 +242,5 @@ class QueuePersonGenerationAction
         }
 
         return $response;
-    }
-
-    private function confidenceLabel(?float $confidence): string
-    {
-        if ($confidence === null) {
-            return 'unknown';
-        }
-
-        return match (true) {
-            $confidence >= 0.9 => 'high',
-            $confidence >= 0.7 => 'medium',
-            $confidence >= 0.5 => 'low',
-            default => 'very_low',
-        };
-    }
-
-    private function normalizeLocale(?string $locale): ?string
-    {
-        if ($locale === null || $locale === '') {
-            return null;
-        }
-
-        $candidate = str_replace('_', '-', $locale);
-        $candidateLower = strtolower($candidate);
-
-        foreach (Locale::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
-    }
-
-    private function normalizeContextTag(?string $contextTag): ?string
-    {
-        if ($contextTag === null || $contextTag === '') {
-            return null;
-        }
-
-        $candidateLower = strtolower($contextTag);
-
-        foreach (ContextTag::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
     }
 }

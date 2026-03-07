@@ -17,29 +17,16 @@ class QueueTvShowGenerationJob
      */
     public function handle(TvShowGenerationRequested $event): void
     {
-        $aiService = AiServiceSelector::getService();
-        AiServiceSelector::validate();
+        $jobClass = AiServiceSelector::getJobClass(RealGenerateTvShowJob::class, MockGenerateTvShowJob::class);
 
-        match ($aiService) {
-            'real' => RealGenerateTvShowJob::dispatch(
-                $event->slug,
-                $event->jobId,
-                existingTvShowId: $event->existingTvShowId,
-                baselineDescriptionId: $event->baselineDescriptionId,
-                locale: $event->locale,
-                contextTag: $event->contextTag,
-                tmdbData: $event->tmdbData
-            ),
-            'mock' => MockGenerateTvShowJob::dispatch(
-                $event->slug,
-                $event->jobId,
-                existingTvShowId: $event->existingTvShowId,
-                baselineDescriptionId: $event->baselineDescriptionId,
-                locale: $event->locale,
-                contextTag: $event->contextTag,
-                tmdbData: $event->tmdbData
-            ),
-            default => throw new \InvalidArgumentException("Invalid AI service: {$aiService}. Must be 'mock' or 'real'."),
-        };
+        $jobClass::dispatch(
+            $event->slug,
+            $event->jobId,
+            existingTvShowId: $event->existingTvShowId,
+            baselineDescriptionId: $event->baselineDescriptionId,
+            locale: $event->locale,
+            contextTag: $event->contextTag,
+            tmdbData: $event->tmdbData
+        );
     }
 }

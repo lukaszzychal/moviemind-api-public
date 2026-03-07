@@ -9,9 +9,11 @@ interface OpenAiClientInterface
      *
      * @param  string  $slug  Movie slug
      * @param  array{title: string, release_date: string, overview: string, id: int, director?: string}|null  $tmdbData  Optional TMDb data to provide context to AI
+     * @param  string|null  $locale  Optional locale (pl-PL, en-US, etc.) – language for the description
+     * @param  string|null  $contextTag  Optional context tag (modern, critical, humorous, default) – style of the description
      * @return array{success: bool, title?: string, release_year?: int, director?: string, description?: string, genres?: array, model?: string, error?: string}
      */
-    public function generateMovie(string $slug, ?array $tmdbData = null): array;
+    public function generateMovie(string $slug, ?array $tmdbData = null, ?string $locale = null, ?string $contextTag = null): array;
 
     /**
      * Generate movie description with specific context tag and locale.

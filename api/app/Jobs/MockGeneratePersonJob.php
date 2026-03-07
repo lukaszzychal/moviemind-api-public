@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
+use App\Jobs\Concerns\ResolvesLocaleAndContext;
 use App\Models\Person;
 use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
@@ -26,7 +27,7 @@ use Laravel\Pennant\Feature;
  */
 class MockGeneratePersonJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, ResolvesLocaleAndContext, SerializesModels;
 
     public int $tries = 3;
 
@@ -105,7 +106,7 @@ class MockGeneratePersonJob implements ShouldQueue
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
-        $contextForCache = $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag;
+        $contextForCache = ($bio->context_tag instanceof ContextTag ? $bio->context_tag->value : null) ?? (string) $bio->context_tag;
         $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextForCache);
     }
 
@@ -137,55 +138,10 @@ class MockGeneratePersonJob implements ShouldQueue
         Cache::put($this->cacheKey(), $payload, now()->addMinutes(15));
     }
 
-    private function resolveLocale(): Locale
+    protected function getExistingContextTags(object $entity): array
     {
-        if ($this->locale) {
-            $normalized = $this->normalizeLocale($this->locale);
-            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
-                return $enum;
-            }
-        }
-
-        return Locale::EN_US;
-    }
-
-    private function normalizeLocale(string $locale): ?string
-    {
-        $candidate = str_replace('_', '-', $locale);
-        $candidateLower = strtolower($candidate);
-
-        foreach (Locale::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
-    }
-
-    private function determineContextTag(Person $person, Locale $locale): string
-    {
-        if ($this->contextTag !== null) {
-            $normalized = $this->normalizeContextTag($this->contextTag);
-            if ($normalized !== null) {
-                return $normalized;
-            }
-        }
-
-        return $this->nextContextTag($person);
-    }
-
-    private function normalizeContextTag(string $contextTag): ?string
-    {
-        $candidateLower = strtolower($contextTag);
-
-        foreach (ContextTag::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
+        /** @var Person $entity */
+        return $entity->bios()->pluck('context_tag')->all();
     }
 
     private function persistBio(Person $person, Locale $locale, string $contextTag, array $attributes): PersonBio
@@ -248,40 +204,23 @@ class MockGeneratePersonJob implements ShouldQueue
             return $this->persistBio($person, $locale, $this->determineContextTag($person, $locale), $attributes);
         }
 
+        if ($this->contextTag !== null) {
+            $normalizedContextTag = $this->normalizeContextTag($this->contextTag);
+            $baselineContextValue = $baseline->context_tag instanceof ContextTag
+                ? $baseline->context_tag->value
+                : (string) $baseline->context_tag;
+
+            if ($normalizedContextTag !== null && $baselineContextValue !== $normalizedContextTag) {
+                return $this->persistBio($person, $locale, $normalizedContextTag, $attributes);
+            }
+        }
+
         $baseline->fill(array_merge($attributes, [
             'locale' => $locale->value,
         ]));
         $baseline->save();
 
         return $baseline->fresh();
-    }
-
-    private function nextContextTag(Person $person): string
-    {
-        $existingTags = array_map(
-            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
-            $person->bios()->pluck('context_tag')->all()
-        );
-        $preferredOrder = [
-            ContextTag::DEFAULT->value,
-            ContextTag::MODERN->value,
-            ContextTag::CRITICAL->value,
-            ContextTag::HUMOROUS->value,
-        ];
-
-        foreach ($preferredOrder as $candidate) {
-            if (! in_array($candidate, $existingTags, true)) {
-                return $candidate;
-            }
-        }
-
-        $suffix = 2;
-        do {
-            $candidate = ContextTag::DEFAULT->value.'_'.$suffix;
-            $suffix++;
-        } while (in_array($candidate, $existingTags, true));
-
-        return $candidate;
     }
 
     private function cacheKey(): string

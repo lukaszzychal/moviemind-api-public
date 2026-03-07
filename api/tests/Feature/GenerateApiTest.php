@@ -298,6 +298,22 @@ class GenerateApiTest extends TestCase
             });
     }
 
+    public function test_generate_tv_series_respects_locale_and_context(): void
+    {
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingTvSeries('breaking-bad-2008', ['locale' => 'pl-PL', 'context_tag' => 'critical'])
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('breaking-bad-2008')
+            ->andShouldHaveLocale('pl-PL')
+            ->andShouldHaveContextTag('critical')
+            ->andEventShouldBeDispatched(TvSeriesGenerationRequested::class, function ($event) {
+                return $event->slug === 'breaking-bad-2008'
+                    && $event->locale === 'pl-PL'
+                    && $event->contextTag === 'critical';
+            });
+    }
+
     public function test_generate_tv_series_existing_slug_triggers_regeneration_flow(): void
     {
         $this->givenFeatureFlagEnabled('ai_description_generation')
@@ -332,6 +348,22 @@ class GenerateApiTest extends TestCase
             ->andEventShouldBeDispatched(TvShowGenerationRequested::class, function ($event) {
                 return $event->slug === 'the-tonight-show-1954'
                     && $event->locale === 'en-US';
+            });
+    }
+
+    public function test_generate_tv_show_respects_locale_and_context(): void
+    {
+        $this->givenFeatureFlagEnabled('ai_description_generation')
+            ->whenGeneratingTvShow('the-tonight-show-1954', ['locale' => 'pl-PL', 'context_tag' => 'modern'])
+            ->thenShouldReturn202()
+            ->andShouldHaveStatus('PENDING')
+            ->andShouldHaveSlug('the-tonight-show-1954')
+            ->andShouldHaveLocale('pl-PL')
+            ->andShouldHaveContextTag('modern')
+            ->andEventShouldBeDispatched(TvShowGenerationRequested::class, function ($event) {
+                return $event->slug === 'the-tonight-show-1954'
+                    && $event->locale === 'pl-PL'
+                    && $event->contextTag === 'modern';
             });
     }
 

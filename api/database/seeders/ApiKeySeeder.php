@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\ApiKey;
 use App\Models\SubscriptionPlan;
 use Illuminate\Database\Seeder;
 
@@ -11,10 +12,11 @@ use Illuminate\Database\Seeder;
  * Seeder for demo API keys.
  *
  * Creates demo API keys for each subscription plan (Free, Pro, Enterprise).
- * These keys are for portfolio/demo purposes only.
+ * The Free plan key is marked as public (is_public=true) and its plaintext
+ * is stored so it can be displayed on the welcome endpoint for portfolio/demo purposes.
  *
- * Note: In production, API keys would be created through the admin panel
- * or via billing provider integration (Stripe, PayPal, etc.).
+ * Note: In production, regular API keys are NEVER stored in plaintext.
+ * This is an exception only for the public demo key.
  */
 class ApiKeySeeder extends Seeder
 {
@@ -42,22 +44,26 @@ class ApiKeySeeder extends Seeder
             return;
         }
 
-        // Create demo API keys for each plan
-        $this->createDemoKey($apiKeyService, 'Demo Free Plan Key', $freePlan->id);
-        $this->createDemoKey($apiKeyService, 'Demo Pro Plan Key', $proPlan->id);
-        $this->createDemoKey($apiKeyService, 'Demo Enterprise Plan Key', $enterprisePlan->id);
+        // Free plan key is PUBLIC — plaintext stored for welcome endpoint
+        $this->createDemoKey($apiKeyService, 'Demo Free Plan Key', $freePlan->id, isPublic: true);
+        $this->createDemoKey($apiKeyService, 'Demo Pro Plan Key', $proPlan->id, isPublic: false);
+        $this->createDemoKey($apiKeyService, 'Demo Enterprise Plan Key', $enterprisePlan->id, isPublic: false);
 
         $this->command->info('ApiKeySeeder: Created demo API keys for Free, Pro, and Enterprise plans.');
-        $this->command->warn('Note: Plaintext API keys are only shown once during creation. Check logs or database for key prefixes.');
+        $this->command->info('The Free plan demo key is public and visible on the welcome endpoint (/).');
     }
 
     /**
      * Create a demo API key.
      */
-    private function createDemoKey(\App\Services\ApiKeyService $apiKeyService, string $name, string $planId): void
-    {
+    private function createDemoKey(
+        \App\Services\ApiKeyService $apiKeyService,
+        string $name,
+        string $planId,
+        bool $isPublic = false,
+    ): void {
         // Check if key already exists
-        $existing = \App\Models\ApiKey::where('name', $name)
+        $existing = ApiKey::where('name', $name)
             ->where('plan_id', $planId)
             ->first();
 
@@ -69,10 +75,19 @@ class ApiKeySeeder extends Seeder
 
         $result = $apiKeyService->createKey(
             name: $name,
-            planId: $planId
+            planId: $planId,
         );
 
-        $this->command->info("ApiKeySeeder: Created demo API key '{$name}' with prefix '{$result['apiKey']->key_prefix}'");
-        $this->command->warn("Plaintext key: {$result['key']} (save this - it won't be shown again!)");
+        // For public keys: store plaintext so welcome endpoint can display it
+        if ($isPublic) {
+            $result['apiKey']->update([
+                'is_public' => true,
+                'public_plaintext_key' => $result['key'],
+            ]);
+            $this->command->info("ApiKeySeeder: Created PUBLIC demo key '{$name}' → {$result['key']}");
+        } else {
+            $this->command->info("ApiKeySeeder: Created demo API key '{$name}' with prefix '{$result['apiKey']->key_prefix}'");
+            $this->command->warn("Plaintext key: {$result['key']} (save this - it won't be shown again!)");
+        }
     }
 }
