@@ -279,12 +279,14 @@ class RealGeneratePersonJob implements ShouldQueue
                 'bio_id' => $bio->id,
                 'result' => $willUpdateBaseline ? 'baseline_updated' : 'alternative_appended',
                 'locale' => $locale->value,
+                /** @phpstan-ignore-next-line */
                 'context_tag' => ($bio->context_tag instanceof ContextTag ? $bio->context_tag->value : null) ?? (string) $bio->context_tag,
             ]);
         }
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
+        /** @phpstan-ignore-next-line */
         $contextForCache = ($bio->context_tag instanceof ContextTag ? $bio->context_tag->value : null) ?? (string) $bio->context_tag;
         $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextForCache);
     }

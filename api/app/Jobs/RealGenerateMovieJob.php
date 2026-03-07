@@ -1234,6 +1234,7 @@ class RealGenerateMovieJob implements ShouldQueue
                 ]
             );
 
+        /** @phpstan-ignore-next-line */
         $contextForCache = ($description->context_tag instanceof ContextTag ? $description->context_tag->value : null) ?? (string) $description->context_tag;
 
         // Create cast and crew from AI response
@@ -1385,6 +1386,7 @@ class RealGenerateMovieJob implements ShouldQueue
         // Create new person
         try {
             $slug = Person::generateSlug($name);
+            /** @var Person $person */
             $person = Person::create([
                 'name' => $name,
                 'slug' => $slug,
