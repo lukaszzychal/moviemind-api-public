@@ -22,7 +22,7 @@ class QueueTvShowGenerationJob
         $jobClass::dispatch(
             $event->slug,
             $event->jobId,
-            existingTvShowId: $event->existingTvShowId,
+            existingEntityId: $event->existingTvShowId,
             baselineDescriptionId: $event->baselineDescriptionId,
             locale: $event->locale,
             contextTag: $event->contextTag,
