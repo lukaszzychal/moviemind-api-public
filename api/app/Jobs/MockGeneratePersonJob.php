@@ -106,6 +106,7 @@ class MockGeneratePersonJob implements ShouldQueue
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
+        /** @phpstan-ignore-next-line */
         $contextForCache = ($bio->context_tag instanceof ContextTag ? $bio->context_tag->value : null) ?? (string) $bio->context_tag;
         $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextForCache);
     }

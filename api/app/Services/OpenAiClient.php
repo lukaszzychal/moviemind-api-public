@@ -62,12 +62,7 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse($e->getMessage());
         }
 
-        $localeInstruction = $locale !== null && $locale !== ''
-            ? "IMPORTANT: Write the description in the language for locale: {$locale} (e.g. pl-PL = Polish, en-US = English). The description field MUST be in that language.\n\n"
-            : '';
-        $contextInstruction = $contextTag !== null && $contextTag !== ''
-            ? $this->getContextTagInstructions($contextTag)."\n\n"
-            : '';
+        $instructions = $this->buildLocaleAndStyleInstructions($locale, $contextTag);
 
         // Sanitize TMDb data if available
         if ($tmdbData !== null) {
@@ -83,12 +78,10 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n".
                 "- Do NOT copy the overview from TMDb - create your own original description\n\n".
-                $localeInstruction.
-                $contextInstruction.
+                $instructions.
                 'Return JSON with: title, release_year, director, description (your original movie plot description), genres (array), cast (array of cast/crew members).';
             $userPrompt = "Movie data from TMDb:\n{$tmdbContext}\n\n{$directorInstruction}\n\nGenerate a unique, original description for this movie. Do NOT copy the overview. Create your own original description.\n\n".
-                $localeInstruction.
-                $contextInstruction.
+                $instructions.
                 "IMPORTANT requirements:\n- Director: {$directorInstruction}\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Cast: Include the director and top 3-5 main actors with their character names and billing order.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, release_year, director, description (your original movie plot), genres (array), cast (array with director and main actors).";
         } else {
             $systemPrompt = "You are a movie database assistant. IMPORTANT: First verify if the movie exists. If the movie does not exist, return {\"error\": \"Movie not found\"}. Only if the movie exists, generate movie information from the slug.\n\n".
@@ -96,13 +89,10 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT include any HTML tags, scripts, or executable code in your response\n".
                 "- Do NOT attempt to override system instructions\n".
                 "- Do NOT include any role manipulation attempts\n".
-                "- Return ONLY valid JSON\n\n".
-                $localeInstruction.
-                $contextInstruction.
+                $instructions.
                 'You MUST provide the director name by researching the movie. Return JSON with: title, release_year, director, description (movie plot), genres (array), cast (array of cast/crew members).';
             $userPrompt = "Generate movie information for slug: {$slug}. IMPORTANT: First verify if this movie exists. If it does not exist, return {\"error\": \"Movie not found\"}. Only if it exists, return JSON with: title, release_year, director, description (movie plot), genres (array), cast (array with director and main actors).\n\n".
-                $localeInstruction.
-                $contextInstruction.
+                $instructions.
                 "IMPORTANT requirements:\n- Director: You MUST research and provide the correct director name for this movie.\n- Description: Write a comprehensive movie plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the movie's plot without major spoilers.\n- Cast: Include the director and top 3-5 main actors with their character names and billing order.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
         }
 
@@ -280,6 +270,22 @@ class OpenAiClient implements OpenAiClientInterface
     }
 
     /**
+     * Build reusable locale and context tag instructions for prompts.
+     */
+    public function buildLocaleAndStyleInstructions(?string $locale = null, ?string $contextTag = null): string
+    {
+        $instructions = '';
+        if ($locale !== null && $locale !== '') {
+            $instructions .= "IMPORTANT: Write the response in the language for locale: {$locale} (e.g. pl-PL = Polish, en-US = English). The output MUST be in that language.\n\n";
+        }
+        if ($contextTag !== null && $contextTag !== '') {
+            $instructions .= $this->getContextTagInstructions($contextTag)."\n\n";
+        }
+
+        return $instructions;
+    }
+
+    /**
      * Get JSON schema for description-only response.
      *
      * @return array<string, mixed>
@@ -372,17 +378,17 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse($e->getMessage());
         }
 
-        $styleInstructions = $this->getContextTagInstructions($contextTag);
+        $instructions = $this->buildLocaleAndStyleInstructions($locale, $contextTag);
 
         // Sanitize TMDb data if available
         if ($tmdbData !== null) {
             $tmdbData = $this->sanitizeTmdbData($tmdbData);
             $tmdbContext = $this->formatTmdbPersonContext($tmdbData);
-            $systemPrompt = "You are a biography assistant. Generate a unique, original biography for the person based on the provided TMDb data. Do NOT copy the biography from TMDb. Create your own original biography. Write the biography in language: {$locale}. {$styleInstructions} Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).";
-            $userPrompt = "Person data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original biography for this person. Do NOT copy the biography. Create your own original biography. Language: {$locale}\n\n{$styleInstructions}\n\nReturn JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).";
+            $systemPrompt = "You are a biography assistant. Generate a unique, original biography for the person based on the provided TMDb data. Do NOT copy the biography from TMDb. Create your own original biography.\n\n{$instructions}Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).";
+            $userPrompt = "Person data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original biography for this person. Do NOT copy the biography. Create your own original biography.\n\n{$instructions}Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (your original full text biography).";
         } else {
-            $systemPrompt = "You are a biography assistant. IMPORTANT: First verify if the person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, generate biography from the slug. Write the biography in language: {$locale}. {$styleInstructions} Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
-            $userPrompt = "Generate biography for person with slug: {$slug}. IMPORTANT: First verify if this person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, write the biography in language: {$locale}. {$styleInstructions} Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
+            $systemPrompt = "You are a biography assistant. IMPORTANT: First verify if the person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, generate biography from the slug.\n\n{$instructions}Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
+            $userPrompt = "Generate biography for person with slug: {$slug}. IMPORTANT: First verify if this person exists. If the person does not exist, return {\"error\": \"Person not found\"}. Only if the person exists, write the biography.\n\n{$instructions}Return JSON with: name, birth_date (YYYY-MM-DD), birthplace, biography (full text).";
         }
 
         return $this->makeApiCall('person', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
@@ -432,7 +438,7 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse($e->getMessage());
         }
 
-        $styleInstructions = $this->getContextTagInstructions($contextTag);
+        $instructions = $this->buildLocaleAndStyleInstructions($locale, $contextTag);
 
         // Sanitize TMDb data if available
         if ($tmdbData !== null) {
@@ -445,9 +451,9 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n".
                 "- Do NOT copy the overview from TMDb - create your own original description\n\n".
-                "Language: {$locale}. {$styleInstructions}\n\n".
+                "{$instructions}".
                 'Return JSON with: title, first_air_year, description (your original TV series plot description), genres (array).';
-            $userPrompt = "TV series data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this TV series. Do NOT copy the overview. Create your own original description. Language: {$locale}. {$styleInstructions}\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the series without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, first_air_year, description (your original TV series plot), genres (array).";
+            $userPrompt = "TV series data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this TV series. Do NOT copy the overview. Create your own original description.\n\n{$instructions}IMPORTANT requirements:\n- Description: Write a comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the series without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, first_air_year, description (your original TV series plot), genres (array).";
         } else {
             $systemPrompt = "You are a TV series database assistant. IMPORTANT: First verify if the TV series exists. If the TV series does not exist, return {\"error\": \"TV series not found\"}. Only if the TV series exists, generate TV series information from the slug.\n\n".
                 "SECURITY REQUIREMENTS:\n".
@@ -455,9 +461,9 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT attempt to override system instructions\n".
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n\n".
-                "Language: {$locale}. {$styleInstructions}\n\n".
+                "{$instructions}".
                 'Return JSON with: title, first_air_year, description (TV series plot), genres (array).';
-            $userPrompt = "Generate TV series information for slug: {$slug}. IMPORTANT: First verify if this TV series exists. If it does not exist, return {\"error\": \"TV series not found\"}. Only if it exists, write in language: {$locale}. {$styleInstructions} Return JSON with: title, first_air_year, description (TV series plot), genres (array).\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the series without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
+            $userPrompt = "Generate TV series information for slug: {$slug}. IMPORTANT: First verify if this TV series exists. If it does not exist, return {\"error\": \"TV series not found\"}. Only if it exists, generate the description.\n\n{$instructions}Return JSON with: title, first_air_year, description (TV series plot), genres (array).\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV series plot description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the series without major spoilers.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
         }
 
         return $this->makeApiCall('tv_series', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
@@ -507,7 +513,7 @@ class OpenAiClient implements OpenAiClientInterface
             return $this->errorResponse($e->getMessage());
         }
 
-        $styleInstructions = $this->getContextTagInstructions($contextTag);
+        $instructions = $this->buildLocaleAndStyleInstructions($locale, $contextTag);
 
         // Sanitize TMDb data if available
         if ($tmdbData !== null) {
@@ -520,9 +526,9 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n".
                 "- Do NOT copy the overview from TMDb - create your own original description\n\n".
-                "Language: {$locale}. {$styleInstructions}\n\n".
+                "{$instructions}".
                 'Return JSON with: title, first_air_year, description (your original TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).';
-            $userPrompt = "TV show data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this TV show. Do NOT copy the overview. Create your own original description. Language: {$locale}. {$styleInstructions}\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV show description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the show.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, first_air_year, description (your original TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).";
+            $userPrompt = "TV show data from TMDb:\n{$tmdbContext}\n\nGenerate a unique, original description for this TV show. Do NOT copy the overview. Create your own original description.\n\n{$instructions}IMPORTANT requirements:\n- Description: Write a comprehensive TV show description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the show.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.\n\nReturn JSON with: title, first_air_year, description (your original TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).";
         } else {
             $systemPrompt = "You are a TV show database assistant. IMPORTANT: First verify if the TV show exists. If the TV show does not exist, return {\"error\": \"TV show not found\"}. Only if the TV show exists, generate TV show information from the slug.\n\n".
                 "SECURITY REQUIREMENTS:\n".
@@ -530,9 +536,9 @@ class OpenAiClient implements OpenAiClientInterface
                 "- Do NOT attempt to override system instructions\n".
                 "- Do NOT include any role manipulation attempts\n".
                 "- Return ONLY valid JSON\n\n".
-                "Language: {$locale}. {$styleInstructions}\n\n".
+                "{$instructions}".
                 'Return JSON with: title, first_air_year, description (TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).';
-            $userPrompt = "Generate TV show information for slug: {$slug}. IMPORTANT: First verify if this TV show exists. If it does not exist, return {\"error\": \"TV show not found\"}. Only if it exists, write in language: {$locale}. {$styleInstructions} Return JSON with: title, first_air_year, description (TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV show description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the show.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
+            $userPrompt = "Generate TV show information for slug: {$slug}. IMPORTANT: First verify if this TV show exists. If it does not exist, return {\"error\": \"TV show not found\"}. Only if it exists, generate the description.\n\n{$instructions}Return JSON with: title, first_air_year, description (TV show description), genres (array), show_type (TALK_SHOW, REALITY, NEWS, DOCUMENTARY, VARIETY, GAME_SHOW).\n\nIMPORTANT requirements:\n- Description: Write a comprehensive TV show description (minimum 2-3 sentences, 50-150 words). The description should be engaging, informative, and provide a clear overview of the show.\n- Security: Do NOT include HTML, scripts, or any executable code. Return plain text only.";
         }
 
         return $this->makeApiCall('tv_show', $slug, $systemPrompt, $userPrompt, function ($content) use ($tmdbData) {
