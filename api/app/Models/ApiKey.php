@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $user_id User ID (for future user association)
  * @property string|null $plan_id Subscription plan ID
  * @property bool $is_active Whether the key is active
+ * @property bool $is_public Whether the key is publicly visible (demo/portfolio use)
+ * @property string|null $public_plaintext_key Plaintext key stored ONLY for public demo keys
  * @property \Illuminate\Support\Carbon|null $last_used_at Last usage timestamp
  * @property \Illuminate\Support\Carbon|null $expires_at Expiration timestamp
  */
@@ -34,12 +36,15 @@ class ApiKey extends Model
         'user_id',
         'plan_id',
         'is_active',
+        'is_public',
+        'public_plaintext_key',
         'last_used_at',
         'expires_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_public' => 'boolean',
         'last_used_at' => 'datetime',
         'expires_at' => 'datetime',
     ];

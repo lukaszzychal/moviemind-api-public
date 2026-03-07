@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ApiKey;
 use Illuminate\Support\Facades\Route;
 
 // OpenAPI Documentation routes (public, no authentication required)
@@ -15,10 +16,9 @@ Route::get('api/docs/openapi.yaml', function () {
 
 // Welcome endpoint
 Route::get('/', function () {
-    // ... (rest of the file remains the same)
     $baseUrl = request()->getSchemeAndHttpHost();
 
-    return response()->json([
+    $response = [
         'message' => 'Welcome to MovieMind API',
         'status' => 'ok',
         'version' => '1.0.0',
@@ -35,5 +35,21 @@ Route::get('/', function () {
             'openapi' => $baseUrl.'/api/docs/openapi.yaml',
             'swagger_ui' => $baseUrl.'/api/doc',
         ],
-    ], 200, ['Content-Type' => 'application/json']);
+    ];
+
+    // Show public demo API key if available (for portfolio/demo purposes only)
+    $publicKey = ApiKey::where('is_public', true)
+        ->where('is_active', true)
+        ->whereNotNull('public_plaintext_key')
+        ->first();
+
+    if ($publicKey !== null) {
+        $response['demo'] = [
+            'api_key' => $publicKey->public_plaintext_key,
+            'plan' => $publicKey->plan?->name ?? 'free',
+            'note' => 'This is a public demo key for portfolio/testing purposes. Rate limits apply.',
+        ];
+    }
+
+    return response()->json($response, 200, ['Content-Type' => 'application/json']);
 });
