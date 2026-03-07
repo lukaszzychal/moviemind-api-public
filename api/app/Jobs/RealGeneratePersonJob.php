@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\ContextTag;
 use App\Enums\DescriptionOrigin;
 use App\Enums\Locale;
+use App\Jobs\Concerns\ResolvesLocaleAndContext;
 use App\Models\Person;
 use App\Models\PersonBio;
 use App\Repositories\PersonRepository;
@@ -30,7 +31,7 @@ use Laravel\Pennant\Feature;
  */
 class RealGeneratePersonJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, ResolvesLocaleAndContext, SerializesModels;
 
     public int $tries = 3;
 
@@ -278,13 +279,13 @@ class RealGeneratePersonJob implements ShouldQueue
                 'bio_id' => $bio->id,
                 'result' => $willUpdateBaseline ? 'baseline_updated' : 'alternative_appended',
                 'locale' => $locale->value,
-                'context_tag' => $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag,
+                'context_tag' => ($bio->context_tag instanceof ContextTag ? $bio->context_tag->value : null) ?? (string) $bio->context_tag,
             ]);
         }
 
         $this->promoteDefaultIfEligible($person, $bio);
         $this->invalidatePersonCaches($person);
-        $contextForCache = $bio->context_tag instanceof ContextTag ? $bio->context_tag->value : (string) $bio->context_tag;
+        $contextForCache = ($bio->context_tag instanceof ContextTag ? $bio->context_tag->value : null) ?? (string) $bio->context_tag;
         $this->updateCache('DONE', $person->id, $bio->id, $person->slug, $locale->value, $contextForCache);
     }
 
@@ -316,91 +317,15 @@ class RealGeneratePersonJob implements ShouldQueue
         Cache::put($this->cacheKey(), $payload, now()->addMinutes(15));
     }
 
-    private function nextContextTag(Person $person): string
+    protected function getExistingContextTags(object $entity): array
     {
-        $existingTags = array_map(
-            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
-            $person->bios()->pluck('context_tag')->all()
-        );
-        $preferredOrder = [
-            ContextTag::DEFAULT->value,
-            ContextTag::MODERN->value,
-            ContextTag::CRITICAL->value,
-            ContextTag::HUMOROUS->value,
-        ];
-
-        foreach ($preferredOrder as $candidate) {
-            if (! in_array($candidate, $existingTags, true)) {
-                return $candidate;
-            }
-        }
-
-        // All standard tags are used - fallback to DEFAULT
-        // This prevents creating invalid enum values like "DEFAULT_2"
-        // If user needs more descriptions, they should explicitly specify context_tag
-        \Illuminate\Support\Facades\Log::warning('All standard context tags are used, falling back to DEFAULT', [
-            'person_id' => $person->id,
-            'slug' => $person->slug,
-            'existing_tags' => $existingTags,
-        ]);
-
-        return ContextTag::DEFAULT->value;
+        /** @var Person $entity */
+        return $entity->bios()->pluck('context_tag')->all();
     }
 
     private function cacheKey(): string
     {
         return 'ai_job:'.$this->jobId;
-    }
-
-    private function resolveLocale(): Locale
-    {
-        if ($this->locale) {
-            $normalized = $this->normalizeLocale($this->locale);
-            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
-                return $enum;
-            }
-        }
-
-        return Locale::EN_US;
-    }
-
-    private function normalizeLocale(string $locale): ?string
-    {
-        $candidate = str_replace('_', '-', $locale);
-        $candidateLower = strtolower($candidate);
-
-        foreach (Locale::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
-    }
-
-    private function determineContextTag(Person $person, Locale $locale): string
-    {
-        if ($this->contextTag !== null) {
-            $normalized = $this->normalizeContextTag($this->contextTag);
-            if ($normalized !== null) {
-                return $normalized;
-            }
-        }
-
-        return $this->nextContextTag($person);
-    }
-
-    private function normalizeContextTag(string $contextTag): ?string
-    {
-        $candidateLower = strtolower($contextTag);
-
-        foreach (ContextTag::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
     }
 
     private function persistBio(Person $person, Locale $locale, string $contextTag, array $attributes): PersonBio
@@ -456,6 +381,17 @@ class RealGeneratePersonJob implements ShouldQueue
 
         if (! $baseline instanceof PersonBio) {
             return $this->persistBio($person, $locale, $this->determineContextTag($person, $locale), $attributes);
+        }
+
+        if ($this->contextTag !== null) {
+            $normalizedContextTag = $this->normalizeContextTag($this->contextTag);
+            $baselineContextValue = $baseline->context_tag instanceof ContextTag
+                ? $baseline->context_tag->value
+                : (string) $baseline->context_tag;
+
+            if ($normalizedContextTag !== null && $baselineContextValue !== $normalizedContextTag) {
+                return $this->persistBio($person, $locale, $normalizedContextTag, $attributes);
+            }
         }
 
         $baseline->fill(array_merge($attributes, [

@@ -8,6 +8,7 @@ use App\Enums\Locale;
 use App\Enums\RoleType;
 use App\Events\MovieGenerationCompleted;
 use App\Events\MovieGenerationFailed;
+use App\Jobs\Concerns\ResolvesLocaleAndContext;
 use App\Models\Movie;
 use App\Models\MovieDescription;
 use App\Models\Person;
@@ -39,7 +40,7 @@ use Laravel\Pennant\Feature;
  */
 class RealGenerateMovieJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, ResolvesLocaleAndContext, SerializesModels;
 
     public int $tries = 3;
 
@@ -415,91 +416,15 @@ class RealGenerateMovieJob implements ShouldQueue
         }
     }
 
-    private function nextContextTag(Movie $movie): string
+    protected function getExistingContextTags(object $entity): array
     {
-        $existingTags = array_map(
-            fn ($tag) => $tag instanceof ContextTag ? $tag->value : (string) $tag,
-            $movie->descriptions()->pluck('context_tag')->all()
-        );
-        $preferredOrder = [
-            ContextTag::DEFAULT->value,
-            ContextTag::MODERN->value,
-            ContextTag::CRITICAL->value,
-            ContextTag::HUMOROUS->value,
-        ];
-
-        foreach ($preferredOrder as $candidate) {
-            if (! in_array($candidate, $existingTags, true)) {
-                return $candidate;
-            }
-        }
-
-        // All standard tags are used - fallback to DEFAULT
-        // This prevents creating invalid enum values like "DEFAULT_2"
-        // If user needs more descriptions, they should explicitly specify context_tag
-        Log::warning('All standard context tags are used, falling back to DEFAULT', [
-            'movie_id' => $movie->id,
-            'slug' => $movie->slug,
-            'existing_tags' => $existingTags,
-        ]);
-
-        return ContextTag::DEFAULT->value;
+        /** @var Movie $entity */
+        return $entity->descriptions()->pluck('context_tag')->all();
     }
 
     private function cacheKey(): string
     {
         return 'ai_job:'.$this->jobId;
-    }
-
-    private function resolveLocale(): Locale
-    {
-        if ($this->locale) {
-            $normalized = $this->normalizeLocale($this->locale);
-            if ($normalized !== null && ($enum = Locale::tryFrom($normalized))) {
-                return $enum;
-            }
-        }
-
-        return Locale::EN_US;
-    }
-
-    private function normalizeLocale(string $locale): ?string
-    {
-        $candidate = str_replace('_', '-', $locale);
-        $candidateLower = strtolower($candidate);
-
-        foreach (Locale::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
-    }
-
-    private function determineContextTag(Movie $movie, Locale $locale): string
-    {
-        if ($this->contextTag !== null) {
-            $normalized = $this->normalizeContextTag($this->contextTag);
-            if ($normalized !== null) {
-                return $normalized;
-            }
-        }
-
-        return $this->nextContextTag($movie);
-    }
-
-    private function normalizeContextTag(string $contextTag): ?string
-    {
-        $candidateLower = strtolower($contextTag);
-
-        foreach (ContextTag::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
     }
 
     private function persistDescription(Movie $movie, Locale $locale, string $contextTag, array $attributes): MovieDescription
@@ -562,7 +487,11 @@ class RealGenerateMovieJob implements ShouldQueue
         // If context_tag is explicitly provided and differs from baseline, create new description instead
         if ($this->contextTag !== null) {
             $normalizedContextTag = $this->normalizeContextTag($this->contextTag);
-            if ($normalizedContextTag !== null && $baseline->context_tag->value !== $normalizedContextTag) {
+            $baselineContextValue = $baseline->context_tag instanceof ContextTag
+                ? $baseline->context_tag->value
+                : (string) $baseline->context_tag;
+
+            if ($normalizedContextTag !== null && $baselineContextValue !== $normalizedContextTag) {
                 // User wants a different context_tag, create new description instead of updating baseline
                 return $this->persistDescription($movie, $locale, $normalizedContextTag, $attributes);
             }
@@ -1305,7 +1234,7 @@ class RealGenerateMovieJob implements ShouldQueue
                 ]
             );
 
-        $contextForCache = $description->context_tag instanceof ContextTag ? $description->context_tag->value : (string) $description->context_tag;
+        $contextForCache = ($description->context_tag instanceof ContextTag ? $description->context_tag->value : null) ?? (string) $description->context_tag;
 
         // Create cast and crew from AI response
         // @phpstan-ignore-next-line - cast is optional in AI response
