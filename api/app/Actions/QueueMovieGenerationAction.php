@@ -2,9 +2,9 @@
 
 namespace App\Actions;
 
-use App\Enums\ContextTag;
 use App\Enums\Locale;
 use App\Events\MovieGenerationRequested;
+use App\Helpers\GenerationRequestNormalizer;
 use App\Models\Movie;
 use App\Services\JobStatusService;
 use Illuminate\Support\Facades\Log;
@@ -51,8 +51,8 @@ class QueueMovieGenerationAction
             'existing_movie_slug' => $existingMovie?->slug,
         ]);
         $confidence = is_string($confidence) ? (float) $confidence : $confidence; // Ensure confidence is float or null
-        $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
-        $normalizedContextTag = $this->normalizeContextTag($contextTag);
+        $normalizedLocale = GenerationRequestNormalizer::normalizeLocale($locale) ?? Locale::EN_US->value;
+        $normalizedContextTag = GenerationRequestNormalizer::normalizeContextTag($contextTag);
 
         $existingMovie ??= Movie::where('slug', $slug)->first();
 
@@ -96,7 +96,7 @@ class QueueMovieGenerationAction
                     'message' => 'Generation already queued for movie slug',
                     'slug' => $slug,
                     'confidence' => $confidence,
-                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                     'locale' => $normalizedLocale,
                     'context_tag' => $normalizedContextTag,
                 ];
@@ -119,7 +119,7 @@ class QueueMovieGenerationAction
                         'message' => 'Generation already queued for movie slug',
                         'slug' => $slug,
                         'confidence' => $confidence,
-                        'confidence_level' => $this->confidenceLabel($confidence),
+                        'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                         'locale' => $normalizedLocale,
                         'context_tag' => $normalizedContextTag,
                     ];
@@ -163,7 +163,7 @@ class QueueMovieGenerationAction
                     'message' => 'Generation queued for movie by slug',
                     'slug' => $slug,
                     'confidence' => $confidence,
-                    'confidence_level' => $this->confidenceLabel($confidence),
+                    'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                     'locale' => $normalizedLocale,
                 ];
 
@@ -213,7 +213,7 @@ class QueueMovieGenerationAction
             'message' => 'Generation queued for movie by slug',
             'slug' => $slug,
             'confidence' => $confidence,
-            'confidence_level' => $this->confidenceLabel($confidence),
+            'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
             'locale' => $normalizedLocale,
         ];
 
@@ -247,7 +247,7 @@ class QueueMovieGenerationAction
             'message' => 'Generation already queued for movie slug',
             'slug' => $slug,
             'confidence' => $confidence,
-            'confidence_level' => $this->confidenceLabel(is_numeric($confidence) ? (float) $confidence : null),
+            'confidence_level' => GenerationRequestNormalizer::confidenceLabel(is_numeric($confidence) ? (float) $confidence : null),
             'locale' => $existingJob['locale'] ?? $locale ?? Locale::EN_US->value,
         ];
 
@@ -263,54 +263,5 @@ class QueueMovieGenerationAction
         }
 
         return $response;
-    }
-
-    private function confidenceLabel(?float $confidence): string
-    {
-        if ($confidence === null) {
-            return 'unknown';
-        }
-
-        return match (true) {
-            $confidence >= 0.9 => 'high',
-            $confidence >= 0.7 => 'medium',
-            $confidence >= 0.5 => 'low',
-            default => 'very_low',
-        };
-    }
-
-    private function normalizeLocale(?string $locale): ?string
-    {
-        if ($locale === null || $locale === '') {
-            return null;
-        }
-
-        $candidate = str_replace('_', '-', $locale);
-        $candidateLower = strtolower($candidate);
-
-        foreach (Locale::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
-    }
-
-    private function normalizeContextTag(?string $contextTag): ?string
-    {
-        if ($contextTag === null || $contextTag === '') {
-            return null;
-        }
-
-        $candidateLower = strtolower($contextTag);
-
-        foreach (ContextTag::cases() as $case) {
-            if (strtolower($case->value) === $candidateLower) {
-                return $case->value;
-            }
-        }
-
-        return null;
     }
 }

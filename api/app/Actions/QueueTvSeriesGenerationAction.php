@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
-use App\Enums\ContextTag;
 use App\Enums\Locale;
 use App\Events\TvSeriesGenerationRequested;
+use App\Helpers\GenerationRequestNormalizer;
 use App\Models\TvSeries;
 use App\Services\JobStatusService;
 use Illuminate\Support\Facades\Log;
@@ -33,8 +33,8 @@ class QueueTvSeriesGenerationAction
             'existing_tv_series_id' => $existingTvSeries?->id,
             'existing_tv_series_slug' => $existingTvSeries?->slug,
         ]);
-        $normalizedLocale = $this->normalizeLocale($locale) ?? Locale::EN_US->value;
-        $normalizedContextTag = $this->normalizeContextTag($contextTag);
+        $normalizedLocale = GenerationRequestNormalizer::normalizeLocale($locale) ?? Locale::EN_US->value;
+        $normalizedContextTag = GenerationRequestNormalizer::normalizeContextTag($contextTag);
 
         $existingTvSeries ??= TvSeries::where('slug', $slug)->first();
 
@@ -63,7 +63,7 @@ class QueueTvSeriesGenerationAction
                 'message' => 'Generation already queued for TV series slug',
                 'slug' => $slug,
                 'confidence' => $confidence,
-                'confidence_level' => $this->confidenceLabel($confidence),
+                'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
                 'locale' => $normalizedLocale,
                 'context_tag' => $normalizedContextTag,
             ];
@@ -89,7 +89,7 @@ class QueueTvSeriesGenerationAction
             'message' => 'Generation queued for TV series slug',
             'slug' => $slug,
             'confidence' => $confidence,
-            'confidence_level' => $this->confidenceLabel($confidence),
+            'confidence_level' => GenerationRequestNormalizer::confidenceLabel($confidence),
             'locale' => $normalizedLocale,
             'context_tag' => $normalizedContextTag,
         ];
@@ -109,7 +109,7 @@ class QueueTvSeriesGenerationAction
             'message' => 'Generation already queued for TV series slug',
             'slug' => $slug,
             'confidence' => $existingJob['confidence'] ?? null,
-            'confidence_level' => $this->confidenceLabel($existingJob['confidence'] ?? null),
+            'confidence_level' => GenerationRequestNormalizer::confidenceLabel($existingJob['confidence'] ?? null),
             'locale' => $locale,
             'context_tag' => $contextTag,
         ];
@@ -119,55 +119,5 @@ class QueueTvSeriesGenerationAction
         }
 
         return $response;
-    }
-
-    /**
-     * Convert confidence score to human-readable label.
-     */
-    private function confidenceLabel(?float $confidence): string
-    {
-        if ($confidence === null) {
-            return 'unknown';
-        }
-
-        if ($confidence >= 0.9) {
-            return 'high';
-        }
-
-        if ($confidence >= 0.7) {
-            return 'medium';
-        }
-
-        if ($confidence >= 0.5) {
-            return 'low';
-        }
-
-        return 'very_low';
-    }
-
-    private function normalizeLocale(?string $locale): ?string
-    {
-        if ($locale === null || $locale === '') {
-            return null;
-        }
-
-        try {
-            return Locale::from($locale)->value;
-        } catch (\ValueError $e) {
-            return null;
-        }
-    }
-
-    private function normalizeContextTag(?string $contextTag): ?string
-    {
-        if ($contextTag === null || $contextTag === '') {
-            return null;
-        }
-
-        try {
-            return ContextTag::from($contextTag)->value;
-        } catch (\ValueError $e) {
-            return null;
-        }
     }
 }

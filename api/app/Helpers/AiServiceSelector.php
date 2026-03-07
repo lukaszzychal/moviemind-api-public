@@ -44,4 +44,20 @@ class AiServiceSelector
             throw new \InvalidArgumentException("Invalid AI service: {$service}. Must be ".self::MOCK.' or '.self::REAL.'.');
         }
     }
+
+    /**
+     * Return the job class (real or mock) based on configured AI service.
+     *
+     * @param  class-string  $realJobClass
+     * @param  class-string  $mockJobClass
+     * @return class-string
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function getJobClass(string $realJobClass, string $mockJobClass): string
+    {
+        self::validate();
+
+        return self::getService() === self::REAL ? $realJobClass : $mockJobClass;
+    }
 }

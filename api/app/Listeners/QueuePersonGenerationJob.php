@@ -15,29 +15,16 @@ class QueuePersonGenerationJob
      */
     public function handle(PersonGenerationRequested $event): void
     {
-        $aiService = AiServiceSelector::getService();
-        AiServiceSelector::validate();
+        $jobClass = AiServiceSelector::getJobClass(RealGeneratePersonJob::class, MockGeneratePersonJob::class);
 
-        match ($aiService) {
-            'real' => RealGeneratePersonJob::dispatch(
-                $event->slug,
-                $event->jobId,
-                existingPersonId: $event->existingPersonId,
-                baselineBioId: $event->baselineBioId,
-                locale: $event->locale,
-                contextTag: $event->contextTag,
-                tmdbData: $event->tmdbData
-            ),
-            'mock' => MockGeneratePersonJob::dispatch(
-                $event->slug,
-                $event->jobId,
-                existingPersonId: $event->existingPersonId,
-                baselineBioId: $event->baselineBioId,
-                locale: $event->locale,
-                contextTag: $event->contextTag,
-                tmdbData: $event->tmdbData
-            ),
-            default => throw new \InvalidArgumentException("Invalid AI service: {$aiService}. Must be 'mock' or 'real'."),
-        };
+        $jobClass::dispatch(
+            $event->slug,
+            $event->jobId,
+            existingPersonId: $event->existingPersonId,
+            baselineBioId: $event->baselineBioId,
+            locale: $event->locale,
+            contextTag: $event->contextTag,
+            tmdbData: $event->tmdbData
+        );
     }
 }
