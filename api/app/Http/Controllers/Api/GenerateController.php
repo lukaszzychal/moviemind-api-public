@@ -112,11 +112,10 @@ class GenerateController extends Controller
 
         if ($validation['confidence'] >= 0.7) {
             if ($existing) {
-                return response()->json([
-                    'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.movie')]),
-                    'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.movie')]),
-                    'job_id' => $result['existing_id'] ?? null,
-                ], 202);
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.movie')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.movie')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -198,11 +197,10 @@ class GenerateController extends Controller
 
         if ($validation['confidence'] >= 0.7) {
             if ($existing) {
-                return response()->json([
-                    'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.person')]),
-                    'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.person')]),
-                    'job_id' => $result['existing_id'] ?? null,
-                ], 202);
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.person')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.person')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -282,11 +280,10 @@ class GenerateController extends Controller
 
         if ($validation['confidence'] >= 0.7) {
             if ($existing) {
-                return response()->json([
-                    'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_series')]),
-                    'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_series')]),
-                    'job_id' => $result['existing_id'] ?? null,
-                ], 202);
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_series')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_series')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -366,11 +363,10 @@ class GenerateController extends Controller
 
         if ($validation['confidence'] >= 0.7) {
             if ($existing) {
-                return response()->json([
-                    'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_show')]),
-                    'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_show')]),
-                    'job_id' => $result['existing_id'] ?? null,
-                ], 202);
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_show')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_show')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
