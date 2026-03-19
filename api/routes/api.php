@@ -52,6 +52,24 @@ Route::prefix('v1')->group(function () {
         'plan.rate.limit',
         'plan.feature:ai_generate',
     ]);
+    Route::get('demo', function () {
+        $publicKey = \App\Models\ApiKey::where('is_public', true)
+            ->where('is_active', true)
+            ->whereNotNull('public_plaintext_key')
+            ->first();
+
+        if ($publicKey !== null) {
+            return response()->json([
+                'demo' => [
+                    'api_key' => $publicKey->public_plaintext_key,
+                    'plan' => $publicKey->plan?->name ?? 'free',
+                    'note' => 'This is a public demo key for portfolio/testing purposes. Rate limits apply.',
+                ],
+            ], 200, ['Content-Type' => 'application/json']);
+        }
+
+        return response()->json(['message' => 'No public demo key available'], 404);
+    });
     Route::get('jobs/{id}', [JobsController::class, 'show']);
     Route::post('feedback', [FeedbackController::class, 'store'])->middleware('adaptive.rate.limit:report');
     Route::get('health', [HealthController::class, 'health']);

@@ -86,7 +86,7 @@ class MovieResponseFormatter
                     'id' => $description->id,
                     'locale' => $description->locale->value,
                     'text' => $description->text,
-                    'context_tag' => $description->context_tag->value,
+                    'context_tag' => $description->context_tag?->value,
                     'origin' => $description->origin->value,
                     'ai_model' => $description->ai_model,
                     'created_at' => $description->created_at?->toISOString(),
@@ -103,7 +103,7 @@ class MovieResponseFormatter
                     'id' => $description->id,
                     'locale' => $description->locale->value,
                     'text' => $description->text,
-                    'context_tag' => $description->context_tag->value,
+                    'context_tag' => $description->context_tag?->value,
                     'origin' => $description->origin->value,
                     'ai_model' => $description->ai_model,
                     'created_at' => $description->created_at?->toISOString(),
@@ -138,7 +138,7 @@ class MovieResponseFormatter
      */
     public function formatDescriptionNotFound(): JsonResponse
     {
-        return $this->formatError('Description not found for movie', 404);
+        return $this->formatError(trans('api.movie.description_not_found'), 404);
     }
 
     /**
@@ -147,7 +147,7 @@ class MovieResponseFormatter
     public function formatInvalidSlug(string $slug, array $validation): JsonResponse
     {
         return $this->formatError(
-            'Invalid slug format',
+            trans('api.movie.invalid_slug'),
             400,
             [
                 'message' => $validation['reason'],
@@ -163,10 +163,10 @@ class MovieResponseFormatter
     public function formatDisambiguation(string $slug, array $options): JsonResponse
     {
         return $this->formatError(
-            'Multiple movies found',
+            trans('api.movie.multiple_found'),
             300,
             [
-                'message' => 'Multiple movies match your search. Please select one from the options below:',
+                'message' => trans('api.movie.disambiguation_message'),
                 'slug' => $slug,
                 'options' => $options,
                 'count' => count($options),
@@ -188,7 +188,7 @@ class MovieResponseFormatter
      */
     public function formatNotFound(?string $customMessage = null): JsonResponse
     {
-        $message = $customMessage ?? 'Movie not found';
+        $message = $customMessage ?? trans('api.movie.not_found');
 
         return $this->formatError($message, 404);
     }
@@ -246,8 +246,8 @@ class MovieResponseFormatter
 
         if ($searchResult->isAmbiguous()) {
             return response()->json([
-                'error' => 'Multiple movies found',
-                'message' => 'Multiple movies match your search criteria. Please refine your search or select a specific movie.',
+                'error' => trans('api.movie.search_multiple_found'),
+                'message' => trans('api.movie.search_multiple_message'),
                 'match_type' => $searchResult->matchType,
                 'count' => $searchResult->total,
                 'results' => $searchResult->results,
@@ -257,8 +257,8 @@ class MovieResponseFormatter
 
         if ($searchResult->isEmpty()) {
             return response()->json([
-                'error' => 'No movies found',
-                'message' => 'No movies match your search criteria.',
+                'error' => trans('api.movie.search_none_found'),
+                'message' => trans('api.movie.search_none_message'),
                 'match_type' => $searchResult->matchType,
                 'total' => $searchResult->total,
                 'results' => [],
@@ -282,7 +282,7 @@ class MovieResponseFormatter
      */
     public function formatDisambiguationSelectionNotFound(): JsonResponse
     {
-        return $this->formatError('Selected movie not found in search results', 404);
+        return $this->formatError(trans('api.movie.disambiguation_selection_not_found'), 404);
     }
 
     /**
@@ -294,7 +294,7 @@ class MovieResponseFormatter
     public function formatRefreshSuccess(string $slug, string $movieId): JsonResponse
     {
         return response()->json([
-            'message' => 'Movie data refreshed from TMDb',
+            'message' => trans('api.movie.refresh_success'),
             'slug' => $slug,
             'movie_id' => $movieId,
             'refreshed_at' => now()->toIso8601String(),
@@ -306,7 +306,7 @@ class MovieResponseFormatter
      */
     public function formatRefreshNoSnapshot(): JsonResponse
     {
-        return $this->formatError('No TMDb snapshot found for this movie', 404);
+        return $this->formatError(trans('api.movie.no_snapshot'), 404);
     }
 
     /**
@@ -314,6 +314,6 @@ class MovieResponseFormatter
      */
     public function formatRefreshFailed(): JsonResponse
     {
-        return $this->formatError('Failed to refresh movie data from TMDb', 500);
+        return $this->formatError(trans('api.movie.refresh_failed'), 500);
     }
 }

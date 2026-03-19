@@ -6,7 +6,6 @@ use App\Services\EntityVerificationServiceInterface;
 use App\Services\OpenAiClient;
 use App\Services\OpenAiClientInterface;
 use App\Services\TmdbVerificationService;
-use App\Services\TvmazeVerificationService;
 use App\Support\PhpstanFixer\AutoFixService;
 use App\Support\PhpstanFixer\Fixers\CollectionGenericDocblockFixer;
 use App\Support\PhpstanFixer\Fixers\MissingParamDocblockFixer;
@@ -24,13 +23,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OpenAiClientInterface::class, OpenAiClient::class);
         $this->app->bind(EntityVerificationServiceInterface::class, TmdbVerificationService::class);
 
-        // TV show/series retrieval uses Tvmaze for verification (same interface, different implementation)
-        $this->app->when(\App\Services\TvShowRetrievalService::class)
-            ->needs(EntityVerificationServiceInterface::class)
-            ->give(TvmazeVerificationService::class);
-        $this->app->when(\App\Services\TvSeriesRetrievalService::class)
-            ->needs(EntityVerificationServiceInterface::class)
-            ->give(TvmazeVerificationService::class);
+        // TV show/series search and retrieval now also use TMDb for consistency and better coverage
+        // (Removing Tvmaze overrides to use default TmdbVerificationService)
 
         // Register AutoFixService - always bind to prevent dependency resolution errors
         $this->app->bind(

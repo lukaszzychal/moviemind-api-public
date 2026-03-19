@@ -52,10 +52,22 @@ class PersonController extends Controller
 
         // Normal search
         $q = $request->query('q');
-        $people = $this->personRepository->searchPeople($q, 50);
-        $data = $people->map(fn ($person) => $this->transformPerson($person));
+        $limit = (int) $request->query('per_page', 50);
+        $people = $this->personRepository->searchPeople($q, $limit);
 
-        return response()->json(['data' => $data]);
+        $data = $people->getCollection()->map(fn ($person) => $this->transformPerson($person));
+
+        return response()->json([
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $people->currentPage(),
+                'per_page' => $people->perPage(),
+                'total_pages' => $people->lastPage(),
+                'total' => $people->total(),
+                'has_next_page' => $people->hasMorePages(),
+                'has_previous_page' => $people->currentPage() > 1,
+            ],
+        ]);
     }
 
     /**
@@ -68,7 +80,7 @@ class PersonController extends Controller
     {
         $slugsParam = $request->query('slugs');
         if ($slugsParam === null) {
-            return response()->json(['errors' => ['slugs' => ['The slugs field is required and cannot be empty.']]], 422);
+            return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_slugs_required')]]], 422);
         }
 
         $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
@@ -76,16 +88,16 @@ class PersonController extends Controller
         $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
 
         if (empty($slugs)) {
-            return response()->json(['errors' => ['slugs' => ['The slugs field is required and cannot be empty.']]], 422);
+            return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_slugs_required')]]], 422);
         }
 
         if (count($slugs) > 50) {
-            return response()->json(['errors' => ['slugs' => ['The slugs field must not have more than 50 items.']]], 422);
+            return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_max_items')]]], 422);
         }
 
         foreach ($slugs as $slug) {
             if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json(['errors' => ['slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.']]], 422);
+                return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_invalid_slug_pattern')]]], 422);
             }
         }
 
@@ -96,7 +108,7 @@ class PersonController extends Controller
         $allowedInclude = ['bios', 'movies'];
         foreach ($include as $item) {
             if (! in_array($item, $allowedInclude, true)) {
-                return response()->json(['errors' => ['include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.']]], 422);
+                return response()->json(['errors' => ['include' => [trans('api.general.bulk_invalid_include')]]], 422);
             }
         }
 
@@ -276,8 +288,8 @@ class PersonController extends Controller
         }, $searchResults);
 
         return response()->json([
-            'error' => 'Multiple people found',
-            'message' => 'Multiple people match this slug. Please select one:',
+            'error' => trans('api.person.multiple_found'),
+            'message' => trans('api.person.disambiguation_message'),
             'slug' => $slug,
             'options' => $options,
             'count' => count($options),
@@ -324,7 +336,7 @@ class PersonController extends Controller
         $person = $this->personRepository->findBySlugWithRelations($slug);
 
         if ($person === null) {
-            return response()->json(['error' => 'Person not found'], 404);
+            return response()->json(['error' => trans('api.person.not_found')], 404);
         }
 
         $validated = $request->validated();

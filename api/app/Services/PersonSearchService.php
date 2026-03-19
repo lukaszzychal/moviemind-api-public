@@ -258,6 +258,9 @@ class PersonSearchService
 
         $birthYear = $person->birth_date?->format('Y');
 
+        $overviewText = $person->defaultBio?->text ?? '';
+        $overviewPreview = mb_substr($overviewText, 0, 200);
+
         return [
             'source' => 'local',
             'slug' => $person->slug,
@@ -265,6 +268,7 @@ class PersonSearchService
             'birth_year' => $birthYear ? (int) $birthYear : null,
             'birthplace' => $person->birthplace,
             'has_bio' => $hasBio,
+            'overview' => $overviewPreview,
         ];
     }
 

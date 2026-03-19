@@ -228,6 +228,38 @@ Możesz użyć skryptu `setup-local-testing.sh`, który automatycznie przygotuje
 
 See docker-compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
+## ☁️ Cloud Deployment (Railway / Docker)
+
+MovieMind API is optimized for easy deployments on PaaS platforms like Railway or any VPS running Docker.
+
+### Deploying from Pre-built Images (GHCR) - Recommended 🚀
+Thanks to GitHub Actions, frontend and backend images are built and published automatically whenever code gets pushed to the `main` branch. 
+To speed up deployment and save build minutes, point your PaaS (like Railway) to your image registry rather than building from source code:
+- **Frontend**: `ghcr.io/your-username/moviemind-api-public-frontend:latest`
+- **Backend**: `ghcr.io/your-username/moviemind-api-public-backend:latest`
+*(In Railway, select "Deploy from Docker Image" instead of "Deploy from GitHub repo" and paste the adjusted image URL).*
+
+### Deploying from Source (Alternative)
+If you prefer building directly from the repository source:
+
+#### Frontend Deployment (Vue/Vite)
+The frontend is configured as a Single Page Application (SPA).
+1. Create a new service from your GitHub repository in Railway.
+2. Set the **Root Directory** to `/frontend`.
+3. Railway will automatically use the provided `Dockerfile` which builds the Node.js application and serves it via Nginx with proper SPA routing.
+4. Set necessary environment variables (e.g., `VITE_API_URL`).
+
+### Backend Deployment (Laravel & Admin Panel)
+You can deploy the backend securely by separating the public API from the Filament Admin Panel using environment variables. 
+1. Create a service from your repository with the **Root Directory** set to `/api`.
+2. **Public API Instance**:
+   - Set `ADMIN_PANEL_ENABLED=false` in the environment variables.
+   - The `RestrictAdminPanel` middleware will block all access to the `/admin` routes (returns 404 Not Found), keeping your public API secure.
+3. **Private Admin Instance** (Optional):
+   - Create a second service pointing to the same `/api` directory.
+   - Set `ADMIN_PANEL_ENABLED=true`.
+   - Use a private or unguessable domain for this instance to access the Filament Admin Panel.
+
 ## 📋 Feature Overview
 
 | Area | Public Demo (this repo) | Commercial Edition (private) |

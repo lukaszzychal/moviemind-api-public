@@ -54,8 +54,10 @@ class MovieController extends Controller
 
         // Normal search
         $q = $request->query('q');
-        $movies = $this->movieRepository->searchMovies($q, 50);
-        $data = $movies->map(function (Movie $movie) {
+        $limit = (int) $request->query('per_page', 50);
+        $movies = $this->movieRepository->searchMovies($q, $limit);
+
+        $data = $movies->getCollection()->map(function (Movie $movie) {
             $resource = MovieResource::make($movie)->additional([
                 '_links' => $this->hateoas->movieLinks($movie),
             ]);
@@ -63,7 +65,17 @@ class MovieController extends Controller
             return $resource->resolve();
         });
 
-        return $this->responseFormatter->formatMovieList($data->toArray());
+        return response()->json([
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $movies->currentPage(),
+                'per_page' => $movies->perPage(),
+                'total_pages' => $movies->lastPage(),
+                'total' => $movies->total(),
+                'has_next_page' => $movies->hasMorePages(),
+                'has_previous_page' => $movies->currentPage() > 1,
+            ],
+        ]);
     }
 
     /**
@@ -78,7 +90,7 @@ class MovieController extends Controller
         if ($slugsParam === null || $slugsParam === '') {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                    'slugs' => [trans('api.general.bulk_slugs_required')],
                 ],
             ], 422);
         }
@@ -91,7 +103,7 @@ class MovieController extends Controller
         if (empty($slugs)) {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                    'slugs' => [trans('api.general.bulk_slugs_required')],
                 ],
             ], 422);
         }
@@ -99,7 +111,7 @@ class MovieController extends Controller
         if (count($slugs) > 50) {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field must not have more than 50 items.'],
+                    'slugs' => [trans('api.general.bulk_max_items')],
                 ],
             ], 422);
         }
@@ -109,7 +121,7 @@ class MovieController extends Controller
             if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
                 return response()->json([
                     'errors' => [
-                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
+                        'slugs' => [trans('api.general.bulk_invalid_slug_pattern')],
                     ],
                 ], 422);
             }
@@ -127,7 +139,7 @@ class MovieController extends Controller
             if (! in_array($item, $allowedInclude, true)) {
                 return response()->json([
                     'errors' => [
-                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
+                        'include' => [trans('api.general.bulk_invalid_include')],
                     ],
                 ], 422);
             }
@@ -218,7 +230,7 @@ class MovieController extends Controller
     {
         $descriptionId = $this->normalizeDescriptionId($request->query('description_id'));
         if ($descriptionId === false) {
-            return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
+            return $this->responseFormatter->formatError(trans('api.general.invalid_param', ['param' => 'description_id']), 422);
         }
 
         // Extract and validate locale parameter (null if not provided, 'en-US' if invalid)

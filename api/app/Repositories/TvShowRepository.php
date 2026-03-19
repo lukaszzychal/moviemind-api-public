@@ -9,18 +9,19 @@ use Illuminate\Support\Collection;
 
 class TvShowRepository
 {
-    public function searchTvShows(?string $query, int $limit = 50): Collection
+    public function searchTvShows(?string $query, int $limit = 50): \Illuminate\Pagination\LengthAwarePaginator
     {
         return TvShow::query()
             ->when($query, function ($builder) use ($query) {
-                $builder->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"])
-                    ->orWhereJsonContains('genres', $query)
-                    ->orWhere('show_type', 'LIKE', "%{$query}%");
+                $builder->where(function ($b) use ($query) {
+                    $b->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"])
+                        ->orWhereJsonContains('genres', $query)
+                        ->orWhere('show_type', 'LIKE', "%{$query}%");
+                });
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
-            ->limit($limit)
-            ->get();
+            ->paginate($limit);
     }
 
     public function findBySlugWithRelations(string $slug): ?TvShow

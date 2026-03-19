@@ -20,7 +20,7 @@ class JobErrorFormatter
     public function formatError(\Throwable $exception, string $slug, string $entityType, ?array $suggestedSlugs = null): array
     {
         $type = $this->detectErrorType($exception);
-        $entity = strtolower($entityType) === 'movie' ? 'movie' : 'person';
+        $entityName = trans('api.job_errors.entities.'.strtolower($entityType));
 
         $error = [
             'type' => $type->value,
@@ -32,7 +32,7 @@ class JobErrorFormatter
         // Add suggested slugs for NOT_FOUND errors
         if ($type === JobErrorType::NOT_FOUND && ! empty($suggestedSlugs)) {
             $error['suggested_slugs'] = $suggestedSlugs;
-            $error['user_message'] = "This {$entity} does not exist. Did you mean one of these?";
+            $error['user_message'] = trans('api.job_errors.did_you_mean', ['entity' => $entityName]);
         }
 
         return $error;
@@ -65,13 +65,13 @@ class JobErrorFormatter
      */
     private function getShortMessage(JobErrorType $type, string $entityType): string
     {
-        $entity = strtolower($entityType) === 'movie' ? 'movie' : 'person';
+        $entityName = trans('api.job_errors.entities.'.strtolower($entityType));
 
         return match ($type) {
-            JobErrorType::NOT_FOUND => "The requested {$entity} was not found",
-            JobErrorType::AI_API_ERROR => 'AI API returned an error',
-            JobErrorType::VALIDATION_ERROR => 'AI data validation failed',
-            JobErrorType::UNKNOWN_ERROR => 'An unexpected error occurred',
+            JobErrorType::NOT_FOUND => trans('api.job_errors.not_found', ['entity' => $entityName]),
+            JobErrorType::AI_API_ERROR => trans('api.job_errors.ai_api_error'),
+            JobErrorType::VALIDATION_ERROR => trans('api.job_errors.validation_error'),
+            JobErrorType::UNKNOWN_ERROR => trans('api.job_errors.unknown_error'),
         };
     }
 
@@ -80,13 +80,13 @@ class JobErrorFormatter
      */
     private function getUserFriendlyMessage(JobErrorType $type, string $entityType): string
     {
-        $entity = strtolower($entityType) === 'movie' ? 'movie' : 'person';
+        $entityName = trans('api.job_errors.entities.'.strtolower($entityType));
 
         return match ($type) {
-            JobErrorType::NOT_FOUND => "This {$entity} does not exist in our database",
-            JobErrorType::AI_API_ERROR => 'AI service is temporarily unavailable. Please try again later.',
-            JobErrorType::VALIDATION_ERROR => 'Generated data failed validation checks. Please try again.',
-            JobErrorType::UNKNOWN_ERROR => 'An unexpected error occurred. Please try again later.',
+            JobErrorType::NOT_FOUND => trans('api.job_errors.user_not_found', ['entity' => $entityName]),
+            JobErrorType::AI_API_ERROR => trans('api.job_errors.user_ai_api_error'),
+            JobErrorType::VALIDATION_ERROR => trans('api.job_errors.user_validation_error'),
+            JobErrorType::UNKNOWN_ERROR => trans('api.job_errors.user_unknown_error'),
         };
     }
 }
