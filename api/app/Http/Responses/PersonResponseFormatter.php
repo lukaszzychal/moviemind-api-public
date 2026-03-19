@@ -111,7 +111,7 @@ class PersonResponseFormatter
      */
     public function formatBioNotFound(): JsonResponse
     {
-        return $this->formatError('Bio not found for person', 404);
+        return $this->formatError(trans('api.person.bio_not_found'), 404);
     }
 
     /**
@@ -120,7 +120,7 @@ class PersonResponseFormatter
     public function formatInvalidSlug(string $slug, array $validation): JsonResponse
     {
         return $this->formatError(
-            'Invalid slug format',
+            trans('api.person.invalid_slug'),
             400,
             [
                 'message' => $validation['reason'],
@@ -136,10 +136,10 @@ class PersonResponseFormatter
     public function formatDisambiguation(string $slug, array $options): JsonResponse
     {
         return $this->formatError(
-            'Multiple people found',
+            trans('api.person.multiple_found'),
             300,
             [
-                'message' => 'Multiple people match your search. Please select one from the options below:',
+                'message' => trans('api.person.disambiguation_message'),
                 'slug' => $slug,
                 'options' => $options,
                 'count' => count($options),
@@ -161,7 +161,7 @@ class PersonResponseFormatter
      */
     public function formatNotFound(?string $customMessage = null): JsonResponse
     {
-        $message = $customMessage ?? 'Person not found';
+        $message = $customMessage ?? trans('api.person.not_found');
 
         return $this->formatError($message, 404);
     }
@@ -214,7 +214,7 @@ class PersonResponseFormatter
      */
     public function formatDisambiguationSelectionNotFound(): JsonResponse
     {
-        return $this->formatError('Selected person not found in search results', 404);
+        return $this->formatError(trans('api.person.disambiguation_selection_not_found'), 404);
     }
 
     /**
@@ -226,7 +226,7 @@ class PersonResponseFormatter
     public function formatRefreshSuccess(string $slug, string $personId): JsonResponse
     {
         return response()->json([
-            'message' => 'Person data refreshed from TMDb',
+            'message' => trans('api.person.refresh_success'),
             'slug' => $slug,
             'person_id' => $personId,
             'refreshed_at' => now()->toIso8601String(),
@@ -238,7 +238,7 @@ class PersonResponseFormatter
      */
     public function formatRefreshNoSnapshot(): JsonResponse
     {
-        return $this->formatError('No TMDb snapshot found for this person', 404);
+        return $this->formatError(trans('api.person.no_snapshot'), 404);
     }
 
     /**
@@ -246,6 +246,6 @@ class PersonResponseFormatter
      */
     public function formatRefreshFailed(): JsonResponse
     {
-        return $this->formatError('Failed to refresh person data from TMDb', 500);
+        return $this->formatError(trans('api.person.refresh_failed'), 500);
     }
 }

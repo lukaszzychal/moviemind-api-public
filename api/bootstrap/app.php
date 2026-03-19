@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Add request-id and correlation-id middleware globally
         $middleware->append(\App\Http\Middleware\RequestIdMiddleware::class);
+        $middleware->append(\App\Http\Middleware\SetLocale::class);
         // Security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS when HTTPS)
         $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
 

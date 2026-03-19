@@ -3,6 +3,11 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPerson, getPersonRelated, reportPerson } from '@/api/client'
 import ReportModal from '@/components/ReportModal.vue'
+import Select from '@/components/ui/Select.vue'
+import Button from '@/components/ui/Button.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -46,7 +51,7 @@ async function loadRelated () {
   }
 }
 
-watch(slug, () => {
+watch([slug, locale], () => {
   loadPerson()
   loadRelated()
 }, { immediate: true })
@@ -85,7 +90,7 @@ const relatedList = computed(() => {
       v-if="loading"
       class="text-gray-500"
     >
-      Loading...
+      {{ t('detail.loading') }}
     </div>
     <div
       v-else-if="error"
@@ -98,13 +103,13 @@ const relatedList = computed(() => {
       class="p-4 bg-amber-50 rounded-lg"
     >
       <p class="text-amber-800">
-        Bio is being generated.
+        {{ t('detail.generating_bio') }}
       </p>
       <router-link
         :to="{ name: 'Job', params: { id: acceptedGeneration.job_id } }"
         class="text-indigo-600 hover:underline mt-2 inline-block"
       >
-        Check job status
+        {{ t('detail.check_job') }}
       </router-link>
     </div>
     <template v-else-if="person">
@@ -125,20 +130,15 @@ const relatedList = computed(() => {
         v-if="person.bios && person.bios.length > 1"
         class="mb-4"
       >
-        <label class="block text-sm font-medium text-gray-700 mb-1">Bio version</label>
-        <select
-          :value="selectedBio?.id"
-          class="rounded border border-gray-300 px-3 py-2"
-          @change="(e) => selectBio(e.target.value)"
-        >
-          <option
-            v-for="b in person.bios"
-            :key="b.id"
-            :value="b.id"
-          >
-            {{ b.locale }} {{ b.context_tag ? `(${b.context_tag})` : '' }}
-          </option>
-        </select>
+        <Select
+          :label="t('detail.bio_version')"
+          :model-value="selectedBio?.id"
+          @update:model-value="selectBio"
+          :options="person.bios.map(b => ({
+            value: b.id,
+            label: `${b.locale} ${b.context_tag ? `(${b.context_tag})` : ''}`
+          }))"
+        />
       </div>
 
       <div
@@ -155,7 +155,7 @@ const relatedList = computed(() => {
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Movies
+          {{ t('detail.movies') }}
         </h2>
         <ul class="flex flex-wrap gap-2">
           <li
@@ -181,7 +181,7 @@ const relatedList = computed(() => {
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Related people
+          {{ t('detail.related_people') }}
         </h2>
         <ul class="space-y-1">
           <li
@@ -198,26 +198,25 @@ const relatedList = computed(() => {
         </ul>
       </div>
 
-      <div class="flex gap-4">
-        <router-link
-          :to="{ name: 'Generate', query: { entity_type: 'PERSON', slug: person.slug } }"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+      <div class="flex flex-wrap gap-4 mt-8">
+        <Button
+          @click="router.push({ name: 'Generate', query: { entity_type: 'PERSON', slug: person.slug } })"
+          variant="primary"
         >
-          Generate bio
-        </router-link>
-        <router-link
-          :to="{ name: 'Compare', query: { type: 'people', slug1: person.slug } }"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          {{ t('detail.generate_bio') }}
+        </Button>
+        <Button
+          @click="router.push({ name: 'Compare', query: { type: 'people', slug1: person.slug } })"
+          variant="outline"
         >
-          Compare with another
-        </router-link>
-        <button
-          type="button"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          {{ t('detail.compare') }}
+        </Button>
+        <Button
           @click="reportOpen = true"
+          variant="outline"
         >
-          Report issue
-        </button>
+          {{ t('detail.report') }}
+        </Button>
       </div>
     </template>
 

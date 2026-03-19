@@ -10,7 +10,7 @@ use App\Services\EntityVerificationServiceInterface;
 use App\Services\PersonSearchService;
 use App\Support\SearchResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Pennant\Feature;
 use Tests\TestCase;
@@ -32,7 +32,7 @@ class PersonSearchServiceTest extends TestCase
         $personRepository = $this->createMock(PersonRepository::class);
         $personRepository->expects($this->once())
             ->method('searchPeople')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
 
@@ -56,7 +56,7 @@ class PersonSearchServiceTest extends TestCase
         $personRepository = $this->createMock(PersonRepository::class);
         $personRepository->expects($this->once())
             ->method('searchPeople')
-            ->willReturn(Collection::make([$localPerson]));
+            ->willReturn(new LengthAwarePaginator([$localPerson], 1, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -100,7 +100,7 @@ class PersonSearchServiceTest extends TestCase
         $personRepository = $this->createMock(PersonRepository::class);
         $personRepository->expects($this->once())
             ->method('searchPeople')
-            ->willReturn(Collection::make([$person1964, $person1970]));
+            ->willReturn(new LengthAwarePaginator([$person1964, $person1970], 2, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
 
@@ -117,7 +117,7 @@ class PersonSearchServiceTest extends TestCase
         $personRepository = $this->createMock(PersonRepository::class);
         $personRepository->expects($this->once())
             ->method('searchPeople')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
 

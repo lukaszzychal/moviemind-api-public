@@ -4,9 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   getTvSeriesBySlug,
   getTvSeriesRelated,
-  reportTvSeries,
 } from '@/api/client'
 import ReportModal from '@/components/ReportModal.vue'
+import Badge from '@/components/ui/Badge.vue'
+import Select from '@/components/ui/Select.vue'
+import Button from '@/components/ui/Button.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -51,7 +56,7 @@ async function loadRelated () {
   }
 }
 
-watch(slug, () => {
+watch([slug, locale], () => {
   load()
   loadRelated()
 }, { immediate: true })
@@ -83,7 +88,7 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
       v-if="loading"
       class="text-gray-500"
     >
-      Loading...
+      {{ t('detail.loading') }}
     </div>
     <div
       v-else-if="error"
@@ -96,13 +101,13 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
       class="p-4 bg-amber-50 rounded-lg"
     >
       <p class="text-amber-800">
-        Description is being generated.
+        {{ t('detail.generating') }}
       </p>
       <router-link
         :to="{ name: 'Job', params: { id: acceptedGeneration.job_id } }"
         class="text-indigo-600 hover:underline mt-2 inline-block"
       >
-        Check job status
+        {{ t('detail.check_job') }}
       </router-link>
     </div>
     <template v-else-if="tvSeries">
@@ -121,19 +126,19 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
           v-if="tvSeries.number_of_seasons != null"
           class="text-gray-600"
         >
-          {{ tvSeries.number_of_seasons }} seasons, {{ tvSeries.number_of_episodes }} episodes
+          {{ t('detail.seasons_episodes', { seasons: tvSeries.number_of_seasons, episodes: tvSeries.number_of_episodes }) }}
         </p>
         <div
           v-if="tvSeries.genres?.length"
           class="mt-2 flex flex-wrap gap-2"
         >
-          <span
+          <Badge
             v-for="g in tvSeries.genres"
-            :key="g"
-            class="px-2 py-0.5 bg-gray-200 rounded text-sm text-gray-700"
+            :key="typeof g === 'object' ? g.name : g"
+            variant="default"
           >
             {{ typeof g === 'object' ? g.name : g }}
-          </span>
+          </Badge>
         </div>
       </div>
 
@@ -141,20 +146,15 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
         v-if="tvSeries.descriptions?.length > 1"
         class="mb-4"
       >
-        <label class="block text-sm font-medium text-gray-700 mb-1">Description version</label>
-        <select
-          :value="selectedDescription?.id"
-          class="rounded border border-gray-300 px-3 py-2"
-          @change="(e) => selectDescription(e.target.value)"
-        >
-          <option
-            v-for="d in tvSeries.descriptions"
-            :key="d.id"
-            :value="d.id"
-          >
-            {{ d.locale }} {{ d.context_tag ? `(${d.context_tag})` : '' }}
-          </option>
-        </select>
+        <Select
+          :label="t('detail.description_version')"
+          :model-value="selectedDescription?.id"
+          @update:model-value="selectDescription"
+          :options="tvSeries.descriptions.map(d => ({
+            value: d.id,
+            label: `${d.locale} ${d.context_tag ? `(${d.context_tag})` : ''}`
+          }))"
+        />
       </div>
 
       <div
@@ -171,7 +171,7 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Cast & crew
+          {{ t('detail.cast_crew') }}
         </h2>
         <ul class="flex flex-wrap gap-2">
           <li
@@ -193,7 +193,7 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Related series
+          {{ t('detail.related_series') }}
         </h2>
         <ul class="space-y-1">
           <li
@@ -218,33 +218,32 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
         </ul>
       </div>
 
-      <div class="flex gap-4">
-        <router-link
-          :to="{ name: 'Generate', query: { entity_type: 'TV_SERIES', slug: tvSeries.slug } }"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+      <div class="flex flex-wrap gap-4 mt-8">
+        <Button
+          @click="router.push({ name: 'Generate', query: { entity_type: 'TV_SERIES', slug: tvSeries.slug } })"
+          variant="primary"
         >
-          Generate description
-        </router-link>
-        <router-link
-          :to="{ name: 'Compare', query: { type: 'tv-series', slug1: tvSeries.slug } }"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          {{ t('detail.generate_desc') }}
+        </Button>
+        <Button
+          @click="router.push({ name: 'Compare', query: { type: 'tv-series', slug1: tvSeries.slug } })"
+          variant="outline"
         >
-          Compare with another
-        </router-link>
-        <button
-          type="button"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          {{ t('detail.compare') }}
+        </Button>
+        <Button
           @click="reportOpen = true"
+          variant="outline"
         >
-          Report issue
-        </button>
+          {{ t('detail.report') }}
+        </Button>
       </div>
     </template>
 
     <ReportModal
       v-model="reportOpen"
       :description-id="selectedDescription?.id"
-      :on-submit="(payload) => reportTvSeries(slug.value, payload)"
+      :on-submit="onReport"
     />
   </div>
 </template>

@@ -37,7 +37,7 @@ class GenerateController extends Controller
             'PERSON', 'ACTOR' => $this->handlePersonGeneration($slug, $validated['locale'] ?? null, $contextTags),
             'TV_SERIES' => $this->handleTvSeriesGeneration($slug, $validated['locale'] ?? null, $contextTags),
             'TV_SHOW' => $this->handleTvShowGeneration($slug, $validated['locale'] ?? null, $contextTags),
-            default => response()->json(['error' => 'Invalid entity type'], 400),
+            default => response()->json(['error' => trans('api.general.invalid_entity_type')], 400),
         };
     }
 
@@ -55,7 +55,7 @@ class GenerateController extends Controller
         $validation = SlugValidator::validateMovieSlug($slug);
         if (! $validation['valid']) {
             return response()->json([
-                'error' => 'Invalid slug format',
+                'error' => trans('api.general.invalid_slug'),
                 'message' => $validation['reason'],
                 'confidence' => $validation['confidence'],
                 'slug' => $slug,
@@ -82,7 +82,7 @@ class GenerateController extends Controller
             return response()->json([
                 'job_ids' => array_column($results, 'job_id'),
                 'status' => 'PENDING',
-                'message' => 'Generation queued for multiple context tags',
+                'message' => trans('api.generation.multiple_queued'),
                 'slug' => $slug,
                 'context_tags' => $contextTags,
                 'locale' => $locale ?? 'en-US',
@@ -110,9 +110,12 @@ class GenerateController extends Controller
             $contextTag
         );
 
-        if ($existing) {
-            if (($result['message'] ?? '') !== 'Generation already queued for movie slug') {
-                $result['message'] = 'Generation queued for existing movie slug';
+        if ($validation['confidence'] >= 0.7) {
+            if ($existing) {
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.movie')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.movie')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -131,13 +134,13 @@ class GenerateController extends Controller
     private function handlePersonGeneration(string $slug, ?string $locale = null, ?array $contextTags = null): JsonResponse
     {
         if (! Feature::active('ai_bio_generation')) {
-            return response()->json(['error' => 'Feature not available'], 403);
+            return response()->json(['error' => trans('api.general.feature_not_available')], 403);
         }
 
         $validation = SlugValidator::validatePersonSlug($slug);
         if (! $validation['valid']) {
             return response()->json([
-                'error' => 'Invalid slug format',
+                'error' => trans('api.general.invalid_slug'),
                 'message' => $validation['reason'],
                 'confidence' => $validation['confidence'],
                 'slug' => $slug,
@@ -164,7 +167,7 @@ class GenerateController extends Controller
             return response()->json([
                 'job_ids' => array_column($results, 'job_id'),
                 'status' => 'PENDING',
-                'message' => 'Generation queued for multiple context tags',
+                'message' => trans('api.generation.multiple_queued'),
                 'slug' => $slug,
                 'context_tags' => $contextTags,
                 'locale' => $locale ?? 'en-US',
@@ -192,9 +195,12 @@ class GenerateController extends Controller
             $contextTag
         );
 
-        if ($existing) {
-            if (($result['message'] ?? '') !== 'Generation already queued for person slug') {
-                $result['message'] = 'Generation queued for existing person slug';
+        if ($validation['confidence'] >= 0.7) {
+            if ($existing) {
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.person')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.person')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -219,7 +225,7 @@ class GenerateController extends Controller
         $validation = SlugValidator::validateTvSeriesSlug($slug);
         if (! $validation['valid']) {
             return response()->json([
-                'error' => 'Invalid slug format',
+                'error' => trans('api.general.invalid_slug'),
                 'message' => $validation['reason'],
                 'confidence' => $validation['confidence'],
                 'slug' => $slug,
@@ -245,7 +251,7 @@ class GenerateController extends Controller
             return response()->json([
                 'job_ids' => array_column($results, 'job_id'),
                 'status' => 'PENDING',
-                'message' => 'Generation queued for multiple context tags',
+                'message' => trans('api.generation.multiple_queued'),
                 'slug' => $slug,
                 'context_tags' => $contextTags,
                 'locale' => $locale ?? 'en-US',
@@ -272,9 +278,12 @@ class GenerateController extends Controller
             $contextTag
         );
 
-        if ($existing) {
-            if (($result['message'] ?? '') !== 'Generation already queued for TV series slug') {
-                $result['message'] = 'Generation queued for existing TV series slug';
+        if ($validation['confidence'] >= 0.7) {
+            if ($existing) {
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_series')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_series')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -299,7 +308,7 @@ class GenerateController extends Controller
         $validation = SlugValidator::validateTvShowSlug($slug);
         if (! $validation['valid']) {
             return response()->json([
-                'error' => 'Invalid slug format',
+                'error' => trans('api.general.invalid_slug'),
                 'message' => $validation['reason'],
                 'confidence' => $validation['confidence'],
                 'slug' => $slug,
@@ -325,7 +334,7 @@ class GenerateController extends Controller
             return response()->json([
                 'job_ids' => array_column($results, 'job_id'),
                 'status' => 'PENDING',
-                'message' => 'Generation queued for multiple context tags',
+                'message' => trans('api.generation.multiple_queued'),
                 'slug' => $slug,
                 'context_tags' => $contextTags,
                 'locale' => $locale ?? 'en-US',
@@ -352,9 +361,12 @@ class GenerateController extends Controller
             $contextTag
         );
 
-        if ($existing) {
-            if (($result['message'] ?? '') !== 'Generation already queued for TV show slug') {
-                $result['message'] = 'Generation queued for existing TV show slug';
+        if ($validation['confidence'] >= 0.7) {
+            if ($existing) {
+                $result['error'] = trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_show')]);
+                $result['message'] = trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_show')]);
+
+                return response()->json($result, 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);

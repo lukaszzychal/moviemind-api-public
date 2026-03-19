@@ -10,7 +10,7 @@ use App\Services\EntityVerificationServiceInterface;
 use App\Services\MovieSearchService;
 use App\Support\SearchResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Pennant\Feature;
 use Tests\TestCase;
@@ -32,7 +32,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
 
@@ -56,7 +56,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([$localMovie]));
+            ->willReturn(new LengthAwarePaginator([$localMovie], 1, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -101,7 +101,7 @@ class MovieSearchServiceTest extends TestCase
         // Repository is called with year and returns only matching movies (filtering in DB)
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([$movie1999]));
+            ->willReturn(new LengthAwarePaginator([$movie1999], 1, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
 
@@ -123,7 +123,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -177,7 +177,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -224,7 +224,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([$movie]));
+            ->willReturn(new LengthAwarePaginator([$movie], 1, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -258,7 +258,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([$movie1, $movie2]));
+            ->willReturn(new LengthAwarePaginator([$movie1, $movie2], 2, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -280,7 +280,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())
@@ -310,7 +310,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once()) // Should only be called once due to cache
             ->method('searchMovies')
-            ->willReturn(Collection::make([$movie]));
+            ->willReturn(new LengthAwarePaginator([$movie], 1, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once()) // Should only be called once due to cache
@@ -335,7 +335,7 @@ class MovieSearchServiceTest extends TestCase
         $movieRepository = $this->createMock(MovieRepository::class);
         $movieRepository->expects($this->once())
             ->method('searchMovies')
-            ->willReturn(Collection::make([]));
+            ->willReturn(new LengthAwarePaginator([], 0, 20));
 
         $tmdbService = $this->createMock(EntityVerificationServiceInterface::class);
         $tmdbService->expects($this->once())

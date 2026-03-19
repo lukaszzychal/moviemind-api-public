@@ -32,7 +32,8 @@ class TvShowSearchService
     }
 
     public function __construct(
-        private readonly TvShowRepository $tvShowRepository
+        private readonly TvShowRepository $tvShowRepository,
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService
     ) {}
 
     /**
@@ -140,6 +141,9 @@ class TvShowSearchService
             ? $tvShow->descriptions_count > 0
             : $tvShow->descriptions()->exists();
 
+        $overviewText = $tvShow->defaultDescription?->text ?? '';
+        $overviewPreview = mb_substr($overviewText, 0, 200);
+
         return [
             'source' => 'local',
             'slug' => $tvShow->slug,
@@ -148,6 +152,7 @@ class TvShowSearchService
             'first_air_year' => $tvShow->first_air_date?->year,
             'show_type' => $tvShow->show_type,
             'has_description' => $hasDescription,
+            'overview' => $overviewPreview,
         ];
     }
 
@@ -165,9 +170,89 @@ class TvShowSearchService
             return [];
         }
 
-        // Note: TMDb search for TV shows will be implemented in Phase 4
-        // For now, return empty array
-        return [];
+        return $this->searchTmdb($query, $year, $limit);
+    }
+
+    /**
+     * Search for TV shows in TMDB.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function searchTmdb(string $query, ?int $year, int $limit): array
+    {
+        try {
+            $tmdbResults = $this->tmdbVerificationService->searchTvShows($query, $limit);
+
+            // Transform all results first (without slugs)
+            $transformedResults = array_map(
+                fn (array $tmdbTvShow) => $this->transformTmdbTvShowToSearchResult($tmdbTvShow, false),
+                $tmdbResults
+            );
+
+            // Filter by year if specified (same logic as for local results)
+            if ($year !== null) {
+                $transformedResults = array_filter($transformedResults, function (array $result) use ($year) {
+                    return ($result['first_air_year'] ?? null) === $year;
+                });
+            }
+
+            // Note: Slug generation will be done in search() method after getting local results
+            // to ensure proper context-aware slug generation
+            return array_values($transformedResults); // Re-index array after filtering
+        } catch (\Throwable $e) {
+            Log::warning('TvShowSearchService: TMDB search failed', [
+                'query' => $query,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Transform TMDB TV show data to search result array.
+     *
+     * @param  array<string, mixed>  $tmdbTvShow
+     * @param  bool  $generateSlug  Whether to generate slug (false when generating slugs in batch)
+     * @return array<string, mixed>
+     */
+    private function transformTmdbTvShowToSearchResult(array $tmdbTvShow, bool $generateSlug = true): array
+    {
+        $firstAirYear = $this->extractYearFromDate($tmdbTvShow['first_air_date'] ?? '');
+
+        $overview = $tmdbTvShow['overview'] ?? '';
+        $overviewPreview = substr($overview, 0, 200);
+
+        $result = [
+            'source' => 'external',
+            'title' => $tmdbTvShow['name'],
+            'first_air_year' => $firstAirYear,
+            'overview' => $overviewPreview,
+            'needs_creation' => true,
+        ];
+
+        if ($generateSlug) {
+            $result['suggested_slug'] = TvShow::generateSlug(
+                $tmdbTvShow['name'],
+                $firstAirYear
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Extract year from date string (YYYY-MM-DD format).
+     */
+    private function extractYearFromDate(string $date): ?int
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        $yearString = substr($date, 0, 4);
+
+        return (int) $yearString;
     }
 
     /**

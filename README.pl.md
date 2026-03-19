@@ -205,6 +205,37 @@ Zwróć tylko czysty tekst.
 
 Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
+## ☁️ Wdrożenie w Chmurze (Railway / Docker)
+
+Projekt MovieMind API jest zoptymalizowany pod łatwe wdrożenia na platformach PaaS takich jak Railway lub własnych serwerach VPS opartych na Dockerze.
+
+### Wdrożenie z Gotowych Obrazów (GHCR) - Zalecane 🚀
+Dzięki GitHub Actions, obrazy dla środowisk Frontend i Backend budują się i tagują automatycznie przy wypychaniu kodu na główną gałąź.
+Aby maksymalnie przyspieszyć wdrożenie i zaoszczędzić zasoby, wskaż źródło deploymentu jako "Docker Image" zamiast budować aplikację z kodu źródłowego:
+- **Frontend**: `ghcr.io/twoj-uzytkownik/moviemind-api-public-frontend:latest`
+- **Backend**: `ghcr.io/twoj-uzytkownik/moviemind-api-public-backend:latest`
+*(W Railway po prostu wybierz opcję "Deploy from Docker Image" zamiast "Deploy from GitHub repo" i wklej powyższy, dostosowany URL).*
+
+### Wdrożenie ze źródeł (Alternatywa)
+Jeżeli wolisz budować środowisko z kodu w repozytorium, zastosuj poniższe reguły.
+
+#### Frontend (Vue/Vite)
+Frontend funkcjonuje jako aplikacja SPA (Single Page Application).
+1. Utwórz nową usługę z repozytorium GitHub na platformie.
+2. W ustawieniach wskaż **Katalog Główny (Root Directory)** na `/frontend`.
+3. Platforma automatycznie wykryje i użyje dołączonego pliku `Dockerfile` do zbudowania i serwowania aplikacji przez Nginx.
+4. W zmiennych środowiskowych zdefiniuj m.in. `VITE_API_URL`.
+
+### Wdrożenie Backendu (Ukrycie Panelu Admina)
+Aplikację Laravel możesz wdrożyć w sposób chroniący panel administracyjny Filament przed publicznym dostępem.
+1. Utwórz nową usługę z repozytorium wskazując katalog `/api` jako główny.
+2. **Instancja Publicznego API**:
+   - Ustaw zmienną środowiskową `ADMIN_PANEL_ENABLED=false`.
+   - Zintegrowany Middleware (`RestrictAdminPanel`) automatycznie zablokuje wszystkie próby wejścia na ścieżkę `/admin` (zwracając błąd 404 Not Found).
+3. **Instancja Panelu Admina** (Opcjonalnie):
+   - Stwórz osobną usługę opartą na tym samym kodzie.
+   - Ustaw `ADMIN_PANEL_ENABLED=true` oraz podepnij do niej niejawną domenę.
+
 ## 📋 Przegląd funkcji
 
 | Obszar | Publiczne demo (to repo) | Wersja komercyjna (prywatne) |

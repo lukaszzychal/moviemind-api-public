@@ -2,7 +2,12 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getJob } from '@/api/client'
+import Card from '@/components/ui/Card.vue'
+import Badge from '@/components/ui/Badge.vue'
+import Button from '@/components/ui/Button.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const id = computed(() => route.params.id)
@@ -72,13 +77,13 @@ const detailRoute = computed(() => {
 <template>
   <div>
     <h1 class="text-2xl font-bold text-gray-900 mb-4">
-      Job status
+      {{ t('job.title') }}
     </h1>
     <div
       v-if="loading && !job"
       class="text-gray-500"
     >
-      Loading...
+      {{ t('job.loading') }}
     </div>
     <div
       v-else-if="error"
@@ -86,43 +91,41 @@ const detailRoute = computed(() => {
     >
       {{ error }}
     </div>
-    <div
-      v-else-if="job"
-      class="space-y-2"
-    >
-      <p>
-        <span class="font-medium text-gray-700">Status:</span>
-        <span
-          :class="{
-            'text-amber-600': job.status === 'PENDING',
-            'text-green-600': job.status === 'DONE',
-            'text-red-600': job.status === 'FAILED',
-            'text-gray-600': job.status === 'UNKNOWN',
-          }"
-        >
-          {{ job.status }}
-        </span>
-      </p>
-      <p v-if="job.entity">
-        <span class="font-medium text-gray-700">Entity:</span> {{ job.entity }} — {{ job.slug }}
-      </p>
-      <div
-        v-if="job.error"
-        class="p-3 bg-red-50 rounded text-red-700 text-sm"
+      <Card
+        v-else-if="job"
+        padding-class="p-6"
       >
-        {{ typeof job.error === 'object' ? JSON.stringify(job.error) : job.error }}
-      </div>
-      <div
-        v-if="job.status === 'DONE' && detailRoute"
-        class="mt-4"
-      >
-        <router-link
-          :to="detailRoute"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-        >
-          View {{ job.entity }}
-        </router-link>
-      </div>
-    </div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-gray-700">{{ t('job.status_label') }}</span>
+            <Badge
+              :variant="job.status === 'DONE' ? 'success' : job.status === 'PENDING' ? 'warning' : job.status === 'FAILED' ? 'danger' : 'default'"
+            >
+              {{ t('job.status.' + job.status) }}
+            </Badge>
+          </div>
+          <div v-if="job.entity" class="flex justify-between border-t border-gray-100 pt-3">
+            <span class="font-medium text-gray-700">{{ t('job.entity_label') }}</span>
+            <span class="text-gray-900 font-medium">{{ job.entity }} — {{ job.slug }}</span>
+          </div>
+          <div
+            v-if="job.error"
+            class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700 text-sm mt-4"
+          >
+            {{ typeof job.error === 'object' ? JSON.stringify(job.error) : job.error }}
+          </div>
+          <div
+            v-if="job.status === 'DONE' && detailRoute"
+            class="mt-6 pt-4 border-t border-gray-100 flex justify-end"
+          >
+            <Button
+              @click="router.push(detailRoute)"
+              variant="primary"
+            >
+              {{ t('job.view_entity') }} {{ job.entity }}
+            </Button>
+          </div>
+        </div>
+      </Card>
   </div>
 </template>

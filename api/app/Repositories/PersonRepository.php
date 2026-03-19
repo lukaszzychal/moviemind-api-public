@@ -8,20 +8,21 @@ use Illuminate\Support\Str;
 
 class PersonRepository
 {
-    public function searchPeople(?string $query, int $limit = 50): Collection
+    public function searchPeople(?string $query, int $limit = 50): \Illuminate\Pagination\LengthAwarePaginator
     {
         return Person::query()
             ->when($query, function ($builder) use ($query) {
-                $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ["%$query%"])
-                    ->orWhereRaw('LOWER(birthplace) LIKE LOWER(?)', ["%$query%"])
-                    ->orWhereHas('movies', function ($qm) use ($query) {
-                        $qm->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"]);
-                    });
+                $builder->where(function ($b) use ($query) {
+                    $b->whereRaw('LOWER(name) LIKE LOWER(?)', ["%$query%"])
+                        ->orWhereRaw('LOWER(birthplace) LIKE LOWER(?)', ["%$query%"])
+                        ->orWhereHas('movies', function ($qm) use ($query) {
+                            $qm->whereRaw('LOWER(title) LIKE LOWER(?)', ["%$query%"]);
+                        });
+                });
             })
             ->with(['defaultBio', 'movies'])
             ->withCount('bios')
-            ->limit($limit)
-            ->get();
+            ->paginate($limit);
     }
 
     public function findBySlugWithRelations(string $slug): ?Person

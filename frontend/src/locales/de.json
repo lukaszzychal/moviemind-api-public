@@ -1,0 +1,129 @@
+{
+    "nav": {
+        "search": "Suche",
+        "compare": "Vergleichen",
+        "generate": "Erzeugen",
+        "feedback": "Feedback"
+    },
+    "footer": {
+        "tmdb_disclaimer": "Dieses Produkt verwendet die TMDb-API, wird jedoch nicht von TMDb unterstützt oder zertifiziert."
+    },
+    "home": {
+        "subtitle": "KI-generierte Beschreibungen für Filme, Personen und TV. Suchen und erkunden.",
+        "search_placeholder": "Suche nach Filmen, Personen, Serien...",
+        "search_button": "Suchen",
+        "data_sources": "Datenquellen"
+    },
+    "search": {
+        "title": "Suchen",
+        "placeholder": "Abfrage...",
+        "button": "Suchen",
+        "loading": "Wird geladen...",
+        "no_results": "Keine Ergebnisse.",
+        "page_of": "Seite {page} von {total}",
+        "per_page": "Pro Seite",
+        "previous": "Vorherige",
+        "next": "Nächste",
+        "badge": {
+            "local": "Lokal",
+            "tmdb": "TMDb"
+        }
+    },
+    "generate": {
+        "title": "Beschreibung erstellen",
+        "subtitle": "Setzen Sie KI-Erstellung in die Warteschlange. Erfordert einen API-Schlüssel.",
+        "entity_type_label": "Entitätstyp",
+        "slug_label": "Slug oder Entitäts-ID",
+        "slug_placeholder": "z. B. the-matrix-1999",
+        "locale_label": "Sprache",
+        "context_tag_label": "Kontext-Tag",
+        "api_key_label": "API-Schlüssel",
+        "api_key_placeholder": "Ihr MovieMind API-Schlüssel",
+        "iam_human": "Ich bin ein Mensch",
+        "get_demo_key": "Demo-Schlüssel holen",
+        "loading_demo": "Wird geladen...",
+        "submit": "Zur Warteschlange hinzufügen",
+        "submitting": "Senden...",
+        "success_title": "Erfolgreich eingereiht!",
+        "error": {
+            "no_slug": "Slug oder Entitäts-ID ist erforderlich",
+            "no_api_key": "API-Schlüssel wird benötigt",
+            "not_human": "Bitte bestätigen Sie zuerst, dass Sie ein Mensch sind.",
+            "demo_unavailable": "Demo API-Schlüssel ist derzeit nicht vom Server verfügbar."
+        }
+    },
+    "feedback": {
+        "title": "Feedback",
+        "subtitle": "Senden Sie anonymes Feedback (keine persönlichen Daten).",
+        "category_label": "Kategorie",
+        "message_label": "Nachricht (mind. 10 Zeichen)",
+        "send_button": "Senden",
+        "sending": "Senden...",
+        "success": "Feedback erhalten. Vielen Dank.",
+        "error": {
+            "min_length": "Die Nachricht muss mindestens 10 Zeichen lang sein"
+        },
+        "category": {
+            "bug": "Fehler",
+            "suggestion": "Vorschlag",
+            "other": "Andere"
+        }
+    },
+    "compare": {
+        "title": "Vergleichen",
+        "slug1_placeholder": "Erster Slug",
+        "slug2_placeholder": "Zweiter Slug",
+        "button": "Vergleichen",
+        "comparing": "Vergleichen...",
+        "comparison_title": "Vergleich",
+        "common_genres": "Gemeinsame Genres",
+        "year_difference": "Altersunterschied (Jahre)",
+        "similarity_score": "Ähnlichkeitswert",
+        "common_people": "Gemeinsame Personen",
+        "common_movies": "Gemeinsame Filme",
+        "birth_year_difference": "Altersunterschied (Geburtsjahr)",
+        "error": {
+            "both_slugs": "Bitte beide Slugs eingeben",
+            "same_slugs": "Slugs müssen voneinander abweichen"
+        }
+    },
+    "job": {
+        "title": "Jobstatus",
+        "loading": "Wird geladen...",
+        "status_label": "Status",
+        "entity_label": "Entität",
+        "view_entity": "Anzeigen",
+        "status": {
+            "DONE": "ABGESCHLOSSEN",
+            "PENDING": "AUSSTEHEND",
+            "FAILED": "FEHLGESCHLAGEN",
+            "PROCESSING": "IN BEARBEITUNG"
+        }
+    },
+    "types": {
+        "movies": "Filme",
+        "people": "Personen",
+        "tv_series": "TV Serien",
+        "tv_shows": "TV Shows"
+    },
+    "detail": {
+        "loading": "Wird geladen...",
+        "generating": "Beschreibung wird generiert.",
+        "generating_bio": "Biografie wird generiert.",
+        "check_job": "Jobstatus prüfen",
+        "description_version": "Beschreibungsversion",
+        "bio_version": "Biografie-Version",
+        "cast_crew": "Besetzung & Crew",
+        "related_movies": "Ähnliche Filme",
+        "related_people": "Ähnliche Personen",
+        "related_series": "Ähnliche Serien",
+        "related_shows": "Ähnliche Shows",
+        "collection": "Sammlung",
+        "movies": "Filme",
+        "seasons_episodes": "{seasons} Staffeln, {episodes} Episoden",
+        "generate_desc": "Beschreibung generieren",
+        "generate_bio": "Biografie generieren",
+        "compare": "Mit einem anderen vergleichen",
+        "report": "Problem melden"
+    }
+}
