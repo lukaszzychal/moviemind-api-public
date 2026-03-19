@@ -32,6 +32,9 @@ return [
         'multiple_found' => 'Multiple TV series found',
         'invalid_slug' => 'Invalid slug format',
         'disambiguation_message' => 'Multiple TV series match your search. Please select one from the options below:',
+        'refresh_success' => 'TV series data refreshed from TMDb',
+        'no_snapshot' => 'No TMDb snapshot found for this TV series',
+        'refresh_failed' => 'Failed to refresh TV series data from TMDb',
     ],
     'tv_show' => [
         'not_found' => 'TV show not found',
@@ -39,10 +42,16 @@ return [
         'multiple_found' => 'Multiple TV shows found',
         'invalid_slug' => 'Invalid slug format',
         'disambiguation_message' => 'Multiple TV shows match your search. Please select one from the options below:',
+        'refresh_success' => 'TV show data refreshed from TMDb',
+        'no_snapshot' => 'No TMDb snapshot found for this TV show',
+        'refresh_failed' => 'Failed to refresh TV show data from TMDb',
     ],
     'generation' => [
         'unauthorized' => 'Unauthorized. API key required.',
         'invalid_entity_type' => 'Invalid entity type provided.',
+        'multiple_queued' => 'Generation queued for multiple context tags',
+        'already_queued' => 'Generation already queued for :entity slug',
+        'queued_existing' => 'Generation queued for existing :entity slug',
     ],
     'feedback' => [
         'too_short' => 'Feedback message is too short.',
@@ -73,10 +82,5 @@ return [
         'bulk_invalid_slug_pattern' => 'Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.',
         'bulk_invalid_include' => 'The include field must contain only authorized values.',
         'invalid_param' => 'Invalid :param parameter',
-    ],
-    'generation' => [
-        'multiple_queued' => 'Generation queued for multiple context tags',
-        'already_queued' => 'Generation already queued for :entity slug',
-        'queued_existing' => 'Generation queued for existing :entity slug',
     ],
 ];

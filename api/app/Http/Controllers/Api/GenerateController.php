@@ -116,7 +116,7 @@ class GenerateController extends Controller
                     'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.movie')]),
                     'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.movie')]),
                     'job_id' => $result['existing_id'] ?? null,
-                ]);
+                ], 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -202,7 +202,7 @@ class GenerateController extends Controller
                     'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.person')]),
                     'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.person')]),
                     'job_id' => $result['existing_id'] ?? null,
-                ]);
+                ], 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -286,7 +286,7 @@ class GenerateController extends Controller
                     'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_series')]),
                     'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_series')]),
                     'job_id' => $result['existing_id'] ?? null,
-                ]);
+                ], 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);
@@ -370,7 +370,7 @@ class GenerateController extends Controller
                     'error' => trans('api.generation.already_queued', ['entity' => trans('api.job_errors.entities.tv_show')]),
                     'message' => trans('api.generation.queued_existing', ['entity' => trans('api.job_errors.entities.tv_show')]),
                     'job_id' => $result['existing_id'] ?? null,
-                ]);
+                ], 202);
             }
             $result['confidence'] = $validation['confidence'];
             $result['confidence_level'] = $this->confidenceLevel($validation['confidence']);

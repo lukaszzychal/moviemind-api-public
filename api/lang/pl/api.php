@@ -32,6 +32,9 @@ return [
         'multiple_found' => 'Znaleziono wiele seriali telewizyjnych',
         'invalid_slug' => 'Nieprawidłowy format adresu slug',
         'disambiguation_message' => 'Wiele seriali pasuje do Twojego zapytania. Wybierz jeden z poniższych:',
+        'refresh_success' => 'Dane serialu zostały odświeżone z TMDb',
+        'no_snapshot' => 'Brak snapshotu TMDb dla tego serialu',
+        'refresh_failed' => 'Nie udało się odświeżyć danych serialu z TMDb',
     ],
     'tv_show' => [
         'not_found' => 'Program telewizyjny nie został znaleziony',
@@ -39,10 +42,16 @@ return [
         'multiple_found' => 'Znaleziono wiele programów telewizyjnych',
         'invalid_slug' => 'Nieprawidłowy format adresu slug',
         'disambiguation_message' => 'Wiele programów pasuje do Twojego zapytania. Wybierz jeden z poniższych:',
+        'refresh_success' => 'Dane programu zostały odświeżone z TMDb',
+        'no_snapshot' => 'Brak snapshotu TMDb dla tego programu',
+        'refresh_failed' => 'Nie udało się odświeżyć danych programu z TMDb',
     ],
     'generation' => [
         'unauthorized' => 'Nieautoryzowany dostęp. Wymagany klucz API.',
         'invalid_entity_type' => 'Podano nieprawidłowy typ encji.',
+        'multiple_queued' => 'Kolejkowanie generowania dla wielu tagów kontekstowych',
+        'already_queued' => 'Generowanie jest już zakolejkowane dla sluga typu :entity',
+        'queued_existing' => 'Zakolejkowano generowanie dla istniejącego sluga typu :entity',
     ],
     'feedback' => [
         'too_short' => 'Wiadomość opinii jest zbyt krótka.',
@@ -73,10 +82,5 @@ return [
         'bulk_invalid_slug_pattern' => 'Każdy slug musi pasować do wzorca: /^[a-z0-9-]+$/i i mieć maksymalnie 255 znaków.',
         'bulk_invalid_include' => 'Pole include musi zawierać tylko uprawnione wartości.',
         'invalid_param' => 'Nieprawidłowy parametr :param',
-    ],
-    'generation' => [
-        'multiple_queued' => 'Kolejkowanie generowania dla wielu tagów kontekstowych',
-        'already_queued' => 'Generowanie jest już zakolejkowane dla sluga typu :entity',
-        'queued_existing' => 'Zakolejkowano generowanie dla istniejącego sluga typu :entity',
     ],
 ];
