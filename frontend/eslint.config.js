@@ -6,7 +6,7 @@ export default [
     ignores: ['dist', 'node_modules', '**/*.min.js'],
   },
   {
-    files: ['src/views/**/*.vue', 'src/components/Layout.vue'],
+    files: ['**/*.vue'],
     rules: {
       'vue/multi-word-component-names': 'off',
     },
