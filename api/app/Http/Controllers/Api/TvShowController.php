@@ -41,8 +41,10 @@ class TvShowController extends Controller
         }
 
         $q = $request->query('q');
-        $tvShows = $this->tvShowRepository->searchTvShows($q, 50);
-        $data = $tvShows->map(function ($tvShow) {
+        $limit = (int) $request->query('per_page', 50);
+        $tvShows = $this->tvShowRepository->searchTvShows($q, $limit);
+
+        $data = $tvShows->getCollection()->map(function ($tvShow) {
             $resource = TvShowResource::make($tvShow)->additional([
                 '_links' => $this->hateoas->tvShowLinks($tvShow),
             ]);
@@ -51,8 +53,15 @@ class TvShowController extends Controller
         });
 
         return response()->json([
-            'data' => $data->toArray(),
-            'count' => $data->count(),
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $tvShows->currentPage(),
+                'per_page' => $tvShows->perPage(),
+                'total_pages' => $tvShows->lastPage(),
+                'total' => $tvShows->total(),
+                'has_next_page' => $tvShows->hasMorePages(),
+                'has_previous_page' => $tvShows->currentPage() > 1,
+            ],
         ]);
     }
 
@@ -66,7 +75,7 @@ class TvShowController extends Controller
         if ($slugsParam === null || $slugsParam === '') {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                    'slugs' => [trans('api.general.bulk_slugs_required')],
                 ],
             ], 422);
         }
@@ -78,7 +87,7 @@ class TvShowController extends Controller
         if (empty($slugs)) {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                    'slugs' => [trans('api.general.bulk_slugs_required')],
                 ],
             ], 422);
         }
@@ -86,7 +95,7 @@ class TvShowController extends Controller
         if (count($slugs) > 50) {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field must not have more than 50 items.'],
+                    'slugs' => [trans('api.general.bulk_max_items')],
                 ],
             ], 422);
         }
@@ -95,7 +104,7 @@ class TvShowController extends Controller
             if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
                 return response()->json([
                     'errors' => [
-                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
+                        'slugs' => [trans('api.general.bulk_invalid_slug_pattern')],
                     ],
                 ], 422);
             }
@@ -111,7 +120,7 @@ class TvShowController extends Controller
             if (! in_array($item, $allowedInclude, true)) {
                 return response()->json([
                     'errors' => [
-                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
+                        'include' => [trans('api.general.bulk_invalid_include')],
                     ],
                 ], 422);
             }
@@ -255,12 +264,12 @@ class TvShowController extends Controller
             ->first();
 
         if (! $snapshot) {
-            return response()->json(['error' => 'No TMDb snapshot found for this TV show'], 404);
+            return response()->json(['error' => trans('api.tv_show.no_snapshot')], 404);
         }
 
         // TODO: Implement refreshTvShowDetails in TmdbVerificationService
         return response()->json([
-            'message' => 'TV show data refreshed from TMDb',
+            'message' => trans('api.tv_show.refresh_success'),
             'slug' => $slug,
             'tv_show_id' => $tvShow->id,
             'refreshed_at' => now()->toIso8601String(),

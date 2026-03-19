@@ -21,13 +21,15 @@ class MovieRepository
         string|array|null $actor = null,
         ?string $director = null,
         ?int $year = null
-    ): Collection {
+    ): \Illuminate\Pagination\LengthAwarePaginator {
         return Movie::query()
             ->when($query !== null && $query !== '', function ($builder) use ($query) {
                 $pattern = '%'.$query.'%';
-                $builder->whereRaw('LOWER(title) LIKE LOWER(?)', [$pattern])
-                    ->orWhereRaw('LOWER(director) LIKE LOWER(?)', [$pattern])
-                    ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern]);
+                $builder->where(function ($b) use ($pattern) {
+                    $b->whereRaw('LOWER(title) LIKE LOWER(?)', [$pattern])
+                        ->orWhereRaw('LOWER(director) LIKE LOWER(?)', [$pattern])
+                        ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern]);
+                });
             })
             ->when($actor !== null && $actor !== [], function ($builder) use ($actor) {
                 $names = is_array($actor) ? $actor : [$actor];
@@ -48,8 +50,7 @@ class MovieRepository
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
-            ->limit($limit)
-            ->get();
+            ->paginate($limit);
     }
 
     public function findBySlugWithRelations(string $slug): ?Movie

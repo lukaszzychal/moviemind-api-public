@@ -41,8 +41,10 @@ class TvSeriesController extends Controller
         }
 
         $q = $request->query('q');
-        $tvSeries = $this->tvSeriesRepository->searchTvSeries($q, 50);
-        $data = $tvSeries->map(function ($tvSeries) {
+        $limit = (int) $request->query('per_page', 50);
+        $tvSeries = $this->tvSeriesRepository->searchTvSeries($q, $limit);
+
+        $data = $tvSeries->getCollection()->map(function ($tvSeries) {
             $resource = TvSeriesResource::make($tvSeries)->additional([
                 '_links' => $this->hateoas->tvSeriesLinks($tvSeries),
             ]);
@@ -51,8 +53,15 @@ class TvSeriesController extends Controller
         });
 
         return response()->json([
-            'data' => $data->toArray(),
-            'count' => $data->count(),
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $tvSeries->currentPage(),
+                'per_page' => $tvSeries->perPage(),
+                'total_pages' => $tvSeries->lastPage(),
+                'total' => $tvSeries->total(),
+                'has_next_page' => $tvSeries->hasMorePages(),
+                'has_previous_page' => $tvSeries->currentPage() > 1,
+            ],
         ]);
     }
 
@@ -66,7 +75,7 @@ class TvSeriesController extends Controller
         if ($slugsParam === null || $slugsParam === '') {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                    'slugs' => [trans('api.general.bulk_slugs_required')],
                 ],
             ], 422);
         }
@@ -78,7 +87,7 @@ class TvSeriesController extends Controller
         if (empty($slugs)) {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field is required and cannot be empty.'],
+                    'slugs' => [trans('api.general.bulk_slugs_required')],
                 ],
             ], 422);
         }
@@ -86,7 +95,7 @@ class TvSeriesController extends Controller
         if (count($slugs) > 50) {
             return response()->json([
                 'errors' => [
-                    'slugs' => ['The slugs field must not have more than 50 items.'],
+                    'slugs' => [trans('api.general.bulk_max_items')],
                 ],
             ], 422);
         }
@@ -95,7 +104,7 @@ class TvSeriesController extends Controller
             if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
                 return response()->json([
                     'errors' => [
-                        'slugs' => ['Each slug must match the pattern: /^[a-z0-9-]+$/i and be max 255 characters.'],
+                        'slugs' => [trans('api.general.bulk_invalid_slug_pattern')],
                     ],
                 ], 422);
             }
@@ -111,7 +120,7 @@ class TvSeriesController extends Controller
             if (! in_array($item, $allowedInclude, true)) {
                 return response()->json([
                     'errors' => [
-                        'include' => ['The include field must contain only: '.implode(', ', $allowedInclude).'.'],
+                        'include' => [trans('api.general.bulk_invalid_include')],
                     ],
                 ], 422);
             }
@@ -255,13 +264,13 @@ class TvSeriesController extends Controller
             ->first();
 
         if (! $snapshot) {
-            return response()->json(['error' => 'No TMDb snapshot found for this TV series'], 404);
+            return response()->json(['error' => trans('api.tv_series.no_snapshot')], 404);
         }
 
         // TODO: Implement refreshTvSeriesDetails in TmdbVerificationService
         // For now, return success message
         return response()->json([
-            'message' => 'TV series data refreshed from TMDb',
+            'message' => trans('api.tv_series.refresh_success'),
             'slug' => $slug,
             'tv_series_id' => $tvSeries->id,
             'refreshed_at' => now()->toIso8601String(),

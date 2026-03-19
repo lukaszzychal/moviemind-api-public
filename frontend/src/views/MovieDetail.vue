@@ -8,6 +8,12 @@ import {
   reportMovie,
 } from '@/api/client'
 import ReportModal from '@/components/ReportModal.vue'
+import Badge from '@/components/ui/Badge.vue'
+import Select from '@/components/ui/Select.vue'
+import Button from '@/components/ui/Button.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -68,7 +74,7 @@ async function loadCollection () {
   }
 }
 
-watch(slug, () => {
+watch([slug, locale], () => {
   loadMovie()
   loadRelated()
   loadCollection()
@@ -106,7 +112,7 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
       v-if="loading"
       class="text-gray-500"
     >
-      Loading...
+      {{ t('detail.loading') }}
     </div>
     <div
       v-else-if="error"
@@ -119,13 +125,13 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
       class="p-4 bg-amber-50 rounded-lg"
     >
       <p class="text-amber-800">
-        Description is being generated.
+        {{ t('detail.generating') }}
       </p>
       <router-link
         :to="{ name: 'Job', params: { id: acceptedGeneration.job_id } }"
         class="text-indigo-600 hover:underline mt-2 inline-block"
       >
-        Check job status
+        {{ t('detail.check_job') }}
       </router-link>
     </div>
     <template v-else-if="movie">
@@ -144,13 +150,13 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
           v-if="movie.genres && movie.genres.length"
           class="mt-2 flex flex-wrap gap-2"
         >
-          <span
+          <Badge
             v-for="g in movie.genres"
             :key="g"
-            class="px-2 py-0.5 bg-gray-200 rounded text-sm text-gray-700"
+            variant="default"
           >
             {{ g }}
-          </span>
+          </Badge>
         </div>
       </div>
 
@@ -158,20 +164,15 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
         v-if="movie.descriptions && movie.descriptions.length > 1"
         class="mb-4"
       >
-        <label class="block text-sm font-medium text-gray-700 mb-1">Description version</label>
-        <select
-          :value="selectedDescription?.id"
-          class="rounded border border-gray-300 px-3 py-2"
-          @change="(e) => selectDescription(e.target.value)"
-        >
-          <option
-            v-for="d in movie.descriptions"
-            :key="d.id"
-            :value="d.id"
-          >
-            {{ d.locale }} {{ d.context_tag ? `(${d.context_tag})` : '' }}
-          </option>
-        </select>
+        <Select
+          :label="t('detail.description_version')"
+          :model-value="selectedDescription?.id"
+          @update:model-value="selectDescription"
+          :options="movie.descriptions.map(d => ({
+            value: d.id,
+            label: `${d.locale} ${d.context_tag ? `(${d.context_tag})` : ''}`
+          }))"
+        />
       </div>
 
       <div
@@ -188,7 +189,7 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Cast & crew
+          {{ t('detail.cast_crew') }}
         </h2>
         <ul class="flex flex-wrap gap-2">
           <li
@@ -218,7 +219,7 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Related movies
+          {{ t('detail.related_movies') }}
         </h2>
         <ul class="space-y-1">
           <li
@@ -248,7 +249,7 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          Collection
+          {{ t('detail.collection') }}
         </h2>
         <p
           v-if="collection?.collection?.name"
@@ -275,33 +276,32 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
         </ul>
       </div>
 
-      <div class="flex gap-4">
-        <router-link
-          :to="{ name: 'Generate', query: { entity_type: 'MOVIE', slug: movie.slug } }"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+      <div class="flex flex-wrap gap-4 mt-8">
+        <Button
+          @click="router.push({ name: 'Generate', query: { entity_type: 'MOVIE', slug: movie.slug } })"
+          variant="primary"
         >
-          Generate description
-        </router-link>
-        <router-link
-          :to="{ name: 'Compare', query: { type: 'movies', slug1: movie.slug } }"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          {{ t('detail.generate_desc') }}
+        </Button>
+        <Button
+          @click="router.push({ name: 'Compare', query: { type: 'movies', slug1: movie.slug } })"
+          variant="outline"
         >
-          Compare with another
-        </router-link>
-        <button
-          type="button"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          {{ t('detail.compare') }}
+        </Button>
+        <Button
           @click="reportOpen = true"
+          variant="outline"
         >
-          Report issue
-        </button>
+          {{ t('detail.report') }}
+        </Button>
       </div>
     </template>
 
     <ReportModal
       v-model="reportOpen"
       :description-id="selectedDescription?.id"
-      :on-submit="(payload) => reportMovie(slug.value, payload)"
+      :on-submit="onReport"
     />
   </div>
 </template>

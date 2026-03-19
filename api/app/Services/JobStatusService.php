@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\AiJob;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class JobStatusService
@@ -52,22 +52,17 @@ class JobStatusService
         );
 
         // Save to database (ai_jobs table)
-        // Note: ai_jobs.id is auto-increment, but we need to store job_id (UUID) in payload_json
-        // entity_id is UUID (string) since models use UUID as primary key
-        // entity_id can be null if entity doesn't exist yet (will be updated when entity is created)
-        DB::table('ai_jobs')->insert([
+        AiJob::create([
             'entity_type' => $entityType,
-            'entity_id' => $entityId, // Can be null if entity doesn't exist yet
+            'entity_id' => $entityId,
             'locale' => $locale,
             'context_tag' => $contextTag,
             'status' => self::STATUS_PENDING,
-            'payload_json' => json_encode([
+            'payload_json' => [
                 'job_id' => $jobId,
                 'slug' => $slug,
                 'confidence' => $confidence,
-            ]),
-            'created_at' => now(),
-            'updated_at' => now(),
+            ],
         ]);
 
         $this->storeSlugMapping($entityType, $slug, $jobId, self::STATUS_PENDING, $locale, $contextTag);
@@ -167,11 +162,37 @@ class JobStatusService
     }
 
     /**
-     * Retrieve job status from cache.
+     * Retrieve job status from cache or database fallback.
      */
     public function getStatus(string $jobId): ?array
     {
-        return Cache::get($this->cacheKey($jobId));
+        $data = Cache::get($this->cacheKey($jobId));
+
+        if ($data !== null) {
+            return $data;
+        }
+
+        // Fallback to database if cache is empty
+        $row = AiJob::where('payload_json->job_id', $jobId)->first();
+
+        if ($row) {
+            $data = $row->payload_json;
+            // Synchronize fields from table columns to the payload array
+            $data['status'] = $row->status;
+            $data['locale'] = $row->locale;
+            $data['context_tag'] = $row->context_tag;
+
+            // Re-cache for better performance on subsequent polls
+            Cache::put(
+                $this->cacheKey($jobId),
+                $data,
+                Carbon::now()->addMinutes(self::CACHE_TTL_MINUTES)
+            );
+
+            return $data;
+        }
+
+        return null;
     }
 
     /**
@@ -200,15 +221,12 @@ class JobStatusService
         $contextTag = $merged['context_tag'] ?? null;
 
         // Update database (ai_jobs table)
-        // Use whereRaw for PostgreSQL JSON queries
-        DB::table('ai_jobs')
-            ->whereRaw("payload_json->>'job_id' = ?", [$jobId])
+        AiJob::where('payload_json->job_id', $jobId)
             ->update([
                 'status' => $status,
                 'locale' => $locale,
                 'context_tag' => $contextTag,
-                'payload_json' => json_encode($merged),
-                'updated_at' => now(),
+                'payload_json' => $merged,
             ]);
 
         if ($entityType !== '' && $requestedSlug !== '') {

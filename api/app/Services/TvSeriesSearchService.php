@@ -32,7 +32,8 @@ class TvSeriesSearchService
     }
 
     public function __construct(
-        private readonly TvSeriesRepository $tvSeriesRepository
+        private readonly TvSeriesRepository $tvSeriesRepository,
+        private readonly EntityVerificationServiceInterface $tmdbVerificationService
     ) {}
 
     /**
@@ -140,6 +141,9 @@ class TvSeriesSearchService
             ? $tvSeries->descriptions_count > 0
             : $tvSeries->descriptions()->exists();
 
+        $overviewText = $tvSeries->defaultDescription?->text ?? '';
+        $overviewPreview = mb_substr($overviewText, 0, 200);
+
         return [
             'source' => 'local',
             'slug' => $tvSeries->slug,
@@ -147,6 +151,7 @@ class TvSeriesSearchService
             'first_air_date' => $tvSeries->first_air_date?->format('Y-m-d'),
             'first_air_year' => $tvSeries->first_air_date?->year,
             'has_description' => $hasDescription,
+            'overview' => $overviewPreview,
         ];
     }
 
@@ -164,9 +169,89 @@ class TvSeriesSearchService
             return [];
         }
 
-        // Note: TMDb search for TV series will be implemented in Phase 4
-        // For now, return empty array
-        return [];
+        return $this->searchTmdb($query, $year, $limit);
+    }
+
+    /**
+     * Search for TV series in TMDB.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function searchTmdb(string $query, ?int $year, int $limit): array
+    {
+        try {
+            $tmdbResults = $this->tmdbVerificationService->searchTvSeries($query, $limit);
+
+            // Transform all results first (without slugs)
+            $transformedResults = array_map(
+                fn (array $tmdbTvSeries) => $this->transformTmdbTvSeriesToSearchResult($tmdbTvSeries, false),
+                $tmdbResults
+            );
+
+            // Filter by year if specified (same logic as for local results)
+            if ($year !== null) {
+                $transformedResults = array_filter($transformedResults, function (array $result) use ($year) {
+                    return ($result['first_air_year'] ?? null) === $year;
+                });
+            }
+
+            // Note: Slug generation will be done in search() method after getting local results
+            // to ensure proper context-aware slug generation
+            return array_values($transformedResults); // Re-index array after filtering
+        } catch (\Throwable $e) {
+            Log::warning('TvSeriesSearchService: TMDB search failed', [
+                'query' => $query,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Transform TMDB TV series data to search result array.
+     *
+     * @param  array<string, mixed>  $tmdbTvSeries
+     * @param  bool  $generateSlug  Whether to generate slug (false when generating slugs in batch)
+     * @return array<string, mixed>
+     */
+    private function transformTmdbTvSeriesToSearchResult(array $tmdbTvSeries, bool $generateSlug = true): array
+    {
+        $firstAirYear = $this->extractYearFromDate($tmdbTvSeries['first_air_date'] ?? '');
+
+        $overview = $tmdbTvSeries['overview'] ?? '';
+        $overviewPreview = substr($overview, 0, 200);
+
+        $result = [
+            'source' => 'external',
+            'title' => $tmdbTvSeries['name'],
+            'first_air_year' => $firstAirYear,
+            'overview' => $overviewPreview,
+            'needs_creation' => true,
+        ];
+
+        if ($generateSlug) {
+            $result['suggested_slug'] = TvSeries::generateSlug(
+                $tmdbTvSeries['name'],
+                $firstAirYear
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Extract year from date string (YYYY-MM-DD format).
+     */
+    private function extractYearFromDate(string $date): ?int
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        $yearString = substr($date, 0, 4);
+
+        return (int) $yearString;
     }
 
     /**

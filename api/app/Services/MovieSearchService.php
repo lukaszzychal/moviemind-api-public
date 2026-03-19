@@ -231,6 +231,9 @@ class MovieSearchService
             ? $movie->descriptions_count > 0
             : $movie->descriptions()->exists();
 
+        $overviewText = $movie->defaultDescription?->text ?? '';
+        $overviewPreview = mb_substr($overviewText, 0, 200);
+
         return [
             'source' => 'local',
             'slug' => $movie->slug,
@@ -238,6 +241,7 @@ class MovieSearchService
             'release_year' => $movie->release_year,
             'director' => $movie->director,
             'has_description' => $hasDescription,
+            'overview' => $overviewPreview,
         ];
     }
 

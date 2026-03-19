@@ -47,3 +47,7 @@ tests/e2e/login-failure.png
 chatgpt
 chatgpt2
 
+
+/private/
+
+.php-cs-fixer.cache

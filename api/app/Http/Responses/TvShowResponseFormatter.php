@@ -43,7 +43,7 @@ class TvShowResponseFormatter
                     'id' => $description->id,
                     'locale' => $description->locale->value,
                     'text' => $description->text,
-                    'context_tag' => $description->context_tag->value,
+                    'context_tag' => $description->context_tag?->value,
                     'origin' => $description->origin->value,
                     'ai_model' => $description->ai_model,
                     'created_at' => $description->created_at?->toISOString(),
@@ -60,7 +60,7 @@ class TvShowResponseFormatter
                     'id' => $description->id,
                     'locale' => $description->locale->value,
                     'text' => $description->text,
-                    'context_tag' => $description->context_tag->value,
+                    'context_tag' => $description->context_tag?->value,
                     'origin' => $description->origin->value,
                     'ai_model' => $description->ai_model,
                     'created_at' => $description->created_at?->toISOString(),
@@ -95,7 +95,7 @@ class TvShowResponseFormatter
      */
     public function formatDescriptionNotFound(): JsonResponse
     {
-        return $this->formatError('Description not found for TV show', 404);
+        return $this->formatError(trans('api.tv_show.description_not_found'), 404);
     }
 
     /**
@@ -104,7 +104,7 @@ class TvShowResponseFormatter
     public function formatInvalidSlug(string $slug, array $validation): JsonResponse
     {
         return $this->formatError(
-            'Invalid slug format',
+            trans('api.tv_show.invalid_slug'),
             400,
             [
                 'message' => $validation['reason'],
@@ -120,10 +120,10 @@ class TvShowResponseFormatter
     public function formatDisambiguation(string $slug, array $options): JsonResponse
     {
         return $this->formatError(
-            'Multiple TV shows found',
+            trans('api.tv_show.multiple_found'),
             300,
             [
-                'message' => 'Multiple TV shows match your search. Please select one from the options below:',
+                'message' => trans('api.tv_show.disambiguation_message'),
                 'slug' => $slug,
                 'options' => $options,
                 'count' => count($options),
@@ -145,7 +145,7 @@ class TvShowResponseFormatter
      */
     public function formatNotFound(?string $customMessage = null): JsonResponse
     {
-        $message = $customMessage ?? 'TV show not found';
+        $message = $customMessage ?? trans('api.tv_show.not_found');
 
         return $this->formatError($message, 404);
     }

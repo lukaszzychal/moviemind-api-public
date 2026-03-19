@@ -7,6 +7,14 @@ import {
   searchTvSeries,
   searchTvShows,
 } from '@/api/client'
+import Input from '@/components/ui/Input.vue'
+import Select from '../components/ui/Select.vue'
+import Button from '../components/ui/Button.vue'
+import Card from '../components/ui/Card.vue'
+import Badge from '../components/ui/Badge.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -17,49 +25,82 @@ const result = ref(null)
 const type = computed(() => route.query.type || 'movies')
 const q = computed(() => route.query.q || '')
 const page = computed(() => Math.max(1, parseInt(route.query.page, 10) || 1))
+const perPage = computed(() => parseInt(route.query.per_page, 10) || 20)
 
-const typeOptions = [
-  { value: 'movies', label: 'Movies' },
-  { value: 'people', label: 'People' },
-  { value: 'tv-series', label: 'TV Series' },
-  { value: 'tv-shows', label: 'TV Shows' },
+const localQ = ref(route.query.q || '')
+const localType = ref(route.query.type || 'movies')
+const localPerPage = ref(perPage.value)
+
+watch(() => route.query.q, (newVal) => { localQ.value = newVal || '' })
+watch(() => route.query.type, (newVal) => { localType.value = newVal || 'movies' })
+watch(() => route.query.per_page, (newVal) => { localPerPage.value = parseInt(newVal, 10) || 20 })
+
+const typeOptions = computed(() => [
+  { value: 'movies', label: t('types.movies') },
+  { value: 'people', label: t('types.people') },
+  { value: 'tv-series', label: t('types.tv_series') },
+  { value: 'tv-shows', label: t('types.tv_shows') },
+])
+
+const perPageOptions = [
+  { value: 10, label: '10' },
+  { value: 20, label: '20' },
+  { value: 50, label: '50' },
+  { value: 100, label: '100' },
 ]
 
+function submitSearch () {
+  router.push({ query: { ...route.query, q: localQ.value, type: localType.value, per_page: localPerPage.value, page: 1 } })
+}
+
+let currentSearchId = 0
+
 async function runSearch () {
+  const searchId = ++currentSearchId
+
   error.value = null
   result.value = null
-  const params = { page: page.value, per_page: 20 }
+  const params = { page: page.value, per_page: perPage.value }
   if (q.value) params.q = q.value
 
   loading.value = true
   try {
+    let res = null
     switch (type.value) {
       case 'movies':
-        result.value = await searchMovies(params)
+        res = await searchMovies(params)
         break
       case 'people':
-        result.value = await searchPeople(params)
+        res = await searchPeople(params)
         break
       case 'tv-series':
-        result.value = await searchTvSeries(params)
+        res = await searchTvSeries(params)
         break
       case 'tv-shows':
-        result.value = await searchTvShows(params)
+        res = await searchTvShows(params)
         break
       default:
-        result.value = await searchMovies(params)
+        res = await searchMovies(params)
+    }
+    
+    if (searchId === currentSearchId) {
+      result.value = res
     }
   } catch (e) {
-    error.value = e.data?.message || e.message || 'Search failed'
+    if (searchId === currentSearchId) {
+      error.value = e.data?.message || e.message || 'Search failed'
+    }
   } finally {
-    loading.value = false
+    if (searchId === currentSearchId) {
+      loading.value = false
+    }
   }
 }
 
-watch([type, q, page], runSearch, { immediate: true })
+watch([type, q, page, perPage], runSearch, { immediate: true })
 
 function detailPath (item) {
-  const slug = item.slug
+  const slug = item.slug || item.suggested_slug
   switch (type.value) {
     case 'movies':
       return { name: 'MovieDetail', params: { slug } }
@@ -105,38 +146,41 @@ const pagination = computed(() => result.value?.pagination ?? null)
 <template>
   <div>
     <h1 class="text-2xl font-bold text-gray-900 mb-4">
-      Search
+      {{ t('search.title') }}
     </h1>
     <form
       class="flex flex-wrap gap-2 mb-6"
-      @submit.prevent="runSearch"
+      @submit.prevent="submitSearch"
     >
-      <input
-        :value="q"
+      <Input
+        :model-value="localQ"
+        @update:model-value="localQ = $event"
         type="search"
-        placeholder="Query..."
-        class="rounded-lg border border-gray-300 px-4 py-2 flex-1 min-w-[200px]"
-        @input="(e) => router.replace({ query: { ...route.query, q: e.target.value, page: 1 } })"
-      >
-      <select
-        :value="type"
-        class="rounded-lg border border-gray-300 px-4 py-2"
-        @change="(e) => router.replace({ query: { ...route.query, type: e.target.value, page: 1 } })"
-      >
-        <option
-          v-for="opt in typeOptions"
-          :key="opt.value"
-          :value="opt.value"
-        >
-          {{ opt.label }}
-        </option>
-      </select>
-      <button
+        :placeholder="t('search.placeholder')"
+      />
+      <div class="w-48">
+        <Select
+          :model-value="localType"
+          @update:model-value="localType = $event; submitSearch()"
+          :options="typeOptions"
+        />
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-500 whitespace-nowrap">{{ t('search.per_page') }}</span>
+        <div class="w-24">
+          <Select
+            :model-value="localPerPage"
+            @update:model-value="localPerPage = $event; submitSearch()"
+            :options="perPageOptions"
+          />
+        </div>
+      </div>
+      <Button
         type="submit"
-        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+        variant="primary"
       >
-        Search
-      </button>
+        {{ t('search.button') }}
+      </Button>
     </form>
 
     <div
@@ -149,56 +193,77 @@ const pagination = computed(() => result.value?.pagination ?? null)
       v-if="loading"
       class="text-gray-500"
     >
-      Loading...
+      {{ t('search.loading') }}
     </div>
     <div
       v-if="!loading && items.length === 0 && (q || result)"
       class="text-gray-500"
     >
-      No results.
+      {{ t('search.no_results') }}
     </div>
-    <ul
+    <div
       v-else-if="!loading && items.length"
-      class="space-y-2"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
     >
-      <li
+      <Card
         v-for="item in items"
-        :key="item.slug || item.id"
+        :key="item.slug || item.suggested_slug || item.id"
+        clickable
+        @click="router.push(detailPath(item))"
+        padding-class="p-4"
       >
-        <router-link
-          :to="detailPath(item)"
-          class="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
-        >
-          <span class="font-medium text-gray-900">{{ itemTitle(item) }}</span>
-          <span
-            v-if="itemSubtitle(item)"
-            class="text-gray-500 ml-2"
-          >{{ itemSubtitle(item) }}</span>
-        </router-link>
-      </li>
-    </ul>
+        <template #header>
+          <div class="flex items-start justify-between mb-2">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 leading-tight">{{ itemTitle(item) }}</h3>
+              <p v-if="itemSubtitle(item)" class="text-sm text-gray-500 mt-1">{{ itemSubtitle(item) }}</p>
+            </div>
+            
+            <Badge 
+              v-if="item.source === 'external'" 
+              variant="info" 
+              class="shrink-0 ml-2"
+            >
+              {{ t('search.badge.tmdb') }}
+            </Badge>
+            <Badge 
+              v-else-if="item.source === 'local'" 
+              variant="success" 
+              class="shrink-0 ml-2"
+            >
+              {{ t('search.badge.local') }}
+            </Badge>
+          </div>
+        </template>
+        <div v-if="item.overview" class="text-sm text-gray-600 line-clamp-3">
+          {{ item.overview }}
+        </div>
+      </Card>
+    </div>
 
     <div
       v-if="pagination && (pagination.total_pages > 1 || pagination.page > 1)"
       class="mt-6 flex gap-2 items-center"
     >
-      <button
+      <Button
         :disabled="page <= 1"
-        class="px-3 py-1 rounded border border-gray-300 disabled:opacity-50"
+        variant="outline"
+        size="sm"
         @click="goPage(page - 1)"
       >
-        Previous
-      </button>
-      <span class="text-gray-600">
-        Page {{ pagination.page ?? page }} of {{ pagination.total_pages ?? 1 }}
+        {{ t('search.previous') }}
+      </Button>
+      <span class="text-gray-600 font-medium">
+        {{ t('search.page_of', { page: pagination.page ?? page, total: pagination.total_pages ?? 1 }) }}
       </span>
-      <button
+      <Button
         :disabled="page >= (pagination.total_pages ?? 1)"
-        class="px-3 py-1 rounded border border-gray-300 disabled:opacity-50"
+        variant="outline"
+        size="sm"
         @click="goPage(page + 1)"
       >
-        Next
-      </button>
+        {{ t('search.next') }}
+      </Button>
     </div>
   </div>
 </template>

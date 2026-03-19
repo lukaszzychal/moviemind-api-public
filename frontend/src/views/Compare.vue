@@ -7,7 +7,9 @@ import {
   compareTvSeries,
   compareTvShows,
 } from '@/api/client'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const type = computed(() => route.query.type || 'movies')
@@ -17,12 +19,12 @@ const result = ref(null)
 const loading = ref(false)
 const error = ref(null)
 
-const typeOptions = [
-  { value: 'movies', label: 'Movies' },
-  { value: 'people', label: 'People' },
-  { value: 'tv-series', label: 'TV Series' },
-  { value: 'tv-shows', label: 'TV Shows' },
-]
+const typeOptions = computed(() => [
+  { value: 'movies', label: t('types.movies') },
+  { value: 'people', label: t('types.people') },
+  { value: 'tv-series', label: t('types.tv_series') },
+  { value: 'tv-shows', label: t('types.tv_shows') },
+])
 
 watch([type], () => {
   result.value = null
@@ -33,11 +35,11 @@ async function runCompare () {
   const s1 = slug1.value?.trim()
   const s2 = slug2.value?.trim()
   if (!s1 || !s2) {
-    error.value = 'Enter both slugs'
+    error.value = t('compare.error.both_slugs')
     return
   }
   if (s1 === s2) {
-    error.value = 'Slugs must be different'
+    error.value = t('compare.error.same_slugs')
     return
   }
   error.value = null
@@ -89,7 +91,7 @@ function detailPath (slug, entityType) {
 <template>
   <div>
     <h1 class="text-2xl font-bold text-gray-900 mb-4">
-      Compare
+      {{ t('compare.title') }}
     </h1>
     <form
       class="flex flex-wrap gap-4 mb-6"
@@ -111,13 +113,13 @@ function detailPath (slug, entityType) {
       <input
         v-model="slug1"
         type="text"
-        placeholder="First slug"
+        :placeholder="t('compare.slug1_placeholder')"
         class="rounded border border-gray-300 px-3 py-2 flex-1 min-w-[180px]"
       >
       <input
         v-model="slug2"
         type="text"
-        placeholder="Second slug"
+        :placeholder="t('compare.slug2_placeholder')"
         class="rounded border border-gray-300 px-3 py-2 flex-1 min-w-[180px]"
       >
       <button
@@ -125,7 +127,7 @@ function detailPath (slug, entityType) {
         class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
         :disabled="loading"
       >
-        {{ loading ? 'Comparing...' : 'Compare' }}
+        {{ loading ? t('compare.comparing') : t('compare.button') }}
       </button>
     </form>
 
@@ -203,12 +205,12 @@ function detailPath (slug, entityType) {
       class="mt-6 p-4 bg-gray-50 rounded-lg"
     >
       <h3 class="font-semibold text-gray-900 mb-2">
-        Comparison
+        {{ t('compare.comparison_title') }}
       </h3>
       <dl class="space-y-1 text-sm">
         <template v-if="result.comparison.common_genres?.length">
           <dt class="text-gray-600">
-            Common genres
+            {{ t('compare.common_genres') }}
           </dt>
           <dd class="text-gray-900">
             {{ result.comparison.common_genres.join(', ') }}
@@ -216,7 +218,7 @@ function detailPath (slug, entityType) {
         </template>
         <template v-if="result.comparison.year_difference != null">
           <dt class="text-gray-600">
-            Year difference
+            {{ t('compare.year_difference') }}
           </dt>
           <dd class="text-gray-900">
             {{ result.comparison.year_difference }}
@@ -224,7 +226,7 @@ function detailPath (slug, entityType) {
         </template>
         <template v-if="result.comparison.similarity_score != null">
           <dt class="text-gray-600">
-            Similarity score
+            {{ t('compare.similarity_score') }}
           </dt>
           <dd class="text-gray-900">
             {{ (result.comparison.similarity_score * 100).toFixed(1) }}%
@@ -232,7 +234,7 @@ function detailPath (slug, entityType) {
         </template>
         <template v-if="result.comparison.common_people?.length">
           <dt class="text-gray-600">
-            Common people
+            {{ t('compare.common_people') }}
           </dt>
           <dd class="text-gray-900">
             <span
@@ -246,7 +248,7 @@ function detailPath (slug, entityType) {
         </template>
         <template v-if="result.comparison.common_movies_count != null">
           <dt class="text-gray-600">
-            Common movies
+            {{ t('compare.common_movies') }}
           </dt>
           <dd class="text-gray-900">
             {{ result.comparison.common_movies_count }}
@@ -254,7 +256,7 @@ function detailPath (slug, entityType) {
         </template>
         <template v-if="result.comparison.birth_year_difference != null">
           <dt class="text-gray-600">
-            Birth year difference
+            {{ t('compare.birth_year_difference') }}
           </dt>
           <dd class="text-gray-900">
             {{ result.comparison.birth_year_difference }}

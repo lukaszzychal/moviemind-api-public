@@ -1587,7 +1587,7 @@ class TmdbVerificationService implements EntityVerificationServiceInterface
         // Scripted genres (TV Series)
         $scriptedGenres = [
             'Drama', 'Comedy', 'Sci-Fi', 'Crime', 'Thriller', 'Action', 'Adventure',
-            'Fantasy', 'Horror', 'Mystery', 'Romance', 'Animation', 'War', 'Western',
+            'Fantasy', 'Horror', 'Mystery', 'Romance', 'Animation', 'War', 'Western', 'Soap',
         ];
 
         // Unscripted genres (TV Show)
