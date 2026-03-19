@@ -1,0 +1,129 @@
+{
+    "nav": {
+        "search": "Search",
+        "compare": "Compare",
+        "generate": "Generate",
+        "feedback": "Feedback"
+    },
+    "footer": {
+        "tmdb_disclaimer": "This product uses the TMDB API but is not endorsed or certified by TMDB."
+    },
+    "home": {
+        "subtitle": "AI-powered descriptions for movies, people, and TV. Search and explore.",
+        "search_placeholder": "Search movies, people, series...",
+        "search_button": "Search",
+        "data_sources": "Data Sources"
+    },
+    "search": {
+        "title": "Search",
+        "placeholder": "Query...",
+        "button": "Search",
+        "loading": "Loading...",
+        "no_results": "No results.",
+        "page_of": "Page {page} of {total}",
+        "per_page": "Per page",
+        "previous": "Previous",
+        "next": "Next",
+        "badge": {
+            "local": "Local",
+            "tmdb": "TMDb"
+        }
+    },
+    "generate": {
+        "title": "Generate description",
+        "subtitle": "Queue AI generation for a movie, person, TV series, or TV show. Requires an API key.",
+        "entity_type_label": "Entity type",
+        "slug_label": "Slug or entity ID",
+        "slug_placeholder": "e.g. the-matrix-1999",
+        "locale_label": "Locale",
+        "context_tag_label": "Context tag",
+        "api_key_label": "API key",
+        "api_key_placeholder": "Your MovieMind API key",
+        "iam_human": "I'm a human",
+        "get_demo_key": "Get Demo Key",
+        "loading_demo": "Loading...",
+        "submit": "Queue generation",
+        "submitting": "Submitting...",
+        "success_title": "Generation queued successfully!",
+        "error": {
+            "no_slug": "Slug or entity ID is required",
+            "no_api_key": "API key is required for generation",
+            "not_human": "Please confirm you are human first.",
+            "demo_unavailable": "Demo API key currently not available from the server."
+        }
+    },
+    "feedback": {
+        "title": "Feedback",
+        "subtitle": "Send anonymous feedback (no personal data). Optional category.",
+        "category_label": "Category",
+        "message_label": "Message (min 10 characters)",
+        "send_button": "Send feedback",
+        "sending": "Sending...",
+        "success": "Feedback received. Thank you.",
+        "error": {
+            "min_length": "Message must be at least 10 characters"
+        },
+        "category": {
+            "bug": "Bug",
+            "suggestion": "Suggestion",
+            "other": "Other"
+        }
+    },
+    "compare": {
+        "title": "Compare",
+        "slug1_placeholder": "First slug",
+        "slug2_placeholder": "Second slug",
+        "button": "Compare",
+        "comparing": "Comparing...",
+        "comparison_title": "Comparison",
+        "common_genres": "Common genres",
+        "year_difference": "Year difference",
+        "similarity_score": "Similarity score",
+        "common_people": "Common people",
+        "common_movies": "Common movies",
+        "birth_year_difference": "Birth year difference",
+        "error": {
+            "both_slugs": "Enter both slugs",
+            "same_slugs": "Slugs must be different"
+        }
+    },
+    "job": {
+        "title": "Job status",
+        "loading": "Loading...",
+        "status_label": "Status",
+        "entity_label": "Entity",
+        "view_entity": "View",
+        "status": {
+            "DONE": "DONE",
+            "PENDING": "PENDING",
+            "FAILED": "FAILED",
+            "PROCESSING": "PROCESSING"
+        }
+    },
+    "types": {
+        "movies": "Movies",
+        "people": "People",
+        "tv_series": "TV Series",
+        "tv_shows": "TV Shows"
+    },
+    "detail": {
+        "loading": "Loading...",
+        "generating": "Description is being generated.",
+        "generating_bio": "Bio is being generated.",
+        "check_job": "Check job status",
+        "description_version": "Description version",
+        "bio_version": "Bio version",
+        "cast_crew": "Cast & crew",
+        "related_movies": "Related movies",
+        "related_people": "Related people",
+        "related_series": "Related series",
+        "related_shows": "Related shows",
+        "collection": "Collection",
+        "movies": "Movies",
+        "seasons_episodes": "{seasons} seasons, {episodes} episodes",
+        "generate_desc": "Generate description",
+        "generate_bio": "Generate bio",
+        "compare": "Compare with another",
+        "report": "Report issue"
+    }
+}
