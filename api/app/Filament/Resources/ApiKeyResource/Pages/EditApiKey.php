@@ -20,10 +20,11 @@ class EditApiKey extends EditRecord
         $service = app(ApiKeyService::class);
 
         $newPlaintextKey = $data['public_plaintext_key'] ?? null;
-        $existingPlaintextKey = $record->public_plaintext_key;
 
-        // If public_plaintext_key was changed (or newly set), re-hash the key
-        if ($newPlaintextKey && $newPlaintextKey !== $existingPlaintextKey) {
+        // Always re-hash when is_public=true and public_plaintext_key is set.
+        // This ensures the key hash is always in sync with the plaintext key,
+        // even if admin saves the form without changing the value.
+        if (! empty($newPlaintextKey) && ($data['is_public'] ?? false)) {
             $data['key'] = $service->hashKey($newPlaintextKey);
             $data['key_prefix'] = $service->extractPrefix($newPlaintextKey);
         }
