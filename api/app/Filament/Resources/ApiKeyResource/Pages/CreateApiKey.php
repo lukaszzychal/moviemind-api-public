@@ -22,6 +22,8 @@ class CreateApiKey extends CreateRecord
             planId: $data['plan_id'] ?? null,
             userId: $data['user_id'] ?? null,
             expiresAt: isset($data['expires_at']) ? new \DateTime($data['expires_at']) : null,
+            isPublic: $data['is_public'] ?? false,
+            publicPlaintextKey: $data['public_plaintext_key'] ?? null,
         );
 
         // Flash the key to the session to display it
