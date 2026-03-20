@@ -92,7 +92,7 @@ return [
     */
     'queue' => [
         'enabled' => true,    // Enable queue size monitoring
-        'connection' => 'redis', // Redis connection name
+        'connection' => 'default', // Redis connection name (matches config/database.php)
         'queue_name' => 'default', // Queue name to monitor
         'max_size' => 1000,   // Maximum expected queue size (for normalization)
     ],
