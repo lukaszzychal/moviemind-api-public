@@ -72,9 +72,11 @@ class ApiKeyService
         string $name,
         ?string $planId = null,
         ?string $userId = null,
-        ?\DateTimeInterface $expiresAt = null
+        ?\DateTimeInterface $expiresAt = null,
+        bool $isPublic = false,
+        ?string $publicPlaintextKey = null
     ): array {
-        $plaintextKey = $this->generateKey();
+        $plaintextKey = ($isPublic && $publicPlaintextKey) ? $publicPlaintextKey : $this->generateKey();
         $hashedKey = $this->hashKey($plaintextKey);
         $keyPrefix = $this->extractPrefix($plaintextKey);
 
@@ -85,6 +87,8 @@ class ApiKeyService
             'plan_id' => $planId,
             'user_id' => $userId,
             'is_active' => true,
+            'is_public' => $isPublic,
+            'public_plaintext_key' => $isPublic ? $plaintextKey : null,
             'expires_at' => $expiresAt,
         ]);
 

@@ -34,6 +34,18 @@ class ApiKeyResource extends Resource
                 Forms\Components\Toggle::make('is_active')
                     ->required()
                     ->default(true),
+                Forms\Components\Toggle::make('is_public')
+                    ->label('Is Public Demo Key')
+                    ->helperText('Mark this key as available for public demo endpoints.')
+                    ->live(),
+                Forms\Components\TextInput::make('public_plaintext_key')
+                    ->label('Public Plaintext Key')
+                    ->helperText(fn (string $operation) => $operation === 'create'
+                        ? 'Provide a custom key (e.g., mm_demo_portfolio_staging). Leave blank to auto-generate.'
+                        : 'Update the public key value. Changing it will re-hash and replace the key in the database.'
+                    )
+                    ->hidden(fn (Forms\Get $get): bool => $get('is_public') !== true)
+                    ->maxLength(255),
                 // Key and Prefix are handled by logic/hidden on create
                 Forms\Components\TextInput::make('key_prefix')
                     ->disabled()
@@ -58,6 +70,9 @@ class ApiKeyResource extends Resource
                     ->placeholder('None'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean(),
+                Tables\Columns\IconColumn::make('is_public')
+                    ->boolean()
+                    ->label('Public'),
                 Tables\Columns\TextColumn::make('last_used_at')
                     ->dateTime()
                     ->sortable()
