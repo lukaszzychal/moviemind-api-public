@@ -109,9 +109,7 @@ class ApiKeyService
         $keyPrefix = $this->extractPrefix($plaintextKey);
 
         /** @var \Illuminate\Database\Eloquent\Collection<int, ApiKey> $candidates */
-        $candidates = ApiKey::where('key_prefix', $keyPrefix)
-            ->where('is_active', true)
-            ->get();
+        $candidates = ApiKey::where('key_prefix', $keyPrefix)->get();
 
         foreach ($candidates as $apiKey) {
             /** @var ApiKey $apiKey */
