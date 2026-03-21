@@ -285,8 +285,11 @@ class MovieRetrievalService
             return MovieRetrievalResult::notFound();
         }
 
-        if (Feature::active('ai_description_generation')) {
-            Log::info('MovieRetrievalService: TMDB search returned empty, falling back to AI generation', ['slug' => $slug]);
+        if (Feature::active('ai_description_generation') && $validation['confidence'] >= 0.8) {
+            Log::info('MovieRetrievalService: TMDB search returned empty, falling back to AI generation', [
+                'slug' => $slug,
+                'confidence' => $validation['confidence'],
+            ]);
 
             return $this->queueGenerationWithoutTmdb($slug, $validation);
         }
