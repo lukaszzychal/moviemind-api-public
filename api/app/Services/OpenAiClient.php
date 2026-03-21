@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\AiGenerationMetric;
-use Illuminate\Support\Facades\Feature;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Laravel\Pennant\Feature;
 
 /**
  * OpenAI API Client for generating movie and person data.
@@ -125,7 +125,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->movieResponseSchema(), 'JSON', null);
+        }, $this->movieResponseSchema(), 'auto', null);
     }
 
     /**
@@ -181,7 +181,7 @@ class OpenAiClient implements OpenAiClientInterface
                 'description' => $content['description'] ?? null,
                 'model' => $this->model,
             ];
-        }, $this->descriptionResponseSchema(), 'JSON', null);
+        }, $this->descriptionResponseSchema(), 'auto', null);
     }
 
     /**
@@ -415,7 +415,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->personResponseSchema(), 'JSON', null);
+        }, $this->personResponseSchema(), 'auto', null);
     }
 
     /**
@@ -490,7 +490,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->tvSeriesResponseSchema(), 'JSON', null);
+        }, $this->tvSeriesResponseSchema(), 'auto', null);
     }
 
     /**
@@ -566,7 +566,7 @@ class OpenAiClient implements OpenAiClientInterface
             }
 
             return $result;
-        }, $this->tvShowResponseSchema(), 'JSON', null);
+        }, $this->tvShowResponseSchema(), 'auto', null);
     }
 
     /**

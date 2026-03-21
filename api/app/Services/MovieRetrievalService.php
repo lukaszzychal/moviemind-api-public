@@ -279,13 +279,15 @@ class MovieRetrievalService
             return $this->handleSingleTmdbResult($searchResults[0], $slug, $descriptionId, $validation);
         }
 
-        // TMDB search returned empty - if verification is required, return not found
-        if (Feature::active('tmdb_verification')) {
+        // TMDB search returned empty - if verification is required strictly, return not found
+        // Otherwise allow generation without TMDB data if AI generation is enabled (slug was validated)
+        if (Feature::active('tmdb_verification') && ! Feature::active('ai_description_generation')) {
             return MovieRetrievalResult::notFound();
         }
 
-        // Otherwise allow generation without TMDB data (slug already validated)
         if (Feature::active('ai_description_generation')) {
+            Log::info('MovieRetrievalService: TMDB search returned empty, falling back to AI generation', ['slug' => $slug]);
+
             return $this->queueGenerationWithoutTmdb($slug, $validation);
         }
 
