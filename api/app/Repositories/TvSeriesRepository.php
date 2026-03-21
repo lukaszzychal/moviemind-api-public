@@ -20,6 +20,7 @@ class TvSeriesRepository
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
+            ->orderBy('created_at', 'desc')
             ->paginate($limit);
     }
 
