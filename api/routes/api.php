@@ -56,6 +56,10 @@ Route::prefix('v1')->group(function () {
         $publicKey = \App\Models\ApiKey::where('is_public', true)
             ->where('is_active', true)
             ->whereNotNull('public_plaintext_key')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
             ->first();
 
         if ($publicKey !== null) {
