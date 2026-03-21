@@ -57,13 +57,22 @@ class MissingEntityGenerationTest extends TestCase
             ->andConfidenceFieldsShouldBeSet();
     }
 
-    public function test_movie_missing_returns_404_when_not_found_in_tmdb(): void
+    public function test_movie_missing_returns_404_when_not_found_in_tmdb_and_low_confidence(): void
     {
         $this->givenAiGenerationEnabled()
             ->andTmdbVerificationEnabled()
             ->andMovieDoesNotExistInTmdb('non-existent-movie-xyz')
             ->whenRequestingMovie('non-existent-movie-xyz')
             ->thenShouldReturn404WithError('Movie not found');
+    }
+
+    public function test_movie_missing_returns_202_when_not_found_in_tmdb_but_high_confidence(): void
+    {
+        $this->givenAiGenerationEnabled()
+            ->andTmdbVerificationEnabled()
+            ->andMovieDoesNotExistInTmdb('fallback-movie-2024')
+            ->whenRequestingMovie('fallback-movie-2024')
+            ->thenShouldReturn202WithJobDetails();
     }
 
     public function test_movie_missing_returns_404_when_flag_off(): void
@@ -276,13 +285,22 @@ class MissingEntityGenerationTest extends TestCase
             ->andConfidenceFieldsShouldBeSet();
     }
 
-    public function test_tv_series_missing_returns_404_when_not_found_in_tmdb(): void
+    public function test_tv_series_missing_returns_404_when_not_found_in_tmdb_and_low_confidence(): void
     {
         $this->givenAiGenerationEnabled()
             ->andTmdbVerificationEnabled()
             ->andTvSeriesDoesNotExistInTmdb('non-existent-tv-series-xyz')
             ->whenRequestingTvSeries('non-existent-tv-series-xyz')
             ->thenShouldReturn404WithError('TV series not found');
+    }
+
+    public function test_tv_series_missing_returns_202_when_not_found_in_tmdb_but_high_confidence(): void
+    {
+        $this->givenAiGenerationEnabled()
+            ->andTmdbVerificationEnabled()
+            ->andTvSeriesDoesNotExistInTmdb('fallback-series-2024')
+            ->whenRequestingTvSeries('fallback-series-2024')
+            ->thenShouldReturn202WithJobDetails();
     }
 
     public function test_tv_series_missing_returns_404_when_flag_off(): void
