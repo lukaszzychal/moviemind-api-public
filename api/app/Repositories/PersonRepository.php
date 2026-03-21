@@ -22,6 +22,7 @@ class PersonRepository
             })
             ->with(['defaultBio', 'movies'])
             ->withCount('bios')
+            ->orderBy('created_at', 'desc')
             ->paginate($limit);
     }
 

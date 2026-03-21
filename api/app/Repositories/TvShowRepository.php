@@ -21,6 +21,7 @@ class TvShowRepository
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
+            ->orderBy('created_at', 'desc')
             ->paginate($limit);
     }
 
@@ -66,7 +67,7 @@ class TvShowRepository
         $titleSlugPattern = '%'.str_replace('-', '%', $baseSlug).'%';
         $slugPattern = '%'.$baseSlug.'%';
 
-        return TvShow::with(['descriptions', 'defaultDescription'])
+        return TvShow::with(['descriptions', 'defaultDescription', 'people'])
             ->withCount('descriptions')
             ->where(function ($query) use ($slugPattern, $titleSlugPattern) {
                 $query->whereRaw('slug LIKE ?', [$slugPattern])
