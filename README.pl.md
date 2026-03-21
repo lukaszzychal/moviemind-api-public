@@ -18,6 +18,20 @@ MovieMind API to **projekt portfolio/demo**, który demonstruje usługę REST do
 
 **Uwaga:** To projekt portfolio z pełną funkcjonalnością do celów demonstracyjnych. Dla wdrożenia produkcyjnego mogą być wymagane licencje komercyjne (zobacz [Licencje API zewnętrznych](#-licencje-api-zewnętrznych) poniżej).
 
+### 📸 Galeria
+
+**Frontend (Demo publiczne):**
+<div align="center">
+  <img src="docs/img/Fronend/Zrzut%20ekranu%202026-03-21%20o%2017.34.48.png" width="49%" />
+  <img src="docs/img/Fronend/Zrzut%20ekranu%202026-03-21%20o%2017.38.29.png" width="49%" />
+</div>
+
+**Panel Administracyjny (Filament):**
+<div align="center">
+  <img src="docs/img/Backend/Zrzut%20ekranu%202026-03-21%20o%2017.43.12.png" width="49%" />
+  <img src="docs/img/Backend/Zrzut%20ekranu%202026-03-21%20o%2017.45.19.png" width="49%" />
+</div>
+
 ## ✨ Kluczowe funkcje
 
 - 🤖 **Generowanie treści przez AI**: Oryginalne opisy przy użyciu modeli OpenAI/LLM
