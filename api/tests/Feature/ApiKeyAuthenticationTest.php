@@ -75,7 +75,7 @@ class ApiKeyAuthenticationTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'error' => 'Unauthorized',
-                'message' => 'Invalid or expired API key',
+                'message' => 'Invalid API key',
             ]);
     }
 
@@ -93,7 +93,7 @@ class ApiKeyAuthenticationTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'error' => 'Unauthorized',
-                'message' => 'Invalid or expired API key',
+                'message' => 'Expired or inactive API key',
             ]);
     }
 
@@ -111,7 +111,7 @@ class ApiKeyAuthenticationTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'error' => 'Unauthorized',
-                'message' => 'Invalid or expired API key',
+                'message' => 'Expired or inactive API key',
             ]);
     }
 
