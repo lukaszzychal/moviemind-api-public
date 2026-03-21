@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\ApiKey;
+// Fixed: Explicitly qualify global interface
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -99,21 +100,19 @@ class ApiKeyService
     }
 
     /**
-     * Find an API key by its plaintext key.
+     * Find an API key by its plaintext key (even if expired).
      *
-     * @return ApiKey|null The API key if found and valid, null otherwise
+     * @return ApiKey|null The API key if found and verified by hash
      */
     public function findKeyByPlaintext(string $plaintextKey): ?ApiKey
     {
         $keyPrefix = $this->extractPrefix($plaintextKey);
 
-        // First, find candidates by prefix (much faster than checking all keys)
-        $candidates = ApiKey::where('key_prefix', $keyPrefix)
-            ->where('is_active', true)
-            ->get();
+        /** @var \Illuminate\Database\Eloquent\Collection<int, ApiKey> $candidates */
+        $candidates = ApiKey::where('key_prefix', $keyPrefix)->get();
 
-        // Then verify each candidate using hash comparison
         foreach ($candidates as $apiKey) {
+            /** @var ApiKey $apiKey */
             if ($this->validateKey($plaintextKey, $apiKey->key)) {
                 return $apiKey;
             }
@@ -153,16 +152,20 @@ class ApiKeyService
      */
     public function validateAndGetKey(string $plaintextKey): ?ApiKey
     {
-        $apiKey = $this->findKeyByPlaintext($plaintextKey);
+        $keyPrefix = $this->extractPrefix($plaintextKey);
 
-        if ($apiKey === null) {
-            return null;
+        /** @var \Illuminate\Database\Eloquent\Collection<int, ApiKey> $candidates */
+        $candidates = ApiKey::where('key_prefix', $keyPrefix)
+            ->where('is_active', true)
+            ->get();
+
+        foreach ($candidates as $apiKey) {
+            /** @var ApiKey $apiKey */
+            if ($this->validateKey($plaintextKey, $apiKey->key) && $apiKey->isValid()) {
+                return $apiKey;
+            }
         }
 
-        if (! $apiKey->isValid()) {
-            return null;
-        }
-
-        return $apiKey;
+        return null;
     }
 }

@@ -50,13 +50,17 @@ class ApiKeyAuth
         $apiKey = $this->apiKeyService->validateAndGetKey($plaintextKey);
 
         if ($apiKey === null) {
-            Log::warning('API key authentication failed - invalid API key', [
+            // Check why it failed for better logging
+            $foundAny = $this->apiKeyService->findKeyByPlaintext($plaintextKey);
+
+            Log::warning('API key authentication failed', [
                 'ip' => $request->ip(),
                 'path' => $request->path(),
                 'key_prefix' => $this->apiKeyService->extractPrefix($plaintextKey),
+                'reason' => $foundAny ? 'expired_or_inactive' : 'not_found',
             ]);
 
-            return $this->unauthorized('Invalid or expired API key');
+            return $this->unauthorized($foundAny ? 'Expired or inactive API key' : 'Invalid API key');
         }
 
         // Track usage (update last_used_at)

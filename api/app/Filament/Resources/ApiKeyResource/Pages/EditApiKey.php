@@ -19,7 +19,7 @@ class EditApiKey extends EditRecord
         /** @var ApiKeyService $service */
         $service = app(ApiKeyService::class);
 
-        $newPlaintextKey = $data['public_plaintext_key'] ?? null;
+        $newPlaintextKey = isset($data['public_plaintext_key']) ? trim((string) $data['public_plaintext_key']) : null;
 
         // Always re-hash when is_public=true and public_plaintext_key is set.
         // This ensures the key hash is always in sync with the plaintext key,
