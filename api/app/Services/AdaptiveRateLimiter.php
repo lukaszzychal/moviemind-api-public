@@ -130,7 +130,7 @@ class AdaptiveRateLimiter
     private function getQueueRatio(): float
     {
         try {
-            $connection = config('rate-limiting.queue.connection', 'redis');
+            $connection = config('rate-limiting.queue.connection', 'default');
             $queueName = config('rate-limiting.queue.queue_name', 'default');
             $maxSize = (int) config('rate-limiting.queue.max_size', 1000);
 
@@ -163,7 +163,7 @@ class AdaptiveRateLimiter
             $maxJobs = (int) config('rate-limiting.active_jobs.max_jobs', 100);
 
             // Count reserved jobs from Redis (Horizon stores active jobs as reserved keys)
-            $connection = config('rate-limiting.queue.connection', 'redis');
+            $connection = config('rate-limiting.queue.connection', 'default');
             $reservedKeys = Redis::connection($connection)->keys('horizon:*:reserved');
             $activeJobsCount = count($reservedKeys);
 
