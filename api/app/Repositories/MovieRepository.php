@@ -96,7 +96,7 @@ class MovieRepository
         $titleSlugPattern = '%'.str_replace('-', '%', $baseSlug).'%';
         $slugPattern = '%'.$baseSlug.'%';
 
-        return Movie::with(['descriptions', 'defaultDescription'])
+        return Movie::with(['descriptions', 'defaultDescription', 'people', 'genres'])
             ->withCount('descriptions')
             ->where(function ($query) use ($slugPattern, $titleSlugPattern) {
                 $query->whereRaw('slug LIKE ?', [$slugPattern])

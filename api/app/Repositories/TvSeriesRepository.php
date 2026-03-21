@@ -66,7 +66,7 @@ class TvSeriesRepository
         $titleSlugPattern = '%'.str_replace('-', '%', $baseSlug).'%';
         $slugPattern = '%'.$baseSlug.'%';
 
-        return TvSeries::with(['descriptions', 'defaultDescription'])
+        return TvSeries::with(['descriptions', 'defaultDescription', 'people'])
             ->withCount('descriptions')
             ->where(function ($query) use ($slugPattern, $titleSlugPattern) {
                 $query->whereRaw('slug LIKE ?', [$slugPattern])

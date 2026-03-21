@@ -36,7 +36,7 @@ class SearchFixturesSeeder extends Seeder
      */
     private function seedYearOnlyFixture(): void
     {
-        Movie::firstOrCreate(
+        $movie = Movie::firstOrCreate(
             ['slug' => 'search-fixture-year-1985'],
             [
                 'title' => 'Search Fixture Year 1985',
@@ -44,6 +44,15 @@ class SearchFixturesSeeder extends Seeder
                 'director' => 'Fixture Director',
             ]
         );
+
+        $director = Person::firstOrCreate(
+            ['slug' => Str::slug('Fixture Director')],
+            ['name' => 'Fixture Director']
+        );
+
+        $movie->people()->syncWithoutDetaching([
+            $director->id => ['role' => 'DIRECTOR', 'job' => 'Director', 'billing_order' => 1],
+        ]);
     }
 
     /**
@@ -78,7 +87,7 @@ class SearchFixturesSeeder extends Seeder
      */
     private function seedBadBoysDisambiguation(): void
     {
-        Movie::firstOrCreate(
+        $bb1 = Movie::firstOrCreate(
             ['slug' => 'bad-boys-1995'],
             [
                 'title' => 'Bad Boys',
@@ -86,7 +95,7 @@ class SearchFixturesSeeder extends Seeder
                 'director' => 'Michael Bay',
             ]
         );
-        Movie::firstOrCreate(
+        $bb2 = Movie::firstOrCreate(
             ['slug' => 'bad-boys-ii-2003'],
             [
                 'title' => 'Bad Boys II',
@@ -94,6 +103,17 @@ class SearchFixturesSeeder extends Seeder
                 'director' => 'Michael Bay',
             ]
         );
+
+        $bay = Person::firstOrCreate(
+            ['slug' => Str::slug('Michael Bay')],
+            ['name' => 'Michael Bay']
+        );
+
+        foreach ([$bb1, $bb2] as $movie) {
+            $movie->people()->syncWithoutDetaching([
+                $bay->id => ['role' => 'DIRECTOR', 'job' => 'Director', 'billing_order' => 1],
+            ]);
+        }
     }
 
     /**
