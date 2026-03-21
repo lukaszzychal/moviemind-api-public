@@ -77,6 +77,10 @@ class ApiKeyService
         bool $isPublic = false,
         ?string $publicPlaintextKey = null
     ): array {
+        if ($isPublic && $publicPlaintextKey) {
+            $publicPlaintextKey = trim($publicPlaintextKey);
+        }
+
         $plaintextKey = ($isPublic && $publicPlaintextKey) ? $publicPlaintextKey : $this->generateKey();
         $hashedKey = $this->hashKey($plaintextKey);
         $keyPrefix = $this->extractPrefix($plaintextKey);

@@ -27,6 +27,7 @@ class EditApiKey extends EditRecord
         if (! empty($newPlaintextKey) && ($data['is_public'] ?? false)) {
             $data['key'] = $service->hashKey($newPlaintextKey);
             $data['key_prefix'] = $service->extractPrefix($newPlaintextKey);
+            $data['public_plaintext_key'] = $newPlaintextKey;
         }
 
         $record->update($data);
