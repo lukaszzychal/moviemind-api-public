@@ -65,7 +65,10 @@ class TvShowSearchService
             return $cachedResult;
         }
 
-        $localTvShows = $this->searchLocal($searchQuery, $searchYear, $localLimit);
+        $localResult = $this->searchLocal($searchQuery, $searchYear, $localLimit);
+        $localTvShows = $localResult['items'];
+        $localTotalCount = $localResult['total'];
+
         $externalTvShows = $this->searchTmdbIfEnabled($searchQuery, $searchYear, $externalLimit);
 
         // Generate unique slugs for external results, considering local results context
@@ -82,7 +85,9 @@ class TvShowSearchService
             $allTvShows = $this->sortResults($allTvShows, $sortField, $sortOrder);
         }
 
-        $totalTvShowsCount = count($allTvShows);
+        // Total count should reflect all matches, not just the currently fetched subset.
+        $externalItemsInMergedCount = count($allTvShows) - count($localTvShows);
+        $totalTvShowsCount = $localTotalCount + $externalItemsInMergedCount;
 
         $paginatedTvShows = $this->applyPagination($allTvShows, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
         $paginationMetadata = $this->calculatePaginationMetadata($totalTvShowsCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
@@ -111,13 +116,13 @@ class TvShowSearchService
     /**
      * Search for TV shows in local database.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{items: array<int, array<string, mixed>>, total: int}
      */
     private function searchLocal(?string $query, ?int $year, int $limit): array
     {
-        $tvShows = $this->tvShowRepository->searchTvShows($query, $limit);
+        $tvShowsPaginator = $this->tvShowRepository->searchTvShows($query, $limit);
 
-        $filteredTvShows = $tvShows->filter(function (TvShow $tvShow) use ($year) {
+        $filteredTvShows = $tvShowsPaginator->filter(function (TvShow $tvShow) use ($year) {
             if ($year === null) {
                 return true;
             }
@@ -125,9 +130,12 @@ class TvShowSearchService
             return $tvShow->first_air_date?->year === $year;
         });
 
-        return $filteredTvShows->map(function (TvShow $tvShow) {
-            return $this->transformTvShowToSearchResult($tvShow);
-        })->values()->toArray();
+        return [
+            'items' => $filteredTvShows->map(function (TvShow $tvShow) {
+                return $this->transformTvShowToSearchResult($tvShow);
+            })->values()->toArray(),
+            'total' => $tvShowsPaginator->total(),
+        ];
     }
 
     /**

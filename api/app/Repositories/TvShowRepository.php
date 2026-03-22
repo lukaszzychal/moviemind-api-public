@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Models\TvShow;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class TvShowRepository
 {
-    public function searchTvShows(?string $query, int $limit = 50): \Illuminate\Pagination\LengthAwarePaginator
+    public function searchTvShows(?string $query, int $limit = 50): LengthAwarePaginator
     {
         return TvShow::query()
             ->when($query, function ($builder) use ($query) {

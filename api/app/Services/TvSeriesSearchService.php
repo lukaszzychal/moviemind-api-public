@@ -65,7 +65,10 @@ class TvSeriesSearchService
             return $cachedResult;
         }
 
-        $localTvSeries = $this->searchLocal($searchQuery, $searchYear, $localLimit);
+        $localResult = $this->searchLocal($searchQuery, $searchYear, $localLimit);
+        $localTvSeries = $localResult['items'];
+        $localTotalCount = $localResult['total'];
+
         $externalTvSeries = $this->searchTmdbIfEnabled($searchQuery, $searchYear, $externalLimit);
 
         // Generate unique slugs for external results, considering local results context
@@ -82,7 +85,9 @@ class TvSeriesSearchService
             $allTvSeries = $this->sortResults($allTvSeries, $sortField, $sortOrder);
         }
 
-        $totalTvSeriesCount = count($allTvSeries);
+        // Total count should reflect all matches, not just the currently fetched subset.
+        $externalItemsInMergedCount = count($allTvSeries) - count($localTvSeries);
+        $totalTvSeriesCount = $localTotalCount + $externalItemsInMergedCount;
 
         $paginatedTvSeries = $this->applyPagination($allTvSeries, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
         $paginationMetadata = $this->calculatePaginationMetadata($totalTvSeriesCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
@@ -111,13 +116,13 @@ class TvSeriesSearchService
     /**
      * Search for TV series in local database.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{items: array<int, array<string, mixed>>, total: int}
      */
     private function searchLocal(?string $query, ?int $year, int $limit): array
     {
-        $tvSeries = $this->tvSeriesRepository->searchTvSeries($query, $limit);
+        $tvSeriesPaginator = $this->tvSeriesRepository->searchTvSeries($query, $limit);
 
-        $filteredTvSeries = $tvSeries->filter(function (TvSeries $tvSeries) use ($year) {
+        $filteredTvSeries = $tvSeriesPaginator->filter(function (TvSeries $tvSeries) use ($year) {
             if ($year === null) {
                 return true;
             }
@@ -125,9 +130,12 @@ class TvSeriesSearchService
             return $tvSeries->first_air_date?->year === $year;
         });
 
-        return $filteredTvSeries->map(function (TvSeries $tvSeries) {
-            return $this->transformTvSeriesToSearchResult($tvSeries);
-        })->values()->toArray();
+        return [
+            'items' => $filteredTvSeries->map(function (TvSeries $tvSeries) {
+                return $this->transformTvSeriesToSearchResult($tvSeries);
+            })->values()->toArray(),
+            'total' => $tvSeriesPaginator->total(),
+        ];
     }
 
     /**
