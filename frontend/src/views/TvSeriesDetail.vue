@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge.vue'
 import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDate } from '@/composables/useDate.js'
 
 const { t, locale } = useI18n()
 
@@ -85,9 +86,17 @@ function translatedGenre (genre) {
   const raw = typeof genre === 'object' ? genre.name : genre
   const key = `genres.${raw}`
   const result = t(key)
-  // If key not found, vue-i18n returns the key itself - fallback to raw genre name
   return result === key ? raw : result
 }
+
+const airYears = computed(() => {
+  const s = tvSeries.value
+  if (!s) return null
+  const start = formatDate(s.first_air_date, locale.value, 'year')
+  if (!start) return null
+  const end = formatDate(s.last_air_date, locale.value, 'year')
+  return end && end !== start ? `${start} – ${end}` : start
+})
 </script>
 
 <template>
@@ -124,11 +133,10 @@ function translatedGenre (genre) {
           {{ tvSeries.title }}
         </h1>
         <p
-          v-if="tvSeries.first_air_date"
+          v-if="airYears"
           class="text-gray-600 mt-1"
         >
-          {{ tvSeries.first_air_date }}
-          <span v-if="tvSeries.last_air_date"> – {{ tvSeries.last_air_date }}</span>
+          {{ airYears }}
         </p>
         <p
           v-if="tvSeries.number_of_seasons != null"
