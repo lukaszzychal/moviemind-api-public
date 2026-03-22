@@ -104,7 +104,9 @@ class AiMetricsService
         return [
             'token_savings' => [
                 'absolute' => (int) ($json->total_tokens - $toon->total_tokens),
-                'percent' => (float) ($toon->avg_savings_percent ?? 0),
+                'percent' => $json->avg_tokens > 0
+                    ? (float) (($json->avg_tokens - $toon->avg_tokens) * 100.0 / $json->avg_tokens)
+                    : 0.0,
             ],
             'accuracy' => [
                 'json' => (float) ($jsonAccuracy->accuracy_percent ?? 0),

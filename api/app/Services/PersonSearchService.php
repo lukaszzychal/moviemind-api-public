@@ -69,7 +69,10 @@ class PersonSearchService
             return $cachedResult;
         }
 
-        $localPeople = $this->searchLocal($searchQuery, $searchBirthYear, $searchBirthplace, $searchRole, $searchMovie, $localLimit);
+        $localResult = $this->searchLocal($searchQuery, $searchBirthYear, $searchBirthplace, $searchRole, $searchMovie, $localLimit);
+        $localPeople = $localResult['items'];
+        $localTotalCount = $localResult['total'];
+
         $externalPeople = $this->searchTmdbIfEnabled($searchQuery, $searchBirthYear, $externalLimit);
 
         // Generate unique slugs for external results, considering local results context
@@ -86,7 +89,9 @@ class PersonSearchService
             $allPeople = $this->sortResults($allPeople, $sortField, $sortOrder);
         }
 
-        $totalPeopleCount = count($allPeople);
+        // Total count should reflect all matches, not just the currently fetched subset.
+        $externalItemsInMergedCount = count($allPeople) - count($localPeople);
+        $totalPeopleCount = $localTotalCount + $externalItemsInMergedCount;
 
         $paginatedPeople = $this->applyPagination($allPeople, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
         $paginationMetadata = $this->calculatePaginationMetadata($totalPeopleCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
@@ -115,13 +120,13 @@ class PersonSearchService
     /**
      * Search for people in local database.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{items: array<int, array<string, mixed>>, total: int}
      */
     private function searchLocal(?string $query, ?int $birthYear, ?string $birthplace, string|array|null $role, string|array|null $movie, int $limit): array
     {
-        $people = $this->personRepository->searchPeople($query, $limit);
+        $peoplePaginator = $this->personRepository->searchPeople($query, $limit);
 
-        $filteredPeople = $people->filter(function (Person $person) use ($birthYear, $birthplace, $role, $movie) {
+        $filteredPeople = $peoplePaginator->filter(function (Person $person) use ($birthYear, $birthplace, $role, $movie) {
             if ($this->doesPersonMatchBirthYearFilter($person, $birthYear) === false) {
                 return false;
             }
@@ -141,9 +146,12 @@ class PersonSearchService
             return true;
         });
 
-        return $filteredPeople->map(function (Person $person) {
-            return $this->transformPersonToSearchResult($person);
-        })->values()->toArray();
+        return [
+            'items' => $filteredPeople->map(function (Person $person) {
+                return $this->transformPersonToSearchResult($person);
+            })->values()->toArray(),
+            'total' => $peoplePaginator->total(),
+        ];
     }
 
     /**

@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Models\TvSeries;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class TvSeriesRepository
 {
-    public function searchTvSeries(?string $query, int $limit = 50): \Illuminate\Pagination\LengthAwarePaginator
+    public function searchTvSeries(?string $query, int $limit = 50): LengthAwarePaginator
     {
         return TvSeries::query()
             ->when($query, function ($builder) use ($query) {
@@ -20,6 +21,7 @@ class TvSeriesRepository
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
+            ->orderBy('created_at', 'desc')
             ->paginate($limit);
     }
 
@@ -65,7 +67,7 @@ class TvSeriesRepository
         $titleSlugPattern = '%'.str_replace('-', '%', $baseSlug).'%';
         $slugPattern = '%'.$baseSlug.'%';
 
-        return TvSeries::with(['descriptions', 'defaultDescription'])
+        return TvSeries::with(['descriptions', 'defaultDescription', 'people'])
             ->withCount('descriptions')
             ->where(function ($query) use ($slugPattern, $titleSlugPattern) {
                 $query->whereRaw('slug LIKE ?', [$slugPattern])

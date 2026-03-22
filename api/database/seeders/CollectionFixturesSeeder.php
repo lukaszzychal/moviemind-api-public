@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Movie;
+use App\Models\Person;
 use App\Models\TmdbSnapshot;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 /**
  * Ensures The Matrix and two sequels exist with TMDb snapshots that have
@@ -80,6 +82,15 @@ class CollectionFixturesSeeder extends Seeder
                 'director' => 'The Wachowskis',
             ]
         );
+
+        $wachowskis = Person::firstOrCreate(
+            ['slug' => Str::slug('The Wachowskis')],
+            ['name' => 'The Wachowskis']
+        );
+
+        $movie->people()->syncWithoutDetaching([
+            $wachowskis->id => ['role' => 'DIRECTOR', 'job' => 'Director', 'billing_order' => 1],
+        ]);
 
         TmdbSnapshot::updateOrCreate(
             ['entity_type' => 'MOVIE', 'entity_id' => $movie->id],

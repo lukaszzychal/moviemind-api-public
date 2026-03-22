@@ -83,9 +83,12 @@ class MovieSearchService
             );
         }
 
-        $localMovies = ($sourceFilter === null || $sourceFilter === 'local')
+        $localResult = ($sourceFilter === null || $sourceFilter === 'local')
             ? $this->searchLocal($searchQuery, $searchYear, $searchDirector, $searchActor, $localLimit)
-            : [];
+            : ['items' => [], 'total' => 0];
+
+        $localMovies = $localResult['items'];
+        $localTotalCount = $localResult['total'];
 
         $externalMovies = ($sourceFilter === null || $sourceFilter === 'external')
             ? $this->searchTmdbIfEnabled($searchQuery, $searchYear, $searchDirector, $externalLimit)
@@ -105,7 +108,10 @@ class MovieSearchService
             $allMovies = $this->sortResults($allMovies, $sortField, $sortOrder);
         }
 
-        $totalMoviesCount = count($allMovies);
+        // Total count should reflect all matches, not just the currently fetched subset.
+        // We use true local count as base and add new external items found.
+        $externalItemsInMergedCount = count($allMovies) - count($localMovies);
+        $totalMoviesCount = $localTotalCount + $externalItemsInMergedCount;
         $matchType = $this->determineMatchType($allMovies, $localMovies, $externalMovies);
         $confidenceScore = $this->calculateConfidence($allMovies, $matchType);
 
@@ -141,15 +147,18 @@ class MovieSearchService
      * Search for movies in local database.
      * Repository filters by actor/director/year in DB when provided.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{items: array<int, array<string, mixed>>, total: int}
      */
     private function searchLocal(?string $query, ?int $year, ?string $director, string|array|null $actor, int $limit): array
     {
-        $movies = $this->movieRepository->searchMovies($query, $limit, $actor, $director, $year);
+        $moviesPaginator = $this->movieRepository->searchMovies($query, $limit, $actor, $director, $year);
 
-        return $movies->map(fn (Movie $movie) => $this->transformMovieToSearchResult($movie))
-            ->values()
-            ->toArray();
+        return [
+            'items' => $moviesPaginator->map(fn (Movie $movie) => $this->transformMovieToSearchResult($movie))
+                ->values()
+                ->toArray(),
+            'total' => $moviesPaginator->total(),
+        ];
     }
 
     /**

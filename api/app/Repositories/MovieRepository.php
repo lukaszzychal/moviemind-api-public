@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Models\Movie;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class MovieRepository
@@ -21,14 +22,17 @@ class MovieRepository
         string|array|null $actor = null,
         ?string $director = null,
         ?int $year = null
-    ): \Illuminate\Pagination\LengthAwarePaginator {
+    ): LengthAwarePaginator {
         return Movie::query()
             ->when($query !== null && $query !== '', function ($builder) use ($query) {
                 $pattern = '%'.$query.'%';
                 $builder->where(function ($b) use ($pattern) {
                     $b->whereRaw('LOWER(title) LIKE LOWER(?)', [$pattern])
                         ->orWhereRaw('LOWER(director) LIKE LOWER(?)', [$pattern])
-                        ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern]);
+                        ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern])
+                        ->orWhereHas('locales', function ($query) use ($pattern) {
+                            $query->whereRaw('LOWER(title_localized) LIKE LOWER(?)', [$pattern]);
+                        });
                 });
             })
             ->when($actor !== null && $actor !== [], function ($builder) use ($actor) {
@@ -50,6 +54,7 @@ class MovieRepository
             })
             ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
+            ->orderBy('created_at', 'desc')
             ->paginate($limit);
     }
 
@@ -95,7 +100,7 @@ class MovieRepository
         $titleSlugPattern = '%'.str_replace('-', '%', $baseSlug).'%';
         $slugPattern = '%'.$baseSlug.'%';
 
-        return Movie::with(['descriptions', 'defaultDescription'])
+        return Movie::with(['descriptions', 'defaultDescription', 'people', 'genres'])
             ->withCount('descriptions')
             ->where(function ($query) use ($slugPattern, $titleSlugPattern) {
                 $query->whereRaw('slug LIKE ?', [$slugPattern])
