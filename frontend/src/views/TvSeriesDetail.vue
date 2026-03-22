@@ -80,6 +80,14 @@ async function onReport (payload) {
 }
 
 const relatedList = computed(() => related.value?.related_tv_series ?? [])
+
+function translatedGenre (genre) {
+  const raw = typeof genre === 'object' ? genre.name : genre
+  const key = `genres.${raw}`
+  const result = t(key)
+  // If key not found, vue-i18n returns the key itself - fallback to raw genre name
+  return result === key ? raw : result
+}
 </script>
 
 <template>
@@ -137,7 +145,7 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
             :key="typeof g === 'object' ? g.name : g"
             variant="default"
           >
-            {{ typeof g === 'object' ? g.name : g }}
+            {{ translatedGenre(g) }}
           </Badge>
         </div>
       </div>
