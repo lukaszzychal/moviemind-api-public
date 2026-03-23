@@ -123,7 +123,9 @@ function itemTitle (item) {
 function itemSubtitle (item) {
   if (type.value === 'movies' && item.release_year) return String(item.release_year)
   if (type.value === 'people' && item.birth_date) return item.birth_date
-  if ((type.value === 'tv-series' || type.value === 'tv-shows') && item.first_air_date) return item.first_air_date
+  if ((type.value === 'tv-series' || type.value === 'tv-shows') && item.first_air_date) {
+    return String(item.first_air_date).substring(0, 4)
+  }
   return null
 }
 

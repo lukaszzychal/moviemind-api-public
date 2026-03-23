@@ -173,7 +173,7 @@ const airYear = computed(() => {
               <span
                 v-if="r.first_air_date"
                 class="text-gray-500"
-              >({{ r.first_air_date }})</span>
+              >({{ r.first_air_date.substring(0, 4) }})</span>
             </router-link>
           </li>
         </ul>

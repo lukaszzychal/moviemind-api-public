@@ -224,7 +224,7 @@ const airYears = computed(() => {
               <span
                 v-if="r.first_air_date"
                 class="text-gray-500"
-              >({{ r.first_air_date }})</span>
+              >({{ r.first_air_date.substring(0, 4) }})</span>
               <span
                 v-if="r.relationship_label"
                 class="text-gray-400 text-sm"
