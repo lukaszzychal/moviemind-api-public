@@ -540,13 +540,13 @@ class TvShowSearchService
 
     /**
      * Generate cache key from search criteria.
-     * Note: Cache key does NOT include page number - we cache all results and paginate in memory.
      *
      * @param  array<string, mixed>  $criteria
      */
     private function generateCacheKey(array $criteria): string
     {
         $queryHash = md5($criteria['q'] ?? '');
+        $page = $criteria['page'] ?? 1;
         $itemsPerPage = $criteria['per_page'] ?? $criteria['limit'] ?? 20;
         $sortField = $criteria['sort'] ?? '';
         $sortOrder = $criteria['order'] ?? '';
@@ -557,6 +557,7 @@ class TvShowSearchService
             'tv_show:search',
             $queryHash,
             $criteria['year'] ?? '',
+            $page,
             $itemsPerPage,
             $sortField,
             $sortOrder,

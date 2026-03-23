@@ -805,7 +805,6 @@ class MovieSearchService
 
     /**
      * Generate cache key from search criteria.
-     * Note: Cache key does NOT include page number - we cache all results and paginate in memory.
      *
      * @param  array<string, mixed>  $criteria
      */
@@ -817,6 +816,7 @@ class MovieSearchService
             ? implode(',', $criteria['actor'])
             : ($criteria['actor'] ?? '');
         $actorHash = md5($actorString);
+        $page = $criteria['page'] ?? 1;
         $itemsPerPage = $criteria['per_page'] ?? $criteria['limit'] ?? 20;
         $sortField = $criteria['sort'] ?? '';
         $sortOrder = $criteria['order'] ?? '';
@@ -830,6 +830,7 @@ class MovieSearchService
             $criteria['year'] ?? '',
             $directorHash,
             $actorHash,
+            $page,
             $itemsPerPage,
             $sortField,
             $sortOrder,
