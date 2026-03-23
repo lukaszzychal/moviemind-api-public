@@ -119,8 +119,8 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
           v-if="tvSeries.first_air_date"
           class="text-gray-600 mt-1"
         >
-          {{ tvSeries.first_air_date }}
-          <span v-if="tvSeries.last_air_date"> – {{ tvSeries.last_air_date }}</span>
+          {{ tvSeries.first_air_date.substring(0, 4) }}
+          <span v-if="tvSeries.last_air_date"> – {{ tvSeries.last_air_date.substring(0, 4) }}</span>
         </p>
         <p
           v-if="tvSeries.number_of_seasons != null"
@@ -208,7 +208,7 @@ const relatedList = computed(() => related.value?.related_tv_series ?? [])
               <span
                 v-if="r.first_air_date"
                 class="text-gray-500"
-              >({{ r.first_air_date }})</span>
+              >({{ r.first_air_date.substring(0, 4) }})</span>
               <span
                 v-if="r.relationship_label"
                 class="text-gray-400 text-sm"

@@ -118,7 +118,7 @@ const relatedList = computed(() => related.value?.related_tv_shows ?? related.va
           v-if="tvShow.first_air_date"
           class="text-gray-600 mt-1"
         >
-          {{ tvShow.first_air_date }}
+          {{ tvShow.first_air_date.substring(0, 4) }}
         </p>
       </div>
 
@@ -166,7 +166,7 @@ const relatedList = computed(() => related.value?.related_tv_shows ?? related.va
               <span
                 v-if="r.first_air_date"
                 class="text-gray-500"
-              >({{ r.first_air_date }})</span>
+              >({{ r.first_air_date.substring(0, 4) }})</span>
             </router-link>
           </li>
         </ul>
