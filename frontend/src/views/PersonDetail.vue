@@ -6,6 +6,7 @@ import ReportModal from '@/components/ReportModal.vue'
 import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDate } from '@/composables/useDate.js'
 
 const { t, locale } = useI18n()
 
@@ -82,6 +83,11 @@ const relatedList = computed(() => {
   const r = related.value
   return r?.related_people ?? r?.people ?? []
 })
+
+const formattedBirthDate = computed(() => {
+  if (!person.value?.birth_date) return null
+  return formatDate(person.value.birth_date, locale.value)
+})
 </script>
 
 <template>
@@ -118,10 +124,10 @@ const relatedList = computed(() => {
           {{ person.name }}
         </h1>
         <p
-          v-if="person.birth_date"
+          v-if="formattedBirthDate"
           class="text-gray-600 mt-1"
         >
-          {{ person.birth_date }}
+          {{ formattedBirthDate }}
           <span v-if="person.birthplace"> · {{ person.birthplace }}</span>
         </p>
       </div>

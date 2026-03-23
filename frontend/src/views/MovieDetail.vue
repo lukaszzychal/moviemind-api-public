@@ -104,6 +104,13 @@ const relatedList = computed(() => {
 })
 
 const collectionMovies = computed(() => collection.value?.movies ?? [])
+
+function translatedGenre (genre) {
+  const raw = typeof genre === 'object' ? genre.name : genre
+  const key = `genres.${raw}`
+  const result = t(key)
+  return result === key ? raw : result
+}
 </script>
 
 <template>
@@ -155,7 +162,7 @@ const collectionMovies = computed(() => collection.value?.movies ?? [])
             :key="g"
             variant="default"
           >
-            {{ g }}
+            {{ translatedGenre(g) }}
           </Badge>
         </div>
       </div>

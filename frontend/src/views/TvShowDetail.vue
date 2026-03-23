@@ -9,6 +9,7 @@ import ReportModal from '@/components/ReportModal.vue'
 import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDate } from '@/composables/useDate.js'
 
 const { t, locale } = useI18n()
 
@@ -79,6 +80,12 @@ async function onReport (payload) {
 }
 
 const relatedList = computed(() => related.value?.related_tv_shows ?? related.value?.data ?? [])
+
+const airYear = computed(() => {
+  const s = tvShow.value
+  if (!s) return null
+  return formatDate(s.first_air_date, locale.value, 'year')
+})
 </script>
 
 <template>
@@ -115,10 +122,10 @@ const relatedList = computed(() => related.value?.related_tv_shows ?? related.va
           {{ tvShow.title }}
         </h1>
         <p
-          v-if="tvShow.first_air_date"
+          v-if="airYear"
           class="text-gray-600 mt-1"
         >
-          {{ tvShow.first_air_date.substring(0, 4) }}
+          {{ airYear }}
         </p>
       </div>
 
