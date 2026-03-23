@@ -816,7 +816,6 @@ class MovieSearchService
             ? implode(',', $criteria['actor'])
             : ($criteria['actor'] ?? '');
         $actorHash = md5($actorString);
-        $page = $criteria['page'] ?? 1;
         $itemsPerPage = $criteria['per_page'] ?? $criteria['limit'] ?? 20;
         $sortField = $criteria['sort'] ?? '';
         $sortOrder = $criteria['order'] ?? '';
@@ -830,7 +829,6 @@ class MovieSearchService
             $criteria['year'] ?? '',
             $directorHash,
             $actorHash,
-            $page,
             $itemsPerPage,
             $sortField,
             $sortOrder,
