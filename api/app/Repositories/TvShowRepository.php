@@ -20,7 +20,21 @@ class TvShowRepository
                         ->orWhere('show_type', 'LIKE', "%{$query}%");
                 });
             })
-            ->with(['defaultDescription', 'people'])
+            ->with(['defaultDescription'])
+            ->withCount('descriptions')
+            ->orderBy('created_at', 'desc')
+            ->paginate($limit);
+    }
+
+    /**
+     * Get a paginated list of TV shows.
+     *
+     * @return LengthAwarePaginator<TvShow>
+     */
+    public function getPaginated(int $limit): LengthAwarePaginator
+    {
+        return TvShow::query()
+            ->with(['defaultDescription'])
             ->withCount('descriptions')
             ->orderBy('created_at', 'desc')
             ->paginate($limit);

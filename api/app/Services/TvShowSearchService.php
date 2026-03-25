@@ -24,6 +24,16 @@ class TvShowSearchService
 
     private const CACHE_TTL_SECONDS_PRODUCTION = 3600; // 1 hour for production
 
+    /**
+     * Max items to fetch from local database when pagination is used.
+     */
+    private const LOCAL_PAGINATION_FETCH_LIMIT = 100;
+
+    /**
+     * Max items to fetch from external TMDB when pagination is used.
+     */
+    private const EXTERNAL_PAGINATION_FETCH_LIMIT = 20;
+
     private function getCacheTtl(): int
     {
         return app()->environment('local')
@@ -51,10 +61,9 @@ class TvShowSearchService
         $currentPageNumber = $paginationInfo['current_page'];
         $isPaginationRequested = $paginationInfo['is_pagination_requested'];
 
-        // When pagination is requested, fetch enough records so any page can be served in memory
-        $maxFetch = $isPaginationRequested ? 200 : $itemsPerPage;
-        $localLimit = $criteria['local_limit'] ?? $maxFetch;
-        $externalLimit = $criteria['external_limit'] ?? $maxFetch;
+        // When pagination is requested, fetch enough items so any page can be served from cache.
+        $localLimit = $this->resolveLocalFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
+        $externalLimit = $this->resolveExternalFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
 
         $cacheKey = $this->generateCacheKey($criteria);
 
@@ -185,7 +194,7 @@ class TvShowSearchService
     {
         $hasDescription = isset($tvShow->descriptions_count)
             ? $tvShow->descriptions_count > 0
-            : $tvShow->descriptions()->exists();
+            : $tvShow->descriptions->isNotEmpty();
 
         $overviewText = $tvShow->defaultDescription?->text ?? '';
         $overviewPreview = mb_substr($overviewText, 0, 200);
@@ -578,6 +587,44 @@ class TvShowSearchService
             'first_air_year', 'created_at' => 'desc',
             default => 'asc',
         };
+    }
+
+    /**
+     * Resolve how many items to fetch from local database.
+     */
+    private function resolveLocalFetchLimit(
+        array $criteria,
+        int $itemsPerPage,
+        ?int $currentPageNumber,
+        bool $isPaginationRequested
+    ): int {
+        if (array_key_exists('local_limit', $criteria)) {
+            return (int) $criteria['local_limit'];
+        }
+        if (! $isPaginationRequested) {
+            return $itemsPerPage;
+        }
+
+        return self::LOCAL_PAGINATION_FETCH_LIMIT;
+    }
+
+    /**
+     * Resolve how many items to fetch from external TMDB.
+     */
+    private function resolveExternalFetchLimit(
+        array $criteria,
+        int $itemsPerPage,
+        ?int $currentPageNumber,
+        bool $isPaginationRequested
+    ): int {
+        if (array_key_exists('external_limit', $criteria)) {
+            return (int) $criteria['external_limit'];
+        }
+        if (! $isPaginationRequested) {
+            return min($itemsPerPage, self::EXTERNAL_PAGINATION_FETCH_LIMIT);
+        }
+
+        return self::EXTERNAL_PAGINATION_FETCH_LIMIT;
     }
 
     /**
