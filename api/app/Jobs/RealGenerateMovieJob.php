@@ -29,6 +29,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Laravel\Pennant\Feature;
+use Throwable;
 
 /**
  * Real Generate Movie Job - calls actual AI API for production.
@@ -511,7 +512,7 @@ class RealGenerateMovieJob implements ShouldQueue
         return Feature::active('ai_generation_baseline_locking');
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         /** @var JobStatusService $jobStatusService */
         $jobStatusService = app(JobStatusService::class);
