@@ -14,32 +14,32 @@ import Card from '../components/ui/Card.vue'
 import Badge from '../components/ui/Badge.vue'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t: translate } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
-const loading = ref(false)
-const error = ref(null)
-const result = ref(null)
+const isLoading = ref(false)
+const searchError = ref(null)
+const searchResult = ref(null)
 
 const type = computed(() => route.query.type || 'movies')
-const q = computed(() => route.query.q || '')
-const page = computed(() => Math.max(1, parseInt(route.query.page, 10) || 1))
-const perPage = computed(() => parseInt(route.query.per_page, 10) || 20)
+const activeSearchQuery = computed(() => route.query.q || '')
+const currentPage = computed(() => Math.max(1, parseInt(route.query.page, 10) || 1))
+const itemsPerPage = computed(() => parseInt(route.query.per_page, 10) || 20)
 
-const localQ = ref(route.query.q || '')
+const localSearchQuery = ref(route.query.q || '')
 const localType = ref(route.query.type || 'movies')
-const localPerPage = ref(perPage.value)
+const localItemsPerPage = ref(itemsPerPage.value)
 
-watch(() => route.query.q, (newVal) => { localQ.value = newVal || '' })
+watch(() => route.query.q, (newVal) => { localSearchQuery.value = newVal || '' })
 watch(() => route.query.type, (newVal) => { localType.value = newVal || 'movies' })
-watch(() => route.query.per_page, (newVal) => { localPerPage.value = parseInt(newVal, 10) || 20 })
+watch(() => route.query.per_page, (newVal) => { localItemsPerPage.value = parseInt(newVal, 10) || 20 })
 
 const typeOptions = computed(() => [
-  { value: 'movies', label: t('types.movies') },
-  { value: 'people', label: t('types.people') },
-  { value: 'tv-series', label: t('types.tv_series') },
-  { value: 'tv-shows', label: t('types.tv_shows') },
+  { value: 'movies', label: translate('types.movies') },
+  { value: 'people', label: translate('types.people') },
+  { value: 'tv-series', label: translate('types.tv_series') },
+  { value: 'tv-shows', label: translate('types.tv_shows') },
 ])
 
 const perPageOptions = [
@@ -50,7 +50,7 @@ const perPageOptions = [
 ]
 
 function submitSearch () {
-  router.push({ query: { ...route.query, q: localQ.value, type: localType.value, per_page: localPerPage.value, page: 1 } })
+  router.push({ query: { ...route.query, q: localSearchQuery.value, type: localType.value, per_page: localItemsPerPage.value, page: 1 } })
 }
 
 let currentSearchId = 0
@@ -58,46 +58,46 @@ let currentSearchId = 0
 async function runSearch () {
   const searchId = ++currentSearchId
 
-  error.value = null
-  result.value = null
-  const params = { page: page.value, per_page: perPage.value }
-  if (q.value) params.q = q.value
+  searchError.value = null
+  searchResult.value = null
+  const params = { page: currentPage.value, per_page: itemsPerPage.value }
+  if (activeSearchQuery.value) params.q = activeSearchQuery.value
 
-  loading.value = true
+  isLoading.value = true
   try {
-    let res = null
+    let apiResponse = null
     switch (type.value) {
       case 'movies':
-        res = await searchMovies(params)
+        apiResponse = await searchMovies(params)
         break
       case 'people':
-        res = await searchPeople(params)
+        apiResponse = await searchPeople(params)
         break
       case 'tv-series':
-        res = await searchTvSeries(params)
+        apiResponse = await searchTvSeries(params)
         break
       case 'tv-shows':
-        res = await searchTvShows(params)
+        apiResponse = await searchTvShows(params)
         break
       default:
-        res = await searchMovies(params)
+        apiResponse = await searchMovies(params)
     }
     
     if (searchId === currentSearchId) {
-      result.value = res
+      searchResult.value = apiResponse
     }
-  } catch (e) {
+  } catch (error) {
     if (searchId === currentSearchId) {
-      error.value = e.data?.message || e.message || 'Search failed'
+      searchError.value = error.data?.message || error.message || 'Search failed'
     }
   } finally {
     if (searchId === currentSearchId) {
-      loading.value = false
+      isLoading.value = false
     }
   }
 }
 
-watch([type, q, page, perPage], runSearch, { immediate: true })
+watch([type, activeSearchQuery, currentPage, itemsPerPage], runSearch, { immediate: true })
 
 function detailPath (item) {
   const slug = item.slug || item.suggested_slug
@@ -136,29 +136,29 @@ function goPage (newPage) {
   })
 }
 
-const items = computed(() => {
-  const r = result.value
-  if (!r) return []
-  return r.data ?? r.results ?? []
+const resultsList = computed(() => {
+  const responseData = searchResult.value
+  if (!responseData) return []
+  return responseData.data ?? responseData.results ?? []
 })
 
-const pagination = computed(() => result.value?.pagination ?? null)
+const pagination = computed(() => searchResult.value?.pagination ?? null)
 </script>
 
 <template>
   <div>
     <h1 class="text-2xl font-bold text-gray-900 mb-4">
-      {{ t('search.title') }}
+      {{ translate('search.title') }}
     </h1>
     <form
       class="flex flex-wrap gap-2 mb-6"
       @submit.prevent="submitSearch"
     >
       <Input
-        :model-value="localQ"
-        @update:model-value="localQ = $event"
+        :model-value="localSearchQuery"
+        @update:model-value="localSearchQuery = $event"
         type="search"
-        :placeholder="t('search.placeholder')"
+        :placeholder="translate('search.placeholder')"
       />
       <div class="w-48">
         <Select
@@ -168,11 +168,11 @@ const pagination = computed(() => result.value?.pagination ?? null)
         />
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-500 whitespace-nowrap">{{ t('search.per_page') }}</span>
+        <span class="text-sm text-gray-500 whitespace-nowrap">{{ translate('search.per_page') }}</span>
         <div class="w-24">
           <Select
-            :model-value="localPerPage"
-            @update:model-value="localPerPage = $event; submitSearch()"
+            :model-value="localItemsPerPage"
+            @update:model-value="localItemsPerPage = $event; submitSearch()"
             :options="perPageOptions"
           />
         </div>
@@ -181,34 +181,36 @@ const pagination = computed(() => result.value?.pagination ?? null)
         type="submit"
         variant="primary"
       >
-        {{ t('search.button') }}
+        {{ translate('search.button') }}
       </Button>
     </form>
 
     <div
-      v-if="error"
+      v-if="searchError"
       class="mb-4 p-4 bg-red-50 text-red-700 rounded-lg"
     >
-      {{ error }}
+      {{ searchError }}
     </div>
     <div
-      v-if="loading"
+      v-if="isLoading"
       class="text-gray-500"
     >
-      {{ t('search.loading') }}
+      {{ translate('search.loading') }}
     </div>
     <div
-      v-if="!loading && items.length === 0 && (q || result)"
+      v-if="!isLoading && resultsList.length === 0 && (activeSearchQuery || searchResult)"
       class="text-gray-500"
     >
-      {{ t('search.no_results') }}
+      {{ translate('search.no_results') }}
+      ,{{ isLoading }}, {{ resultsList.length }}, {{ activeSearchQuery }}, {{ searchResult }}
     </div>
     <div
-      v-else-if="!loading && items.length"
+      v-else-if="!isLoading && resultsList.length"
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
     >
+    ,{{ isLoading }}, {{ resultsList.length }}, {{ activeSearchQuery }}, {{ searchResult }}
       <Card
-        v-for="item in items"
+        v-for="item in resultsList"
         :key="item.slug || item.suggested_slug || item.id"
         clickable
         @click="router.push(detailPath(item))"
@@ -226,14 +228,14 @@ const pagination = computed(() => result.value?.pagination ?? null)
               variant="info" 
               class="shrink-0 ml-2"
             >
-              {{ t('search.badge.tmdb') }}
+              {{ translate('search.badge.tmdb') }}
             </Badge>
             <Badge 
               v-else-if="item.source === 'local'" 
               variant="success" 
               class="shrink-0 ml-2"
             >
-              {{ t('search.badge.local') }}
+              {{ translate('search.badge.local') }}
             </Badge>
           </div>
         </template>
@@ -248,23 +250,23 @@ const pagination = computed(() => result.value?.pagination ?? null)
       class="mt-6 flex gap-2 items-center"
     >
       <Button
-        :disabled="page <= 1"
+        :disabled="currentPage <= 1"
         variant="outline"
         size="sm"
-        @click="goPage(page - 1)"
+        @click="goPage(currentPage - 1)"
       >
-        {{ t('search.previous') }}
+        {{ translate('search.previous') }}
       </Button>
       <span class="text-gray-600 font-medium">
-        {{ t('search.page_of', { page: pagination.page ?? page, total: pagination.total_pages ?? 1 }) }}
+        {{ translate('search.page_of', { page: pagination.page ?? currentPage, total: pagination.total_pages ?? 1 }) }}
       </span>
       <Button
-        :disabled="page >= (pagination.total_pages ?? 1)"
+        :disabled="currentPage >= (pagination.total_pages ?? 1)"
         variant="outline"
         size="sm"
-        @click="goPage(page + 1)"
+        @click="goPage(currentPage + 1)"
       >
-        {{ t('search.next') }}
+        {{ translate('search.next') }}
       </Button>
     </div>
   </div>

@@ -568,11 +568,12 @@ class MovieSearchService
         if ($explicitLocal || $explicitExternal) {
             return $itemsPerPage;
         }
-        if (! $isPaginationRequested || $currentPageNumber === null || $currentPageNumber <= 1) {
+        if (! $isPaginationRequested) {
             return $itemsPerPage;
         }
 
-        return (int) min($currentPageNumber * $itemsPerPage, self::PAGINATION_FETCH_LIMIT);
+        // Always fetch max records when pagination is requested so any page can be served from cache
+        return self::PAGINATION_FETCH_LIMIT;
     }
 
     /**
@@ -829,6 +830,7 @@ class MovieSearchService
             $criteria['year'] ?? '',
             $directorHash,
             $actorHash,
+            // NOTE: page is intentionally excluded – cache stores the full result set and slices per request
             $itemsPerPage,
             $sortField,
             $sortOrder,
