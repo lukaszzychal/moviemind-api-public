@@ -208,6 +208,7 @@ class RealGenerateMovieJob implements ShouldQueue
                 'release_year' => $movie->release_year,
                 'director' => $movie->director,
                 'description' => $aiResponse['description'] ?? null,
+                'cast' => $aiResponse['cast'] ?? [],
                 'model' => $aiResponse['model'] ?? 'openai-gpt-4',
             ];
         }

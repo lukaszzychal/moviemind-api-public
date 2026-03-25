@@ -124,8 +124,8 @@ class MovieCastAutoCreationTest extends TestCase
 
     public function test_movie_generation_handles_existing_person(): void
     {
-        $uniqueSlug = 'django-unchained-2012';
-        $uniqueTitle = 'Django Unchained '.time();
+        $uniqueSlug = 'django-reborn-2012';
+        $uniqueTitle = 'Django Reborn '.time();
         $personName = 'Existing Person '.time();
 
         // Create existing person
