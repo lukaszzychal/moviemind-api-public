@@ -19,7 +19,7 @@ class TvSeriesRepository
                         ->orWhereJsonContains('genres', $query);
                 });
             })
-            ->with(['defaultDescription', 'people'])
+            ->with(['defaultDescription'])
             ->withCount('descriptions')
             ->orderBy('created_at', 'desc')
             ->paginate($limit);

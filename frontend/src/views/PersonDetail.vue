@@ -8,63 +8,63 @@ import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
 import { formatDate } from '@/composables/useDate.js'
 
-const { t, locale } = useI18n()
+const { t: translate, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
-const slug = computed(() => route.params.slug)
-const bioId = computed(() => route.query.bio_id || null)
-const person = ref(null)
-const acceptedGeneration = ref(null)
-const related = ref(null)
-const loading = ref(true)
-const error = ref(null)
-const reportOpen = ref(false)
+const activeSlug = computed(() => route.params.slug)
+const requestedBioId = computed(() => route.query.bio_id || null)
+const personData = ref(null)
+const acceptedGenerationJob = ref(null)
+const relatedPeopleData = ref(null)
+const isLoading = ref(true)
+const searchError = ref(null)
+const isReportModalOpen = ref(false)
 
 async function loadPerson () {
-  if (!slug.value) return
-  loading.value = true
-  error.value = null
-  person.value = null
-  acceptedGeneration.value = null
+  if (!activeSlug.value) return
+  isLoading.value = true
+  searchError.value = null
+  personData.value = null
+  acceptedGenerationJob.value = null
   try {
-    const data = await getPerson(slug.value)
-    if (data.job_id && data.status === 'PENDING') {
-      acceptedGeneration.value = data
-      person.value = null
+    const apiResponse = await getPerson(activeSlug.value)
+    if (apiResponse.job_id && apiResponse.status === 'PENDING') {
+      acceptedGenerationJob.value = apiResponse
+      personData.value = null
     } else {
-      person.value = data
-      acceptedGeneration.value = null
+      personData.value = apiResponse
+      acceptedGenerationJob.value = null
     }
-  } catch (e) {
-    error.value = e.data?.message || e.message || 'Failed to load person'
+  } catch (error) {
+    searchError.value = error.data?.message || error.message || 'Failed to load person'
   } finally {
-    loading.value = false
+    isLoading.value = false
   }
 }
 
 async function loadRelated () {
-  if (!slug.value) return
+  if (!activeSlug.value) return
   try {
-    related.value = await getPersonRelated(slug.value)
+    relatedPeopleData.value = await getPersonRelated(activeSlug.value)
   } catch {
-    related.value = null
+    relatedPeopleData.value = null
   }
 }
 
-watch([slug, locale], () => {
+watch([activeSlug, locale], () => {
   loadPerson()
   loadRelated()
 }, { immediate: true })
 
 const selectedBio = computed(() => {
-  const p = person.value
-  if (!p) return null
-  if (bioId.value && p.bios) {
-    const found = p.bios.find(b => String(b.id) === String(bioId.value))
+  const person = personData.value
+  if (!person) return null
+  if (requestedBioId.value && person.bios) {
+    const found = person.bios.find(bio => String(bio.id) === String(requestedBioId.value))
     if (found) return found
   }
-  return p.default_bio || (p.bios && p.bios[0]) || null
+  return person.default_bio || (person.bios && person.bios[0]) || null
 })
 
 function selectBio (id) {
@@ -73,76 +73,76 @@ function selectBio (id) {
 
 async function onReport (payload) {
   const { description_id, ...rest } = payload
-  await reportPerson(slug.value, {
+  await reportPerson(activeSlug.value, {
     ...rest,
     bio_id: selectedBio.value?.id,
   })
 }
 
-const relatedList = computed(() => {
-  const r = related.value
-  return r?.related_people ?? r?.people ?? []
+const relatedPeopleList = computed(() => {
+  const responseData = relatedPeopleData.value
+  return responseData?.related_people ?? responseData?.people ?? []
 })
 
 const formattedBirthDate = computed(() => {
-  if (!person.value?.birth_date) return null
-  return formatDate(person.value.birth_date, locale.value)
+  if (!personData.value?.birth_date) return null
+  return formatDate(personData.value.birth_date, locale.value)
 })
 </script>
 
 <template>
   <div>
     <div
-      v-if="loading"
+      v-if="isLoading"
       class="text-gray-500"
     >
-      {{ t('detail.loading') }}
+      {{ translate('detail.loading') }}
     </div>
     <div
-      v-else-if="error"
+      v-else-if="searchError"
       class="p-4 bg-red-50 text-red-700 rounded-lg"
     >
-      {{ error }}
+      {{ searchError }}
     </div>
     <div
-      v-else-if="acceptedGeneration"
+      v-else-if="acceptedGenerationJob"
       class="p-4 bg-amber-50 rounded-lg"
     >
       <p class="text-amber-800">
-        {{ t('detail.generating_bio') }}
+        {{ translate('detail.generating_bio') }}
       </p>
       <router-link
-        :to="{ name: 'Job', params: { id: acceptedGeneration.job_id } }"
+        :to="{ name: 'Job', params: { id: acceptedGenerationJob.job_id } }"
         class="text-indigo-600 hover:underline mt-2 inline-block"
       >
-        {{ t('detail.check_job') }}
+        {{ translate('detail.check_job') }}
       </router-link>
     </div>
-    <template v-else-if="person">
+    <template v-else-if="personData">
       <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900">
-          {{ person.name }}
+          {{ personData.name }}
         </h1>
         <p
           v-if="formattedBirthDate"
           class="text-gray-600 mt-1"
         >
           {{ formattedBirthDate }}
-          <span v-if="person.birthplace"> · {{ person.birthplace }}</span>
+          <span v-if="personData.birthplace"> · {{ personData.birthplace }}</span>
         </p>
       </div>
 
       <div
-        v-if="person.bios && person.bios.length > 1"
+        v-if="personData.bios && personData.bios.length > 1"
         class="mb-4"
       >
         <Select
-          :label="t('detail.bio_version')"
+          :label="translate('detail.bio_version')"
           :model-value="selectedBio?.id"
           @update:model-value="selectBio"
-          :options="person.bios.map(b => ({
-            value: b.id,
-            label: `${b.locale} ${b.context_tag ? `(${b.context_tag})` : ''}`
+          :options="personData.bios.map(bio => ({
+            value: bio.id,
+            label: `${bio.locale} ${bio.context_tag ? `(${bio.context_tag})` : ''}`
           }))"
         />
       </div>
@@ -157,48 +157,48 @@ const formattedBirthDate = computed(() => {
       </div>
 
       <div
-        v-if="person.movies && person.movies.length"
+        v-if="personData.movies && personData.movies.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.movies') }}
+          {{ translate('detail.movies') }}
         </h2>
         <ul class="flex flex-wrap gap-2">
           <li
-            v-for="m in person.movies"
-            :key="m.slug"
+            v-for="movie in personData.movies"
+            :key="movie.slug"
           >
             <router-link
-              :to="{ name: 'MovieDetail', params: { slug: m.slug } }"
+              :to="{ name: 'MovieDetail', params: { slug: movie.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ m.title }}
+              {{ movie.title }}
               <span
-                v-if="m.release_year"
+                v-if="movie.release_year"
                 class="text-gray-500"
-              >({{ m.release_year }})</span>
+              >({{ movie.release_year }})</span>
             </router-link>
           </li>
         </ul>
       </div>
 
       <div
-        v-if="relatedList.length"
+        v-if="relatedPeopleList.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.related_people') }}
+          {{ translate('detail.related_people') }}
         </h2>
         <ul class="space-y-1">
           <li
-            v-for="r in relatedList"
-            :key="r.slug"
+            v-for="relatedPerson in relatedPeopleList"
+            :key="relatedPerson.slug"
           >
             <router-link
-              :to="{ name: 'PersonDetail', params: { slug: r.slug } }"
+              :to="{ name: 'PersonDetail', params: { slug: relatedPerson.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ r.name }}
+              {{ relatedPerson.name }}
             </router-link>
           </li>
         </ul>
@@ -206,28 +206,28 @@ const formattedBirthDate = computed(() => {
 
       <div class="flex flex-wrap gap-4 mt-8">
         <Button
-          @click="router.push({ name: 'Generate', query: { entity_type: 'PERSON', slug: person.slug } })"
+          @click="router.push({ name: 'Generate', query: { entity_type: 'PERSON', slug: personData.slug } })"
           variant="primary"
         >
-          {{ t('detail.generate_bio') }}
+          {{ translate('detail.generate_bio') }}
         </Button>
         <Button
-          @click="router.push({ name: 'Compare', query: { type: 'people', slug1: person.slug } })"
+          @click="router.push({ name: 'Compare', query: { type: 'people', slug1: personData.slug } })"
           variant="outline"
         >
-          {{ t('detail.compare') }}
+          {{ translate('detail.compare') }}
         </Button>
         <Button
-          @click="reportOpen = true"
+          @click="isReportModalOpen = true"
           variant="outline"
         >
-          {{ t('detail.report') }}
+          {{ translate('detail.report') }}
         </Button>
       </div>
     </template>
 
     <ReportModal
-      v-model="reportOpen"
+      v-model="isReportModalOpen"
       :description-id="selectedBio?.id"
       :on-submit="onReport"
     />

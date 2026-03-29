@@ -25,6 +25,16 @@ class PersonSearchService
 
     private const CACHE_TTL_SECONDS_PRODUCTION = 3600; // 1 hour for production
 
+    /**
+     * Max items to fetch from local database when pagination is used.
+     */
+    private const LOCAL_PAGINATION_FETCH_LIMIT = 100;
+
+    /**
+     * Max items to fetch from external TMDB when pagination is used.
+     */
+    private const EXTERNAL_PAGINATION_FETCH_LIMIT = 20;
+
     private function getCacheTtl(): int
     {
         return app()->environment('local')
@@ -55,18 +65,18 @@ class PersonSearchService
         $currentPageNumber = $paginationInfo['current_page'];
         $isPaginationRequested = $paginationInfo['is_pagination_requested'];
 
-        // Determine limits for each source
-        $localLimit = $criteria['local_limit'] ?? $itemsPerPage;
-        $externalLimit = $criteria['external_limit'] ?? $itemsPerPage;
+        // When pagination is requested, fetch enough items so any page can be served from cache.
+        $localLimit = $this->resolveLocalFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
+        $externalLimit = $this->resolveExternalFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
 
         $cacheKey = $this->generateCacheKey($criteria);
 
-        // Try to get from tagged cache first (for Redis/Memcached)
-        $cachedResult = $this->getFromTaggedCache($cacheKey);
-        if ($cachedResult !== null) {
+        // Cache stores the full (unpaginated) result set so any page can be served from a single entry
+        $cachedPayload = $this->getFromTaggedCache($cacheKey);
+        if ($cachedPayload !== null) {
             Log::debug('PersonSearchService: cache hit', ['criteria' => $criteria]);
 
-            return $cachedResult;
+            return $this->buildSearchResultFromCached($cachedPayload, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
         }
 
         $localResult = $this->searchLocal($searchQuery, $searchBirthYear, $searchBirthplace, $searchRole, $searchMovie, $localLimit);
@@ -93,13 +103,24 @@ class PersonSearchService
         $externalItemsInMergedCount = count($allPeople) - count($localPeople);
         $totalPeopleCount = $localTotalCount + $externalItemsInMergedCount;
 
-        $paginatedPeople = $this->applyPagination($allPeople, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
-        $paginationMetadata = $this->calculatePaginationMetadata($totalPeopleCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
-
         $matchType = $this->determineMatchType($allPeople, $localPeople, $externalPeople);
         $confidenceScore = $this->calculateConfidence($allPeople, $matchType);
 
-        $searchResult = new SearchResult(
+        // Cache the full list so any page can be served from one cache entry
+        $cachePayload = [
+            'all_items' => $allPeople,
+            'total' => $totalPeopleCount,
+            'local_count' => count($localPeople),
+            'external_count' => count($externalPeople),
+            'match_type' => $matchType,
+            'confidence' => $confidenceScore,
+        ];
+        $this->putInTaggedCache($cacheKey, $cachePayload);
+
+        $paginatedPeople = $this->applyPagination($allPeople, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
+        $paginationMetadata = $this->calculatePaginationMetadata($totalPeopleCount, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
+
+        return new SearchResult(
             results: $paginatedPeople,
             total: $totalPeopleCount,
             localCount: count($localPeople),
@@ -110,11 +131,36 @@ class PersonSearchService
             perPage: $paginationMetadata['per_page'],
             totalPages: $paginationMetadata['total_pages']
         );
+    }
 
-        // Store in tagged cache (for Redis/Memcached) or regular cache (fallback)
-        $this->putInTaggedCache($cacheKey, $searchResult);
+    /**
+     * Re-build SearchResult from a cached full payload, applying pagination for this request.
+     *
+     * @param  array{all_items: array<int, array<string, mixed>>, total: int, local_count: int, external_count: int, match_type: string, confidence: float}  $cached
+     */
+    private function buildSearchResultFromCached(
+        array $cached,
+        ?int $currentPageNumber,
+        int $itemsPerPage,
+        bool $isPaginationRequested
+    ): SearchResult {
+        $allItems = $cached['all_items'];
+        $total = $cached['total'];
 
-        return $searchResult;
+        $paginatedItems = $this->applyPagination($allItems, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
+        $paginationMetadata = $this->calculatePaginationMetadata($total, $currentPageNumber, $itemsPerPage, $isPaginationRequested);
+
+        return new SearchResult(
+            results: $paginatedItems,
+            total: $total,
+            localCount: $cached['local_count'],
+            externalCount: $cached['external_count'],
+            matchType: $cached['match_type'],
+            confidence: $cached['confidence'],
+            currentPage: $paginationMetadata['current_page'],
+            perPage: $paginationMetadata['per_page'],
+            totalPages: $paginationMetadata['total_pages']
+        );
     }
 
     /**
@@ -233,11 +279,12 @@ class PersonSearchService
      */
     private function getPersonRoles(Person $person): array
     {
-        return $person->movies()
-            ->distinct()
-            ->pluck('role')
+        return $person->movies
+            ->pluck('pivot.role')
+            ->filter()
             ->map(fn (string $role) => strtoupper($role))
             ->unique()
+            ->values()
             ->toArray();
     }
 
@@ -248,7 +295,7 @@ class PersonSearchService
      */
     private function getPersonMovieSlugs(Person $person): array
     {
-        return $person->movies()
+        return $person->movies
             ->pluck('slug')
             ->toArray();
     }
@@ -262,7 +309,7 @@ class PersonSearchService
     {
         $hasBio = isset($person->bios_count)
             ? $person->bios_count > 0
-            : $person->bios()->exists();
+            : $person->bios->isNotEmpty();
 
         $birthYear = $person->birth_date?->format('Y');
 
@@ -545,6 +592,44 @@ class PersonSearchService
     }
 
     /**
+     * Resolve how many items to fetch from local database.
+     */
+    private function resolveLocalFetchLimit(
+        array $criteria,
+        int $itemsPerPage,
+        ?int $currentPageNumber,
+        bool $isPaginationRequested
+    ): int {
+        if (array_key_exists('local_limit', $criteria)) {
+            return (int) $criteria['local_limit'];
+        }
+        if (! $isPaginationRequested) {
+            return $itemsPerPage;
+        }
+
+        return self::LOCAL_PAGINATION_FETCH_LIMIT;
+    }
+
+    /**
+     * Resolve how many items to fetch from external TMDB.
+     */
+    private function resolveExternalFetchLimit(
+        array $criteria,
+        int $itemsPerPage,
+        ?int $currentPageNumber,
+        bool $isPaginationRequested
+    ): int {
+        if (array_key_exists('external_limit', $criteria)) {
+            return (int) $criteria['external_limit'];
+        }
+        if (! $isPaginationRequested) {
+            return min($itemsPerPage, self::EXTERNAL_PAGINATION_FETCH_LIMIT);
+        }
+
+        return self::EXTERNAL_PAGINATION_FETCH_LIMIT;
+    }
+
+    /**
      * Extract pagination information from criteria.
      *
      * @param  array<string, mixed>  $criteria
@@ -615,7 +700,12 @@ class PersonSearchService
     /**
      * Get from tagged cache if supported, otherwise from regular cache.
      */
-    private function getFromTaggedCache(string $cacheKey): ?SearchResult
+    /**
+     * Get from tagged cache if supported, otherwise from regular cache.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function getFromTaggedCache(string $cacheKey): ?array
     {
         try {
             // Try tagged cache first (works with Redis, Memcached, DynamoDB)
@@ -628,15 +718,17 @@ class PersonSearchService
 
     /**
      * Store in tagged cache if supported, otherwise in regular cache.
+     *
+     * @param  array<string, mixed>  $payload
      */
-    private function putInTaggedCache(string $cacheKey, SearchResult $searchResult): void
+    private function putInTaggedCache(string $cacheKey, array $payload): void
     {
         try {
             // Try tagged cache first (works with Redis, Memcached, DynamoDB)
-            Cache::tags(['person_search'])->put($cacheKey, $searchResult, now()->addSeconds($this->getCacheTtl()));
+            Cache::tags(['person_search'])->put($cacheKey, $payload, now()->addSeconds($this->getCacheTtl()));
         } catch (\BadMethodCallException $e) {
             // Fallback to regular cache if tags not supported (database, file drivers)
-            Cache::put($cacheKey, $searchResult, now()->addSeconds($this->getCacheTtl()));
+            Cache::put($cacheKey, $payload, now()->addSeconds($this->getCacheTtl()));
         }
     }
 
@@ -728,7 +820,7 @@ class PersonSearchService
             $birthplaceHash,
             $roleHash,
             $movieHash,
-            $page,
+            // NOTE: page excluded intentionally – cache stores full result set, pagination is applied in memory
             $itemsPerPage,
             $sortField,
             $sortOrder,

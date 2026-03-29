@@ -12,64 +12,64 @@ import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
 import { formatDate } from '@/composables/useDate.js'
 
-const { t, locale } = useI18n()
+const { t: translate, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
-const slug = computed(() => route.params.slug)
-const descriptionId = computed(() => route.query.description_id || null)
-const tvSeries = ref(null)
-const acceptedGeneration = ref(null)
-const related = ref(null)
-const loading = ref(true)
-const error = ref(null)
-const reportOpen = ref(false)
+const activeSlug = computed(() => route.params.slug)
+const requestedDescriptionId = computed(() => route.query.description_id || null)
+const tvSeriesData = ref(null)
+const acceptedGenerationJob = ref(null)
+const relatedTvSeriesData = ref(null)
+const isLoading = ref(true)
+const searchError = ref(null)
+const isReportModalOpen = ref(false)
 
-async function load () {
-  if (!slug.value) return
-  loading.value = true
-  error.value = null
-  tvSeries.value = null
-  acceptedGeneration.value = null
+async function loadTvSeries () {
+  if (!activeSlug.value) return
+  isLoading.value = true
+  searchError.value = null
+  tvSeriesData.value = null
+  acceptedGenerationJob.value = null
   try {
-    const query = descriptionId.value ? { description_id: descriptionId.value } : {}
-    const data = await getTvSeriesBySlug(slug.value, query)
-    if (data.job_id && data.status === 'PENDING') {
-      acceptedGeneration.value = data
-      tvSeries.value = null
+    const query = requestedDescriptionId.value ? { description_id: requestedDescriptionId.value } : {}
+    const apiResponse = await getTvSeriesBySlug(activeSlug.value, query)
+    if (apiResponse.job_id && apiResponse.status === 'PENDING') {
+      acceptedGenerationJob.value = apiResponse
+      tvSeriesData.value = null
     } else {
-      tvSeries.value = data
-      acceptedGeneration.value = null
+      tvSeriesData.value = apiResponse
+      acceptedGenerationJob.value = null
     }
-  } catch (e) {
-    error.value = e.data?.message || e.message || 'Failed to load TV series'
+  } catch (error) {
+    searchError.value = error.data?.message || error.message || 'Failed to load TV series'
   } finally {
-    loading.value = false
+    isLoading.value = false
   }
 }
 
 async function loadRelated () {
-  if (!slug.value) return
+  if (!activeSlug.value) return
   try {
-    related.value = await getTvSeriesRelated(slug.value)
+    relatedTvSeriesData.value = await getTvSeriesRelated(activeSlug.value)
   } catch {
-    related.value = null
+    relatedTvSeriesData.value = null
   }
 }
 
-watch([slug, locale], () => {
-  load()
+watch([activeSlug, locale], () => {
+  loadTvSeries()
   loadRelated()
 }, { immediate: true })
 
 const selectedDescription = computed(() => {
-  const s = tvSeries.value
-  if (!s) return null
-  if (descriptionId.value && s.descriptions) {
-    const found = s.descriptions.find(d => String(d.id) === String(descriptionId.value))
+  const series = tvSeriesData.value
+  if (!series) return null
+  if (requestedDescriptionId.value && series.descriptions) {
+    const found = series.descriptions.find(desc => String(desc.id) === String(requestedDescriptionId.value))
     if (found) return found
   }
-  return s.descriptions?.[0] || null
+  return series.descriptions?.[0] || null
 })
 
 function selectDescription (id) {
@@ -77,98 +77,98 @@ function selectDescription (id) {
 }
 
 async function onReport (payload) {
-  await reportTvSeries(slug.value, payload)
+  await reportTvSeries(activeSlug.value, payload)
 }
 
-const relatedList = computed(() => related.value?.related_tv_series ?? [])
+const relatedTvSeriesList = computed(() => relatedTvSeriesData.value?.related_tv_series ?? [])
 
 function translatedGenre (genre) {
   const raw = typeof genre === 'object' ? genre.name : genre
   const key = `genres.${raw}`
-  const result = t(key)
+  const result = translate(key)
   return result === key ? raw : result
 }
 
-const airYears = computed(() => {
-  const s = tvSeries.value
-  if (!s) return null
-  const start = formatDate(s.first_air_date, locale.value, 'year')
-  if (!start) return null
-  const end = formatDate(s.last_air_date, locale.value, 'year')
-  return end && end !== start ? `${start} – ${end}` : start
+const activeAirYears = computed(() => {
+  const series = tvSeriesData.value
+  if (!series) return null
+  const startYear = formatDate(series.first_air_date, locale.value, 'year')
+  if (!startYear) return null
+  const endYear = formatDate(series.last_air_date, locale.value, 'year')
+  return endYear && endYear !== startYear ? `${startYear} – ${endYear}` : startYear
 })
 </script>
 
 <template>
   <div>
     <div
-      v-if="loading"
+      v-if="isLoading"
       class="text-gray-500"
     >
-      {{ t('detail.loading') }}
+      {{ translate('detail.loading') }}
     </div>
     <div
-      v-else-if="error"
+      v-else-if="searchError"
       class="p-4 bg-red-50 text-red-700 rounded-lg"
     >
-      {{ error }}
+      {{ searchError }}
     </div>
     <div
-      v-else-if="acceptedGeneration"
+      v-else-if="acceptedGenerationJob"
       class="p-4 bg-amber-50 rounded-lg"
     >
       <p class="text-amber-800">
-        {{ t('detail.generating') }}
+        {{ translate('detail.generating') }}
       </p>
       <router-link
-        :to="{ name: 'Job', params: { id: acceptedGeneration.job_id } }"
+        :to="{ name: 'Job', params: { id: acceptedGenerationJob.job_id } }"
         class="text-indigo-600 hover:underline mt-2 inline-block"
       >
-        {{ t('detail.check_job') }}
+        {{ translate('detail.check_job') }}
       </router-link>
     </div>
-    <template v-else-if="tvSeries">
+    <template v-else-if="tvSeriesData">
       <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900">
-          {{ tvSeries.title }}
+          {{ tvSeriesData.title }}
         </h1>
         <p
-          v-if="airYears"
+          v-if="activeAirYears"
           class="text-gray-600 mt-1"
         >
-          {{ airYears }}
+          {{ activeAirYears }}
         </p>
         <p
-          v-if="tvSeries.number_of_seasons != null"
+          v-if="tvSeriesData.number_of_seasons != null"
           class="text-gray-600"
         >
-          {{ t('detail.seasons_episodes', { seasons: tvSeries.number_of_seasons, episodes: tvSeries.number_of_episodes }) }}
+          {{ translate('detail.seasons_episodes', { seasons: tvSeriesData.number_of_seasons, episodes: tvSeriesData.number_of_episodes }) }}
         </p>
         <div
-          v-if="tvSeries.genres?.length"
+          v-if="tvSeriesData.genres?.length"
           class="mt-2 flex flex-wrap gap-2"
         >
           <Badge
-            v-for="g in tvSeries.genres"
-            :key="typeof g === 'object' ? g.name : g"
+            v-for="genre in tvSeriesData.genres"
+            :key="typeof genre === 'object' ? genre.name : genre"
             variant="default"
           >
-            {{ translatedGenre(g) }}
+            {{ translatedGenre(genre) }}
           </Badge>
         </div>
       </div>
 
       <div
-        v-if="tvSeries.descriptions?.length > 1"
+        v-if="tvSeriesData.descriptions?.length > 1"
         class="mb-4"
       >
         <Select
-          :label="t('detail.description_version')"
+          :label="translate('detail.description_version')"
           :model-value="selectedDescription?.id"
           @update:model-value="selectDescription"
-          :options="tvSeries.descriptions.map(d => ({
-            value: d.id,
-            label: `${d.locale} ${d.context_tag ? `(${d.context_tag})` : ''}`
+          :options="tvSeriesData.descriptions.map(desc => ({
+            value: desc.id,
+            label: `${desc.locale} ${desc.context_tag ? `(${desc.context_tag})` : ''}`
           }))"
         />
       </div>
@@ -183,52 +183,52 @@ const airYears = computed(() => {
       </div>
 
       <div
-        v-if="tvSeries.people?.length"
+        v-if="tvSeriesData.people?.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.cast_crew') }}
+          {{ translate('detail.cast_crew') }}
         </h2>
         <ul class="flex flex-wrap gap-2">
           <li
-            v-for="p in tvSeries.people"
-            :key="p.slug"
+            v-for="person in tvSeriesData.people"
+            :key="person.slug"
           >
             <router-link
-              :to="{ name: 'PersonDetail', params: { slug: p.slug } }"
+              :to="{ name: 'PersonDetail', params: { slug: person.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ p.name }}
+              {{ person.name }}
             </router-link>
           </li>
         </ul>
       </div>
 
       <div
-        v-if="relatedList.length"
+        v-if="relatedTvSeriesList.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.related_series') }}
+          {{ translate('detail.related_series') }}
         </h2>
         <ul class="space-y-1">
           <li
-            v-for="r in relatedList"
-            :key="r.slug"
+            v-for="relatedItem in relatedTvSeriesList"
+            :key="relatedItem.slug"
           >
             <router-link
-              :to="{ name: 'TvSeriesDetail', params: { slug: r.slug } }"
+              :to="{ name: 'TvSeriesDetail', params: { slug: relatedItem.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ r.title }}
+              {{ relatedItem.title }}
               <span
-                v-if="r.first_air_date"
+                v-if="relatedItem.first_air_date"
                 class="text-gray-500"
-              >({{ r.first_air_date.substring(0, 4) }})</span>
+              >({{ relatedItem.first_air_date.substring(0, 4) }})</span>
               <span
-                v-if="r.relationship_label"
+                v-if="relatedItem.relationship_label"
                 class="text-gray-400 text-sm"
-              > — {{ r.relationship_label }}</span>
+              > — {{ relatedItem.relationship_label }}</span>
             </router-link>
           </li>
         </ul>
@@ -236,28 +236,28 @@ const airYears = computed(() => {
 
       <div class="flex flex-wrap gap-4 mt-8">
         <Button
-          @click="router.push({ name: 'Generate', query: { entity_type: 'TV_SERIES', slug: tvSeries.slug } })"
+          @click="router.push({ name: 'Generate', query: { entity_type: 'TV_SERIES', slug: tvSeriesData.slug } })"
           variant="primary"
         >
-          {{ t('detail.generate_desc') }}
+          {{ translate('detail.generate_desc') }}
         </Button>
         <Button
-          @click="router.push({ name: 'Compare', query: { type: 'tv-series', slug1: tvSeries.slug } })"
+          @click="router.push({ name: 'Compare', query: { type: 'tv-series', slug1: tvSeriesData.slug } })"
           variant="outline"
         >
-          {{ t('detail.compare') }}
+          {{ translate('detail.compare') }}
         </Button>
         <Button
-          @click="reportOpen = true"
+          @click="isReportModalOpen = true"
           variant="outline"
         >
-          {{ t('detail.report') }}
+          {{ translate('detail.report') }}
         </Button>
       </div>
     </template>
 
     <ReportModal
-      v-model="reportOpen"
+      v-model="isReportModalOpen"
       :description-id="selectedDescription?.id"
       :on-submit="onReport"
     />

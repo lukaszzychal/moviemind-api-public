@@ -26,10 +26,16 @@ class MovieSearchService
     private const CACHE_TTL_SECONDS_PRODUCTION = 3600; // 1 hour for production
 
     /**
-     * Max items to fetch from local/external when pagination is used, so that
-     * cached result set can serve multiple pages (cache stores full list, we slice per request).
+     * Max items to fetch from local database when pagination is used.
+     * Higher limit allows cached result set to serve multiple pages.
      */
-    private const PAGINATION_FETCH_LIMIT = 100;
+    private const LOCAL_PAGINATION_FETCH_LIMIT = 100;
+
+    /**
+     * Max items to fetch from external TMDB when pagination is used.
+     * Lower limit to avoid excessive API calls (N+1 for details) and bandwidth.
+     */
+    private const EXTERNAL_PAGINATION_FETCH_LIMIT = 20;
 
     private function getCacheTtl(): int
     {
@@ -62,9 +68,8 @@ class MovieSearchService
 
         // When pagination is requested, fetch enough items so the requested page has data.
         // Cache stores the full list; we slice per request.
-        $fetchLimit = $this->resolveFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
-        $localLimit = $criteria['local_limit'] ?? $fetchLimit;
-        $externalLimit = $criteria['external_limit'] ?? $fetchLimit;
+        $localLimit = $this->resolveLocalFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
+        $externalLimit = $this->resolveExternalFetchLimit($criteria, $itemsPerPage, $currentPageNumber, $isPaginationRequested);
 
         $sourceFilter = $criteria['source'] ?? null;
 
@@ -557,22 +562,42 @@ class MovieSearchService
      * Resolve how many items to fetch so the requested page can be served.
      * When pagination is requested we fetch at least current_page * per_page (capped).
      */
-    private function resolveFetchLimit(
+    /**
+     * Resolve how many items to fetch from local database.
+     */
+    private function resolveLocalFetchLimit(
         array $criteria,
         int $itemsPerPage,
         ?int $currentPageNumber,
         bool $isPaginationRequested
     ): int {
-        $explicitLocal = array_key_exists('local_limit', $criteria);
-        $explicitExternal = array_key_exists('external_limit', $criteria);
-        if ($explicitLocal || $explicitExternal) {
-            return $itemsPerPage;
+        if (array_key_exists('local_limit', $criteria)) {
+            return (int) $criteria['local_limit'];
         }
-        if (! $isPaginationRequested || $currentPageNumber === null || $currentPageNumber <= 1) {
+        if (! $isPaginationRequested) {
             return $itemsPerPage;
         }
 
-        return (int) min($currentPageNumber * $itemsPerPage, self::PAGINATION_FETCH_LIMIT);
+        return self::LOCAL_PAGINATION_FETCH_LIMIT;
+    }
+
+    /**
+     * Resolve how many items to fetch from external TMDB.
+     */
+    private function resolveExternalFetchLimit(
+        array $criteria,
+        int $itemsPerPage,
+        ?int $currentPageNumber,
+        bool $isPaginationRequested
+    ): int {
+        if (array_key_exists('external_limit', $criteria)) {
+            return (int) $criteria['external_limit'];
+        }
+        if (! $isPaginationRequested) {
+            return min($itemsPerPage, self::EXTERNAL_PAGINATION_FETCH_LIMIT);
+        }
+
+        return self::EXTERNAL_PAGINATION_FETCH_LIMIT;
     }
 
     /**
@@ -816,7 +841,6 @@ class MovieSearchService
             ? implode(',', $criteria['actor'])
             : ($criteria['actor'] ?? '');
         $actorHash = md5($actorString);
-        $page = $criteria['page'] ?? 1;
         $itemsPerPage = $criteria['per_page'] ?? $criteria['limit'] ?? 20;
         $sortField = $criteria['sort'] ?? '';
         $sortOrder = $criteria['order'] ?? '';
@@ -830,7 +854,7 @@ class MovieSearchService
             $criteria['year'] ?? '',
             $directorHash,
             $actorHash,
-            $page,
+            // NOTE: page is intentionally excluded – cache stores the full result set and slices per request
             $itemsPerPage,
             $sortField,
             $sortOrder,

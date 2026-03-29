@@ -13,81 +13,81 @@ import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
 
-const { t, locale } = useI18n()
+const { t: translate, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
-const slug = computed(() => route.params.slug)
-const descriptionId = computed(() => route.query.description_id || null)
+const activeSlug = computed(() => route.params.slug)
+const requestedDescriptionId = computed(() => route.query.description_id || null)
 
-const movie = ref(null)
-const acceptedGeneration = ref(null)
-const related = ref(null)
-const collection = ref(null)
-const loading = ref(true)
-const error = ref(null)
-const reportOpen = ref(false)
+const movieData = ref(null)
+const acceptedGenerationJob = ref(null)
+const relatedMoviesData = ref(null)
+const movieCollectionData = ref(null)
+const isLoading = ref(true)
+const searchError = ref(null)
+const isReportModalOpen = ref(false)
 
 async function loadMovie () {
-  if (!slug.value) return
-  loading.value = true
-  error.value = null
-  movie.value = null
-  acceptedGeneration.value = null
+  if (!activeSlug.value) return
+  isLoading.value = true
+  searchError.value = null
+  movieData.value = null
+  acceptedGenerationJob.value = null
   try {
     const query = {}
-    if (descriptionId.value) query.description_id = descriptionId.value
-    const data = await getMovie(slug.value, query)
-    if (data.job_id && data.status === 'PENDING') {
-      acceptedGeneration.value = data
-      movie.value = null
+    if (requestedDescriptionId.value) query.description_id = requestedDescriptionId.value
+    const apiResponse = await getMovie(activeSlug.value, query)
+    if (apiResponse.job_id && apiResponse.status === 'PENDING') {
+      acceptedGenerationJob.value = apiResponse
+      movieData.value = null
     } else {
-      movie.value = data
-      acceptedGeneration.value = null
+      movieData.value = apiResponse
+      acceptedGenerationJob.value = null
     }
-  } catch (e) {
-    if (e.status === 202 && e.data?.job_id) {
-      acceptedGeneration.value = e.data
+  } catch (error) {
+    if (error.status === 202 && error.data?.job_id) {
+      acceptedGenerationJob.value = error.data
     } else {
-      error.value = e.data?.message || e.message || 'Failed to load movie'
+      searchError.value = error.data?.message || error.message || 'Failed to load movie'
     }
   } finally {
-    loading.value = false
+    isLoading.value = false
   }
 }
 
 async function loadRelated () {
-  if (!slug.value) return
+  if (!activeSlug.value) return
   try {
-    related.value = await getMovieRelated(slug.value)
+    relatedMoviesData.value = await getMovieRelated(activeSlug.value)
   } catch {
-    related.value = null
+    relatedMoviesData.value = null
   }
 }
 
 async function loadCollection () {
-  if (!slug.value) return
+  if (!activeSlug.value) return
   try {
-    collection.value = await getMovieCollection(slug.value)
+    movieCollectionData.value = await getMovieCollection(activeSlug.value)
   } catch {
-    collection.value = null
+    movieCollectionData.value = null
   }
 }
 
-watch([slug, locale], () => {
+watch([activeSlug, locale], () => {
   loadMovie()
   loadRelated()
   loadCollection()
 }, { immediate: true })
 
 const selectedDescription = computed(() => {
-  const m = movie.value
-  if (!m) return null
-  if (descriptionId.value && m.descriptions) {
-    const found = m.descriptions.find(d => String(d.id) === String(descriptionId.value))
+  const movie = movieData.value
+  if (!movie) return null
+  if (requestedDescriptionId.value && movie.descriptions) {
+    const found = movie.descriptions.find(desc => String(desc.id) === String(requestedDescriptionId.value))
     if (found) return found
   }
-  return m.default_description || (m.descriptions && m.descriptions[0]) || null
+  return movie.default_description || (movie.descriptions && movie.descriptions[0]) || null
 })
 
 function selectDescription (id) {
@@ -95,20 +95,20 @@ function selectDescription (id) {
 }
 
 async function onReport (payload) {
-  await reportMovie(slug.value, payload)
+  await reportMovie(activeSlug.value, payload)
 }
 
-const relatedList = computed(() => {
-  const r = related.value
-  return r?.related_movies ?? []
+const relatedMoviesList = computed(() => {
+  const responseData = relatedMoviesData.value
+  return responseData?.related_movies ?? []
 })
 
-const collectionMovies = computed(() => collection.value?.movies ?? [])
+const collectionMoviesList = computed(() => movieCollectionData.value?.movies ?? [])
 
 function translatedGenre (genre) {
   const raw = typeof genre === 'object' ? genre.name : genre
   const key = `genres.${raw}`
-  const result = t(key)
+  const result = translate(key)
   return result === key ? raw : result
 }
 </script>
@@ -116,68 +116,68 @@ function translatedGenre (genre) {
 <template>
   <div>
     <div
-      v-if="loading"
+      v-if="isLoading"
       class="text-gray-500"
     >
-      {{ t('detail.loading') }}
+      {{ translate('detail.loading') }}
     </div>
     <div
-      v-else-if="error"
+      v-else-if="searchError"
       class="p-4 bg-red-50 text-red-700 rounded-lg"
     >
-      {{ error }}
+      {{ searchError }}
     </div>
     <div
-      v-else-if="acceptedGeneration"
+      v-else-if="acceptedGenerationJob"
       class="p-4 bg-amber-50 rounded-lg"
     >
       <p class="text-amber-800">
-        {{ t('detail.generating') }}
+        {{ translate('detail.generating') }}
       </p>
       <router-link
-        :to="{ name: 'Job', params: { id: acceptedGeneration.job_id } }"
+        :to="{ name: 'Job', params: { id: acceptedGenerationJob.job_id } }"
         class="text-indigo-600 hover:underline mt-2 inline-block"
       >
-        {{ t('detail.check_job') }}
+        {{ translate('detail.check_job') }}
       </router-link>
     </div>
-    <template v-else-if="movie">
+    <template v-else-if="movieData">
       <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900">
-          {{ movie.title }}
+          {{ movieData.title }}
         </h1>
         <p
-          v-if="movie.release_year"
+          v-if="movieData.release_year"
           class="text-gray-600 mt-1"
         >
-          {{ movie.release_year }}
-          <span v-if="movie.director"> · {{ movie.director }}</span>
+          {{ movieData.release_year }}
+          <span v-if="movieData.director"> · {{ movieData.director }}</span>
         </p>
         <div
-          v-if="movie.genres && movie.genres.length"
+          v-if="movieData.genres && movieData.genres.length"
           class="mt-2 flex flex-wrap gap-2"
         >
           <Badge
-            v-for="g in movie.genres"
-            :key="g"
+            v-for="genre in movieData.genres"
+            :key="genre"
             variant="default"
           >
-            {{ translatedGenre(g) }}
+            {{ translatedGenre(genre) }}
           </Badge>
         </div>
       </div>
 
       <div
-        v-if="movie.descriptions && movie.descriptions.length > 1"
+        v-if="movieData.descriptions && movieData.descriptions.length > 1"
         class="mb-4"
       >
         <Select
-          :label="t('detail.description_version')"
+          :label="translate('detail.description_version')"
           :model-value="selectedDescription?.id"
           @update:model-value="selectDescription"
-          :options="movie.descriptions.map(d => ({
-            value: d.id,
-            label: `${d.locale} ${d.context_tag ? `(${d.context_tag})` : ''}`
+          :options="movieData.descriptions.map(desc => ({
+            value: desc.id,
+            label: `${desc.locale} ${desc.context_tag ? `(${desc.context_tag})` : ''}`
           }))"
         />
       </div>
@@ -192,92 +192,92 @@ function translatedGenre (genre) {
       </div>
 
       <div
-        v-if="movie.people && movie.people.length"
+        v-if="movieData.people && movieData.people.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.cast_crew') }}
+          {{ translate('detail.cast_crew') }}
         </h2>
         <ul class="flex flex-wrap gap-2">
           <li
-            v-for="p in movie.people"
-            :key="p.slug"
+            v-for="person in movieData.people"
+            :key="person.slug"
           >
             <router-link
-              :to="{ name: 'PersonDetail', params: { slug: p.slug } }"
+              :to="{ name: 'PersonDetail', params: { slug: person.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ p.name }}
+              {{ person.name }}
               <span
-                v-if="p.character_name"
+                v-if="person.character_name"
                 class="text-gray-500"
-              >({{ p.character_name }})</span>
+              >({{ person.character_name }})</span>
               <span
-                v-else-if="p.role"
+                v-else-if="person.role"
                 class="text-gray-500"
-              >({{ p.role }})</span>
+              >({{ person.role }})</span>
             </router-link>
           </li>
         </ul>
       </div>
 
       <div
-        v-if="relatedList.length"
+        v-if="relatedMoviesList.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.related_movies') }}
+          {{ translate('detail.related_movies') }}
         </h2>
         <ul class="space-y-1">
           <li
-            v-for="r in relatedList"
-            :key="r.slug"
+            v-for="relatedItem in relatedMoviesList"
+            :key="relatedItem.slug"
           >
             <router-link
-              :to="{ name: 'MovieDetail', params: { slug: r.slug } }"
+              :to="{ name: 'MovieDetail', params: { slug: relatedItem.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ r.title }}
+              {{ relatedItem.title }}
               <span
-                v-if="r.release_year"
+                v-if="relatedItem.release_year"
                 class="text-gray-500"
-              >({{ r.release_year }})</span>
+              >({{ relatedItem.release_year }})</span>
               <span
-                v-if="r.relationship_label"
+                v-if="relatedItem.relationship_label"
                 class="text-gray-400 text-sm"
-              > — {{ r.relationship_label }}</span>
+              > — {{ relatedItem.relationship_label }}</span>
             </router-link>
           </li>
         </ul>
       </div>
 
       <div
-        v-if="collectionMovies.length"
+        v-if="collectionMoviesList.length"
         class="mb-8"
       >
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
-          {{ t('detail.collection') }}
+          {{ translate('detail.collection') }}
         </h2>
         <p
-          v-if="collection?.collection?.name"
+          v-if="movieCollectionData?.collection?.name"
           class="text-gray-600 mb-2"
         >
-          {{ collection.collection.name }}
+          {{ movieCollectionData.collection.name }}
         </p>
         <ul class="space-y-1">
           <li
-            v-for="m in collectionMovies"
-            :key="m.slug"
+            v-for="colItem in collectionMoviesList"
+            :key="colItem.slug"
           >
             <router-link
-              :to="{ name: 'MovieDetail', params: { slug: m.slug } }"
+              :to="{ name: 'MovieDetail', params: { slug: colItem.slug } }"
               class="text-indigo-600 hover:underline"
             >
-              {{ m.title }}
+              {{ colItem.title }}
               <span
-                v-if="m.release_year"
+                v-if="colItem.release_year"
                 class="text-gray-500"
-              >({{ m.release_year }})</span>
+              >({{ colItem.release_year }})</span>
             </router-link>
           </li>
         </ul>
@@ -285,28 +285,28 @@ function translatedGenre (genre) {
 
       <div class="flex flex-wrap gap-4 mt-8">
         <Button
-          @click="router.push({ name: 'Generate', query: { entity_type: 'MOVIE', slug: movie.slug } })"
+          @click="router.push({ name: 'Generate', query: { entity_type: 'MOVIE', slug: movieData.slug } })"
           variant="primary"
         >
-          {{ t('detail.generate_desc') }}
+          {{ translate('detail.generate_desc') }}
         </Button>
         <Button
-          @click="router.push({ name: 'Compare', query: { type: 'movies', slug1: movie.slug } })"
+          @click="router.push({ name: 'Compare', query: { type: 'movies', slug1: movieData.slug } })"
           variant="outline"
         >
-          {{ t('detail.compare') }}
+          {{ translate('detail.compare') }}
         </Button>
         <Button
-          @click="reportOpen = true"
+          @click="isReportModalOpen = true"
           variant="outline"
         >
-          {{ t('detail.report') }}
+          {{ translate('detail.report') }}
         </Button>
       </div>
     </template>
 
     <ReportModal
-      v-model="reportOpen"
+      v-model="isReportModalOpen"
       :description-id="selectedDescription?.id"
       :on-submit="onReport"
     />
