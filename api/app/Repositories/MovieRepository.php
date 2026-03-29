@@ -52,10 +52,7 @@ class MovieRepository
             ->when($year !== null, function ($builder) use ($year) {
                 $builder->where('release_year', $year);
             })
-            ->with(['defaultDescription'])
-            ->when($actor !== null && $actor !== [], function ($builder) {
-                $builder->with('people');
-            })
+            ->with(['defaultDescription', 'people'])
             ->withCount('descriptions')
             ->orderBy('created_at', 'desc')
             ->paginate($limit);
