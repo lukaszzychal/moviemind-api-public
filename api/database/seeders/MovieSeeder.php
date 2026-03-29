@@ -8,6 +8,7 @@ use App\Enums\Locale;
 use App\Models\Genre;
 use App\Models\Movie;
 use App\Models\MovieDescription;
+use App\Models\Person;
 use Illuminate\Database\Seeder;
 
 class MovieSeeder extends Seeder
@@ -142,6 +143,14 @@ class MovieSeeder extends Seeder
                     'fetched_at' => \Illuminate\Support\Carbon::now(),
                 ]
             );
+
+            $directorPerson = Person::firstOrCreate(
+                ['slug' => \Illuminate\Support\Str::slug($director)],
+                ['name' => $director]
+            );
+            $movie->people()->syncWithoutDetaching([
+                $directorPerson->id => ['role' => 'DIRECTOR', 'job' => 'Director', 'billing_order' => 1],
+            ]);
 
             $attach($movie, [$genre]);
         }
