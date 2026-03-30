@@ -1761,7 +1761,7 @@ CMD ["php-fpm"]
 
 ### 🚀 Docker Compose
 ```yaml
-# docker-compose.yml
+# compose.yml
 version: '3.9'
 services:
   laravel:
@@ -1852,7 +1852,7 @@ CMD ["php-fpm"]
 
 ### 🚀 Docker Compose
 ```yaml
-# docker-compose.yml
+# compose.yml
 version: '3.9'
 services:
   laravel:

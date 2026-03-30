@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Backup PostgreSQL database via Docker Compose.
 # Usage: backup-db.sh <compose-file> <backup-dir> [retention-days]
-# Example: ./scripts/backup-db.sh docker-compose.production.yml /var/backups/moviemind 14
+# Example: ./scripts/backup-db.sh compose.production.yml /var/backups/moviemind 14
 # Requires: docker compose, api/.env with DB_USERNAME and DB_DATABASE (or set in environment).
 
 set -euo pipefail
@@ -14,7 +14,7 @@ RETENTION_DAYS="${3:-14}"
 
 if [[ -z "$COMPOSE_FILE" || -z "$BACKUP_DIR" ]]; then
   echo "Usage: $0 <compose-file> <backup-dir> [retention-days]"
-  echo "  compose-file   e.g. docker-compose.production.yml or docker-compose.staging.yml"
+  echo "  compose-file   e.g. compose.production.yml or compose.staging.yml"
   echo "  backup-dir     directory to write backup files (created if missing)"
   echo "  retention-days optional; default 14. Delete backups older than this."
   exit 1

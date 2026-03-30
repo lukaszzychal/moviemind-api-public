@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Restore a backup into a temporary database and verify it; then drop the temporary database.
 # Usage: verify-restore-db.sh <compose-file> <backup-dir> [backup-file]
-# Example: ./scripts/verify-restore-db.sh docker-compose.production.yml /var/backups/moviemind
+# Example: ./scripts/verify-restore-db.sh compose.production.yml /var/backups/moviemind
 # If backup-file is omitted, uses the latest backup-*.sql or backup-*.sql.gz in backup-dir by mtime.
 
 set -euo pipefail
@@ -15,7 +15,7 @@ BACKUP_FILE_OPT="${3:-}"
 
 if [[ -z "$COMPOSE_FILE" || -z "$BACKUP_DIR" ]]; then
   echo "Usage: $0 <compose-file> <backup-dir> [backup-file]"
-  echo "  compose-file   e.g. docker-compose.production.yml or docker-compose.staging.yml"
+  echo "  compose-file   e.g. compose.production.yml or compose.staging.yml"
   echo "  backup-dir     directory containing backup-*.sql or backup-*.sql.gz"
   echo "  backup-file    optional; path to specific backup. If omitted, latest by mtime is used."
   exit 1

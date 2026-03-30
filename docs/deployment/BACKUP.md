@@ -16,25 +16,25 @@ docker compose exec db pg_dump -U moviemind moviemind > backup-$(date +%Y%m%d-%H
 
 **Staging:**
 ```bash
-docker compose -f docker-compose.staging.yml exec db pg_dump -U moviemind moviemind_staging > backup-staging-$(date +%Y%m%d-%H%M).sql
+docker compose -f compose.staging.yml exec db pg_dump -U moviemind moviemind_staging > backup-staging-$(date +%Y%m%d-%H%M).sql
 ```
 
 **Production (service name may vary if using external DB):**
 ```bash
-docker compose -f docker-compose.production.yml exec db pg_dump -U $DB_USERNAME $DB_DATABASE > backup-prod-$(date +%Y%m%d-%H%M).sql
+docker compose -f compose.production.yml exec db pg_dump -U $DB_USERNAME $DB_DATABASE > backup-prod-$(date +%Y%m%d-%H%M).sql
 ```
 
 ### Restore
 
 ```bash
 # Stop app (optional, to avoid writes during restore)
-docker compose -f docker-compose.production.yml stop php
+docker compose -f compose.production.yml stop php
 
 # Restore
-docker compose -f docker-compose.production.yml exec -T db psql -U $DB_USERNAME -d $DB_DATABASE < backup-prod-YYYYMMDD-HHMM.sql
+docker compose -f compose.production.yml exec -T db psql -U $DB_USERNAME -d $DB_DATABASE < backup-prod-YYYYMMDD-HHMM.sql
 
 # Start app
-docker compose -f docker-compose.production.yml start php
+docker compose -f compose.production.yml start php
 ```
 
 ### Recommendations
@@ -60,26 +60,26 @@ Tworzy kopię bazy (pg_dump), kompresuje ją (gzip) i usuwa backupy starsze niż
 
 **Staging** (np. codziennie o 2:00, backupy w `./backups-staging`, retencja 14 dni):
 ```bash
-# Upewnij się, że stack działa: docker compose -f docker-compose.staging.yml up -d
+# Upewnij się, że stack działa: docker compose -f compose.staging.yml up -d
 cd /ścieżka/do/moviemind-api-public
 chmod +x scripts/backup-db.sh
-./scripts/backup-db.sh docker-compose.staging.yml ./backups-staging 14
+./scripts/backup-db.sh compose.staging.yml ./backups-staging 14
 ```
 
 **Production** (np. codziennie o 2:00, backupy w `/var/backups/moviemind`, retencja 30 dni):
 ```bash
 cd /ścieżka/do/moviemind-api-public
-./scripts/backup-db.sh docker-compose.production.yml /var/backups/moviemind 30
+./scripts/backup-db.sh compose.production.yml /var/backups/moviemind 30
 ```
 
 **Cron — staging:**
 ```cron
-0 2 * * * cd /ścieżka/do/moviemind-api-public && ./scripts/backup-db.sh docker-compose.staging.yml /var/backups/moviemind-staging 14
+0 2 * * * cd /ścieżka/do/moviemind-api-public && ./scripts/backup-db.sh compose.staging.yml /var/backups/moviemind-staging 14
 ```
 
 **Cron — production:**
 ```cron
-0 2 * * * cd /ścieżka/do/moviemind-api-public && ./scripts/backup-db.sh docker-compose.production.yml /var/backups/moviemind 30
+0 2 * * * cd /ścieżka/do/moviemind-api-public && ./scripts/backup-db.sh compose.production.yml /var/backups/moviemind 30
 ```
 
 Katalog na backupy zostanie utworzony, jeśli nie istnieje. Pliki mają postać `backup-YYYYMMDD-HHMMSS.sql.gz`.
@@ -97,17 +97,17 @@ Przywraca ostatnią (lub wskazaną) kopię do tymczasowej bazy `moviemind_restor
 ```bash
 cd /ścieżka/do/moviemind-api-public
 chmod +x scripts/verify-restore-db.sh
-./scripts/verify-restore-db.sh docker-compose.staging.yml ./backups-staging
+./scripts/verify-restore-db.sh compose.staging.yml ./backups-staging
 ```
 
 **Production** (np. raz w tygodniu, niedziela 4:00):
 ```bash
-./scripts/verify-restore-db.sh docker-compose.production.yml /var/backups/moviemind
+./scripts/verify-restore-db.sh compose.production.yml /var/backups/moviemind
 ```
 
 **Cron — test odzysku production (raz w tygodniu):**
 ```cron
-0 4 * * 0 cd /ścieżka/do/moviemind-api-public && ./scripts/verify-restore-db.sh docker-compose.production.yml /var/backups/moviemind
+0 4 * * 0 cd /ścieżka/do/moviemind-api-public && ./scripts/verify-restore-db.sh compose.production.yml /var/backups/moviemind
 ```
 
 #### Uwagi

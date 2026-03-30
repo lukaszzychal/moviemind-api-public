@@ -421,7 +421,7 @@ public int $timeout = 120; // 120 sekund
 
 ## 🐳 **Docker Setup**
 
-### **docker-compose.yml:**
+### **compose.yml:**
 
 ```yaml
 horizon:

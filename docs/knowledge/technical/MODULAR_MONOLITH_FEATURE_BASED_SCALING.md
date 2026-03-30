@@ -1784,14 +1784,14 @@ Ten przykład pokazuje minimalną konfigurację z 2 instancjami API i podstawowy
 
 ```
 moviemind-scaling/
-├── docker-compose.yml
+├── compose.yml
 ├── docker/
 │   └── nginx/
 │       └── simple-load-balancer.conf
 └── .env.example
 ```
 
-#### docker-compose.yml
+#### compose.yml
 
 ```yaml
 version: "3.9"
@@ -2076,7 +2076,7 @@ graph LR
 ],
 ```
 
-#### docker-compose.yml dla Pipeline
+#### compose.yml dla Pipeline
 
 ```yaml
 version: "3.9"
@@ -2399,7 +2399,7 @@ private function getAvailableStages(): array
 
 **Sytuacja:** Masz 2 instancje API i chcesz dodać trzecią.
 
-**Krok 1:** Dodaj nową instancję do docker-compose.yml
+**Krok 1:** Dodaj nową instancję do compose.yml
 
 ```yaml
 api-3:
@@ -2512,7 +2512,7 @@ server {
 #### Skalowanie w Górę (Dodawanie Instancji)
 
 ```bash
-# 1. Dodaj nową instancję do docker-compose.yml
+# 1. Dodaj nową instancję do compose.yml
 # 2. Zaktualizuj konfigurację Nginx
 # 3. Uruchom nową instancję
 docker compose up -d api-6
@@ -2968,7 +2968,7 @@ cd moviemind-scaling-lab
 # W tym przykładzie zakładamy, że masz już aplikację Laravel
 ```
 
-**Krok 2: Utwórz docker-compose.yml**
+**Krok 2: Utwórz compose.yml**
 
 ```yaml
 version: "3.9"
@@ -3179,7 +3179,7 @@ Dodać trzecią instancję API i zaktualizować konfigurację Nginx dla path-bas
 
 #### Krok po Kroku
 
-**Krok 1: Dodaj trzecią instancję do docker-compose.yml**
+**Krok 1: Dodaj trzecią instancję do compose.yml**
 
 ```yaml
 api-3:

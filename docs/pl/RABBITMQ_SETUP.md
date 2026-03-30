@@ -71,7 +71,7 @@ RABBITMQ_VHOST=/
 RABBITMQ_QUEUE=default
 ```
 
-### 3. Dodaj RabbitMQ do `docker-compose.yml`
+### 3. Dodaj RabbitMQ do `compose.yml`
 
 ```yaml
 services:

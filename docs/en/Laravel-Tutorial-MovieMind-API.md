@@ -356,7 +356,7 @@ RUN composer install --no-dev --optimize-autoloader
 CMD ["php-fpm"]
 ```
 
-### docker-compose.yml (excerpt)
+### compose.yml (excerpt)
 ```yaml
 version: '3.9'
 services:

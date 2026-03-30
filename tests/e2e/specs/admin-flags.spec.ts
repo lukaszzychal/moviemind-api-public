@@ -8,14 +8,14 @@ test.describe('Admin Feature Flags Management', () => {
   test.beforeAll(async () => {
     const projectRoot = path.resolve(__dirname, '../../..');
     const composeExec =
-      'docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec -T php php artisan test:prepare-e2e';
+      'docker compose -f compose.yml -f compose.e2e.yml exec -T php php artisan test:prepare-e2e';
     try {
       execSync(composeExec, { stdio: 'inherit', cwd: projectRoot });
     } catch (error) {
       const err = error as { message?: string; stderr?: string };
       const stderr = err.stderr != null ? String(err.stderr).trim() : '';
       throw new Error(
-        `test:prepare-e2e failed (cwd: ${projectRoot}). ${err.message ?? ''}${stderr ? ` Stderr: ${stderr}` : ''}. Ensure the stack is running: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate. Run npm run test:e2e from project root with Docker in PATH.`
+        `test:prepare-e2e failed (cwd: ${projectRoot}). ${err.message ?? ''}${stderr ? ` Stderr: ${stderr}` : ''}. Ensure the stack is running: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate. Run npm run test:e2e from project root with Docker in PATH.`
       );
     }
     // Fail fast if APP_URL does not match baseURL (prevents "Session lost" after login)
@@ -24,18 +24,18 @@ test.describe('Admin Feature Flags Management', () => {
     const res = await fetch(`${baseURL}/api/v1/health/db`);
     if (!res.ok) {
       throw new Error(
-        `App health check failed (${res.status}) at ${baseURL}. Restart with: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`
+        `App health check failed (${res.status}) at ${baseURL}. Restart with: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`
       );
     }
     const data = (await res.json()) as { app_url?: string };
     if (data.app_url == null) {
       throw new Error(
-        `E2E requires APP_URL in health response (is APP_ENV=local?). Restart with: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`
+        `E2E requires APP_URL in health response (is APP_ENV=local?). Restart with: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`
       );
     }
     if (data.app_url !== expectedAppUrl) {
       throw new Error(
-        `E2E requires APP_URL to match baseURL. Current app_url is "${data.app_url}". Restart with: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`
+        `E2E requires APP_URL to match baseURL. Current app_url is "${data.app_url}". Restart with: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`
       );
     }
   });
@@ -43,14 +43,14 @@ test.describe('Admin Feature Flags Management', () => {
   test.beforeEach(async ({ page }) => {
     const projectRoot = path.resolve(__dirname, '../../..');
     const composeExec =
-      'docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec -T php php artisan test:prepare-e2e';
+      'docker compose -f compose.yml -f compose.e2e.yml exec -T php php artisan test:prepare-e2e';
     try {
       execSync(composeExec, { stdio: 'pipe', cwd: projectRoot });
     } catch (e) {
       const err = e as { message?: string; stderr?: string };
       const stderr = err.stderr != null ? String(err.stderr).trim() : '';
       throw new Error(
-        `test:prepare-e2e failed (cwd: ${projectRoot}). ${err.message ?? ''}${stderr ? ` Stderr: ${stderr}` : ''}. Ensure stack is running: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate. Run npm run test:e2e from project root.`
+        `test:prepare-e2e failed (cwd: ${projectRoot}). ${err.message ?? ''}${stderr ? ` Stderr: ${stderr}` : ''}. Ensure stack is running: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate. Run npm run test:e2e from project root.`
       );
     }
     await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
@@ -97,7 +97,7 @@ test.describe('Admin Feature Flags Management', () => {
     const expectedHost = new URL(baseURL).host;
     if (currentHost !== expectedHost) {
       throw new Error(
-        'Session lost when opening /admin/features. Restart app with E2E override so APP_URL matches baseURL: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate'
+        'Session lost when opening /admin/features. Restart app with E2E override so APP_URL matches baseURL: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate'
       );
     }
 
@@ -106,7 +106,7 @@ test.describe('Admin Feature Flags Management', () => {
     const pathname = new URL(page.url()).pathname;
     if (pathname.startsWith('/admin/login')) {
       throw new Error(
-        'Session lost when opening /admin/features. Restart app with E2E override so APP_URL matches baseURL: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate'
+        'Session lost when opening /admin/features. Restart app with E2E override so APP_URL matches baseURL: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate'
       );
     }
     await expect(page).toHaveURL(/\/admin\/features/, { timeout: 10000 });

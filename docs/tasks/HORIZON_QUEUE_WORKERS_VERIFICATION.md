@@ -60,13 +60,13 @@ Weryfikacja konfiguracji i działania queue workers/Horizon została przeprowadz
 
 **Rozwiązanie:**
 - ✅ W `env/local.env.example` jest `QUEUE_CONNECTION=redis`
-- ✅ W `docker-compose.yml` horizon service ma `QUEUE_CONNECTION: redis`
+- ✅ W `compose.yml` horizon service ma `QUEUE_CONNECTION: redis`
 
 ---
 
 ### **3. Docker Compose Configuration**
 
-**Plik:** `docker-compose.yml`
+**Plik:** `compose.yml`
 
 #### **Status:** ✅ Skonfigurowane poprawnie
 

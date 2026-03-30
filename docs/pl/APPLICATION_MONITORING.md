@@ -132,7 +132,7 @@ Aplikacja → Prometheus → Grafana
 **Instalacja (Docker):**
 
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   grafana:
     image: grafana/grafana:latest
@@ -224,7 +224,7 @@ Logi Aplikacji → Promtail → Loki → Grafana
 **Instalacja (Docker):**
 
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   loki:
     image: grafana/loki:latest
@@ -395,7 +395,7 @@ Zabbix Agent → Zabbix Server → Zabbix Frontend
 **Instalacja (Docker):**
 
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   zabbix-server:
     image: zabbix/zabbix-server-pgsql:latest
@@ -479,7 +479,7 @@ Aplikacja → Logstash → Elasticsearch → Kibana
 **Instalacja (Docker):**
 
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0

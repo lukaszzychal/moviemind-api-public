@@ -148,8 +148,8 @@ start_docker_containers() {
     
     cd "$PROJECT_ROOT"
     
-    if [ ! -f "docker-compose.yml" ]; then
-        print_error "Plik docker-compose.yml nie istnieje w ${PROJECT_ROOT}"
+    if [ ! -f "compose.yml" ]; then
+        print_error "Plik compose.yml nie istnieje w ${PROJECT_ROOT}"
         return 1
     fi
     
@@ -190,7 +190,7 @@ start_docker_containers() {
         fi
     fi
     
-    # Export AI_SERVICE for docker-compose
+    # Export AI_SERVICE for Compose
     export AI_SERVICE="$AI_SERVICE_MODE"
     
     print_info "Uruchamianie: $DOCKER_COMPOSE_CMD up -d --build"

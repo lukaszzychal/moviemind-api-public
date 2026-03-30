@@ -51,7 +51,7 @@ Ten dokument opisuje zalecane zasady ochrony gałęzi dla repozytorium MovieMind
 - Wymagany: co najmniej 1 recenzent
 - Właściciele Kodu — recenzja wymagana dla zmian w:
   - `.github/workflows/` — przepływy CI/CD
-  - `docker-compose.yml` — zmiany infrastruktury
+  - `compose.yml` — zmiany infrastruktury
   - `composer.json` — zmiany zależności
   - `README.md` — zmiany dokumentacji
 
@@ -148,7 +148,8 @@ Utwórz `.github/CODEOWNERS`:
 /.gitleaks.toml @lukaszzychal
 
 # Infrastruktura
-/docker-compose.yml @lukaszzychal
+/compose.yml @lukaszzychal
+/compose.*.yml @lukaszzychal
 /Dockerfile @lukaszzychal
 
 # Zależności

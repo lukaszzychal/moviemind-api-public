@@ -7,12 +7,12 @@ test.describe('User Management', () => {
 
   test.beforeEach(async ({ page }) => {
     const projectRoot = path.resolve(__dirname, '../../..');
-    const composeExec = 'docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec -T php';
+    const composeExec = 'docker compose -f compose.yml -f compose.e2e.yml exec -T php';
     try {
       execSync(`${composeExec} php artisan test:prepare-e2e`, { stdio: 'pipe', cwd: projectRoot });
     } catch (e) {
       throw new Error(
-        `test:prepare-e2e failed: ${(e as Error).message}. Start stack: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate. Run from project root.`
+        `test:prepare-e2e failed: ${(e as Error).message}. Start stack: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate. Run from project root.`
       );
     }
     await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
@@ -45,7 +45,7 @@ test.describe('User Management', () => {
         const failureScreenshot = path.join(projectRoot, 'tests', 'e2e', 'login-failure.png');
         await page.screenshot({ path: failureScreenshot }).catch(() => {});
         throw new Error(
-          `Admin login failed (still on /admin/login). Screenshot: ${failureScreenshot}. Start app with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate. Body (500 chars): ${bodyText.slice(0, 500)}`
+          `Admin login failed (still on /admin/login). Screenshot: ${failureScreenshot}. Start app with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate. Body (500 chars): ${bodyText.slice(0, 500)}`
         );
       }
       throw e;
@@ -56,7 +56,7 @@ test.describe('User Management', () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:8000';
     if (new URL(page.url()).host !== new URL(baseURL).host) {
       throw new Error(
-        'Session lost when opening /admin/users. Start app with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate'
+        'Session lost when opening /admin/users. Start app with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate'
       );
     }
 
@@ -64,7 +64,7 @@ test.describe('User Management', () => {
     const pathname = new URL(page.url()).pathname;
     if (pathname.startsWith('/admin/login')) {
       throw new Error(
-        'Session lost when opening /admin/users. Restart app with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate'
+        'Session lost when opening /admin/users. Restart app with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate'
       );
     }
     await expect(page).toHaveURL(/\/admin\/users/, { timeout: 10000 });

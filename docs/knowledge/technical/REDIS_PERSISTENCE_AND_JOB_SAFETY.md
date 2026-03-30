@@ -14,7 +14,7 @@
 
 ### **1. Redis AOF (Append Only File)** ✅ Włączone
 
-**Konfiguracja:** `docker-compose.yml`
+**Konfiguracja:** `compose.yml`
 
 ```yaml
 redis:

@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Trust all proxies (Docker/Nginx)
         $middleware->trustProxies(at: '*');
+        // Enable CORS for browser clients (frontend on separate origin).
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
 
         // Add request-id and correlation-id middleware globally
         $middleware->append(\App\Http\Middleware\RequestIdMiddleware::class);

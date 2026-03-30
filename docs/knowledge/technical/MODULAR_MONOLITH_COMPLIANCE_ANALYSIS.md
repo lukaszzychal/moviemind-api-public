@@ -185,13 +185,13 @@ $instanceId = env('INSTANCE_ID', 'unknown');
 
 **Dowody:**
 - PostgreSQL jako wspólna baza danych
-- Konfiguracja w `docker-compose.yml`: serwis `db`
+- Konfiguracja w `compose.yml`: serwis `db`
 - Wszystkie instancje łączą się z tą samą bazą danych
 - Migracje wykonywane centralnie
 
 **Konfiguracja:**
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   db:
     image: postgres:15
@@ -211,13 +211,13 @@ services:
 
 **Dowody:**
 - Redis jako wspólny cache
-- Konfiguracja w `docker-compose.yml`: serwis `redis`
+- Konfiguracja w `compose.yml`: serwis `redis`
 - Wszystkie instancje używają tego samego Redis
 - Laravel cache driver: `redis`
 
 **Konfiguracja:**
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   redis:
     image: redis:7-alpine
@@ -235,13 +235,13 @@ services:
 **Dowody:**
 - Laravel Horizon dla zarządzania kolejką
 - Redis jako backend kolejki
-- Konfiguracja w `docker-compose.yml`: serwis `horizon`
+- Konfiguracja w `compose.yml`: serwis `horizon`
 - Wszystkie instancje mogą dodawać zadania do kolejki
 - Horizon workers przetwarzają zadania
 
 **Konfiguracja:**
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   horizon:
     command: php artisan horizon

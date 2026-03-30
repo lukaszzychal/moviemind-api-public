@@ -51,7 +51,7 @@ This document outlines the recommended branch protection rules for the MovieMind
 - Required: at least 1 reviewer
 - Code Owners — review required for changes to:
   - `.github/workflows/` — CI/CD workflows
-  - `docker-compose.yml` — Infrastructure changes
+  - `compose.yml` — Infrastructure changes
   - `composer.json` — Dependency changes
   - `README.md` — Documentation changes
 
@@ -148,7 +148,8 @@ Create `.github/CODEOWNERS`:
 /.gitleaks.toml @lukaszzychal
 
 # Infrastructure
-/docker-compose.yml @lukaszzychal
+/compose.yml @lukaszzychal
+/compose.*.yml @lukaszzychal
 /Dockerfile @lukaszzychal
 
 # Dependencies

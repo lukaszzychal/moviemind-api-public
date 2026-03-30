@@ -251,7 +251,7 @@ Error: Bind for 0.0.0.0:8000 failed: port is already allocated
    ```bash
    lsof -i :8000
    ```
-2. Stop the process or change the port in `docker-compose.yml` (line 41: `"8000:80"` → `"8001:80"`)
+2. Stop the process or change the port in `compose.yml` (line 41: `"8000:80"` → `"8001:80"`)
 
 #### Issue: Port 5433 already in use (PostgreSQL)
 
@@ -261,7 +261,7 @@ Error: Bind for 0.0.0.0:5433 failed: port is already allocated
 ```
 
 **Solution:**
-1. Change the port in `docker-compose.yml` (line 91: `"5433:5432"` → `"5434:5432"`)
+1. Change the port in `compose.yml` (line 91: `"5433:5432"` → `"5434:5432"`)
 2. Update `DB_PORT` in `api/.env` if using external client
 
 #### Issue: Containers won't start

@@ -15,7 +15,7 @@ test.describe('Admin Panel Flow', () => {
     }).toBe(200);
 
     const projectRoot = path.resolve(__dirname, '../../..');
-    const composeExec = 'docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec -T php';
+    const composeExec = 'docker compose -f compose.yml -f compose.e2e.yml exec -T php';
     try {
       console.log('Seeding admin user...');
       execSync(`${composeExec} php artisan test:prepare-e2e`, { stdio: 'inherit', cwd: projectRoot });
@@ -44,7 +44,7 @@ test.describe('Admin Panel Flow', () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:8000';
     if (new URL(page.url()).host !== new URL(baseURL).host) {
       throw new Error(
-        'Login redirected to wrong host. Start app with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate'
+        'Login redirected to wrong host. Start app with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate'
       );
     }
     await expect(
