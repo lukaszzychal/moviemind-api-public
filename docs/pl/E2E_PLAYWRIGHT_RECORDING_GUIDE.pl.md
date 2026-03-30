@@ -10,7 +10,7 @@
 Przed uruchomieniem `npm run test:e2e` uruchom stos z override’em E2E, żeby `APP_URL` zgadzał się z baseURL Playwrighta (`http://127.0.0.1:8000`):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate
+docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate
 ```
 
 Następnie uruchom testy:
@@ -44,9 +44,9 @@ Zamiast pisać kod testu ręcznie, można **nagrywać** czynności w przeglądar
 - Działająca aplikacja (np. `docker compose up -d`)
 - Node.js i zainstalowane zależności (`npm install`)
 - **Logowanie do panelu admina w testach:** Playwright używa `baseURL` (np. `http://127.0.0.1:8000`). Laravel używa `APP_URL` do przekierowań i ciasteczek. Gdy adresy się różnią, ciasteczko sesji nie jest wysyłane i logowanie w przeglądarce testowej się nie udaje. **Użyj osobnej konfiguracji E2E**, żeby nie zmieniać głównego `api/.env`:
-  - **Zalecane:** Uruchom stos z override’em E2E: `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`. Użyj `--force-recreate`, żeby kontenery `php` i `horizon` przeładowały `APP_URL=http://127.0.0.1:8000`. Ręczne testy rób pod adresem `http://127.0.0.1:8000`.
+  - **Zalecane:** Uruchom stos z override’em E2E: `docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`. Użyj `--force-recreate`, żeby kontenery `php` i `horizon` przeładowały `APP_URL=http://127.0.0.1:8000`. Ręczne testy rób pod adresem `http://127.0.0.1:8000`.
   - **Cache konfiguracji:** Global-setup E2E uruchamia `config:clear`, dzięki czemu Laravel używa `APP_URL` z kontenera (a nie wartości z cache w `bootstrap/cache/config.php`). Jeśli nie uruchomisz aplikacji z override’em e2e, logowanie do panelu w testach może nadal się nie powieść.
-  - **Opcjonalnie:** Jeśli potrzebujesz więcej zmiennych tylko na E2E, skopiuj `env/e2e.env.example` do `api/.env.e2e` i doładuj ten plik w override (np. w `docker-compose.e2e.yml`). Sekrety trzymaj w `.env`; w `.env.e2e` tylko nadpisania (np. `APP_URL`).
+  - **Opcjonalnie:** Jeśli potrzebujesz więcej zmiennych tylko na E2E, skopiuj `env/e2e.env.example` do `api/.env.e2e` i doładuj ten plik w override (np. w `compose.e2e.yml`). Sekrety trzymaj w `.env`; w `.env.e2e` tylko nadpisania (np. `APP_URL`).
 
 ### 2.2 Uruchomienie nagrywarki
 
@@ -197,7 +197,7 @@ Jeśli zmienił się cały kawałek flow (np. nowy modal albo krok), możesz nag
 
 | Zadanie | Polecenie |
 |--------|-----------|
-| Uruchom aplikację pod E2E (APP_URL=127.0.0.1) | `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate` |
+| Uruchom aplikację pod E2E (APP_URL=127.0.0.1) | `docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate` |
 | Uruchom wszystkie testy E2E | `npm run test:e2e` |
 | Uruchom jeden spec | `npm run test:e2e -- tests/e2e/specs/admin-flags.spec.ts` |
 | Uruchom jeden test po nazwie | `npm run test:e2e -- tests/e2e/specs/admin-flags.spec.ts -g "should display feature flags"` |

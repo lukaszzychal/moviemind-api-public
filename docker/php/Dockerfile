@@ -64,7 +64,7 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
  && composer clear-cache
 
 # ----------------------------------------------------------------------------
-# Stage 3: Local/Dev - PHP-FPM only (for docker-compose with separate Nginx)
+# Stage 3: Local/Dev - PHP-FPM only (for Compose with separate Nginx)
 # ----------------------------------------------------------------------------
 FROM base AS local
 

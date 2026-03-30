@@ -227,18 +227,18 @@ docker compose exec php php artisan horizon
 
 2. **Build & Start**
    ```bash
-   docker compose -f docker-compose.staging.yml up -d --build
+   docker compose -f compose.staging.yml up -d --build
    ```
    (Service name is `php`; migrations run automatically via entrypoint.)
 
 3. **Run Migrations (if needed manually)**
    ```bash
-   docker compose -f docker-compose.staging.yml exec php php artisan migrate --force
+   docker compose -f compose.staging.yml exec php php artisan migrate --force
    ```
 
 4. **Seed Data (if needed)**
    ```bash
-   docker compose -f docker-compose.staging.yml exec php php artisan db:seed --class=SubscriptionPlanSeeder
+   docker compose -f compose.staging.yml exec php php artisan db:seed --class=SubscriptionPlanSeeder
    ```
    (Horizon runs inside the same container via Supervisor; no separate step.)
 
@@ -278,20 +278,20 @@ docker compose exec php php artisan horizon
 
 2. **Build & Deploy**
    ```bash
-   docker compose -f docker-compose.production.yml up -d --build
+   docker compose -f compose.production.yml up -d --build
    ```
    (Service name is `php`. Migrations and config/route/view cache run automatically in entrypoint when APP_ENV=production.)
 
 3. **Run Migrations (if needed manually)**
    ```bash
-   docker compose -f docker-compose.production.yml exec php php artisan migrate --force
+   docker compose -f compose.production.yml exec php php artisan migrate --force
    ```
 
 4. **Optimize Application (optional; entrypoint does this when APP_ENV=production)**
    ```bash
-   docker compose -f docker-compose.production.yml exec php php artisan config:cache
-   docker compose -f docker-compose.production.yml exec php php artisan route:cache
-   docker compose -f docker-compose.production.yml exec php php artisan view:cache
+   docker compose -f compose.production.yml exec php php artisan config:cache
+   docker compose -f compose.production.yml exec php php artisan route:cache
+   docker compose -f compose.production.yml exec php php artisan view:cache
    ```
    (Horizon runs inside the same container via Supervisor; no separate step.)
 

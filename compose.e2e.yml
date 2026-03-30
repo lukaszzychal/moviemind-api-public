@@ -1,5 +1,5 @@
 # E2E override: set APP_URL to match Playwright baseURL (127.0.0.1) so admin login cookies work.
-# Usage: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate
+# Usage: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate
 # (--force-recreate ensures php/horizon get the new APP_URL.) Then run: npm run test:e2e
 
 services:

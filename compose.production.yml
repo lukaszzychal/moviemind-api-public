@@ -1,12 +1,12 @@
 # Production: single app image (Nginx + PHP-FPM + Horizon via Supervisor).
 # Usage: cp env/production.env.example api/.env && set all required secrets, then:
-#   docker compose -f docker-compose.production.yml up -d --build
+#   docker compose -f compose.production.yml up -d --build
 # Migrations run automatically via entrypoint. To run manually:
-#   docker compose -f docker-compose.production.yml exec php php artisan migrate --force
+#   docker compose -f compose.production.yml exec php php artisan migrate --force
 # Optimize (optional, entrypoint does this when APP_ENV=production):
-#   docker compose -f docker-compose.production.yml exec php php artisan config:cache
-#   docker compose -f docker-compose.production.yml exec php php artisan route:cache
-#   docker compose -f docker-compose.production.yml exec php php artisan view:cache
+#   docker compose -f compose.production.yml exec php php artisan config:cache
+#   docker compose -f compose.production.yml exec php php artisan route:cache
+#   docker compose -f compose.production.yml exec php php artisan view:cache
 # IMPORTANT: Set ADMIN_AUTH_BYPASS_ENVS= and HORIZON_AUTH_BYPASS_ENVS= (empty) in api/.env.
 # Use strong HORIZON_BASIC_AUTH_PASSWORD and ADMIN_BASIC_AUTH_PASSWORD (min 32 chars).
 

@@ -15,7 +15,7 @@ This document describes the planned migration from Alpine-based Docker images to
 The production Dockerfile uses a multi-stage build:
 1. **Base stage**: Alpine-based (`php:8.3-fpm-alpine`), installs PHP, extensions, Nginx, Supervisor
 2. **Builder stage**: Installs Composer dependencies
-3. **Local stage**: PHP-FPM only (for docker-compose with separate Nginx)
+3. **Local stage**: PHP-FPM only (for Compose with separate Nginx)
 4. **Production stage**: PHP-FPM + Nginx + Supervisor (Alpine-based)
 
 ## Challenges with Distroless Migration

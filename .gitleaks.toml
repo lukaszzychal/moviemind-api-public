@@ -95,7 +95,7 @@ path = '''\.env\.example'''
 reason = "Environment template file"
 
 [[extend.allowlist.paths]]
-path = '''docker-compose\.yml'''
+path = '''compose\.yml'''
 reason = "Docker Compose configuration"
 
 [[extend.allowlist.paths]]

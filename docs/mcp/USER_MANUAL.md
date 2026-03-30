@@ -67,7 +67,7 @@ Zbudowana aplikacja kliencka, aby autoryzować wysłanie zadania z okienka Czatb
 
 Masz tu trzecią, hybrydową opcję: uruchamiasz serwer MCP **w Dockerze lokalnie**, ale w trybie **SSE** (nie Stdio). Dzięki temu zarówno Twój Chatbot Vue.js w przeglądarce jak i Claude Desktop mogą łączyć się z nim przez HTTP - bez konieczności wpychania czegokolwiek w produkcję Railway. Idealne do testów end-to-end przed merżem.
 
-**Krok 1: Dodaj usługę do `docker-compose.yml`:**
+**Krok 1: Dodaj usługę do `compose.yml`:**
 
 ```yaml
 services:

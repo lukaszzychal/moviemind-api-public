@@ -90,7 +90,7 @@ Najbardziej spójne rozwiązanie zakłada wbudowanie protokołu MCP prosto w Mov
 - **Zasada instalacji kodu:** 
   1. Budujesz nową komendę `php artisan mcp:serve` (dla nasłuchu I/O z konsoli) oraz dedykowany `McpController.php` (dla nasłuchu zdalnego klienta po webowym HTTP w `routes/api.php`).
   2. Narzędzia MCP w kodzie PHP to zwykłe funkcje/klasy Action, odwołujące się do Fasady: `AiJob::all()`, `Movie::search()`, `Horizon::getWorkload()`.
-- **Jak postawić to na Dockerze? (Lokalne środowisko developerskie):** Serwer MCP dołącza po prostu jako kolejna z usług do Twojego pliku `docker-compose.yml`, wykonując komendę artisan przy bieżącym starcie kontenera w tle (rozmawiając na paśmie STDIO z systemem gospodarza). Aby połączyć Twojego instalowanego na PC Claude'a, podpinasz mu wprost komendę polecającą: `"command": "docker", "args": ["exec", "-i", "moviemind_backend", "php", "artisan", "mcp:serve"]`.
+- **Jak postawić to na Dockerze? (Lokalne środowisko developerskie):** Serwer MCP dołącza po prostu jako kolejna z usług do Twojego pliku `compose.yml`, wykonując komendę artisan przy bieżącym starcie kontenera w tle (rozmawiając na paśmie STDIO z systemem gospodarza). Aby połączyć Twojego instalowanego na PC Claude'a, podpinasz mu wprost komendę polecającą: `"command": "docker", "args": ["exec", "-i", "moviemind_backend", "php", "artisan", "mcp:serve"]`.
 - **Zalety PHP:** Totalny dostęp prosto z wnętrza do bazy danych bez tworzenia drugiego mikro-serwisu. Idealne, aby zainicjować "Inteligentny Asystent dla Użytkownika na Froncie Vue.js" i odpytywać ten mechanizm wewnętrznym kluczem API po Opcji Zdalnej.
 
 ### Ścieżka 2: Mikrousługa TypeScript (Node.js) jako satelita projektu

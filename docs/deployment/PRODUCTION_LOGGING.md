@@ -37,10 +37,10 @@ LOG_DAILY_DAYS=14
 ### Option A: Docker / Compose (no extra tools)
 
 - **View app + Nginx + Horizon:**  
-  `docker compose -f docker-compose.production.yml logs -f php`
+  `docker compose -f compose.production.yml logs -f php`
 - Logs also remain in `storage/logs/` inside the container. To access from the host, mount the log directory:
 
-  In `docker-compose.production.yml` (optional):
+  In `compose.production.yml` (optional):
 
   ```yaml
   php:

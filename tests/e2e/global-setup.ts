@@ -4,7 +4,7 @@ import * as path from 'path';
 async function globalSetup() {
   const projectRoot = path.resolve(__dirname, '../../');
   // Use -T to avoid TTY issues in CI/Script execution
-  const composeExec = 'docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec -T php';
+  const composeExec = 'docker compose -f compose.yml -f compose.e2e.yml exec -T php';
   try {
     execSync(`${composeExec} php artisan db:seed`, { cwd: projectRoot, stdio: 'inherit' });
   } catch (e) {
@@ -28,19 +28,19 @@ async function globalSetup() {
     res = await fetch(`${baseURL}/api/v1/health/db`);
   } catch (e) {
     throw new Error(
-      `App not reachable at ${baseURL}. Start the stack with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`
+      `App not reachable at ${baseURL}. Start the stack with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`
     );
   }
   if (!res.ok) {
     throw new Error(
-      `App health check failed (${res.status}) at ${baseURL}. Start the stack with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`
+      `App health check failed (${res.status}) at ${baseURL}. Start the stack with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`
     );
   }
   try {
     const data = (await res.json()) as { app_url?: string };
     if (data.app_url != null && data.app_url !== expectedAppUrl) {
       throw new Error(
-        `E2E requires APP_URL to match Playwright baseURL. Current app_url is "${data.app_url}". Start the stack with: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`
+        `E2E requires APP_URL to match Playwright baseURL. Current app_url is "${data.app_url}". Start the stack with: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`
       );
     }
   } catch (e) {
@@ -48,7 +48,7 @@ async function globalSetup() {
       throw e;
     }
     throw new Error(
-      `Could not verify app_url from ${baseURL}/api/v1/health/db. Start the stack with E2E override: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`,
+      `Could not verify app_url from ${baseURL}/api/v1/health/db. Start the stack with E2E override: docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`,
       { cause: e }
     );
   }

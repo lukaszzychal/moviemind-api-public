@@ -58,7 +58,7 @@ moviemind-api-public/
 │   ├── composer.json
 │   └── package.json
 ├── docs/
-├── docker-compose.yml
+├── compose.yml
 └── README.md
 ```
 

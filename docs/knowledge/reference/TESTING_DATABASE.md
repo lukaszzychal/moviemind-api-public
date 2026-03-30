@@ -17,7 +17,7 @@
 <env name="DB_PASSWORD" value="moviemind"/>
 ```
 
-- **Lokalnie (Docker):** `DB_HOST=db` to nazwa serwisu PostgreSQL w `docker-compose.yml`.
+- **Lokalnie (Docker):** `DB_HOST=db` to nazwa serwisu PostgreSQL w `compose.yml`.
 - **W CI:** Zmienne są nadpisywane przez workflow (`DB_HOST=localhost`, `DB_USERNAME=postgres`, `DB_PASSWORD=...`).
 
 ### 2. RefreshDatabase

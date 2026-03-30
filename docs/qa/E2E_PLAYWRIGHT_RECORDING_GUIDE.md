@@ -10,7 +10,7 @@
 Before running `npm run test:e2e`, start the stack with the E2E override so that `APP_URL` matches Playwright’s baseURL (`http://127.0.0.1:8000`):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate
+docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate
 ```
 
 Then run the tests:
@@ -44,9 +44,9 @@ Instead of writing test code by hand, you can **record** actions in the browser;
 - Application running (e.g. `docker compose up -d`)
 - Node.js and project dependencies installed (`npm install`)
 - **Admin login in tests:** Playwright uses `baseURL` (e.g. `http://127.0.0.1:8000`). Laravel uses `APP_URL` for redirects and cookies. If they differ, the session cookie is not sent and login fails in the test browser. **Use a dedicated E2E setup** so the main `api/.env` stays unchanged:
-  - **Recommended:** Start the stack with the E2E override: `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate`. Use `--force-recreate` so `php` and `horizon` pick up `APP_URL=http://127.0.0.1:8000`. Open the app at `http://127.0.0.1:8000` when testing manually.
+  - **Recommended:** Start the stack with the E2E override: `docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate`. Use `--force-recreate` so `php` and `horizon` pick up `APP_URL=http://127.0.0.1:8000`. Open the app at `http://127.0.0.1:8000` when testing manually.
   - **Config cache:** The E2E global-setup runs `config:clear` so Laravel uses the container’s `APP_URL` (and does not use a cached value from `bootstrap/cache/config.php`). If you do not start the app with the e2e override, admin login in tests may still fail.
-  - **Optional:** For more E2E-only vars, copy `env/e2e.env.example` to `api/.env.e2e` and add `api/.env.e2e` to the compose override’s `env_file` (see `docker-compose.e2e.yml`). Keep secrets in `.env`; use `.env.e2e` only for overrides like `APP_URL`.
+  - **Optional:** For more E2E-only vars, copy `env/e2e.env.example` to `api/.env.e2e` and add `api/.env.e2e` to the compose override’s `env_file` (see `compose.e2e.yml`). Keep secrets in `.env`; use `.env.e2e` only for overrides like `APP_URL`.
 
 ### 2.2 Start the recorder
 
@@ -153,7 +153,7 @@ If a whole section of the flow changed (e.g. a new modal or step), you can re-re
 
 | Task | Command |
 |------|--------|
-| Start app for E2E (APP_URL=127.0.0.1) | `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --force-recreate` |
+| Start app for E2E (APP_URL=127.0.0.1) | `docker compose -f compose.yml -f compose.e2e.yml up -d --force-recreate` |
 | Run all E2E tests | `npm run test:e2e` |
 | Run one spec | `npm run test:e2e -- tests/e2e/specs/admin-flags.spec.ts` |
 | Run one test by name | `npm run test:e2e -- tests/e2e/specs/admin-flags.spec.ts -g "should display feature flags"` |

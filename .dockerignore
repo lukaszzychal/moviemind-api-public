@@ -67,8 +67,8 @@ api/database/*.sqlite-journal
 scripts/
 
 # Docker files (not needed inside container)
-docker-compose.yml
-docker-compose.*.yml
+compose.yml
+compose.*.yml
 .dockerignore
 Dockerfile
 *.dockerfile

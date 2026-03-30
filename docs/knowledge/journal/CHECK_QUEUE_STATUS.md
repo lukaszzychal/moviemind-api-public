@@ -85,7 +85,7 @@ QUEUE_CONNECTION=database
 - ✅ **ASYNC** (jeśli worker uruchomiony)
 - ⚠️ **NIE DZIAŁA** (jeśli worker NIE uruchomiony)
 
-### Z `docker-compose.yml`:
+### Z `compose.yml`:
 ```yaml
 horizon:
   environment:
@@ -99,7 +99,7 @@ horizon:
 
 **Masz różne konfiguracje w różnych miejscach:**
 1. `api/.env`: `QUEUE_CONNECTION=database`
-2. `docker-compose.yml`: `QUEUE_CONNECTION=redis` (tylko w horizon)
+2. `compose.yml`: `QUEUE_CONNECTION=redis` (tylko w horizon)
 3. `env/local.env.example`: `QUEUE_CONNECTION=redis`
 
 **To może powodować problemy!**

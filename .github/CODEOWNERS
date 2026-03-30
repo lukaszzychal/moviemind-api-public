@@ -10,7 +10,8 @@
 /.github/dependabot.yml @lukaszzychal
 
 # Infrastructure and deployment
-/docker-compose.yml @lukaszzychal
+/compose.yml @lukaszzychal
+/compose.*.yml @lukaszzychal
 /Dockerfile @lukaszzychal
 /docker/ @lukaszzychal
 

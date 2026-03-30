@@ -1,9 +1,9 @@
 # Staging: single app image (Nginx + PHP-FPM + Horizon via Supervisor).
 # Usage: cp env/staging.env.example api/.env && edit api/.env, then:
-#   docker compose -f docker-compose.staging.yml up -d --build
+#   docker compose -f compose.staging.yml up -d --build
 # Migrations run automatically via entrypoint. To run manually:
-#   docker compose -f docker-compose.staging.yml exec php php artisan migrate --force
-# Seed plans: docker compose -f docker-compose.staging.yml exec php php artisan db:seed --class=SubscriptionPlanSeeder
+#   docker compose -f compose.staging.yml exec php php artisan migrate --force
+# Seed plans: docker compose -f compose.staging.yml exec php php artisan db:seed --class=SubscriptionPlanSeeder
 
 version: "3.9"
 

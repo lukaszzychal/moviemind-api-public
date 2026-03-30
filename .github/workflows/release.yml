@@ -174,7 +174,7 @@ jobs:
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             export IMAGE=ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
             cd ${{ secrets.PROD_DEPLOY_DIR }}
-            sed -i.bak "s|image: .*|image: ${IMAGE}|" docker-compose.yml
+            sed -i.bak "s|image: .*|image: ${IMAGE}|" compose.yml
             docker compose pull
             docker compose up -d --remove-orphans
 

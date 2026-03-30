@@ -48,7 +48,7 @@ Public repo (`moviemind-api-public`):
 ```
 ├── README.md
 ├── src/
-├── docker-compose.yml
+├── compose.yml
 ├── docs/
 ├── .env.example
 ├── .gitignore

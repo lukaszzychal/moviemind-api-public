@@ -12,7 +12,7 @@ export default defineConfig({
   timeout: 60000,
   use: {
     // Use 127.0.0.1 to avoid IPv6 (::1) resolution; Docker/exposed ports often listen on IPv4 only.
-    // For admin login: start app with E2E override so APP_URL matches: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d
+    // For admin login: start app with E2E override so APP_URL matches: docker compose -f compose.yml -f compose.e2e.yml up -d
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:8000',
     trace: 'on-first-retry',
   },

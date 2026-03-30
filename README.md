@@ -240,7 +240,7 @@ Możesz użyć skryptu `setup-local-testing.sh`, który automatycznie przygotuje
 
 ### Docker Compose Configuration
 
-See docker-compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres, Redis, Horizon).
+See compose.yml in repo for full configuration (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
 ## ☁️ Cloud Deployment (Railway / Docker)
 

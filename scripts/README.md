@@ -237,7 +237,7 @@ lsof -i :8000
 # Zatrzymaj lokalny serwer Laravel
 pkill -f "php artisan serve"
 
-# Lub użyj innego portu w docker-compose.yml
+# Lub użyj innego portu w compose.yml
 ```
 
 ### Problem: Kontenery nie startują

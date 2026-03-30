@@ -65,7 +65,7 @@ docker compose logs -f nginx
 
 ### Docker Compose Services
 
-The `docker-compose.yml` provides:
+The `compose.yml` provides:
 - **php**: PHP-FPM container with Laravel application
 - **nginx**: Web server (port 8000)
 - **db**: PostgreSQL database

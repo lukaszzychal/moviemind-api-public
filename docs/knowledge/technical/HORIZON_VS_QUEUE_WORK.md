@@ -182,7 +182,7 @@ Dostępny pod: `http://localhost:8000/horizon`
 
 ### Co mamy:
 ```yaml
-# docker-compose.yml
+# compose.yml
 horizon:
   command: sh -lc "php artisan horizon"  # ❌ Nie działa (brak pakietu)
 ```
@@ -195,7 +195,7 @@ docker-compose exec php bash -lc "php artisan queue:work --once"
 ```
 
 ### Alternatywa dla docker-compose:
-Można zmienić `docker-compose.yml`:
+Można zmienić `compose.yml`:
 ```yaml
 horizon:
   command: sh -lc "php artisan queue:work redis --sleep=3 --tries=3"

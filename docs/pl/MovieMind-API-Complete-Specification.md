@@ -60,7 +60,7 @@ Prywatne repo może zawierać:
 ```
 ├── README.md
 ├── src/
-├── docker-compose.yml
+├── compose.yml
 ├── docs/
 ├── .env.example
 ├── .gitignore

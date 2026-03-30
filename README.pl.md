@@ -215,9 +215,9 @@ Zwróć tylko czysty tekst.
    docker compose logs -f horizon
    ```
 
-### Konfiguracja docker-compose
+### Konfiguracja Compose (`compose.yml`)
 
-Szczegóły w `docker-compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
+Szczegóły w `compose.yml` (PHP-FPM, Nginx, Postgres, Redis, Horizon).
 
 ## ☁️ Wdrożenie w Chmurze (Railway / Docker)
 
