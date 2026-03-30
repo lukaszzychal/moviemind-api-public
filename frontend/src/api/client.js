@@ -115,7 +115,6 @@ export async function getPeople(params = {}) {
 export async function searchPeople(params = {}) {
   const q = new URLSearchParams(params).toString()
   const res = await get(`/people/search?${q}`)
-  console.log(`/people/search?${q}`);
   return parseResponse(res)
 }
 
