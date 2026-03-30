@@ -202,13 +202,11 @@ const pagination = computed(() => searchResult.value?.pagination ?? null)
       class="text-gray-500"
     >
       {{ translate('search.no_results') }}
-      ,{{ isLoading }}, {{ resultsList.length }}, {{ activeSearchQuery }}, {{ searchResult }}
     </div>
     <div
       v-else-if="!isLoading && resultsList.length"
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
     >
-    ,{{ isLoading }}, {{ resultsList.length }}, {{ activeSearchQuery }}, {{ searchResult }}
       <Card
         v-for="item in resultsList"
         :key="item.slug || item.suggested_slug || item.id"
@@ -250,10 +248,10 @@ const pagination = computed(() => searchResult.value?.pagination ?? null)
       class="mt-6 flex gap-2 items-center"
     >
       <Button
-        :disabled="currentPage <= 1"
+        :disabled="(pagination.page ?? currentPage) <= 1"
         variant="outline"
         size="sm"
-        @click="goPage(currentPage - 1)"
+        @click="goPage((pagination.page ?? currentPage) - 1)"
       >
         {{ translate('search.previous') }}
       </Button>
@@ -261,10 +259,10 @@ const pagination = computed(() => searchResult.value?.pagination ?? null)
         {{ translate('search.page_of', { page: pagination.page ?? currentPage, total: pagination.total_pages ?? 1 }) }}
       </span>
       <Button
-        :disabled="currentPage >= (pagination.total_pages ?? 1)"
+        :disabled="(pagination.page ?? currentPage) >= (pagination.total_pages ?? 1)"
         variant="outline"
         size="sm"
-        @click="goPage(currentPage + 1)"
+        @click="goPage((pagination.page ?? currentPage) + 1)"
       >
         {{ translate('search.next') }}
       </Button>

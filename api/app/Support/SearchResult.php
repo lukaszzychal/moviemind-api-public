@@ -86,6 +86,7 @@ class SearchResult
         // Add pagination metadata if pagination is used
         if ($this->currentPage !== null && $this->perPage !== null && $this->totalPages !== null) {
             $data['pagination'] = [
+                'page' => $this->currentPage,
                 'current_page' => $this->currentPage,
                 'per_page' => $this->perPage,
                 'total_pages' => $this->totalPages,
