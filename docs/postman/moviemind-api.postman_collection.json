@@ -1180,6 +1180,286 @@
               ]
             }
           }
+        },
+        {
+          "name": "Admin - List subscription plans",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans"
+              ]
+            },
+            "description": "List subscription plans."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Get subscription plan",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{planId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{{planId}}"
+              ]
+            },
+            "description": "Get subscription plan details."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - List plan features",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{planId}}/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{{planId}}",
+                "features"
+              ]
+            },
+            "description": "List features for a subscription plan."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Add plan feature",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{planId}}/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{{planId}}",
+                "features"
+              ]
+            },
+            "description": "Add a feature to a plan."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Delete plan feature",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{planId}}/features/{{feature}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{{planId}}",
+                "features",
+                "{{feature}}"
+              ]
+            },
+            "description": "Remove a feature from a plan."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - List webhook subscriptions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/webhook-subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "webhook-subscriptions"
+              ]
+            },
+            "description": "List webhook subscriptions."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create webhook subscription",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/webhook-subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "webhook-subscriptions"
+              ]
+            },
+            "description": "Create webhook subscription."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Update webhook subscription",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/webhook-subscriptions/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "webhook-subscriptions",
+                "{{id}}"
+              ]
+            },
+            "description": "Update webhook subscription."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Delete webhook subscription",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/webhook-subscriptions/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "webhook-subscriptions",
+                "{{id}}"
+              ]
+            },
+            "description": "Delete webhook subscription."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
