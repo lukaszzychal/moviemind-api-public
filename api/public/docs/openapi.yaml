@@ -2,210 +2,36 @@ openapi: 3.0.3
 info:
   title: MovieMind API
   version: 1.0.0
-  description: 'Public REST API for movies, people, TV series, and TV shows with AI-powered
-    descriptions.
-
+  description: |
+    Public REST API for movies, people, TV series, and TV shows with AI-powered descriptions.
     Uses slug-based resource identifiers. When data is missing and the corresponding
-
     feature flag is enabled, endpoints return 202 Accepted and queue generation.
-
-    '
 servers:
-- url: http://localhost:8000/api
-  description: Local
+  - url: http://localhost:8000/api
+    description: Local
 tags:
-- name: Movies
-- name: People
-- name: TvSeries
-- name: TvShows
-- name: Generation
-- name: Jobs
-- name: Admin
-- name: Health
-- name: Webhooks
-- name: Feedback
+  - name: Movies
+  - name: People
+  - name: TvSeries
+  - name: TvShows
+  - name: Generation
+  - name: Jobs
+  - name: Admin
+  - name: Health
+  - name: Webhooks
+  - name: Feedback
+  - name: Info
 paths:
-  /v1/admin/ai-metrics/comparison:
+  /v1/movies:
     get:
-      tags:
-      - Admin
-      summary: AI Model Comparison
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/ai-metrics/errors:
-    get:
-      tags:
-      - Admin
-      summary: AI Error Stats
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/ai-metrics/parsing-accuracy:
-    get:
-      tags:
-      - Admin
-      summary: AI Parsing Accuracy
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/ai-metrics/token-usage:
-    get:
-      tags:
-      - Admin
-      summary: AI Token Usage
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/analytics/by-endpoint:
-    get:
-      tags:
-      - Admin
-      summary: Analytics By Endpoint
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/analytics/by-plan:
-    get:
-      tags:
-      - Admin
-      summary: Analytics By Plan
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/analytics/by-time-range:
-    get:
-      tags:
-      - Admin
-      summary: Analytics By Time Range
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/analytics/error-rate:
-    get:
-      tags:
-      - Admin
-      summary: Error Rate Stats
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/analytics/overview:
-    get:
-      tags:
-      - Admin
-      summary: Analytics Overview
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/analytics/top-api-keys:
-    get:
-      tags:
-      - Admin
-      summary: Top API Key Usage
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/api-keys:
-    get:
-      tags:
-      - Admin
-      summary: List API keys
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-    post:
-      tags:
-      - Admin
-      summary: Create API key
-      security:
-      - AdminToken: []
-      responses:
-        '201':
-          description: Created
-  /v1/admin/api-keys/{id}/regenerate:
-    post:
-      tags:
-      - Admin
-      summary: Regenerate API key
-      security:
-      - AdminToken: []
+      tags: [Movies]
+      summary: List movies
       parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/api-keys/{id}/revoke:
-    post:
-      tags:
-      - Admin
-      summary: Revoke API key
-      security:
-      - AdminToken: []
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/debug/config:
-    get:
-      tags:
-      - Debug
-      summary: Debug service configuration
-      description: Protected by feature flag `debug_endpoints`
-      responses:
-        '200':
-          description: Configuration data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DebugConfig'
-      security:
-      - AdminToken: []
-  /v1/admin/feedback:
-    get:
-      tags:
-      - Admin
-      summary: List application feedback
-      description: Paginated list (20 per page). Requires X-Admin-Token or Bearer.
-      security:
-      - AdminToken: []
-      parameters:
-      - in: query
-        name: page
-        schema:
-          type: integer
-          minimum: 1
-        description: Page number
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search (title, director, genre)
       responses:
         '200':
           description: OK
@@ -217,113 +43,104 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ApplicationFeedback'
-                  current_page:
-                    type: integer
-                  per_page:
-                    type: integer
-                  total:
-                    type: integer
-        '401':
-          description: Unauthorized (missing or invalid admin token)
-  /v1/admin/feedback/{id}:
+                      $ref: '#/components/schemas/Movie'
+  /v1/movies/search:
     get:
-      tags:
-      - Admin
-      summary: Get single feedback entry
-      security:
-      - AdminToken: []
+      tags: [Movies]
+      summary: Search movies (Advanced)
+      description: Advanced movie search with multiple filter options (local database + TMDb)
       parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApplicationFeedback'
-        '404':
-          description: Not found
-        '401':
-          description: Unauthorized
-    patch:
-      tags:
-      - Admin
-      summary: Update feedback status
-      security:
-      - AdminToken: []
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Search query (title, director, genre, etc.). **Required** for fetching results from the external TMDb API.
+          example: Matrix
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+          description: Release year filter
+          example: 1999
+        - in: query
+          name: director
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Director name filter
+          example: Lana Wachowski
+        - in: query
+          name: actor
+          required: false
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
                   type: string
-                  enum:
-                  - pending
-                  - read
-                  - archived
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApplicationFeedback'
-        '404':
-          description: Not found
-        '401':
-          description: Unauthorized
-    delete:
-      tags:
-      - Admin
-      summary: Delete feedback entry
-      security:
-      - AdminToken: []
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '204':
-          description: No content
-        '404':
-          description: Not found
-        '401':
-          description: Unauthorized
-  /v1/admin/flags:
-    get:
-      tags:
-      - Admin
-      summary: List feature flags
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/flags/overrides:
-    get:
-      tags:
-      - Admin
-      summary: List feature flag overrides (DB)
-      security:
-      - AdminToken: []
+          description: Actor name(s) filter. Can be single value or array (actor[]=Name1&actor[]=Name2)
+          example: Keanu Reeves
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [title, release_year, created_at]
+          description: Sort field
+        - in: query
+          name: order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort order
+        - in: query
+          name: local_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from local database
+        - in: query
+          name: external_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from TMDb API
+        - in: query
+          name: source
+          required: false
+          schema:
+            type: string
+            enum: [local, external]
+          description: Filter results by source (local database or external TMDb API)
+          example: local
       responses:
         '200':
           description: OK
@@ -335,313 +152,793 @@ paths:
                   data:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        scope:
-                          type: string
-                        value:
-                          type: boolean
-                        updated_at:
-                          type: string
-                          format: date-time
-  /v1/admin/flags/usage:
-    get:
-      tags:
-      - Admin
-      summary: Flags usage metrics
-      security:
-      - AdminToken: []
+                      $ref: '#/components/schemas/Movie'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
+  /v1/movies/bulk:
+    post:
+      tags: [Movies]
+      summary: Get multiple movies by slugs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slugs:
+                  type: array
+                  items:
+                    type: string
       responses:
         '200':
           description: OK
-  /v1/admin/flags/{name}:
-    post:
-      tags:
-      - Admin
-      summary: Toggle a feature flag
-      security:
-      - AdminToken: []
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
+  /v1/movies/compare:
+    get:
+      tags: [Movies]
+      summary: Compare movies
       parameters:
-      - in: path
-        name: name
-        required: true
-        schema:
-          type: string
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of slugs to compare
+      responses:
+        '200':
+          description: OK
+  /v1/movies/{slug}:
+    get:
+      tags: [Movies]
+      summary: Get movie by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieFull'
+        '202':
+          description: Accepted - generation queued (feature flag on)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+        '404':
+          description: Not Found (feature flag off)
+  /v1/movies/{slug}/collection:
+    get:
+      tags: [Movies]
+      summary: Get movie collection/franchise
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/movies/{slug}/related:
+    get:
+      tags: [Movies]
+      summary: Get related movies
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
+  /v1/movies/{slug}/refresh:
+    post:
+      tags: [Movies]
+      summary: Force refresh movie data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/movies/{slug}/report:
+    post:
+      tags: [Movies]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                state:
+                reason:
                   type: string
-                  enum:
-                  - true
-                  - false
-      responses:
-        '200':
-          description: OK
-    delete:
-      tags:
-      - Admin
-      summary: Reset a feature flag
-      security:
-      - AdminToken: []
-      parameters:
-      - in: path
-        name: name
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/instances:
-    get:
-      tags:
-      - Admin
-      summary: List instances
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/instances/{instanceId}:
-    get:
-      tags:
-      - Admin
-      summary: Get instance details
-      security:
-      - AdminToken: []
-      parameters:
-      - in: path
-        name: instanceId
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/jobs-dashboard/by-queue:
-    get:
-      tags:
-      - Admin
-      summary: Jobs by Queue
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/jobs-dashboard/failed:
-    get:
-      tags:
-      - Admin
-      summary: Failed Jobs
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/jobs-dashboard/failed/stats:
-    get:
-      tags:
-      - Admin
-      summary: Failed Jobs Stats
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/jobs-dashboard/overview:
-    get:
-      tags:
-      - Admin
-      summary: Jobs Dashboard Overview
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/jobs-dashboard/processing-times:
-    get:
-      tags:
-      - Admin
-      summary: Job Processing Times
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/jobs-dashboard/recent:
-    get:
-      tags:
-      - Admin
-      summary: Recent Jobs
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/reports:
-    get:
-      tags:
-      - Admin
-      summary: List reports
-      security:
-      - AdminToken: []
-      responses:
-        '200':
-          description: OK
-  /v1/admin/reports/{id}/verify:
-    post:
-      tags:
-      - Admin
-      summary: Verify report
-      security:
-      - AdminToken: []
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/subscription-plans:
-    get:
-      tags:
-      - Admin
-      summary: List subscription plans
-      responses:
-        '200':
-          description: OK
-  /v1/admin/subscription-plans/{id}:
-    get:
-      tags:
-      - Admin
-      summary: Get subscription plan
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/subscription-plans/{id}/features:
-    get:
-      tags:
-      - Admin
-      summary: List plan features
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-    post:
-      tags:
-      - Admin
-      summary: Add feature to plan
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200':
-          description: OK
-  /v1/admin/subscription-plans/{id}/features/{feature}:
-    delete:
-      tags:
-      - Admin
-      summary: Remove feature from plan
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: feature
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/admin/webhook-subscriptions:
-    get:
-      tags:
-      - Admin
-      summary: List webhook subscriptions
-      responses:
-        '200':
-          description: OK
-    post:
-      tags:
-      - Admin
-      summary: Create webhook subscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
+                details:
+                  type: string
       responses:
         '201':
-          description: Created
-  /v1/admin/webhook-subscriptions/{id}:
-    patch:
-      tags:
-      - Admin
-      summary: Update webhook subscription
+          description: Report created
+
+  /v1/people:
+    get:
+      tags: [People]
+      summary: List people
       parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Free-text search
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+  /v1/people/search:
+    get:
+      tags: [People]
+      summary: Search people (Advanced)
+      description: Advanced people search with multiple filter options (local database + TMDb)
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Search query (name, role, etc.)
+          example: Tom Hanks
+        - in: query
+          name: birth_year
+          required: false
+          schema:
+            type: integer
+            minimum: 1800
+          description: Birth year filter
+          example: 1956
+        - in: query
+          name: birthplace
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Birthplace filter
+          example: Concord, California
+        - in: query
+          name: role
+          required: false
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          description: Role(s) filter (ACTOR, DIRECTOR, WRITER, PRODUCER). Can be single value or array
+          example: ACTOR
+        - in: query
+          name: movie
+          required: false
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          description: Movie slug(s) filter. Can be single value or array (movie[]=slug1&movie[]=slug2)
+          example: forrest-gump-1994
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [name, birth_year, created_at]
+          description: Sort field
+        - in: query
+          name: order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort order
+        - in: query
+          name: local_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from local database
+        - in: query
+          name: external_limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Limit results from TMDb API
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
+  /v1/people/bulk:
+    post:
+      tags: [People]
+      summary: Get multiple people by slugs
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              properties:
+                slugs:
+                  type: array
+                  items:
+                    type: string
       responses:
         '200':
           description: OK
-    delete:
-      tags:
-      - Admin
-      summary: Delete webhook subscription
+  /v1/people/compare:
+    get:
+      tags: [People]
+      summary: Compare people
       parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
       responses:
-        '204':
-          description: No Content
+        '200':
+          description: OK
+  /v1/people/{slug}:
+    get:
+      tags: [People]
+      summary: Get person by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonFull'
+        '202':
+          description: Accepted - generation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+        '404':
+          description: Not Found
+  /v1/people/{slug}/related:
+    get:
+      tags: [People]
+      summary: Get related people
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/people/{slug}/refresh:
+    post:
+      tags: [People]
+      summary: Force refresh person data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/people/{slug}/report:
+    post:
+      tags: [People]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Report created
+
+  /v1/tv-series:
+    get:
+      tags: [TvSeries]
+      summary: List TV Series
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvSeries'
+  /v1/tv-series/search:
+    get:
+      tags: [TvSeries]
+      summary: Search TV Series
+      description: Advanced TV series search with filters (local database + TMDb)
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Search query (title, etc.)
+          example: Breaking Bad
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+            minimum: 1950
+          description: First air year filter
+          example: 2008
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvSeries'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
+  /v1/tv-series/compare:
+    get:
+      tags: [TvSeries]
+      summary: Compare TV Series
+      parameters:
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-series/{slug}:
+    get:
+      tags: [TvSeries]
+      summary: Get TV Series by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TvSeriesFull'
+        '202':
+          description: Accepted - generation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+  /v1/tv-series/{slug}/related:
+    get:
+      tags: [TvSeries]
+      summary: Get related TV Series
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-series/{slug}/refresh:
+    post:
+      tags: [TvSeries]
+      summary: Force refresh TV Series data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/tv-series/{slug}/report:
+    post:
+      tags: [TvSeries]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Report created
+
+  /v1/tv-shows:
+    get:
+      tags: [TvShows]
+      summary: List TV Shows
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvShow'
+  /v1/tv-shows/search:
+    get:
+      tags: [TvShows]
+      summary: Search TV Shows
+      description: Advanced TV shows search with filters (local database + TMDb)
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Search query (title, etc.)
+          example: The Tonight Show
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+            minimum: 1950
+          description: First air year filter
+          example: 2014
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Results per page
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TvShow'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
+  /v1/tv-shows/compare:
+    get:
+      tags: [TvShows]
+      summary: Compare TV Shows
+      parameters:
+        - in: query
+          name: slugs
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-shows/{slug}:
+    get:
+      tags: [TvShows]
+      summary: Get TV Show by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TvShowFull'
+        '202':
+          description: Accepted - generation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+  /v1/tv-shows/{slug}/related:
+    get:
+      tags: [TvShows]
+      summary: Get related TV Shows
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/tv-shows/{slug}/refresh:
+    post:
+      tags: [TvShows]
+      summary: Force refresh TV Show data
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Refresh queued
+  /v1/tv-shows/{slug}/report:
+    post:
+      tags: [TvShows]
+      summary: Report data issue
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Report created
+
+  /v1/generate:
+  /v1/demo:
+    get:
+      tags: [Generation]
+      summary: Get public demo API key
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: No public demo key available
+    post:
+      tags: [Generation]
+      summary: Queue generation for an entity
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedGeneration'
+        '403':
+          description: Feature not available
+
+  /v1/jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get job status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+
+  /v1/health/openai:
+    get:
+      tags: [Health]
+      summary: Check OpenAI connectivity
+      responses:
+        '200':
+          description: OpenAI reachable
+        '503':
+          description: OpenAI unavailable
+  /v1/health:
+    get:
+      tags: [Health]
+      summary: Overall System Health
+      responses:
+        '200':
+          description: OK
+  /v1/health/db:
+    get:
+      tags: [Health]
+      summary: Check Database connectivity
+      responses:
+        '200':
+          description: OK
+  /v1/health/instance:
+    get:
+      tags: [Health]
+      summary: Instance Health
+      responses:
+        '200':
+          description: OK
+  /v1/health/tmdb:
+    get:
+      tags: [Health]
+      summary: TMDB API Health
+      responses:
+        '200':
+          description: OK
+  /v1/health/tvmaze:
+    get:
+      tags: [Health]
+      summary: TVMaze API Health
+      responses:
+        '200':
+          description: OK
+
   /v1/author:
     get:
-      tags:
-      - Info
+      tags: [Info]
       summary: Get author metadata
       responses:
         '200':
@@ -667,23 +964,18 @@ paths:
                         format: uri
   /v1/feedback:
     post:
-      tags:
-      - Feedback
+      tags: [Feedback]
       summary: Submit application feedback (anonymous)
-      description: 'Submit anonymous feedback (no personal data). Rate limit same
-        as report endpoints.
-
+      description: |
+        Submit anonymous feedback (no personal data). Rate limit same as report endpoints.
         No authentication required.
-
-        '
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-              - message
+              required: [message]
               properties:
                 message:
                   type: string
@@ -692,10 +984,7 @@ paths:
                   description: Feedback text (required)
                 category:
                   type: string
-                  enum:
-                  - bug
-                  - suggestion
-                  - other
+                  enum: [bug, suggestion, other]
                   description: Optional category
       responses:
         '201':
@@ -707,114 +996,34 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Feedback received. Thank you.
+                    example: "Feedback received. Thank you."
                   id:
                     type: string
                     format: uuid
         '422':
           description: Validation error (e.g. message too short or invalid category)
-  /v1/generate:
-    post:
-      tags:
-      - Generation
-      summary: Queue generation for an entity
+
+  /v1/admin/debug/config:
+    get:
+      tags: [Debug]
+      summary: Debug service configuration
+      description: Protected by feature flag `debug_endpoints`
+      responses:
+        '200':
+          description: Configuration data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugConfig'
       security:
-      - ApiKeyAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenerateRequest'
-      responses:
-        '200':
-          description: Accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
-        '403':
-          description: Feature not available
-  /v1/health:
+        - AdminToken: []
+
+  /v1/admin/flags/overrides:
     get:
-      tags:
-      - Health
-      summary: Overall System Health
-      responses:
-        '200':
-          description: OK
-  /v1/health/db:
-    get:
-      tags:
-      - Health
-      summary: Check Database connectivity
-      responses:
-        '200':
-          description: OK
-  /v1/health/instance:
-    get:
-      tags:
-      - Health
-      summary: Instance Health
-      responses:
-        '200':
-          description: OK
-  /v1/health/openai:
-    get:
-      tags:
-      - Health
-      summary: Check OpenAI connectivity
-      responses:
-        '200':
-          description: OpenAI reachable
-        '503':
-          description: OpenAI unavailable
-  /v1/health/tmdb:
-    get:
-      tags:
-      - Health
-      summary: TMDB API Health
-      responses:
-        '200':
-          description: OK
-  /v1/health/tvmaze:
-    get:
-      tags:
-      - Health
-      summary: TVMaze API Health
-      responses:
-        '200':
-          description: OK
-  /v1/jobs/{id}:
-    get:
-      tags:
-      - Jobs
-      summary: Get job status
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Job'
-  /v1/movies:
-    get:
-      tags:
-      - Movies
-      summary: List movies
-      parameters:
-      - in: query
-        name: q
-        schema:
-          type: string
-        description: Free-text search (title, director, genre)
+      tags: [Admin]
+      summary: List feature flag overrides (DB)
+      security:
+        - AdminToken: []
       responses:
         '200':
           description: OK
@@ -826,285 +1035,182 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Movie'
-  /v1/movies/bulk:
-    post:
-      tags:
-      - Movies
-      summary: Get multiple movies by slugs
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                slugs:
-                  type: array
-                  items:
-                    type: string
+                      type: object
+                      properties:
+                        name: { type: string }
+                        scope: { type: string }
+                        value: { type: boolean }
+                        updated_at: { type: string, format: date-time }
+
+  /v1/admin/flags:
+    get:
+      tags: [Admin]
+      summary: List feature flags
+      security:
+        - AdminToken: []
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Movie'
-  /v1/movies/compare:
-    get:
-      tags:
-      - Movies
-      summary: Compare movies
+  /v1/admin/flags/{name}:
+    post:
+      tags: [Admin]
+      summary: Toggle a feature flag
+      security:
+        - AdminToken: []
       parameters:
-      - in: query
-        name: slugs
-        schema:
-          type: array
-          items:
+        - in: path
+          name: name
+          required: true
+          schema:
             type: string
-        description: List of slugs to compare
-      responses:
-        '200':
-          description: OK
-  /v1/movies/search:
-    get:
-      tags:
-      - Movies
-      summary: Search movies (Advanced)
-      description: Advanced movie search with multiple filter options (local database
-        + TMDb)
-      parameters:
-      - in: query
-        name: q
-        required: false
-        schema:
-          type: string
-          maxLength: 255
-        description: Search query (title, director, genre, etc.). **Required** for
-          fetching results from the external TMDb API.
-        example: Matrix
-      - in: query
-        name: year
-        required: false
-        schema:
-          type: integer
-          minimum: 1900
-        description: Release year filter
-        example: 1999
-      - in: query
-        name: director
-        required: false
-        schema:
-          type: string
-          maxLength: 255
-        description: Director name filter
-        example: Lana Wachowski
-      - in: query
-        name: actor
-        required: false
-        schema:
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              type: string
-        description: Actor name(s) filter. Can be single value or array (actor[]=Name1&actor[]=Name2)
-        example: Keanu Reeves
-      - in: query
-        name: page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          default: 1
-        description: Page number for pagination
-      - in: query
-        name: per_page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
-        description: Results per page
-      - in: query
-        name: sort
-        required: false
-        schema:
-          type: string
-          enum:
-          - title
-          - release_year
-          - created_at
-        description: Sort field
-      - in: query
-        name: order
-        required: false
-        schema:
-          type: string
-          enum:
-          - asc
-          - desc
-          default: asc
-        description: Sort order
-      - in: query
-        name: local_limit
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-        description: Limit results from local database
-      - in: query
-        name: external_limit
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-        description: Limit results from TMDb API
-      - in: query
-        name: source
-        required: false
-        schema:
-          type: string
-          enum:
-          - local
-          - external
-        description: Filter results by source (local database or external TMDb API)
-        example: local
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Movie'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      per_page:
-                        type: integer
-                      total:
-                        type: integer
-  /v1/movies/{slug}:
-    get:
-      tags:
-      - Movies
-      summary: Get movie by slug
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MovieFull'
-        '202':
-          description: Accepted - generation queued (feature flag on)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
-        '404':
-          description: Not Found (feature flag off)
-  /v1/movies/{slug}/collection:
-    get:
-      tags:
-      - Movies
-      summary: Get movie collection/franchise
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/movies/{slug}/refresh:
-    post:
-      tags:
-      - Movies
-      summary: Force refresh movie data
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '202':
-          description: Refresh queued
-  /v1/movies/{slug}/related:
-    get:
-      tags:
-      - Movies
-      summary: Get related movies
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Movie'
-  /v1/movies/{slug}/report:
-    post:
-      tags:
-      - Movies
-      summary: Report data issue
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                reason:
+                state:
                   type: string
-                details:
-                  type: string
+                  enum: [on, off]
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [Admin]
+      summary: Reset a feature flag
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/admin/flags/usage:
+    get:
+      tags: [Admin]
+      summary: Flags usage metrics
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/instances:
+    get:
+      tags: [Admin]
+      summary: List instances
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/instances/{instanceId}:
+    get:
+      tags: [Admin]
+      summary: Get instance details
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: instanceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/api-keys:
+    get:
+      tags: [Admin]
+      summary: List API keys
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Admin]
+      summary: Create API key
+      security:
+        - AdminToken: []
       responses:
         '201':
-          description: Report created
-  /v1/people:
-    get:
-      tags:
-      - People
-      summary: List people
+          description: Created
+  /v1/admin/api-keys/{id}/revoke:
+    post:
+      tags: [Admin]
+      summary: Revoke API key
+      security:
+        - AdminToken: []
       parameters:
-      - in: query
-        name: q
-        schema:
-          type: string
-        description: Free-text search
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/admin/api-keys/{id}/regenerate:
+    post:
+      tags: [Admin]
+      summary: Regenerate API key
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/reports:
+    get:
+      tags: [Admin]
+      summary: List reports
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/reports/{id}/verify:
+    post:
+      tags: [Admin]
+      summary: Verify report
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/feedback:
+    get:
+      tags: [Admin]
+      summary: List application feedback
+      description: Paginated list (20 per page). Requires X-Admin-Token or Bearer.
+      security:
+        - AdminToken: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number
       responses:
         '200':
           description: OK
@@ -1116,572 +1222,369 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Person'
-  /v1/people/bulk:
+                      $ref: '#/components/schemas/ApplicationFeedback'
+                  current_page: { type: integer }
+                  per_page: { type: integer }
+                  total: { type: integer }
+        '401':
+          description: Unauthorized (missing or invalid admin token)
+  /v1/admin/feedback/{id}:
+    get:
+      tags: [Admin]
+      summary: Get single feedback entry
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationFeedback'
+        '404':
+          description: Not found
+        '401':
+          description: Unauthorized
+    patch:
+      tags: [Admin]
+      summary: Update feedback status
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, read, archived]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationFeedback'
+        '404':
+          description: Not found
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Admin]
+      summary: Delete feedback entry
+      security:
+        - AdminToken: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No content
+        '404':
+          description: Not found
+        '401':
+          description: Unauthorized
+
+  /v1/admin/analytics/overview:
+    get:
+      tags: [Admin]
+      summary: Analytics Overview
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/by-plan:
+    get:
+      tags: [Admin]
+      summary: Analytics By Plan
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/by-endpoint:
+    get:
+      tags: [Admin]
+      summary: Analytics By Endpoint
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/by-time-range:
+    get:
+      tags: [Admin]
+      summary: Analytics By Time Range
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/top-api-keys:
+    get:
+      tags: [Admin]
+      summary: Top API Key Usage
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/analytics/error-rate:
+    get:
+      tags: [Admin]
+      summary: Error Rate Stats
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/ai-metrics/token-usage:
+    get:
+      tags: [Admin]
+      summary: AI Token Usage
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/ai-metrics/parsing-accuracy:
+    get:
+      tags: [Admin]
+      summary: AI Parsing Accuracy
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/ai-metrics/errors:
+    get:
+      tags: [Admin]
+      summary: AI Error Stats
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/ai-metrics/comparison:
+    get:
+      tags: [Admin]
+      summary: AI Model Comparison
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/jobs-dashboard/overview:
+    get:
+      tags: [Admin]
+      summary: Jobs Dashboard Overview
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/by-queue:
+    get:
+      tags: [Admin]
+      summary: Jobs by Queue
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/recent:
+    get:
+      tags: [Admin]
+      summary: Recent Jobs
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/failed:
+    get:
+      tags: [Admin]
+      summary: Failed Jobs
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/failed/stats:
+    get:
+      tags: [Admin]
+      summary: Failed Jobs Stats
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+  /v1/admin/jobs-dashboard/processing-times:
+    get:
+      tags: [Admin]
+      summary: Job Processing Times
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: OK
+
+  /v1/admin/subscription-plans:
+    get:
+      tags: [Admin]
+      summary: List subscription plans
+      responses:
+        '200':
+          description: OK
+  /v1/admin/subscription-plans/{id}:
+    get:
+      tags: [Admin]
+      summary: Get subscription plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/admin/subscription-plans/{id}/features:
+    get:
+      tags: [Admin]
+      summary: List plan features
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
     post:
-      tags:
-      - People
-      summary: Get multiple people by slugs
+      tags: [Admin]
+      summary: Add feature to plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              properties:
-                slugs:
-                  type: array
-                  items:
-                    type: string
       responses:
         '200':
           description: OK
-  /v1/people/compare:
-    get:
-      tags:
-      - People
-      summary: Compare people
+  /v1/admin/subscription-plans/{id}/features/{feature}:
+    delete:
+      tags: [Admin]
+      summary: Remove feature from plan
       parameters:
-      - in: query
-        name: slugs
-        schema:
-          type: array
-          items:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: feature
+          required: true
+          schema:
             type: string
       responses:
         '200':
           description: OK
-  /v1/people/search:
+  /v1/admin/webhook-subscriptions:
     get:
-      tags:
-      - People
-      summary: Search people (Advanced)
-      description: Advanced people search with multiple filter options (local database
-        + TMDb)
-      parameters:
-      - in: query
-        name: q
-        required: false
-        schema:
-          type: string
-          maxLength: 255
-        description: Search query (name, role, etc.)
-        example: Tom Hanks
-      - in: query
-        name: birth_year
-        required: false
-        schema:
-          type: integer
-          minimum: 1800
-        description: Birth year filter
-        example: 1956
-      - in: query
-        name: birthplace
-        required: false
-        schema:
-          type: string
-          maxLength: 255
-        description: Birthplace filter
-        example: Concord, California
-      - in: query
-        name: role
-        required: false
-        schema:
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              type: string
-        description: Role(s) filter (ACTOR, DIRECTOR, WRITER, PRODUCER). Can be single
-          value or array
-        example: ACTOR
-      - in: query
-        name: movie
-        required: false
-        schema:
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              type: string
-        description: Movie slug(s) filter. Can be single value or array (movie[]=slug1&movie[]=slug2)
-        example: forrest-gump-1994
-      - in: query
-        name: page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          default: 1
-        description: Page number for pagination
-      - in: query
-        name: per_page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
-        description: Results per page
-      - in: query
-        name: sort
-        required: false
-        schema:
-          type: string
-          enum:
-          - name
-          - birth_year
-          - created_at
-        description: Sort field
-      - in: query
-        name: order
-        required: false
-        schema:
-          type: string
-          enum:
-          - asc
-          - desc
-          default: asc
-        description: Sort order
-      - in: query
-        name: local_limit
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-        description: Limit results from local database
-      - in: query
-        name: external_limit
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-        description: Limit results from TMDb API
+      tags: [Admin]
+      summary: List webhook subscriptions
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Person'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      per_page:
-                        type: integer
-                      total:
-                        type: integer
-  /v1/people/{slug}:
-    get:
-      tags:
-      - People
-      summary: Get person by slug
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PersonFull'
-        '202':
-          description: Accepted - generation queued
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
-        '404':
-          description: Not Found
-  /v1/people/{slug}/refresh:
     post:
-      tags:
-      - People
-      summary: Force refresh person data
-      parameters:
-      - in: path
-        name: slug
+      tags: [Admin]
+      summary: Create webhook subscription
+      requestBody:
         required: true
-        schema:
-          type: string
-      responses:
-        '202':
-          description: Refresh queued
-  /v1/people/{slug}/related:
-    get:
-      tags:
-      - People
-      summary: Get related people
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/people/{slug}/report:
-    post:
-      tags:
-      - People
-      summary: Report data issue
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '201':
-          description: Report created
-  /v1/tv-series:
-    get:
-      tags:
-      - TvSeries
-      summary: List TV Series
+          description: Created
+  /v1/admin/webhook-subscriptions/{id}:
+    patch:
+      tags: [Admin]
+      summary: Update webhook subscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/TvSeries'
-  /v1/tv-series/compare:
-    get:
-      tags:
-      - TvSeries
-      summary: Compare TV Series
+    delete:
+      tags: [Admin]
+      summary: Delete webhook subscription
       parameters:
-      - in: query
-        name: slugs
-        schema:
-          type: array
-          items:
+        - in: path
+          name: id
+          required: true
+          schema:
             type: string
       responses:
-        '200':
-          description: OK
-  /v1/tv-series/search:
-    get:
-      tags:
-      - TvSeries
-      summary: Search TV Series
-      description: Advanced TV series search with filters (local database + TMDb)
-      parameters:
-      - in: query
-        name: q
-        required: false
-        schema:
-          type: string
-          maxLength: 255
-        description: Search query (title, etc.)
-        example: Breaking Bad
-      - in: query
-        name: year
-        required: false
-        schema:
-          type: integer
-          minimum: 1950
-        description: First air year filter
-        example: 2008
-      - in: query
-        name: page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          default: 1
-        description: Page number for pagination
-      - in: query
-        name: per_page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
-        description: Results per page
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/TvSeries'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      per_page:
-                        type: integer
-                      total:
-                        type: integer
-  /v1/tv-series/{slug}:
-    get:
-      tags:
-      - TvSeries
-      summary: Get TV Series by slug
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TvSeriesFull'
-        '202':
-          description: Accepted - generation queued
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
-  /v1/tv-series/{slug}/refresh:
-    post:
-      tags:
-      - TvSeries
-      summary: Force refresh TV Series data
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '202':
-          description: Refresh queued
-  /v1/tv-series/{slug}/related:
-    get:
-      tags:
-      - TvSeries
-      summary: Get related TV Series
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/tv-series/{slug}/report:
-    post:
-      tags:
-      - TvSeries
-      summary: Report data issue
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '201':
-          description: Report created
-  /v1/tv-shows:
-    get:
-      tags:
-      - TvShows
-      summary: List TV Shows
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/TvShow'
-  /v1/tv-shows/compare:
-    get:
-      tags:
-      - TvShows
-      summary: Compare TV Shows
-      parameters:
-      - in: query
-        name: slugs
-        schema:
-          type: array
-          items:
-            type: string
-      responses:
-        '200':
-          description: OK
-  /v1/tv-shows/search:
-    get:
-      tags:
-      - TvShows
-      summary: Search TV Shows
-      description: Advanced TV shows search with filters (local database + TMDb)
-      parameters:
-      - in: query
-        name: q
-        required: false
-        schema:
-          type: string
-          maxLength: 255
-        description: Search query (title, etc.)
-        example: The Tonight Show
-      - in: query
-        name: year
-        required: false
-        schema:
-          type: integer
-          minimum: 1950
-        description: First air year filter
-        example: 2014
-      - in: query
-        name: page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          default: 1
-        description: Page number for pagination
-      - in: query
-        name: per_page
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
-        description: Results per page
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/TvShow'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      per_page:
-                        type: integer
-                      total:
-                        type: integer
-  /v1/tv-shows/{slug}:
-    get:
-      tags:
-      - TvShows
-      summary: Get TV Show by slug
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TvShowFull'
-        '202':
-          description: Accepted - generation queued
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcceptedGeneration'
-  /v1/tv-shows/{slug}/refresh:
-    post:
-      tags:
-      - TvShows
-      summary: Force refresh TV Show data
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '202':
-          description: Refresh queued
-  /v1/tv-shows/{slug}/related:
-    get:
-      tags:
-      - TvShows
-      summary: Get related TV Shows
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-  /v1/tv-shows/{slug}/report:
-    post:
-      tags:
-      - TvShows
-      summary: Report data issue
-      parameters:
-      - in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        '201':
-          description: Report created
+        '204':
+          description: No Content
   /v1/webhooks/billing:
     post:
-      tags:
-      - Webhooks
+      tags: [Webhooks]
       summary: Handle billing events
       responses:
         '200':
           description: OK
   /v1/webhooks/notification:
     post:
-      tags:
-      - Webhooks
+      tags: [Webhooks]
       summary: Handle notification events
       responses:
         '200':
           description: OK
+
 components:
   securitySchemes:
     AdminToken:
@@ -1708,16 +1611,10 @@ components:
         category:
           type: string
           nullable: true
-          enum:
-          - bug
-          - suggestion
-          - other
+          enum: [bug, suggestion, other]
         status:
           type: string
-          enum:
-          - pending
-          - read
-          - archived
+          enum: [pending, read, archived]
         created_at:
           type: string
           format: date-time
@@ -1765,26 +1662,27 @@ components:
           type: string
     MovieFull:
       allOf:
-      - $ref: '#/components/schemas/Movie'
-      - type: object
-        properties:
-          default_description:
-            $ref: '#/components/schemas/MovieDescription'
-          descriptions:
-            type: array
-            items:
+        - $ref: '#/components/schemas/Movie'
+        - type: object
+          properties:
+            default_description:
               $ref: '#/components/schemas/MovieDescription'
-          genres:
-            type: array
-            items:
-              $ref: '#/components/schemas/Genre'
-          people:
-            type: array
-            items:
-              $ref: '#/components/schemas/Person'
-          _links:
-            type: object
-            additionalProperties: true
+            descriptions:
+              type: array
+              items:
+                $ref: '#/components/schemas/MovieDescription'
+            genres:
+              type: array
+              items:
+                $ref: '#/components/schemas/Genre'
+            people:
+              type: array
+              items:
+                $ref: '#/components/schemas/Person'
+            _links:
+              type: object
+              additionalProperties: true
+    
     Person:
       type: object
       properties:
@@ -1818,22 +1716,23 @@ components:
           type: string
     PersonFull:
       allOf:
-      - $ref: '#/components/schemas/Person'
-      - type: object
-        properties:
-          default_bio:
-            $ref: '#/components/schemas/PersonBio'
-          bios:
-            type: array
-            items:
+        - $ref: '#/components/schemas/Person'
+        - type: object
+          properties:
+            default_bio:
               $ref: '#/components/schemas/PersonBio'
-          movies:
-            type: array
-            items:
-              $ref: '#/components/schemas/Movie'
-          _links:
-            type: object
-            additionalProperties: true
+            bios:
+              type: array
+              items:
+                $ref: '#/components/schemas/PersonBio'
+            movies:
+              type: array
+              items:
+                $ref: '#/components/schemas/Movie'
+            _links:
+              type: object
+              additionalProperties: true
+
     TvSeries:
       type: object
       properties:
@@ -1858,24 +1757,25 @@ components:
           type: integer
     TvSeriesFull:
       allOf:
-      - $ref: '#/components/schemas/TvSeries'
-      - type: object
-        properties:
-          descriptions:
-            type: array
-            items:
-              type: object
-              properties:
-                text:
-                  type: string
-          genres:
-            type: array
-            items:
-              $ref: '#/components/schemas/Genre'
-          people:
-            type: array
-            items:
-              $ref: '#/components/schemas/Person'
+        - $ref: '#/components/schemas/TvSeries'
+        - type: object
+          properties:
+            descriptions:
+              type: array
+              items:
+                type: object
+                properties:
+                  text:
+                    type: string
+            genres:
+              type: array
+              items:
+                $ref: '#/components/schemas/Genre'
+            people:
+              type: array
+              items:
+                $ref: '#/components/schemas/Person'
+
     TvShow:
       type: object
       properties:
@@ -1892,107 +1792,71 @@ components:
           nullable: true
     TvShowFull:
       allOf:
-      - $ref: '#/components/schemas/TvShow'
-      - type: object
-        properties:
-          descriptions:
-            type: array
-            items:
-              type: object
-              properties:
-                text:
-                  type: string
+        - $ref: '#/components/schemas/TvShow'
+        - type: object
+          properties:
+            descriptions:
+              type: array
+              items:
+                type: object
+                properties:
+                  text:
+                    type: string
+
     DebugConfig:
       type: object
       properties:
-        environment:
-          type: object
-        openai:
-          type: object
-        queue:
-          type: object
+        environment: { type: object }
+        openai: { type: object }
+        queue: { type: object }
+    
     Job:
       type: object
       properties:
-        job_id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum:
-          - PENDING
-          - DONE
-          - FAILED
-          - UNKNOWN
-        entity:
-          type: string
-          enum:
-          - MOVIE
-          - PERSON
-          - TV_SERIES
-          - TV_SHOW
-        slug:
-          type: string
-        error:
-          type: object
+        job_id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, DONE, FAILED, UNKNOWN] }
+        entity: { type: string, enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW] }
+        slug: { type: string }
+        error: { type: object }
+
     AcceptedGeneration:
       type: object
       properties:
-        job_id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum:
-          - PENDING
-        slug:
-          type: string
-        locale:
-          type: string
-        context_tags:
+        job_id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING] }
+        slug: { type: string }
+        locale: { type: string }
+        context_tags: 
           type: array
           items:
             type: string
+
     GenerateRequest:
       type: object
-      required:
-      - entity_type
+      required: [entity_type]
       oneOf:
-      - required:
-        - slug
-      - required:
-        - entity_id
+        - required: [slug]
+        - required: [entity_id]
       properties:
         entity_type:
           type: string
-          enum:
-          - MOVIE
-          - PERSON
-          - TV_SERIES
-          - TV_SHOW
-          description: 'Type of entity to generate content for.
-
+          enum: [MOVIE, PERSON, TV_SERIES, TV_SHOW]
+          description: |
+            Type of entity to generate content for.
             Use `MOVIE` for movies.
-
             Use `PERSON` for actors, directors, writers, producers.
-
             Use `TV_SERIES` for scripted TV series (dramas, comedies, limited series).
-
             Use `TV_SHOW` for unscripted TV shows (talk shows, reality, news, documentaries).
-
-            '
           example: MOVIE
         slug:
           type: string
           maxLength: 255
-          description: Preferred identifier for the entity (e.g. `the-matrix-1999`).
-            Required when `entity_id` is omitted.
+          description: Preferred identifier for the entity (e.g. `the-matrix-1999`). Required when `entity_id` is omitted.
           example: the-matrix-1999
         entity_id:
           type: string
           maxLength: 255
-          description: Alias for `slug` used by legacy clients (still accepted). Required
-            when `slug` is omitted.
+          description: Alias for `slug` used by legacy clients (still accepted). Required when `slug` is omitted.
           example: the-matrix-1999
         locale:
           type: string
@@ -2002,11 +1866,11 @@ components:
           example: en-US
         context_tag:
           oneOf:
-          - type: string
-          - type: array
-            items:
-              type: string
-              maxLength: 64
-          description: Single context tag or array of context tags to influence generation
-            style
+            - type: string
+            - type: array
+              items:
+                type: string
+                maxLength: 64
+          description: Single context tag or array of context tags to influence generation style
           example: modern
+

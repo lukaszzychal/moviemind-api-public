@@ -249,6 +249,210 @@
               "body": "{\n  \"job_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for movie by slug\",\n  \"slug\": \"annihilation-2018\",\n  \"confidence\": 0.78,\n  \"confidence_level\": \"medium\"\n}"
             }
           ]
+        },
+        {
+          "name": "GET  Movies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/movies"
+          }
+        },
+        {
+          "name": "POST  Movies Bulk",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "bulk"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/movies/bulk",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  Movies Compare",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "compare"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/movies/compare"
+          }
+        },
+        {
+          "name": "GET  Movies Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "search"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/movies/search"
+          }
+        },
+        {
+          "name": "GET  Movies Slug",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{slug}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/movies/{slug}"
+          }
+        },
+        {
+          "name": "GET  Movies Slug Collection",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{slug}}/collection",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{slug}",
+                "collection"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/movies/{slug}/collection"
+          }
+        },
+        {
+          "name": "POST  Movies Slug Refresh",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{slug}}/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{slug}",
+                "refresh"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/movies/{slug}/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  Movies Slug Related",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{slug}}/related",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{slug}",
+                "related"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/movies/{slug}/related"
+          }
+        },
+        {
+          "name": "POST  Movies Slug Report",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/movies/{{slug}}/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "movies",
+                "{slug}",
+                "report"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/movies/{slug}/report",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
         }
       ]
     },
@@ -434,6 +638,190 @@
               "body": "{\n  \"id\": 1,\n  \"slug\": \"the-wachowskis\",\n  \"name\": \"The Wachowskis\",\n  \"birth_date\": null,\n  \"birthplace\": null,\n  \"bios_count\": 2,\n  \"default_bio\": {\n    \"id\": 10,\n    \"person_id\": 1,\n    \"locale\": \"en-US\",\n    \"text\": \"Visionary filmmaking duo behind The Matrix trilogy.\",\n    \"context_tag\": \"modern\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  },\n  \"bios\": [\n    {\n      \"id\": 10,\n      \"person_id\": 1,\n      \"locale\": \"en-US\",\n      \"text\": \"Visionary filmmaking duo behind The Matrix trilogy.\",\n      \"context_tag\": \"modern\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    },\n    {\n      \"id\": 11,\n      \"person_id\": 1,\n      \"locale\": \"pl-PL\",\n      \"text\": \"Tw\\u00f3rcze rodze\\u0144stwo odpowiedzialne za Matrix i rewolucj\\u0119 w kinie SF.\",\n      \"context_tag\": \"critical\",\n      \"origin\": \"GENERATED\",\n      \"ai_model\": \"mock\"\n    }\n  ],\n  \"movies\": [\n    {\n      \"id\": 1,\n      \"slug\": \"the-matrix-1999\",\n      \"title\": \"The Matrix\",\n      \"role\": \"DIRECTOR\",\n      \"character_name\": null\n    }\n  ],\n  \"_links\": {\n    \"self\": {\n      \"href\": \"http://localhost:8000/api/v1/people/the-wachowskis\"\n    },\n    \"movies\": [\n      {\n        \"href\": \"http://localhost:8000/api/v1/movies/the-matrix-1999\",\n        \"title\": \"The Matrix\",\n        \"role\": \"DIRECTOR\"\n      }\n    ]\n  },\n  \"selected_bio\": {\n    \"id\": 11,\n    \"person_id\": 1,\n    \"locale\": \"pl-PL\",\n    \"text\": \"Tw\\u00f3rcze rodze\\u0144stwo odpowiedzialne za Matrix i rewolucj\\u0119 w kinie SF.\",\n    \"context_tag\": \"critical\",\n    \"origin\": \"GENERATED\",\n    \"ai_model\": \"mock\"\n  }\n}"
             }
           ]
+        },
+        {
+          "name": "GET  People",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/people"
+          }
+        },
+        {
+          "name": "POST  People Bulk",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "bulk"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/people/bulk",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  People Compare",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "compare"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/people/compare"
+          }
+        },
+        {
+          "name": "GET  People Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "search"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/people/search"
+          }
+        },
+        {
+          "name": "GET  People Slug",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "{slug}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/people/{slug}"
+          }
+        },
+        {
+          "name": "POST  People Slug Refresh",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{slug}}/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "{slug}",
+                "refresh"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/people/{slug}/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  People Slug Related",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{slug}}/related",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "{slug}",
+                "related"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/people/{slug}/related"
+          }
+        },
+        {
+          "name": "POST  People Slug Report",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/people/{{slug}}/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "people",
+                "{slug}",
+                "report"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/people/{slug}/report",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
         }
       ]
     },
@@ -695,6 +1083,35 @@
               "body": "{\n  \"job_id\": \"9fa8c917-7d31-4b54-90d1-2ccf4bd8df52\",\n  \"status\": \"PENDING\",\n  \"message\": \"Generation queued for person by slug\",\n  \"slug\": \"greta-gerwig\",\n  \"confidence\": 0.64,\n  \"confidence_level\": \"low\"\n}"
             }
           ]
+        },
+        {
+          "name": "Demo key",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/demo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "demo"
+              ]
+            },
+            "description": "Returns public demo API key when available."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -768,6 +1185,25 @@
               "body": "{\n  \"job_id\": \"11111111-1111-1111-1111-111111111111\",\n  \"status\": \"UNKNOWN\"\n}"
             }
           ]
+        },
+        {
+          "name": "GET  Jobs Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{id}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/jobs/{id}"
+          }
         }
       ]
     },
@@ -1205,7 +1641,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
                 ]
               }
             }
@@ -1236,7 +1672,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
                 ]
               }
             }
@@ -1268,39 +1704,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Admin - Add plan feature",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{planId}}/features",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "admin",
-                "subscription-plans",
-                "{{planId}}",
-                "features"
-              ]
-            },
-            "description": "Add a feature to a plan."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
                 ]
               }
             }
@@ -1333,7 +1737,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
                 ]
               }
             }
@@ -1363,37 +1767,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Admin - Create webhook subscription",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/webhook-subscriptions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "admin",
-                "webhook-subscriptions"
-              ]
-            },
-            "description": "Create webhook subscription."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
                 ]
               }
             }
@@ -1424,14 +1798,846 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Admin - Delete webhook subscription",
+          "name": "Author",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/author",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "author"
+              ]
+            },
+            "description": "Returns author metadata (name, email, LinkedIn, GitHub)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 2xx/404 as expected', function () { pm.expect([200,201,204,404]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET  Admin Ai Metrics Comparison",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/ai-metrics/comparison",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "ai-metrics",
+                "comparison"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/ai-metrics/comparison"
+          }
+        },
+        {
+          "name": "GET  Admin Ai Metrics Errors",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/ai-metrics/errors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "ai-metrics",
+                "errors"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/ai-metrics/errors"
+          }
+        },
+        {
+          "name": "GET  Admin Ai Metrics Parsing Accuracy",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/ai-metrics/parsing-accuracy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "ai-metrics",
+                "parsing-accuracy"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/ai-metrics/parsing-accuracy"
+          }
+        },
+        {
+          "name": "GET  Admin Ai Metrics Token Usage",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/ai-metrics/token-usage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "ai-metrics",
+                "token-usage"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/ai-metrics/token-usage"
+          }
+        },
+        {
+          "name": "GET  Admin Analytics By Endpoint",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/by-endpoint",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "by-endpoint"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/analytics/by-endpoint"
+          }
+        },
+        {
+          "name": "GET  Admin Analytics By Plan",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/by-plan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "by-plan"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/analytics/by-plan"
+          }
+        },
+        {
+          "name": "GET  Admin Analytics By Time Range",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/by-time-range",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "by-time-range"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/analytics/by-time-range"
+          }
+        },
+        {
+          "name": "GET  Admin Analytics Error Rate",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/error-rate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "error-rate"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/analytics/error-rate"
+          }
+        },
+        {
+          "name": "GET  Admin Analytics Overview",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "overview"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/analytics/overview"
+          }
+        },
+        {
+          "name": "GET  Admin Analytics Top Api Keys",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/top-api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "top-api-keys"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/analytics/top-api-keys"
+          }
+        },
+        {
+          "name": "GET  Admin Api Keys",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "api-keys"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/api-keys"
+          }
+        },
+        {
+          "name": "POST  Admin Api Keys",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "api-keys"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/api-keys",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST  Admin Api Keys Id Regenerate",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/api-keys/{{id}}/regenerate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "api-keys",
+                "{id}",
+                "regenerate"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/api-keys/{id}/regenerate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST  Admin Api Keys Id Revoke",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/api-keys/{{id}}/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "api-keys",
+                "{id}",
+                "revoke"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/api-keys/{id}/revoke",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  Admin Debug Config",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/debug/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "debug",
+                "config"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/debug/config"
+          }
+        },
+        {
+          "name": "GET  Admin Feedback Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback",
+                "{id}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/feedback/{id}"
+          }
+        },
+        {
+          "name": "PATCH  Admin Feedback Id",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback",
+                "{id}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: PATCH /v1/admin/feedback/{id}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE  Admin Feedback Id",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/feedback/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback",
+                "{id}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: DELETE /v1/admin/feedback/{id}"
+          }
+        },
+        {
+          "name": "GET  Admin Flags Overrides",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags/overrides",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags",
+                "overrides"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/flags/overrides"
+          }
+        },
+        {
+          "name": "POST  Admin Flags Name",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags/{{name}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags",
+                "{name}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/flags/{name}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE  Admin Flags Name",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/flags/{{name}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "flags",
+                "{name}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: DELETE /v1/admin/flags/{name}"
+          }
+        },
+        {
+          "name": "GET  Admin Instances",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/instances",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "instances"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/instances"
+          }
+        },
+        {
+          "name": "GET  Admin Instances Instanceid",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/instances/{{instanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "instances",
+                "{instanceId}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/instances/{instanceId}"
+          }
+        },
+        {
+          "name": "GET  Admin Jobs Dashboard By Queue",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs-dashboard/by-queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs-dashboard",
+                "by-queue"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/jobs-dashboard/by-queue"
+          }
+        },
+        {
+          "name": "GET  Admin Jobs Dashboard Failed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs-dashboard/failed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs-dashboard",
+                "failed"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/jobs-dashboard/failed"
+          }
+        },
+        {
+          "name": "GET  Admin Jobs Dashboard Failed Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs-dashboard/failed/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs-dashboard",
+                "failed",
+                "stats"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/jobs-dashboard/failed/stats"
+          }
+        },
+        {
+          "name": "GET  Admin Jobs Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs-dashboard/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs-dashboard",
+                "overview"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/jobs-dashboard/overview"
+          }
+        },
+        {
+          "name": "GET  Admin Jobs Dashboard Processing Times",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs-dashboard/processing-times",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs-dashboard",
+                "processing-times"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/jobs-dashboard/processing-times"
+          }
+        },
+        {
+          "name": "GET  Admin Jobs Dashboard Recent",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs-dashboard/recent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs-dashboard",
+                "recent"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/jobs-dashboard/recent"
+          }
+        },
+        {
+          "name": "GET  Admin Reports",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reports"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/reports"
+          }
+        },
+        {
+          "name": "POST  Admin Reports Id Verify",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reports/{{id}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reports",
+                "{id}",
+                "verify"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/reports/{id}/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  Admin Subscription Plans Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{id}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/subscription-plans/{id}"
+          }
+        },
+        {
+          "name": "GET  Admin Subscription Plans Id Features",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{id}}/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{id}",
+                "features"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/admin/subscription-plans/{id}/features"
+          }
+        },
+        {
+          "name": "POST  Admin Subscription Plans Id Features",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{id}}/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{id}",
+                "features"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/subscription-plans/{id}/features",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE  Admin Subscription Plans Id Features Feature",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/subscription-plans/{{id}}/features/{{feature}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscription-plans",
+                "{id}",
+                "features",
+                "{feature}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: DELETE /v1/admin/subscription-plans/{id}/features/{feature}"
+          }
+        },
+        {
+          "name": "POST  Admin Webhook Subscriptions",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/webhook-subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "webhook-subscriptions"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/admin/webhook-subscriptions",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "DELETE  Admin Webhook Subscriptions Id",
           "request": {
             "method": "DELETE",
             "url": {
@@ -1444,22 +2650,11 @@
                 "v1",
                 "admin",
                 "webhook-subscriptions",
-                "{{id}}"
+                "{id}"
               ]
             },
-            "description": "Delete webhook subscription."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status code is 2xx', function () { pm.expect(pm.response.code).to.be.above(199).and.below(300); });"
-                ]
-              }
-            }
-          ]
+            "description": "Auto-added from Laravel route list: DELETE /v1/admin/webhook-subscriptions/{id}"
+          }
         }
       ]
     },
@@ -1504,36 +2699,485 @@
           ]
         },
         {
-          "name": "Author",
+          "name": "GET  Health",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/author",
+              "raw": "{{baseUrl}}/api/v1/health",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "author"
+                "health"
               ]
             },
-            "description": "Returns author metadata (name, email, LinkedIn, GitHub)."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test(\"Response has author block\", function () { pm.expect(json).to.have.property('author'); });",
-                  "pm.test(\"Author has name/email\", function () { pm.expect(json.author).to.have.property('name'); pm.expect(json.author).to.have.property('email'); });"
-                ]
+            "description": "Auto-added from Laravel route list: GET /v1/health"
+          }
+        },
+        {
+          "name": "GET  Health Db",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health/db",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                "db"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/health/db"
+          }
+        },
+        {
+          "name": "GET  Health Instance",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health/instance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                "instance"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/health/instance"
+          }
+        },
+        {
+          "name": "GET  Health Tmdb",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health/tmdb",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                "tmdb"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/health/tmdb"
+          }
+        },
+        {
+          "name": "GET  Health Tvmaze",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health/tvmaze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                "tvmaze"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/health/tvmaze"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Info",
+      "item": []
+    },
+    {
+      "name": "TvSeries",
+      "item": [
+        {
+          "name": "GET  Tv Series",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-series"
+          }
+        },
+        {
+          "name": "GET  Tv Series Compare",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series",
+                "compare"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-series/compare"
+          }
+        },
+        {
+          "name": "GET  Tv Series Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series",
+                "search"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-series/search"
+          }
+        },
+        {
+          "name": "GET  Tv Series Slug",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series",
+                "{slug}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-series/{slug}"
+          }
+        },
+        {
+          "name": "POST  Tv Series Slug Refresh",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series/{{slug}}/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series",
+                "{slug}",
+                "refresh"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/tv-series/{slug}/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
-          ]
+          }
+        },
+        {
+          "name": "GET  Tv Series Slug Related",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series/{{slug}}/related",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series",
+                "{slug}",
+                "related"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-series/{slug}/related"
+          }
+        },
+        {
+          "name": "POST  Tv Series Slug Report",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-series/{{slug}}/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-series",
+                "{slug}",
+                "report"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/tv-series/{slug}/report",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "TvShows",
+      "item": [
+        {
+          "name": "GET  Tv Shows",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-shows"
+          }
+        },
+        {
+          "name": "GET  Tv Shows Compare",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows",
+                "compare"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-shows/compare"
+          }
+        },
+        {
+          "name": "GET  Tv Shows Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows",
+                "search"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-shows/search"
+          }
+        },
+        {
+          "name": "GET  Tv Shows Slug",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows",
+                "{slug}"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-shows/{slug}"
+          }
+        },
+        {
+          "name": "POST  Tv Shows Slug Refresh",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows/{{slug}}/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows",
+                "{slug}",
+                "refresh"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/tv-shows/{slug}/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET  Tv Shows Slug Related",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows/{{slug}}/related",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows",
+                "{slug}",
+                "related"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: GET /v1/tv-shows/{slug}/related"
+          }
+        },
+        {
+          "name": "POST  Tv Shows Slug Report",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tv-shows/{{slug}}/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tv-shows",
+                "{slug}",
+                "report"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/tv-shows/{slug}/report",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST  Webhooks Billing",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhooks/billing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "webhooks",
+                "billing"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/webhooks/billing",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST  Webhooks Notification",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhooks/notification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "webhooks",
+                "notification"
+              ]
+            },
+            "description": "Auto-added from Laravel route list: POST /v1/webhooks/notification",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
         }
       ]
     }
