@@ -779,8 +779,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -788,8 +794,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/feedback",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "feedback"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "feedback"
+              ]
             }
           },
           "response": [
@@ -797,7 +809,12 @@
               "name": "201 Created",
               "status": "Created",
               "code": 201,
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
               "body": "{\n  \"message\": \"Feedback received. Thank you.\",\n  \"id\": \"01234567-89ab-cdef-0123-456789abcdef\"\n}"
             }
           ]
@@ -1050,13 +1067,26 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Admin-Token",
+                "value": "{{adminApiKey}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/feedback",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admin", "feedback"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback"
+              ]
             }
           }
         },
@@ -1065,13 +1095,27 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Admin-Token",
+                "value": "{{adminApiKey}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback",
+                "{{feedbackId}}"
+              ]
             }
           }
         },
@@ -1080,9 +1124,18 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" },
-              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Admin-Token",
+                "value": "{{adminApiKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1090,8 +1143,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback",
+                "{{feedbackId}}"
+              ]
             }
           }
         },
@@ -1100,12 +1161,23 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "X-Admin-Token", "value": "{{adminApiKey}}" }
+              {
+                "key": "X-Admin-Token",
+                "value": "{{adminApiKey}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/feedback/{{feedbackId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admin", "feedback", "{{feedbackId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "feedback",
+                "{{feedbackId}}"
+              ]
             }
           }
         }
@@ -1146,6 +1218,38 @@
                   "pm.test(\"Status code is 200 or 503\", function () { pm.expect([200, 503]).to.include(pm.response.code); });",
                   "const json = pm.response.json();",
                   "pm.test(\"Response contains success flag\", function () { pm.expect(json).to.have.property('success'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Author",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/author",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "author"
+              ]
+            },
+            "description": "Returns author metadata (name, email, LinkedIn, GitHub)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response has author block\", function () { pm.expect(json).to.have.property('author'); });",
+                  "pm.test(\"Author has name/email\", function () { pm.expect(json.author).to.have.property('name'); pm.expect(json.author).to.have.property('email'); });"
                 ]
               }
             }

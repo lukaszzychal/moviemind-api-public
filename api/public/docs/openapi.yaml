@@ -1429,6 +1429,33 @@ paths:
       responses:
         '200':
           description: OK
+  /v1/author:
+    get:
+      tags: [Info]
+      summary: Get author metadata
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  author:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      linkedin:
+                        type: string
+                        format: uri
+                      github:
+                        type: string
+                        format: uri
+
 
 components:
   securitySchemes:
