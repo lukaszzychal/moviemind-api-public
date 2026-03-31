@@ -82,6 +82,11 @@ Route::prefix('v1')->group(function () {
     Route::get('health/tvmaze', [HealthController::class, 'tvmaze']);
     Route::get('health/instance', [HealthController::class, 'instance']);
     Route::get('health/db', [HealthController::class, 'database']);
+    Route::get('author', function () {
+        return response()->json([
+            'author' => config('author'),
+        ], 200, ['Content-Type' => 'application/json']);
+    });
 });
 
 Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
