@@ -87,6 +87,16 @@ import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
         <span class="text-xs text-gray-300">
           {{ $t('footer.tmdb_disclaimer') }}
         </span>
+
+        <span class="text-gray-200 select-none text-xs">·</span>
+
+        <div class="text-xs text-gray-500 flex flex-wrap items-center gap-3">
+          <span class="font-semibold text-gray-600">Autor:</span>
+          <span>Łukasz Zychal</span>
+          <a class="text-blue-600 hover:underline" href="mailto:lukasz.zychal.dev@gmail.com">lukasz.zychal.dev@gmail.com</a>
+          <a class="text-blue-600 hover:underline" href="https://www.linkedin.com/in/lukaszzychal/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a class="text-blue-600 hover:underline" href="https://github.com/lukaszzychal" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
       </div>
     </footer>
   </div>
