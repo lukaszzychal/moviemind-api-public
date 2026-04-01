@@ -20,6 +20,7 @@ tags:
   - name: Health
   - name: Webhooks
   - name: Feedback
+  - name: Info
 paths:
   /v1/movies:
     get:
@@ -841,6 +842,15 @@ paths:
           description: Report created
 
   /v1/generate:
+  /v1/demo:
+    get:
+      tags: [Generation]
+      summary: Get public demo API key
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: No public demo key available
     post:
       tags: [Generation]
       summary: Queue generation for an entity
@@ -926,6 +936,32 @@ paths:
         '200':
           description: OK
 
+  /v1/author:
+    get:
+      tags: [Info]
+      summary: Get author metadata
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  author:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      linkedin:
+                        type: string
+                        format: uri
+                      github:
+                        type: string
+                        format: uri
   /v1/feedback:
     post:
       tags: [Feedback]
@@ -1415,6 +1451,125 @@ paths:
         '200':
           description: OK
 
+  /v1/admin/subscription-plans:
+    get:
+      tags: [Admin]
+      summary: List subscription plans
+      responses:
+        '200':
+          description: OK
+  /v1/admin/subscription-plans/{id}:
+    get:
+      tags: [Admin]
+      summary: Get subscription plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/admin/subscription-plans/{id}/features:
+    get:
+      tags: [Admin]
+      summary: List plan features
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Admin]
+      summary: Add feature to plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+  /v1/admin/subscription-plans/{id}/features/{feature}:
+    delete:
+      tags: [Admin]
+      summary: Remove feature from plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: feature
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /v1/admin/webhook-subscriptions:
+    get:
+      tags: [Admin]
+      summary: List webhook subscriptions
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Admin]
+      summary: Create webhook subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+  /v1/admin/webhook-subscriptions/{id}:
+    patch:
+      tags: [Admin]
+      summary: Update webhook subscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [Admin]
+      summary: Delete webhook subscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
   /v1/webhooks/billing:
     post:
       tags: [Webhooks]

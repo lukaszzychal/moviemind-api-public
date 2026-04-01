@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Pennant\Feature;
 use PHPUnit\Framework\Attributes\Timeout;
 use Tests\TestCase;
 
@@ -27,6 +28,7 @@ class SearchPerformanceTest extends TestCase
         config(['rate-limiting.logging.enabled' => false]); // Disable logging in tests
         config(['services.tmdb.api_key' => 'test-api-key']);
         Cache::flush();
+        Feature::deactivate('tmdb_verification');
 
         // Setup fake EntityVerificationService for search endpoint
         // Note: Search endpoint uses MovieSearchService which queries local DB first
