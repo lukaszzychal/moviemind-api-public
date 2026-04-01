@@ -1,9 +1,8 @@
 # Kurs tworzenia serwera MCP
 
 Ten dokument jest praktycznym wprowadzeniem do budowy serwera MCP.
-Bazuje na tym, jak działa `mcp-server` w tym repo, ale prowadzi od
-prostego przykładu do wersji, ktora potrafi udostepniac narzedzia,
-zasoby i prompty.
+Prowadzi od prostego przykładu do wersji, ktora potrafi udostepniac
+narzedzia, zasoby i prompty.
 
 ## Co to jest MCP
 
@@ -28,28 +27,14 @@ Najczesciej wystawia trzy rzeczy:
 - `resources` - dane tylko do odczytu, na przyklad schemat bazy, logi albo slownik tlumaczen
 - `prompts` - gotowe szablony, ktore podpowiadaja modelowi, jak ma pracowac z Twoim kontekstem
 
-W tym repo dokladnie to widac w `mcp-server/src/index.ts`:
+Typowy serwer MCP robi kilka prostych, ale waznych rzeczy:
 
-- serwer rejestruje `resources`, `tools` i `prompts`
-- korzysta z PostgreSQL przez `pg`
-- obsluguje dwa transporty: `stdio` i `SSE`
-
-## Jak dziala obecny `mcp-server`
-
-Obecna implementacja robi kilka prostych, ale waznych rzeczy:
-
-1. Tworzy serwer przez `@modelcontextprotocol/sdk`.
+1. Tworzy instancje serwera przez `@modelcontextprotocol/sdk`.
 2. Deklaruje capabilities dla `resources`, `tools` i `prompts`.
-3. Wystawia narzedzia takie jak:
-   - `search_database_movies`
-   - `check_job_status`
-   - `generate_ai_description`
-   - `dispatch_job_retry`
-4. Wystawia zasoby, na przyklad:
-   - `moviemind://database/schema-summary`
-   - `moviemind://logs/laravel-recent`
-5. Wystawia prompt `recommend_movies_by_actor`.
-6. Potrafi dzialac lokalnie przez `stdio` albo sieciowo przez `SSE`.
+3. Udostepnia narzedzia, ktore model moze wywolywac.
+4. Udostepnia zasoby, ktore model moze odczytywac.
+5. Udostepnia prompty jako gotowe punkty startowe.
+6. Dziala lokalnie przez `stdio` albo sieciowo przez `SSE`.
 
 To jest dobry szkielet startowy, bo pokazuje pelny przeplyw:
 
@@ -68,10 +53,53 @@ i najbezpieczniejsza opcja do developmentu.
 przyklad dla zewnetrznego klienta, chatu webowego albo innej uslugi
 dzialajacej w sieci.
 
-W tym projekcie:
+## Sposoby uruchamiania: lokalnie i w kontenerze
 
-- `stdio` pasuje do pracy lokalnej z Cursor lub Claude Desktop
-- `SSE` pasuje do zdalnego, hostowanego serwera MCP
+W praktyce masz trzy typowe warianty:
+
+### 1. Lokalnie bez kontenera
+
+Najprostsza opcja na start. Dobra do:
+
+- szybkiego prototypowania
+- pracy z `stdio`
+- lokalnego podpiecia pod Cursor albo Claude Desktop
+
+Typowy przeplyw:
+
+```bash
+npm install
+npm run build
+npm run start
+```
+
+albo w trybie developerskim:
+
+```bash
+npm run dev
+```
+
+### 2. Lokalnie w kontenerze
+
+To dobry wariant, gdy:
+
+- chcesz miec powtarzalne srodowisko
+- nie chcesz instalowac lokalnie Node.js
+- planujesz potem wdrozenie do Railway, Render albo Fly.io
+
+W tym modelu budujesz obraz Dockera i uruchamiasz serwer jako osobny
+kontener.
+
+### 3. Zdalnie w kontenerze
+
+To naturalna droga dla hostingu. W praktyce:
+
+- budujesz obraz lokalnie albo na platformie CI
+- platforma uruchamia kontener
+- serwer wystawia `SSE` przez HTTP
+
+Ten wariant jest najczestszy dla publicznych lub pol-publicznych MCP
+serverow.
 
 ## Kurs: budujemy minimalny serwer krok po kroku
 
@@ -208,8 +236,6 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 });
 ```
 
-W MovieMind podobna idea jest uzyta dla `moviemind://database/schema-summary` i `moviemind://logs/laravel-recent`.
-
 ### Krok 4. Dodanie promptow
 
 Prompt w MCP nie zastepuje system prompta modelu. To raczej wygodny
@@ -296,7 +322,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 Najwazniejsza zasada: model ma dostac proste, bezpieczne API, a nie surowy dostep do wszystkiego.
 
-## Jak rozszerzyc serwer do wersji podobnej do MovieMind
+## Jak rozszerzyc serwer do wersji produkcyjnej
 
 Minimalny serwer szybko zacznie rosnac. Dobra kolejnosc rozwoju zwykle wyglada tak:
 
@@ -306,7 +332,7 @@ Minimalny serwer szybko zacznie rosnac. Dobra kolejnosc rozwoju zwykle wyglada t
 4. Wyciagnij logike biznesowa do osobnych funkcji lub serwisow.
 5. Dopiero potem dodaj warstwe HTTP i `SSE`.
 
-W praktyce serwer podobny do `MovieMind` powinien miec podzial na:
+W praktyce wiekszy serwer MCP powinien miec podzial na:
 
 - definicje narzedzi
 - implementacje handlerow
@@ -355,6 +381,190 @@ app.listen(8080);
 
 To wystarcza do prototypu. Do produkcji trzeba dolozyc bezpieczenstwo.
 
+## Uruchomienie przez Docker
+
+Jesli chcesz odpalic serwer MCP w kontenerze, najprostsza droga to
+osobny obraz Dockera, ktory:
+
+- instaluje zaleznosci
+- buduje TypeScript
+- uruchamia gotowy plik z katalogu `build/`
+
+### Przykladowy `Dockerfile`
+
+Ponizej jest prosty, praktyczny przyklad dla serwera MCP w Node.js
+z TypeScript:
+
+```dockerfile
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json tsconfig.json ./
+RUN npm ci
+
+COPY src ./src
+RUN npm run build
+
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/build ./build
+
+EXPOSE 8080
+
+CMD ["npm", "run", "start"]
+```
+
+### Build obrazu
+
+Uruchom z katalogu projektu serwera:
+
+```bash
+docker build -t my-mcp-server .
+```
+
+### Start kontenera w trybie `SSE`
+
+Przykladowe uruchomienie:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e TRANSPORT_TYPE=sse \
+  -e PORT=8080 \
+  -e AUTH_TOKEN=replace_me \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PORT=5432 \
+  -e DB_USERNAME=app_user \
+  -e DB_PASSWORD=secret \
+  -e DB_DATABASE=app_db \
+  my-mcp-server
+```
+
+Po starcie serwer bedzie dostepny pod:
+
+- `http://localhost:8080/sse`
+
+Jesli klient MCP laczy sie przez HTTP, powinien wysylac naglowek:
+
+```text
+Authorization: Bearer replace_me
+```
+
+### Co robi ten `Dockerfile`
+
+- w pierwszym etapie instaluje pelne zaleznosci i buduje TypeScript do
+  `build/`
+- w drugim etapie instaluje tylko zaleznosci produkcyjne
+- finalnie uruchamia `npm run start`, czyli `node build/index.js`
+
+To jest dobry wariant pod Railway, Render, Fly.io albo wlasny serwer.
+Masz jeden przewidywalny artefakt i nie musisz polegac na lokalnej
+instalacji Node.js poza samym Dockerem.
+
+## Popularne wzorce uruchomienia
+
+Nie kazdy serwer MCP musi byc uruchamiany tak samo. W praktyce sa trzy
+sensowne wzorce.
+
+### Wzorzec 1: jeden serwer, wszystkie mozliwosci
+
+To najprostszy wariant. Jeden proces wystawia wszystkie `tools`,
+`resources` i `prompts`.
+
+Ten uklad jest dobry, gdy:
+
+- budujesz proof of concept,
+- pracujesz sam,
+- chcesz szybko przetestowac pomysl bez dodatkowej architektury.
+
+Przykladowy start:
+
+```bash
+npm run start
+```
+
+albo w kontenerze:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e TRANSPORT_TYPE=sse \
+  -e PORT=8080 \
+  -e AUTH_TOKEN=replace_me \
+  my-mcp-server
+```
+
+Minusem tego podejscia jest to, ze szybko mieszaja sie odpowiedzialnosci.
+
+### Wzorzec 2: jeden serwer, rozne role
+
+To dobry kompromis. Nadal masz jeden kodbase, ale serwer uruchamia sie
+w roznych profilach i wystawia tylko czesc mozliwosci.
+
+Najczesciej robi sie to przez zmienna srodowiskowa, na przyklad:
+
+```bash
+MCP_ROLE=public npm run start
+MCP_ROLE=internal npm run start
+```
+
+albo w kontenerze:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e MCP_ROLE=public \
+  -e TRANSPORT_TYPE=sse \
+  -e PORT=8080 \
+  -e AUTH_TOKEN=replace_me \
+  my-mcp-server
+```
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e MCP_ROLE=internal \
+  -e TRANSPORT_TYPE=sse \
+  -e PORT=8080 \
+  -e AUTH_TOKEN=replace_me \
+  my-mcp-server
+```
+
+To podejscie sprawdza sie, gdy:
+
+- chcesz wspolnego kodu,
+- ale potrzebujesz roznych zestawow narzedzi,
+- i chcesz ograniczyc ryzyko wystawienia zbyt szerokiego dostepu.
+
+### Wzorzec 3: osobne serwery MCP
+
+To najbardziej czytelny wariant architektonicznie. Budujesz dwa lub
+wiecej osobnych serwerow, z ktorych kazdy ma swoj cel.
+
+Przykladowo:
+
+- jeden serwer do funkcji produktowych,
+- drugi do diagnostyki,
+- trzeci do pracy z dokumentacja albo wewnetrznymi systemami.
+
+Ten wariant jest dobry, gdy:
+
+- zespol jest wiekszy,
+- system ma wyrazne granice odpowiedzialnosci,
+- chcesz wdrazac, skalowac albo zabezpieczac te serwery niezaleznie.
+
+### Jak wybrac wzorzec
+
+Najprostsza praktyka jest taka:
+
+- zacznij od jednego serwera, jesli dopiero testujesz MCP,
+- przejdz do rol, gdy zaczyna sie mieszac dostep i odpowiedzialnosc,
+- wydziel osobne serwery, gdy roznice sa juz trwale i organizacyjnie
+  wazne.
+
 ## Bezpieczenstwo
 
 Serwer MCP bardzo latwo moze stac sie zbyt potezny. Dlatego:
@@ -366,8 +576,8 @@ Serwer MCP bardzo latwo moze stac sie zbyt potezny. Dlatego:
 - loguj wywolania narzedzi
 - ogranicz dostep w trybie `SSE` tokenem lub innym mechanizmem auth
 
-W obecnym `mcp-server` jest prosty bearer token dla trybu `SSE`.
-To dobry start, ale w wersji produkcyjnej warto dolozyc:
+W prostym serwerze bearer token dla trybu `SSE` moze byc dobrym
+punktem startowym, ale w wersji produkcyjnej warto dolozyc:
 
 - rotacje tokenow
 - rate limiting
@@ -459,13 +669,14 @@ Serwer MCP to cienka warstwa integracyjna. Jego zadaniem nie jest
 "bycie inteligentnym", tylko bezpieczne i przewidywalne udostepnienie
 mozliwosci Twojego systemu modelowi.
 
-W kontekscie MovieMind oznacza to:
+W praktyce oznacza to:
 
 - model moze czytac zdefiniowane zasoby
 - model moze wywolywac ograniczony zestaw narzedzi
 - model moze startowac z gotowych promptow
-- to samo rozwiazanie moze dzialac lokalnie przez `stdio` i zdalnie przez `SSE`
+- to samo rozwiazanie moze dzialac lokalnie przez `stdio` i zdalnie
+  przez `SSE`
 
-Jesli chcesz rozwijac ten serwer dalej, najlepszy nastepny krok to
-rozdzielenie `mcp-server/src/index.ts` na mniejsze moduly i dodanie
-twardej walidacji argumentow dla kazdego narzedzia.
+Jesli chcesz rozwijac taki serwer dalej, najlepszy nastepny krok to
+rozdzielenie `index.ts` na mniejsze moduly i dodanie twardej walidacji
+argumentow dla kazdego narzedzia.

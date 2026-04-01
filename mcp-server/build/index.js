@@ -11,9 +11,9 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const pg_1 = require("pg");
-// Załaduj zmienne środowiskowe z pliku .env
+// Load environment variables from the .env file
 dotenv_1.default.config();
-// Definiowanie instancji serwera MCP
+// Define the MCP server instance
 const server = new index_js_1.Server({
     name: "moviemind-mcp-server",
     version: "1.0.0",
@@ -24,7 +24,7 @@ const server = new index_js_1.Server({
         prompts: {},
     },
 });
-// Połączenie z bazą PostgreSQL (Docker)
+// PostgreSQL connection (Docker)
 const pool = new pg_1.Pool({
     host: process.env.DB_HOST || "postgres",
     port: parseInt(process.env.DB_PORT || "5432"),
@@ -33,8 +33,159 @@ const pool = new pg_1.Pool({
     database: process.env.DB_DATABASE || "moviemind",
 });
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/v1";
+function resolveRole(role) {
+    if (role === "end_user" || role === "devops") {
+        return role;
+    }
+    return "devops";
+}
+const currentRole = resolveRole(process.env.MCP_ROLE);
+const resourceDefinitions = [
+    {
+        uri: "moviemind://database/schema-summary",
+        name: "Database Schema Summary",
+        mimeType: "application/json",
+        description: "Schemat struktury i relacji w bazie MovieMind (TMDb integration)",
+        roles: ["end_user", "devops"],
+    },
+    {
+        uri: "moviemind://frontend/i18n-maps/pl",
+        name: "Polish Translations Mapping",
+        mimeType: "application/json",
+        description: "Frontend dictionary for PL translations",
+        roles: ["end_user", "devops"],
+    },
+    {
+        uri: "moviemind://logs/laravel-recent",
+        name: "Recent Laravel Error Logs",
+        mimeType: "text/plain",
+        description: "Last lines of storage/logs/laravel.log for diagnostics",
+        roles: ["devops"],
+    },
+    {
+        uri: "moviemind://cache/horizon-metrics",
+        name: "Horizon Queue Metrics",
+        mimeType: "application/json",
+        description: "Statystyki z Laravel Horizon Redis queue",
+        roles: ["devops"],
+    },
+];
+const toolDefinitions = [
+    {
+        name: "generate_ai_description",
+        description: "Tworzy nowy wpis asynchroniczny i wysyła Job na serwer OpenAI. Zleca wygenerowanie opisu dla encji np. z Wikipedii.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                entity_type: { type: "string", description: "Typ obiektu np: movie, person", enum: ["movie", "person", "tv_show", "tv_series"] },
+                entity_id: { type: "number", description: "ID obiektu w MovieMind bazy danych" },
+                locale: { type: "string", description: "Docelowy język (np. pl-PL)", default: "pl-PL" },
+            },
+            required: ["entity_type", "entity_id"],
+        },
+        roles: ["end_user", "devops"],
+    },
+    {
+        name: "search_database_movies",
+        description: "Odpytuje relacyjną bazę PostgreSQL o filmy ze słowem kluczowym lub nazwiskiem.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                query: { type: "string", description: "Tytuł, nazwisko lub słowo bazowe od użytkownika" },
+            },
+            required: ["query"],
+        },
+        roles: ["end_user", "devops"],
+    },
+    {
+        name: "check_job_status",
+        description: "Sprawdza status wygenerowanego asynchronicznie polecenia AI w tabeli ai_jobs.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                job_id: { type: "number" },
+            },
+            required: ["job_id"],
+        },
+        roles: ["end_user", "devops"],
+    },
+    {
+        name: "dispatch_job_retry",
+        description: "Restartuje sfailowane eventy w kolejce (php artisan queue:retry). Wymaga środowiska serwera lokalnego Laravela.",
+        inputSchema: {
+            type: "object",
+            properties: {},
+        },
+        roles: ["devops"],
+    },
+    {
+        name: "trigger_cache_clear",
+        description: "Czyści wskazane wpisy cache po działaniach diagnostycznych lub wdrożeniowych.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                cache_key: { type: "string", description: "Klucz cache do wyczyszczenia lub wartość 'all'" },
+            },
+            required: ["cache_key"],
+        },
+        roles: ["devops"],
+    },
+];
+const promptDefinitions = [
+    {
+        name: "recommend_movies_by_actor",
+        description: "Zaproponuj użytkownikowi kolekcję filmów pasujących do fraz w oparciu o polecenia użytkownika.",
+        arguments: [
+            { name: "query", description: "Imiona, nazwiska reżyserów lub keywordy od usera", required: true },
+        ],
+        roles: ["end_user", "devops"],
+    },
+    {
+        name: "analyze_failed_generation",
+        description: "Używane do proaktywnej analizy błędów kolejek w przypadku problemów diagnostycznych AI.",
+        arguments: [
+            { name: "job_id", description: "Opcjonalne ID joba do sprawdzenia narzędziem check_job_status", required: false },
+        ],
+        roles: ["devops"],
+    },
+    {
+        name: "audit_translations_and_frontend",
+        description: "Sprawdza mapowania tłumaczeń frontendowych i szuka braków lub niespójności.",
+        roles: ["devops"],
+    },
+];
+function isAllowedForCurrentRole(roles) {
+    return roles.includes(currentRole);
+}
+function getResourceDefinition(uri) {
+    return resourceDefinitions.find((resource) => resource.uri === uri);
+}
+function getToolDefinition(name) {
+    return toolDefinitions.find((tool) => tool.name === name);
+}
+function getPromptDefinition(name) {
+    return promptDefinitions.find((prompt) => prompt.name === name);
+}
+function ensureResourceAccess(uri) {
+    const resource = getResourceDefinition(uri);
+    if (!resource || !isAllowedForCurrentRole(resource.roles)) {
+        throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Unknown Resource: ${uri}`);
+    }
+}
+function ensureToolAccess(name) {
+    const tool = getToolDefinition(name);
+    if (!tool || !isAllowedForCurrentRole(tool.roles)) {
+        throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Tool not found: ${name}`);
+    }
+}
+function ensurePromptAccess(name) {
+    const prompt = getPromptDefinition(name);
+    if (!prompt || !isAllowedForCurrentRole(prompt.roles)) {
+        throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, "Prompt not found");
+    }
+}
 /**
- * 🗂️ ZASOBY (RESOURCES)
+ * 🗂️ RESOURCES
  * - moviemind://database/schema-summary
  * - moviemind://frontend/i18n-maps/pl
  * - moviemind://logs/laravel-recent
@@ -42,35 +193,13 @@ const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/
  */
 server.setRequestHandler(types_js_1.ListResourcesRequestSchema, async () => {
     return {
-        resources: [
-            {
-                uri: "moviemind://database/schema-summary",
-                name: "Database Schema Summary",
-                mimeType: "application/json",
-                description: "Schemat struktury i relacji w bazie MovieMind (TMDb integration)",
-            },
-            {
-                uri: "moviemind://frontend/i18n-maps/pl",
-                name: "Polish Translations Mapping",
-                mimeType: "application/json",
-                description: "Frontend dictionary for PL translations",
-            },
-            {
-                uri: "moviemind://logs/laravel-recent",
-                name: "Recent Laravel Error Logs",
-                mimeType: "text/plain",
-                description: "Last lines of storage/logs/laravel.log for diagnostics",
-            },
-            {
-                uri: "moviemind://cache/horizon-metrics",
-                name: "Horizon Queue Metrics",
-                mimeType: "application/json",
-                description: "Statystyki z Laravel Horizon Redis queue",
-            }
-        ],
+        resources: resourceDefinitions
+            .filter((resource) => isAllowedForCurrentRole(resource.roles))
+            .map(({ roles, ...resource }) => resource),
     };
 });
 server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) => {
+    ensureResourceAccess(request.params.uri);
     if (request.params.uri === "moviemind://database/schema-summary") {
         return {
             contents: [
@@ -91,7 +220,26 @@ server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) =
             ]
         };
     }
-    // Wrzutka błedów diagnostycznych dla DevOpsów
+    if (request.params.uri === "moviemind://frontend/i18n-maps/pl") {
+        return {
+            contents: [
+                {
+                    uri: request.params.uri,
+                    mimeType: "application/json",
+                    text: JSON.stringify({
+                        locale: "pl",
+                        messages: {
+                            search: "Szukaj",
+                            movies: "Filmy",
+                            people: "Osoby",
+                            recommendations: "Polecane",
+                        },
+                    }, null, 2),
+                },
+            ],
+        };
+    }
+    // Sample diagnostic error output for DevOps use
     if (request.params.uri === "moviemind://logs/laravel-recent") {
         return {
             contents: [
@@ -103,62 +251,37 @@ server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) =
             ]
         };
     }
+    if (request.params.uri === "moviemind://cache/horizon-metrics") {
+        return {
+            contents: [
+                {
+                    uri: request.params.uri,
+                    mimeType: "application/json",
+                    text: JSON.stringify({
+                        queue: "default",
+                        pending_jobs: 2,
+                        failed_jobs: 1,
+                        throughput_per_minute: 14,
+                    }, null, 2),
+                },
+            ],
+        };
+    }
     throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Unknown Resource: ${request.params.uri}`);
 });
 /**
- * ⚙️ NARZĘDZIA (TOOLS)
+ * ⚙️ TOOLS
  */
 server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
     return {
-        tools: [
-            {
-                name: "generate_ai_description",
-                description: "Tworzy nowy wpis asynchroniczny i wysyła Job na serwer OpenAI. Zleca wygenerowanie opisu dla encji np. z Wikipedii.",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        entity_type: { type: "string", description: "Typ obiektu np: movie, person", enum: ["movie", "person", "tv_show", "tv_series"] },
-                        entity_id: { type: "number", description: "ID obiektu w MovieMind bazy danych" },
-                        locale: { type: "string", description: "Docelowy język (np. pl-PL)", default: "pl-PL" },
-                    },
-                    required: ["entity_type", "entity_id"],
-                },
-            },
-            {
-                name: "search_database_movies",
-                description: "Odpytuje relacyjną bazę PostgreSQL o filmy ze słowem kluczowym lub nazwiskiem.",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        query: { type: "string", description: "Tytuł, nazwisko lub słowo bazowe od użytkownika" },
-                    },
-                    required: ["query"],
-                },
-            },
-            {
-                name: "check_job_status",
-                description: "Sprawdza status wygenerowanego asynchronicznie polecenia AI w tabeli ai_jobs.",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        job_id: { type: "number" },
-                    },
-                    required: ["job_id"],
-                },
-            },
-            {
-                name: "dispatch_job_retry",
-                description: "Restartuje sfailowane eventy w kolejce (php artisan queue:retry). Wymaga środowiska serwera lokalnego Laravela.",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                },
-            }
-        ],
+        tools: toolDefinitions
+            .filter((tool) => isAllowedForCurrentRole(tool.roles))
+            .map(({ roles, ...tool }) => tool),
     };
 });
 server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    ensureToolAccess(name);
     try {
         if (name === "search_database_movies") {
             const query = String(args?.query || "");
@@ -184,6 +307,12 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
                 content: [{ type: "text", text: `Wszystkie opadłe Zadania z FailedJobs zrestartowane poprzez polecenie queue:retry all na warstwie CLI!` }]
             };
         }
+        if (name === "trigger_cache_clear") {
+            const cacheKey = String(args?.cache_key || "all");
+            return {
+                content: [{ type: "text", text: `Wywołano czyszczenie cache dla klucza: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
+            };
+        }
     }
     catch (err) {
         return {
@@ -194,27 +323,18 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
     throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Tool not found: ${name}`);
 });
 /**
- * 🤔 PROMPTY (PROMPTS)
+ * 🤔 PROMPTS
  */
 server.setRequestHandler(types_js_1.ListPromptsRequestSchema, async () => {
     return {
-        prompts: [
-            {
-                name: "recommend_movies_by_actor",
-                description: "Zaproponuj użytkownikowi kolekcję filmów pasujących do fraz w oparciu o polecenia użytkownika.",
-                arguments: [
-                    { name: "query", description: "Imiona, nazwiska reżyserów lub keywordy od usera", required: true }
-                ]
-            },
-            {
-                name: "analyze_failed_generation",
-                description: "Używane do proaktywnej analizy błędów kolejek w przypadku problemów diagnostycznych AI.",
-            }
-        ]
+        prompts: promptDefinitions
+            .filter((prompt) => isAllowedForCurrentRole(prompt.roles))
+            .map(({ roles, ...prompt }) => prompt),
     };
 });
-// Zamiast rozrastać schemat bazowy prompta, serwer potrafi odpowiednio przygotować jego gotowe wywołanie
+// Instead of expanding the base prompt schema, the server can prepare a ready-to-use prompt call
 server.setRequestHandler(types_js_1.GetPromptRequestSchema, async (request) => {
+    ensurePromptAccess(request.params.name);
     if (request.params.name === "recommend_movies_by_actor") {
         return {
             description: "Prompt analityczny wspierający rozmówcę z frontend",
@@ -230,24 +350,79 @@ Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 
             ]
         };
     }
+    if (request.params.name === "analyze_failed_generation") {
+        const jobId = request.params.arguments?.job_id;
+        const jobInstruction = jobId
+            ? `Następnie użyj narzędzia 'check_job_status' dla job_id=${jobId}.`
+            : "Jeśli użytkownik poda ID joba, użyj narzędzia 'check_job_status'.";
+        return {
+            description: "Prompt do analizy błędów generowania i logów kolejki",
+            messages: [
+                {
+                    role: "user",
+                    content: {
+                        type: "text",
+                        text: `Przeanalizuj najnowsze logi aplikacji i wskaż najbardziej prawdopodobną przyczynę błędu generowania. ${jobInstruction}`,
+                    }
+                },
+                {
+                    role: "user",
+                    content: {
+                        type: "resource",
+                        resource: {
+                            uri: "moviemind://logs/laravel-recent",
+                            text: "Aktualne logi Laravel do diagnozy błędów generowania.",
+                        }
+                    }
+                }
+            ]
+        };
+    }
+    if (request.params.name === "audit_translations_and_frontend") {
+        return {
+            description: "Prompt do przeglądu mapowań tłumaczeń frontendowych",
+            messages: [
+                {
+                    role: "user",
+                    content: {
+                        type: "text",
+                        text: "Sprawdź załączone mapowanie tłumaczeń i wypisz brakujące, niejednoznaczne lub potencjalnie niespójne klucze."
+                    }
+                },
+                {
+                    role: "user",
+                    content: {
+                        type: "resource",
+                        resource: {
+                            uri: "moviemind://frontend/i18n-maps/pl",
+                            text: "Aktualne polskie tłumaczenia frontendu.",
+                        }
+                    }
+                }
+            ]
+        };
+    }
     throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Prompt not found`);
 });
 /**
- * ZARZĄDZANIE TRANSPORTAMI (Stdio V. HTTP SSE)
+ * TRANSPORT MANAGEMENT (Stdio vs. HTTP SSE)
  */
 async function run() {
     const transportType = process.env.TRANSPORT_TYPE || "stdio";
     if (transportType === "sse") {
-        // Środowisko Railway, uruchom nasłuchiwanie z użyciem Express.js
+        // Railway environment: start listening with Express.js
         const app = (0, express_1.default)();
         app.use((0, cors_1.default)());
         app.use(express_1.default.json());
-        // Middleware zabezpieczający HTTP
-        const AUTH_TOKEN = process.env.AUTH_TOKEN || "DEBUG_TOKEN123";
+        // HTTP security middleware
+        const AUTH_TOKEN = process.env.AUTH_TOKEN;
+        if (!AUTH_TOKEN) {
+            throw new Error("AUTH_TOKEN is required when TRANSPORT_TYPE is set to sse.");
+        }
         app.use((req, res, next) => {
             const authHeader = req.headers.authorization;
             if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
-                // Fallback do uri query parametrów na start
+                // Fallback to URI query parameters for initial setup
                 if (req.query.token !== AUTH_TOKEN) {
                     return res.status(401).send("Unauthorized Access. Zły token Bearer!");
                 }
@@ -274,7 +449,7 @@ async function run() {
         });
     }
     else {
-        // Lokalny proces diagnostyczny STDIO (standard in/out - dla Docker / PC z Cursorem)
+        // Local STDIO diagnostic process (standard in/out for Docker or a local machine with Cursor)
         const transport = new stdio_js_1.StdioServerTransport();
         await server.connect(transport);
         console.error("MovieMind MCP Server uruchomiony w trybie terminala (STDIO). Oczekuje I/O...");
