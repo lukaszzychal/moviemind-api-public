@@ -16,10 +16,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { Pool } from "pg";
 
-// Załaduj zmienne środowiskowe z pliku .env
+// Load environment variables from the .env file
 dotenv.config();
 
-// Definiowanie instancji serwera MCP
+// Define the MCP server instance
 const server = new Server(
   {
     name: "moviemind-mcp-server",
@@ -34,7 +34,7 @@ const server = new Server(
   }
 );
 
-// Połączenie z bazą PostgreSQL (Docker)
+// PostgreSQL connection (Docker)
 const pool = new Pool({
   host: process.env.DB_HOST || "postgres",
   port: parseInt(process.env.DB_PORT || "5432"),
@@ -46,7 +46,7 @@ const pool = new Pool({
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/v1";
 
 /**
- * 🗂️ ZASOBY (RESOURCES)
+ * 🗂️ RESOURCES
  * - moviemind://database/schema-summary
  * - moviemind://frontend/i18n-maps/pl
  * - moviemind://logs/laravel-recent
@@ -105,7 +105,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
   
-  // Wrzutka błedów diagnostycznych dla DevOpsów
+  // Sample diagnostic error output for DevOps use
   if (request.params.uri === "moviemind://logs/laravel-recent") {
     return {
       contents: [
@@ -123,7 +123,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 
 /**
- * ⚙️ NARZĘDZIA (TOOLS)
+ * ⚙️ TOOLS
  */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -219,7 +219,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 
 /**
- * 🤔 PROMPTY (PROMPTS)
+ * 🤔 PROMPTS
  */
 server.setRequestHandler(ListPromptsRequestSchema, async () => {
   return {
@@ -239,7 +239,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
   };
 });
 
-// Zamiast rozrastać schemat bazowy prompta, serwer potrafi odpowiednio przygotować jego gotowe wywołanie
+// Instead of expanding the base prompt schema, the server can prepare a ready-to-use prompt call
 server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   if (request.params.name === "recommend_movies_by_actor") {
     return {
@@ -260,23 +260,23 @@ Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 
 });
 
 /**
- * ZARZĄDZANIE TRANSPORTAMI (Stdio V. HTTP SSE)
+ * TRANSPORT MANAGEMENT (Stdio vs. HTTP SSE)
  */
 async function run() {
   const transportType = process.env.TRANSPORT_TYPE || "stdio";
 
   if (transportType === "sse") {
-    // Środowisko Railway, uruchom nasłuchiwanie z użyciem Express.js
+    // Railway environment: start listening with Express.js
     const app = express();
     app.use(cors());
     app.use(express.json());
 
-    // Middleware zabezpieczający HTTP
+    // HTTP security middleware
     const AUTH_TOKEN = process.env.AUTH_TOKEN || "DEBUG_TOKEN123";
     app.use((req, res, next) => {
       const authHeader = req.headers.authorization;
       if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
-        // Fallback do uri query parametrów na start
+        // Fallback to URI query parameters for initial setup
         if(req.query.token !== AUTH_TOKEN) {
            return res.status(401).send("Unauthorized Access. Zły token Bearer!");
         }
@@ -305,7 +305,7 @@ async function run() {
       console.log(`MovieMind MCP Server Web (SSE) nasłuchuje na Web-Porcie ${PORT}`);
     });
   } else {
-    // Lokalny proces diagnostyczny STDIO (standard in/out - dla Docker / PC z Cursorem)
+    // Local STDIO diagnostic process (standard in/out for Docker or a local machine with Cursor)
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("MovieMind MCP Server uruchomiony w trybie terminala (STDIO). Oczekuje I/O...");
