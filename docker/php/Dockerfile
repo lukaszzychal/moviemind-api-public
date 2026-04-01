@@ -121,8 +121,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY docker/php/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# Fix Nginx config to use 127.0.0.1:9000 instead of php:9000
-RUN sed -i 's/fastcgi_pass php:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf || true
+# Nginx config is rendered at container start so the same template works in local and production.
 
 # Copy dependencies from builder
 COPY --from=builder --chown=app:app /var/www/html/vendor ./vendor

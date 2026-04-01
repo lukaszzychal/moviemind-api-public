@@ -5,15 +5,14 @@ echo "Starting MovieMind API..."
 echo "PORT=${PORT:-80}"
 echo "APP_ENV=${APP_ENV:-production}"
 
-# Create Nginx config with dynamic PORT
-# Railway sets PORT environment variable
-NGINX_PORT=${PORT:-80}
+# Render Nginx config so one template works in both local Docker and production image
+NGINX_PORT=${PORT:-${NGINX_PORT:-80}}
+PHP_FPM_UPSTREAM=${PHP_FPM_UPSTREAM:-127.0.0.1:9000}
 
-# Replace port in Nginx config
 if [ -f /etc/nginx/http.d/default.conf ]; then
-    # Use envsubst to replace ${PORT} in config, or use sed
-    sed -i "s/listen 80/listen ${NGINX_PORT}/" /etc/nginx/http.d/default.conf || true
-    echo "✅ Nginx config updated with PORT=${NGINX_PORT}"
+    sed -i "s|\${NGINX_PORT}|${NGINX_PORT}|g" /etc/nginx/http.d/default.conf || true
+    sed -i "s|\${PHP_FPM_UPSTREAM}|${PHP_FPM_UPSTREAM}|g" /etc/nginx/http.d/default.conf || true
+    echo "✅ Nginx config rendered with PORT=${NGINX_PORT} and PHP_FPM_UPSTREAM=${PHP_FPM_UPSTREAM}"
 fi
 
 # Verify Laravel public directory exists
