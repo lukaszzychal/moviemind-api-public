@@ -247,4 +247,145 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 });
 ```
 
-**EFEKT:** Kliknięcie jednego polecenia w interfejsie zażąda od LLM rozbudowanego i przygotowanego myślenia kontekstowego. AI połączy URI i wykona skrupulatną recenzję (np. szukając SQL injections z boku). Nie musisz powtarzać mu co ma robić ani przeklejać treści – robi to sam z użyciem Twojego Serwera MCP. 🚀
+**EFEKT:** Kliknięcie jednego polecenia w interfejsie zażąda od LLM
+rozbudowanego i przygotowanego myślenia kontekstowego. AI połączy URI
+i wykona skrupulatną recenzję (np. szukając SQL injections z boku).
+Nie musisz powtarzać mu co ma robić ani przeklejać treści, robi to sam
+z użyciem Twojego Serwera MCP. 🚀
+
+---
+
+## Przykład: prompt używa jednocześnie `resource` i `tool`
+
+To jest bardzo praktyczny wariant. Sam prompt nie "wywołuje"
+narzędzia jak funkcji w kodzie, ale może bardzo jasno poinstruować
+model:
+
+1. najpierw przeczytaj konkretny `resource`
+2. potem użyj konkretnego `tool`
+3. na końcu złóż odpowiedź na podstawie obu źródeł
+
+Przykład dla MovieMind:
+
+```typescript
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return {
+        prompts: [
+            {
+                name: "diagnozuj_i_sprawdz_job",
+                description: "Czyta logi błędów i każe modelowi sprawdzić status konkretnego joba."
+            }
+        ]
+    };
+});
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    if (request.params.name === "diagnozuj_i_sprawdz_job") {
+        return {
+            description: "Łączy analizę logów z odpytywaniem narzędzia check_job_status",
+            messages: [
+                {
+                    role: "user",
+                    content: {
+                        type: "text",
+                        text:
+                            "Przeanalizuj dołączone logi. Następnie użyj narzędzia 'check_job_status' dla job_id=42. " +
+                            "Na końcu połącz oba wyniki i powiedz, czy problem wynika z błędu aplikacji, " +
+                            "czy z awarii samego joba."
+                    }
+                },
+                {
+                    role: "user",
+                    content: {
+                        type: "resource",
+                        resource: {
+                            uri: "moviemind://logs/laravel-recent",
+                            text: "Najnowsze logi aplikacji Laravel do analizy."
+                        }
+                    }
+                }
+            ]
+        };
+    }
+
+    throw new Error("Prompt does not exist.");
+});
+```
+
+### Jak to działa w praktyce
+
+- prompt daje modelowi instrukcję kolejności działania
+- `resource` dostarcza gotowy kontekst, na przykład logi
+- `tool` pozwala dobrać dane dynamiczne, na przykład status joba
+- model łączy oba źródła i odpowiada użytkownikowi
+
+To jest często najlepszy wzorzec pracy w MCP:
+
+- `resource` daje tło
+- `tool` daje aktualny stan
+- prompt mówi modelowi, jak to połączyć
+
+## Czy prompt może używać innego prompta?
+
+Nie wprost, przynajmniej nie tak jak narzędzie wywołuje funkcję.
+W MCP prompt zwykle zwraca gotowy zestaw `messages`, a nie
+"uruchamia" drugi prompt po nazwie.
+
+Masz za to trzy sensowne opcje:
+
+1. skopiować wspólny układ wiadomości do dwóch promptów
+2. wyciągnąć wspólny fragment do funkcji pomocniczej po stronie serwera
+3. w treści prompta poinstruować model, by użył tych samych zasobów i narzędzi co inny workflow
+
+Przykład z funkcją pomocniczą po stronie serwera:
+
+```typescript
+function buildLogAuditMessages(extraInstruction: string) {
+    return [
+        {
+            role: "user",
+            content: {
+                type: "text",
+                text: `Przeanalizuj logi aplikacji. ${extraInstruction}`
+            }
+        },
+        {
+            role: "user",
+            content: {
+                type: "resource",
+                resource: {
+                    uri: "moviemind://logs/laravel-recent",
+                    text: "Aktualne logi Laravel."
+                }
+            }
+        }
+    ];
+}
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    if (request.params.name === "analizuj_kody_bledow") {
+        return {
+            description: "Analiza logów bezpieczeństwa",
+            messages: buildLogAuditMessages("Skup się na wyjątkach i błędach 500.")
+        };
+    }
+
+    if (request.params.name === "diagnozuj_i_sprawdz_job") {
+        return {
+            description: "Analiza logów i statusu joba",
+            messages: [
+                ...buildLogAuditMessages("Po analizie użyj narzędzia 'check_job_status' dla job_id=42."),
+            ]
+        };
+    }
+
+    throw new Error("Prompt does not exist.");
+});
+```
+
+To podejście daje efekt podobny do "prompt używa innego prompta",
+ale technicznie robi to czyściej:
+
+- prompty nie zależą od siebie cyklicznie
+- wspólna logika siedzi w jednej funkcji
+- łatwiej utrzymać spójność treści
