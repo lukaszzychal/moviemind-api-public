@@ -34,7 +34,7 @@ const pool = new pg_1.Pool({
 });
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/v1";
 function resolveRole(role) {
-    if (role === "end_user" || role === "devops") {
+    if (role === "end_user" || role === "devops" || role === "all") {
         return role;
     }
     return "devops";
@@ -155,6 +155,9 @@ const promptDefinitions = [
     },
 ];
 function isAllowedForCurrentRole(roles) {
+    if (currentRole === "all") {
+        return true;
+    }
     return roles.includes(currentRole);
 }
 function getResourceDefinition(uri) {

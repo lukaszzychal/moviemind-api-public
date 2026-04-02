@@ -44,7 +44,7 @@ const pool = new Pool({
 });
 
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/v1";
-type McpRole = "end_user" | "devops";
+type McpRole = "end_user" | "devops" | "all";
 
 type McpResourceDefinition = {
   uri: string;
@@ -77,7 +77,7 @@ type McpPromptDefinition = {
 };
 
 function resolveRole(role: string | undefined): McpRole {
-  if (role === "end_user" || role === "devops") {
+  if (role === "end_user" || role === "devops" || role === "all") {
     return role;
   }
 
@@ -204,6 +204,10 @@ const promptDefinitions: McpPromptDefinition[] = [
 ];
 
 function isAllowedForCurrentRole(roles: McpRole[]): boolean {
+  if (currentRole === "all") {
+    return true;
+  }
+
   return roles.includes(currentRole);
 }
 
