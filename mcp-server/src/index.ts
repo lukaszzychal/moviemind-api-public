@@ -414,7 +414,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     if (name === "search_database_movies") {
       const query = String(args?.query || "");
-      const res = await pool.query(`SELECT id, tmdb_id, title, original_title FROM movies WHERE title ILIKE $1 LIMIT 5`, [`%${query}%`]);
+      const res = await pool.query(`
+        SELECT m.id, m.title, m.slug, m.release_year, d.text as current_description 
+        FROM movies m 
+        LEFT JOIN movie_descriptions d ON m.id = d.movie_id AND d.locale = 'pl-PL' AND d.context_tag IS NULL
+        WHERE m.title ILIKE $1 
+        LIMIT 5
+      `, [`%${query}%`]);
       return {
         content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
       };
