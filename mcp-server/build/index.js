@@ -528,7 +528,8 @@ async function run() {
                 await sseTransport.handlePostMessage(req, res, req.body);
             }
             else {
-                res.status(404).send("Session not found.");
+                const safeId = sessionId ? sessionId.replace(/[^a-zA-Z0-9\-_]/g, '') : 'empty';
+                res.status(404).json({ error: 'Session not found', sessionId: safeId });
             }
         });
         const PORT = process.env.PORT || 8080;
