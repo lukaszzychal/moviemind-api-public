@@ -497,7 +497,12 @@ async function run() {
         });
         const transports = new Map();
         app.get("/sse", async (req, res) => {
-            const sseTransport = new sse_js_1.SSEServerTransport("/message", res);
+            // Create an absolute URL for the POST message endpoint. This prevents issues 
+            // where clients misparse relative URLs and lose the sessionId.
+            const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
+            const host = req.headers.host;
+            const messageUrl = `${protocol}://${host}/message`;
+            const sseTransport = new sse_js_1.SSEServerTransport(messageUrl, res);
             transports.set(sseTransport.sessionId, sseTransport);
             await server.connect(sseTransport);
             console.log(`Client connected via SSE successfully. Session ID: ${sseTransport.sessionId}`);
@@ -507,13 +512,23 @@ async function run() {
             });
         });
         app.post("/message", async (req, res) => {
-            const sessionId = req.query.sessionId;
-            const sseTransport = transports.get(sessionId);
+            let sessionId = req.query.sessionId;
+            let sseTransport = sessionId ? transports.get(sessionId) : undefined;
+            if (!sseTransport) {
+                console.warn(`[POST /message] Session not found by query param '${sessionId}'. Size: ${transports.size}. Original URL: ${req.originalUrl}`);
+            }
+            // Fallback: If the client improperly stripped query parameters and there is only one active 
+            // session, use that session automatically. This is a common bug in some MCP clients.
+            if (!sseTransport && transports.size === 1) {
+                console.warn(`[POST /message] Applying single-session fallback.`);
+                sseTransport = Array.from(transports.values())[0];
+                sessionId = sseTransport.sessionId;
+            }
             if (sseTransport) {
                 await sseTransport.handlePostMessage(req, res, req.body);
             }
             else {
-                res.status(404).send("Session not found.");
+                res.status(404).send(`Session not found. (session ID: ${sessionId || "empty/stripped"})`);
             }
         });
         const PORT = process.env.PORT || 8080;
