@@ -168,6 +168,44 @@ Język: {locale}.
 Zwróć tylko czysty tekst.
 ```
 
+## 🔌 Serwer MCP (Model Context Protocol)
+
+Aplikacja zawiera wbudowany serwer MCP (zlokalizowany w katalogu `/mcp-server`), który umożliwia agentom AI bezpośrednią integrację z MovieMind.
+
+### Jak wywołać MCP manualnie (np. przez Postman / klienta HTTP)
+
+Komunikacja z serwerem MCP odbywa się w oparciu o architekturę SSE (Server-Sent Events) i **JSON-RPC 2.0**. Wykonanie manualnego zapytania z klienta takiego jak Postman wymaga dwóch jednoczesnych połączeń:
+
+**Krok 1: Otwarcia nasłuchiwania w tle (SSE)**
+Otwórz zakładkę obsługującą Server-Sent Events (lub wykonaj otwarte zapytanie `GET`), aby nawiązać sesję.
+- **Metoda:** `GET`
+- **URL:** `https://twoja-domena-mcp/sse`
+- **Nagłówki:** `Authorization: Bearer twoj_bardzo_mocny_token`
+
+Jako pierwszą wiadomość na tym strumieniu otrzymasz zdarzenie `endpoint` z parametrem np.:
+`data: /message?sessionId=ID-SESJI`
+Połączenie to **musi pozostać otwarte**, to w nim będziesz odbierać odpowiedzi.
+
+**Krok 2: Wysyłanie właściwych żądań JSON-RPC 2.0**
+W nowej karcie pod ten sam endpoint należy wysyłać komendy MCP standardowym zapytaniem POST. Serwer odpowie od razu `202 Accepted` bez danych, a faktyczna odpowiedź ukaże się w karcie z kroku 1.
+- **Metoda:** `POST`
+- **URL:** `https://twoja-domena-mcp/message?sessionId=ID-SESJI` (id z kroku 1)
+- **Nagłówki:** `Authorization: Bearer twoj_bardzo_mocny_token`, `Content-Type: application/json`
+
+**Przykładowy payload incjalizacji (musi zostać wysłany jako pierwszy przed wywołaniem narzędzi):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": { 
+     "protocolVersion": "2024-11-05", 
+     "capabilities": {}, 
+     "clientInfo": { "name": "postman", "version": "1.0" } 
+  }
+}
+```
+
 ## 🐳 Szybki start
 
 ### Wymagania
