@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Laravel\Pennant\Feature;
 use PHPUnit\Framework\Attributes\Timeout;
 use Tests\TestCase;
@@ -35,6 +36,7 @@ class SearchPerformanceTest extends TestCase
         // then external TMDB. We don't need to set up fake results for queries that
         // match seeded movies (Matrix, Inception). For other queries, empty results are fine.
         $this->fakeEntityVerificationService();
+        Http::fake();
     }
 
     public function test_search_endpoint_handles_multiple_requests_efficiently(): void
