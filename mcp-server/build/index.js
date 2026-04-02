@@ -495,18 +495,25 @@ async function run() {
             }
             next();
         });
-        let sseTransport = null;
+        const transports = new Map();
         app.get("/sse", async (req, res) => {
-            sseTransport = new sse_js_1.SSEServerTransport("/message", res);
+            const sseTransport = new sse_js_1.SSEServerTransport("/message", res);
+            transports.set(sseTransport.sessionId, sseTransport);
             await server.connect(sseTransport);
-            console.log("Client connected via SSE successfully.");
+            console.log(`Client connected via SSE successfully. Session ID: ${sseTransport.sessionId}`);
+            res.on('close', () => {
+                console.log(`Client disconnected. Session ID: ${sseTransport.sessionId}`);
+                transports.delete(sseTransport.sessionId);
+            });
         });
         app.post("/message", async (req, res) => {
+            const sessionId = req.query.sessionId;
+            const sseTransport = transports.get(sessionId);
             if (sseTransport) {
-                await sseTransport.handlePostMessage(req, res);
+                await sseTransport.handlePostMessage(req, res, req.body);
             }
             else {
-                res.status(400).send("No active SSE connection.");
+                res.status(404).send("Session not found.");
             }
         });
         const PORT = process.env.PORT || 8080;
