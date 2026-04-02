@@ -208,6 +208,32 @@ Zalety:
 - prostsze bezpieczeństwo,
 - szybkie podpięcie do Cursor albo Claude Desktop.
 
+Przykładowa konfiguracja klienta MCP:
+
+```json
+{
+  "mcpServers": {
+    "moviemind_devops_local": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/moviemind-api-public/mcp-server/build/index.js"
+      ],
+      "env": {
+        "MCP_ROLE": "devops",
+        "TRANSPORT_TYPE": "stdio",
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_USERNAME": "your_user",
+        "DB_PASSWORD": "your_password",
+        "DB_DATABASE": "moviemind",
+        "LARAVEL_API_URL": "http://localhost:8000/api/v1",
+        "LARAVEL_API_KEY": "your_api_key"
+      }
+    }
+  }
+}
+```
+
 ### DevOps MCP lokalnie w kontenerze
 
 Ten wariant ma sens, jeśli zespół chce spójnego środowiska albo testów
@@ -234,6 +260,22 @@ Taki serwer powinien:
 Tu właśnie sens ma `LARAVEL_API_URL`, bo end-userowy MCP powinien
 rozmawiać z backendem aplikacyjnym, a nie bezpośrednio z całym zapleczem
 diagnostycznym.
+
+Przykładowa konfiguracja klienta MCP dla zdalnego `SSE`:
+
+```json
+{
+  "mcpServers": {
+    "moviemind_end_user_remote": {
+      "type": "sse",
+      "url": "https://your-mcp-service.up.railway.app/sse",
+      "headers": {
+        "Authorization": "Bearer your_mcp_auth_token"
+      }
+    }
+  }
+}
+```
 
 ## Czego nie mieszać
 
