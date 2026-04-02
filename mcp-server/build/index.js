@@ -46,7 +46,7 @@ const resourceDefinitions = [
         uri: "moviemind://database/schema-summary",
         name: "Database Schema Summary",
         mimeType: "application/json",
-        description: "Schemat struktury i relacji w bazie MovieMind (TMDb integration)",
+        description: "Database schema structure and relationships in MovieMind (TMDb integration)",
         roles: ["end_user", "devops"],
     },
     {
@@ -67,22 +67,22 @@ const resourceDefinitions = [
         uri: "moviemind://cache/horizon-metrics",
         name: "Horizon Queue Metrics",
         mimeType: "application/json",
-        description: "Statystyki z Laravel Horizon Redis queue",
+        description: "Statistics from Laravel Horizon Redis queue",
         roles: ["devops"],
     },
 ];
 const toolDefinitions = [
     {
         name: "generate_ai_description",
-        description: "Tworzy nowy wpis asynchroniczny i wysyła Job na serwer OpenAI. Zleca wygenerowanie opisu dla encji np. z Wikipedii.",
+        description: "Creates a new asynchronous entry and sends a Job to OpenAI server. Requests generation of entity description, e.g., from Wikipedia.",
         inputSchema: {
             type: "object",
             properties: {
-                entity_type: { type: "string", description: "Typ obiektu np: movie, person", enum: ["movie", "person", "tv_show", "tv_series"] },
-                slug: { type: "string", description: "Slug encji w backendzie Laravel, np. inception-2010" },
-                entity_id: { type: "string", description: "Legacy field; jeśli slug nie jest podany, zostanie wysłany jako slug do backendu" },
-                locale: { type: "string", description: "Docelowy język (np. pl-PL)", default: "pl-PL" },
-                context_tag: { type: "string", description: "Opcjonalny kontekst generowania, np. modern albo critical" },
+                entity_type: { type: "string", description: "Type of object, e.g. movie, person", enum: ["movie", "person", "tv_show", "tv_series"] },
+                slug: { type: "string", description: "Entity slug in Laravel backend, e.g. inception-2010" },
+                entity_id: { type: "string", description: "Legacy field; if slug is not provided, it will be sent as a slug to the backend" },
+                locale: { type: "string", description: "Target language (e.g. pl-PL)", default: "pl-PL" },
+                context_tag: { type: "string", description: "Optional generation context, e.g. modern or critical" },
             },
             required: ["entity_type"],
         },
@@ -90,11 +90,11 @@ const toolDefinitions = [
     },
     {
         name: "search_database_movies",
-        description: "Odpytuje relacyjną bazę PostgreSQL o filmy ze słowem kluczowym lub nazwiskiem.",
+        description: "Queries PostgreSQL relational database for movies by keyword or last name.",
         inputSchema: {
             type: "object",
             properties: {
-                query: { type: "string", description: "Tytuł, nazwisko lub słowo bazowe od użytkownika" },
+                query: { type: "string", description: "Title, last name or base word from the user" },
             },
             required: ["query"],
         },
@@ -102,7 +102,7 @@ const toolDefinitions = [
     },
     {
         name: "check_job_status",
-        description: "Sprawdza status wygenerowanego asynchronicznie polecenia AI w tabeli ai_jobs.",
+        description: "Checks the status of asynchronously generated AI command in ai_jobs table.",
         inputSchema: {
             type: "object",
             properties: {
@@ -114,7 +114,7 @@ const toolDefinitions = [
     },
     {
         name: "dispatch_job_retry",
-        description: "Restartuje sfailowane eventy w kolejce (php artisan queue:retry). Wymaga środowiska serwera lokalnego Laravela.",
+        description: "Restarts failed queue events (php artisan queue:retry). Requires local Laravel server environment.",
         inputSchema: {
             type: "object",
             properties: {},
@@ -123,11 +123,11 @@ const toolDefinitions = [
     },
     {
         name: "trigger_cache_clear",
-        description: "Czyści wskazane wpisy cache po działaniach diagnostycznych lub wdrożeniowych.",
+        description: "Clears specified cache entries after diagnostic or deployment activities.",
         inputSchema: {
             type: "object",
             properties: {
-                cache_key: { type: "string", description: "Klucz cache do wyczyszczenia lub wartość 'all'" },
+                cache_key: { type: "string", description: "Cache key to clear or 'all' value" },
             },
             required: ["cache_key"],
         },
@@ -137,23 +137,23 @@ const toolDefinitions = [
 const promptDefinitions = [
     {
         name: "recommend_movies_by_actor",
-        description: "Zaproponuj użytkownikowi kolekcję filmów pasujących do fraz w oparciu o polecenia użytkownika.",
+        description: "Suggest a collection of movies matching the keywords based on user prompts.",
         arguments: [
-            { name: "query", description: "Imiona, nazwiska reżyserów lub keywordy od usera", required: true },
+            { name: "query", description: "Names, surnames of directors or keywords from the user", required: true },
         ],
         roles: ["end_user", "devops"],
     },
     {
         name: "analyze_failed_generation",
-        description: "Używane do proaktywnej analizy błędów kolejek w przypadku problemów diagnostycznych AI.",
+        description: "Used for proactive analysis of queue errors in case of AI diagnostic problems.",
         arguments: [
-            { name: "job_id", description: "Opcjonalne ID joba do sprawdzenia narzędziem check_job_status", required: false },
+            { name: "job_id", description: "Optional job ID to check with check_job_status tool", required: false },
         ],
         roles: ["devops"],
     },
     {
         name: "audit_translations_and_frontend",
-        description: "Sprawdza mapowania tłumaczeń frontendowych i szuka braków lub niespójności.",
+        description: "Checks frontend translation mappings and looks for missing or inconsistent keys.",
         roles: ["devops"],
     },
 ];
@@ -403,14 +403,14 @@ server.setRequestHandler(types_js_1.GetPromptRequestSchema, async (request) => {
     ensurePromptAccess(request.params.name);
     if (request.params.name === "recommend_movies_by_actor") {
         return {
-            description: "Prompt analityczny wspierający rozmówcę z frontend",
+            description: "Analytical prompt supporting frontend interlocutor",
             messages: [
                 {
                     role: "user",
                     content: {
                         type: "text",
-                        text: `Użytkownik zapytał o frazy: ${request.params.arguments?.query}. 
-Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 'search_database_movies' by pobrać tytuły pasujące tematycznie!`
+                        text: `User asked about keywords: ${request.params.arguments?.query}.
+Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`
                     }
                 }
             ]
@@ -419,16 +419,16 @@ Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 
     if (request.params.name === "analyze_failed_generation") {
         const jobId = request.params.arguments?.job_id;
         const jobInstruction = jobId
-            ? `Następnie użyj narzędzia 'check_job_status' dla job_id=${jobId}.`
-            : "Jeśli użytkownik poda ID joba, użyj narzędzia 'check_job_status'.";
+            ? `Then use the 'check_job_status' tool for job_id=${jobId}.`
+            : "If the user provides a job ID, use the 'check_job_status' tool.";
         return {
-            description: "Prompt do analizy błędów generowania i logów kolejki",
+            description: "Prompt for analyzing generation errors and queue logs",
             messages: [
                 {
                     role: "user",
                     content: {
                         type: "text",
-                        text: `Przeanalizuj najnowsze logi aplikacji i wskaż najbardziej prawdopodobną przyczynę błędu generowania. ${jobInstruction}`,
+                        text: `Analyze recent application logs and point out the most likely cause of generation error. ${jobInstruction}`,
                     }
                 },
                 {
@@ -437,7 +437,7 @@ Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 
                         type: "resource",
                         resource: {
                             uri: "moviemind://logs/laravel-recent",
-                            text: "Aktualne logi Laravel do diagnozy błędów generowania.",
+                            text: "Current Laravel logs for diagnosing generation errors.",
                         }
                     }
                 }
@@ -446,13 +446,13 @@ Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 
     }
     if (request.params.name === "audit_translations_and_frontend") {
         return {
-            description: "Prompt do przeglądu mapowań tłumaczeń frontendowych",
+            description: "Prompt for reviewing frontend translation mappings",
             messages: [
                 {
                     role: "user",
                     content: {
                         type: "text",
-                        text: "Sprawdź załączone mapowanie tłumaczeń i wypisz brakujące, niejednoznaczne lub potencjalnie niespójne klucze."
+                        text: "Review the attached translation mapping and list missing, ambiguous or potentially inconsistent keys."
                     }
                 },
                 {
@@ -461,7 +461,7 @@ Podaj mu listę trzech najlepszych rekomendacji. Do pomocy użyj narzędzia MCP 
                         type: "resource",
                         resource: {
                             uri: "moviemind://frontend/i18n-maps/pl",
-                            text: "Aktualne polskie tłumaczenia frontendu.",
+                            text: "Current Polish frontend translations.",
                         }
                     }
                 }
