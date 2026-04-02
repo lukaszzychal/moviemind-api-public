@@ -460,21 +460,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     
     if (name === "dispatch_job_retry") {
       return {
-         content: [{ type: "text", text: `Wszystkie opadłe Zadania z FailedJobs zrestartowane poprzez polecenie queue:retry all na warstwie CLI!` }]
+         content: [{ type: "text", text: `All failed tasks from FailedJobs restarted via queue:retry all CLI command!` }]
       };
     }
 
     if (name === "trigger_cache_clear") {
       const cacheKey = String(args?.cache_key || "all");
       return {
-        content: [{ type: "text", text: `Wywołano czyszczenie cache dla klucza: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
+        content: [{ type: "text", text: `Cache clear triggered for key: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
       };
     }
     
   } catch (err: any) {
     return {
       isError: true,
-      content: [{ type: "text", text: `Pojawił się błąd komendy bazy danych w MCP Serwerze: ${err.message}` }]
+      content: [{ type: "text", text: `Database command error occurred in MCP Server: ${err.message}` }]
     };
   }
   
@@ -594,7 +594,7 @@ async function run() {
       if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
         // Fallback to URI query parameters for initial setup
         if(req.query.token !== AUTH_TOKEN) {
-           return res.status(401).send("Unauthorized Access. Zły token Bearer!");
+           return res.status(401).send("Unauthorized Access. Invalid Bearer token!");
         }
       }
       next();
@@ -605,7 +605,7 @@ async function run() {
     app.get("/sse", async (req, res) => {
       sseTransport = new SSEServerTransport("/message", res);
       await server.connect(sseTransport);
-      console.log("Klient połączony prze SSE pomyślnie.");
+      console.log("Client connected via SSE successfully.");
     });
 
     app.post("/message", async (req, res) => {
@@ -618,13 +618,13 @@ async function run() {
 
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {
-      console.log(`MovieMind MCP Server Web (SSE) nasłuchuje na Web-Porcie ${PORT}`);
+      console.log(`MovieMind MCP Server Web (SSE) listening on port ${PORT}`);
     });
   } else {
     // Local STDIO diagnostic process (standard in/out for Docker or a local machine with Cursor)
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("MovieMind MCP Server uruchomiony w trybie terminala (STDIO). Oczekuje I/O...");
+    console.error("MovieMind MCP Server started in terminal mode (STDIO). Waiting for I/O...");
   }
 }
 
