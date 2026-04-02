@@ -639,7 +639,7 @@ async function run() {
       if (sseTransport) {
         await sseTransport.handlePostMessage(req, res, req.body);
       } else {
-        res.status(404).send(`Session not found. (session ID: ${sessionId || "empty/stripped"})`);
+        res.status(404).send("Session not found.");
       }
     });
 

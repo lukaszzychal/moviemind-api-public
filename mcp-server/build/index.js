@@ -528,7 +528,7 @@ async function run() {
                 await sseTransport.handlePostMessage(req, res, req.body);
             }
             else {
-                res.status(404).send(`Session not found. (session ID: ${sessionId || "empty/stripped"})`);
+                res.status(404).send("Session not found.");
             }
         });
         const PORT = process.env.PORT || 8080;
