@@ -44,6 +44,7 @@ const pool = new Pool({
 });
 
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/v1";
+const LARAVEL_API_KEY = process.env.LARAVEL_API_KEY;
 type McpRole = "end_user" | "devops" | "all";
 
 type McpResourceDefinition = {
@@ -125,10 +126,12 @@ const toolDefinitions: McpToolDefinition[] = [
       type: "object",
       properties: {
         entity_type: { type: "string", description: "Typ obiektu np: movie, person", enum: ["movie", "person", "tv_show", "tv_series"] },
-        entity_id: { type: "number", description: "ID obiektu w MovieMind bazy danych" },
+        slug: { type: "string", description: "Slug encji w backendzie Laravel, np. inception-2010" },
+        entity_id: { type: "string", description: "Legacy field; jeśli slug nie jest podany, zostanie wysłany jako slug do backendu" },
         locale: { type: "string", description: "Docelowy język (np. pl-PL)", default: "pl-PL" },
+        context_tag: { type: "string", description: "Opcjonalny kontekst generowania, np. modern albo critical" },
       },
-      required: ["entity_type", "entity_id"],
+      required: ["entity_type"],
     },
     roles: ["end_user", "devops"],
   },
@@ -150,7 +153,7 @@ const toolDefinitions: McpToolDefinition[] = [
     inputSchema: {
       type: "object",
       properties: {
-        job_id: { type: "number" },
+        job_id: { type: "string" },
       },
       required: ["job_id"],
     },
@@ -242,6 +245,62 @@ function ensurePromptAccess(name: string): void {
   if (!prompt || !isAllowedForCurrentRole(prompt.roles)) {
     throw new McpError(ErrorCode.InvalidRequest, "Prompt not found");
   }
+}
+
+function normalizeEntityType(entityType: string): string {
+  const entityTypeMap: Record<string, string> = {
+    movie: "MOVIE",
+    person: "PERSON",
+    actor: "PERSON",
+    tv_series: "TV_SERIES",
+    tv_show: "TV_SHOW",
+  };
+
+  return entityTypeMap[entityType.toLowerCase()] ?? entityType.toUpperCase();
+}
+
+async function parseLaravelJsonResponse(response: Response): Promise<unknown> {
+  const text = await response.text();
+
+  if (text === "") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return { raw: text };
+  }
+}
+
+async function callLaravelApi(
+  path: string,
+  init?: RequestInit,
+  options?: { requireApiKey?: boolean }
+): Promise<unknown> {
+  if (options?.requireApiKey && !LARAVEL_API_KEY) {
+    throw new Error("LARAVEL_API_KEY is required for this MCP tool.");
+  }
+
+  const headers = new Headers(init?.headers);
+  if (options?.requireApiKey && LARAVEL_API_KEY) {
+    headers.set("X-API-Key", LARAVEL_API_KEY);
+  }
+  if (init?.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${LARAVEL_API_URL}${path}`, {
+    ...init,
+    headers,
+  });
+
+  const payload = await parseLaravelJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(`Laravel API request failed with status ${response.status}: ${JSON.stringify(payload)}`);
+  }
+
+  return payload;
 }
 
 /**
@@ -362,16 +421,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     
     if (name === "check_job_status") {
-      const jobId = Number(args?.job_id);
-      const res = await pool.query(`SELECT id, status, result FROM ai_jobs WHERE id = $1`, [jobId]);
+      const jobId = String(args?.job_id || "").trim();
+      if (jobId === "") {
+        throw new Error("check_job_status requires job_id.");
+      }
+
+      const result = await callLaravelApi(`/jobs/${encodeURIComponent(jobId)}`);
       return {
-        content: [{ type: "text", text: res.rows.length > 0 ? JSON.stringify(res.rows[0], null, 2) : "Status: Not found. Job ID doesn't exist." }]
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
     }
     
     if (name === "generate_ai_description") {
+      const slug = String(args?.slug || args?.entity_id || "").trim();
+      if (slug === "") {
+        throw new Error("generate_ai_description requires either slug or entity_id.");
+      }
+
+      const payload = {
+        entity_type: normalizeEntityType(String(args?.entity_type || "")),
+        slug,
+        locale: args?.locale ? String(args.locale) : undefined,
+        context_tag: args?.context_tag ? String(args.context_tag) : undefined,
+      };
+      const result = await callLaravelApi(
+        "/generate",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        { requireApiKey: true }
+      );
+
       return {
-         content: [{ type: "text", text: `Zadanie AI zostało pomyślnie dopisane do kolejki asynchronicznej we wstrzykniętym REST-Call'u! (Mock)` }]
+         content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
     }
     
