@@ -607,6 +607,23 @@ Jesli budujesz serwer w TypeScript, zwykle masz dwie opcje:
 - uruchamiasz skompilowany plik `build/index.js`
 - albo uzywasz `ts-node` w trybie developerskim
 
+Jesli laczysz sie do serwera zdalnego przez `SSE`, konfiguracja klienta
+wyglada zwykle tak:
+
+```json
+{
+  "mcpServers": {
+    "my-remote-server": {
+      "type": "sse",
+      "url": "https://your-server.example.com/sse",
+      "headers": {
+        "Authorization": "Bearer replace_me"
+      }
+    }
+  }
+}
+```
+
 ## Najczestsze bledy na starcie
 
 - za duzo logiki w jednym pliku
