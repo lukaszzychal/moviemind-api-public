@@ -20,7 +20,7 @@ Konstrukcja w klasie transportowej ma nałożony obligatoryjny filtr adresowany 
 |----|---------------------------------|---------------------------------|------------------|---------------------------------------|-----------|
 | **SEC-01** | Weryfikacja odrzucenia bez Bearer | Serwer uruchomiony w trybie wirtualnym `env TRANSPORT_TYPE=sse` | Próba wykonania klienta zapytania WebHook "GET /sse" bez żadnego klucza w nagłówku. | Aplikacja zwraca twardy wyciek `HTTP 401 Unauthorized Access`. Brak zestawienia potoku zdarzeń EventSource. | P1(Krytyczny) |
 | **SEC-02** | Weryfikacja akceptacji przez QueryString (Fallback) | JWT wygasł na kliencie. | Podłączenie adresu sieciowego `GET /sse?token=DEBUG_TOKEN123`. | Utworzony po weryfikacji most SSE 24/7 pomyślnie emituje powitalny paczek od instancji "moviemind-mcp-server". | P2 |
-| **SEC-03** | Injection na `search_database_movies` | Aplikacja odblokowana | Zapytanie przez chat do bota (narzędzia `query` pola) w którym query SQL wynosi np. `' OR 1=1; DROP TABLE movies; --`. | Parametr wpada do paczki PostgreSQL ORM'u przez mechanizm Bindings (`$1`). Znacznik z dropem traktowany jest po prostu jak ciąg do "ILIKE", nie powodując egzekucji polecenia DML ani Exceptionu. | P1(Krytyczny) |
+| **SEC-03** | Injection na `search_database_movies` | Aplikacja odblokowana | Zapytanie przez chat do bota (narzędzia `query` pola) w którym query SQL wynosi np. `' OR 1=1; DROP TABLE movies; --`. | Tytuł trafia do `ILIKE` jako binding (`$1`). Opcjonalny `locale` jest whitelistą API i trafia jako `$2` (nie sklejany w SQL). | P1(Krytyczny) |
 
 ---
 

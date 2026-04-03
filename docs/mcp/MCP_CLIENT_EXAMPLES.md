@@ -36,18 +36,29 @@ Add to `~/.cursor/mcp.json` or your project's `.cursor/mcp.json`:
 ```
 
 **Usage:**
+
 - No local setup required
 - Access from anywhere
 - Requires authentication token
 - Uses public MovieMind API
 
 **How to use in Cursor:**
+
+Argument to the search tool is **`query`** (substring of title), not `title_query`.
+
 ```typescript
-// Call via MCP client in Cursor
+// Polish descriptions (default locale)
 await CallMcpTool({
   server: "user-moviemind_remote",
   toolName: "search_database_movies",
-  arguments: { title_query: "Matrix" }
+  arguments: { query: "Matrix" },
+});
+
+// Latest description for another locale (must match API enum)
+await CallMcpTool({
+  server: "user-moviemind_remote",
+  toolName: "search_database_movies",
+  arguments: { query: "Prestige", locale: "en-US" },
 });
 ```
 
@@ -77,6 +88,7 @@ await CallMcpTool({
 ```
 
 **Usage:**
+
 - Direct database access
 - Admin operations (retry failed jobs, clear cache)
 - Requires local Docker environment
@@ -86,7 +98,9 @@ await CallMcpTool({
 
 ## Configuration for Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Add to Claude Desktop config: on macOS
+`~/Library/Application Support/Claude/claude_desktop_config.json`, on Windows
+`%APPDATA%\Claude\claude_desktop_config.json`.
 
 ### Remote MCP via SSE
 
@@ -156,10 +170,10 @@ const client = new Client(
 
 await client.connect(transport);
 
-// Call tools
+// Call tools (see "Tool parameters" below for locale and generation)
 const result = await client.callTool({
   name: "search_database_movies",
-  arguments: { title_query: "Matrix" }
+  arguments: { query: "Matrix", locale: "pl-PL" },
 });
 ```
 
@@ -194,6 +208,34 @@ await client.connect(transport);
 
 ---
 
+## Tool parameters (MovieMind MCP)
+
+### `search_database_movies`
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `query` | yes | Substring matched against movie title (`ILIKE %query%`). |
+| `locale` | no | Language for `current_description`. Default `pl-PL`. Allowed: `en-US`, `pl-PL`, `de-DE`, `fr-FR`, `es-ES`. |
+
+`locale` is sent as a bound SQL parameter (`$2`), not concatenated into the query.
+
+Each row may include `current_description`, `context_tag`, `description_created_at`, and
+`description_locale` (the locale filter that was applied).
+
+### `generate_ai_description`
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `entity_type` | yes | Use lowercase in MCP: `movie`, `person`, `tv_show`, `tv_series` (API gets uppercase). |
+| `slug` or `entity_id` | one of them | Backend slug, e.g. `the-prestige-2006`. |
+| `locale` | no | e.g. `pl-PL`, `en-US` (must match API `Locale`). |
+| `context_tag` | no | `modern`, `critical`, `humorous` (lowercase), or `DEFAULT`. Wrong casing → **422**. |
+
+After `generate_ai_description`, poll **`check_job_status`** until `DONE`, then **`search_database_movies`**
+with the same **`locale`** to read the saved text.
+
+---
+
 ## Environment Variables Reference
 
 ### Required (for both STDIO and SSE)
@@ -221,9 +263,9 @@ await client.connect(transport);
 
 ### End-User Tools (available in both local and remote)
 
-- `search_database_movies` - Search movies by title
-- `generate_ai_description` - Generate AI description for a movie/person
-- `check_job_status` - Check generation job status
+- `search_database_movies` — `query` plus optional `locale` (default `pl-PL`)
+- `generate_ai_description` — queue AI text; set `locale` and lowercase `context_tag`
+- `check_job_status` — poll job by `job_id`
 
 ### DevOps Tools (available only in local STDIO)
 
@@ -265,7 +307,7 @@ async function test() {
   
   const result = await client.callTool({
     name: "search_database_movies",
-    arguments: { title_query: "Matrix" }
+    arguments: { query: "Matrix" },
   });
   
   console.log(JSON.stringify(result, null, 2));
@@ -304,6 +346,7 @@ curl http://localhost:3000/sse
 **Cause:** Environment variables are incorrect or database is not running.
 
 **Fix:**
+
 1. Check Docker: `docker compose ps`
 2. Verify env vars match your `.env` file
 3. For remote: ensure Railway env vars are set correctly
@@ -313,6 +356,16 @@ curl http://localhost:3000/sse
 **Cause:** Remote Railway server is running outdated code.
 
 **Fix:** Redeploy Railway after merging latest PR to `main`.
+
+### "search_database_movies: unsupported locale ..."
+
+**Cause:** `locale` is not one of the allowed API values.
+
+**Fix:** Use exactly `en-US`, `pl-PL`, `de-DE`, `fr-FR`, or `es-ES`, or omit `locale` for default Polish.
+
+### 422 on `context_tag`
+
+**Cause:** Backend expects enum values such as `modern` / `humorous` (lowercase), not `MODERN`.
 
 ### "LARAVEL_ADMIN_TOKEN is required"
 
