@@ -98,11 +98,17 @@ const resourceDefinitions: McpResourceDefinition[] = [
 const toolDefinitions: McpToolDefinition[] = [
   {
     name: "search_database_movies",
-    description: "Queries PostgreSQL relational database for movies by keyword or last name.",
+    description:
+      "Queries PostgreSQL for movies by title keyword. Optional locale picks the latest description for that locale (default pl-PL).",
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string" },
+        query: { type: "string", description: "Title search substring (ILIKE)" },
+        locale: {
+          type: "string",
+          description:
+            "BCP-47 locale for latest movie_descriptions row: en-US, pl-PL, de-DE, fr-FR, es-ES. Default pl-PL.",
+        },
       },
       required: ["query"],
     },
@@ -224,6 +230,23 @@ function ensurePromptAccess(name: string): void {
   }
 }
 
+/** Must match `App\Enums\Locale` values used in `movie_descriptions.locale`. */
+const MOVIE_SEARCH_LOCALES = ["en-US", "pl-PL", "de-DE", "fr-FR", "es-ES"] as const;
+type MovieSearchLocale = (typeof MOVIE_SEARCH_LOCALES)[number];
+
+function resolveMovieSearchLocale(raw: unknown): MovieSearchLocale {
+  const trimmed = String(raw ?? "").trim();
+  if (trimmed === "") {
+    return "pl-PL";
+  }
+  if ((MOVIE_SEARCH_LOCALES as readonly string[]).includes(trimmed)) {
+    return trimmed as MovieSearchLocale;
+  }
+  throw new Error(
+    `search_database_movies: unsupported locale "${trimmed}". Use one of: ${MOVIE_SEARCH_LOCALES.join(", ")} (or omit for default pl-PL).`
+  );
+}
+
 function normalizeEntityType(entityType: string): string {
   const t = entityType.toLowerCase();
   if (t === "movie") return "MOVIE";
@@ -324,7 +347,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     if (name === "search_database_movies") {
       const query = String(args?.query || "");
-      const res = await pool.query(`
+      const locale = resolveMovieSearchLocale(args?.locale);
+      const res = await pool.query(
+        `
         SELECT 
           m.id, 
           m.title, 
@@ -332,19 +357,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           m.release_year,
           d.text as current_description,
           d.context_tag,
-          d.created_at as description_created_at
+          d.created_at as description_created_at,
+          $2::text as description_locale
         FROM movies m 
         LEFT JOIN LATERAL (
           SELECT text, context_tag, created_at
           FROM movie_descriptions
-          WHERE movie_id = m.id AND locale = 'pl-PL'
+          WHERE movie_id = m.id AND locale = $2
           ORDER BY created_at DESC
           LIMIT 1
         ) d ON true
         WHERE m.title ILIKE $1 
         ORDER BY m.release_year DESC, m.title
         LIMIT 5
-      `, [`%${query}%`]);
+      `,
+        [`%${query}%`, locale]
+      );
       return {
         content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
       };
