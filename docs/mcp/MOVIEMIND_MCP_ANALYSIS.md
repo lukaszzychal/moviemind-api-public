@@ -298,3 +298,24 @@ Docelowo MovieMind powinien iść w ten układ:
 2. `End-User MCP` wdrażany jako osobny kontener na Railway.
 3. Oba warianty korzystają z osobnych narzędzi, zasobów i polityk
    dostępu.
+
+---
+
+## Przykłady konfiguracji klientów MCP
+
+Szczegółowe przykłady konfiguracji dla różnych klientów MCP (Cursor, Claude
+Desktop, generic SDK) oraz instrukcje testowania połączenia znajdziesz w:
+
+**[MCP_CLIENT_EXAMPLES.md](./MCP_CLIENT_EXAMPLES.md)**
+
+Zawiera:
+
+- Konfigurację dla Cursor IDE (`~/.cursor/mcp.json`)
+- Konfigurację dla Claude Desktop (`claude_desktop_config.json`)
+- Przykłady połączeń SSE i STDIO
+- Szczegóły zmiennych środowiskowych
+- Listę dostępnych tools, resources i prompts
+- Troubleshooting typowych problemów
+- Przykłady testowania połączenia
+
+Przykładowy plik konfiguracji dla Cursor: `.cursor/mcp.json.example`

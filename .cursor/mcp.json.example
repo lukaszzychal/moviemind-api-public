@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "moviemind_remote": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--sse",
+        "https://mcp-moviemind-api.up.railway.app/sse",
+        "--header",
+        "Authorization: Bearer YOUR_TOKEN_HERE"
+      ]
+    },
+    "moviemind_devops": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/moviemind-api-public/mcp-server/build/index.js"
+      ],
+      "env": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "5434",
+        "DB_DATABASE": "moviemind",
+        "DB_USERNAME": "moviemind",
+        "DB_PASSWORD": "moviemind",
+        "LARAVEL_API_URL": "http://localhost:8000/api/v1",
+        "LARAVEL_API_KEY": "your-api-key-here",
+        "LARAVEL_ADMIN_TOKEN": "your-admin-token-here"
+      }
+    }
+  }
+}
