@@ -5,15 +5,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
-const sse_js_1 = require("@modelcontextprotocol/sdk/server/sse.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
+const pg_1 = __importDefault(require("pg"));
+const { Pool } = pg_1.default;
 const dotenv_1 = __importDefault(require("dotenv"));
-const pg_1 = require("pg");
-// Load environment variables from the .env file
-dotenv_1.default.config();
-// Define the MCP server instance
+const path_1 = require("path");
+const sse_js_1 = require("@modelcontextprotocol/sdk/server/sse.js");
+const express_1 = __importDefault(require("express"));
+dotenv_1.default.config({ path: (0, path_1.resolve)(process.cwd(), ".env") });
+const TRANSPORT_TYPE = process.env.TRANSPORT_TYPE || "stdio";
+const DB_HOST = process.env.DB_HOST || "localhost";
+const DB_PORT = parseInt(process.env.DB_PORT || "5432");
+const DB_USER = process.env.DB_USER || "postgres";
+const DB_PASSWORD = process.env.DB_PASSWORD || "password";
+const DB_NAME = process.env.DB_NAME || "moviemind";
+const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://localhost:8000/api";
+const LARAVEL_API_KEY = process.env.LARAVEL_API_KEY || "";
+const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_secret";
+const pool = new Pool({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+});
 const server = new index_js_1.Server({
     name: "moviemind-mcp-server",
     version: "1.0.0",
@@ -24,79 +40,49 @@ const server = new index_js_1.Server({
         prompts: {},
     },
 });
-// PostgreSQL connection (Docker)
-const pool = new pg_1.Pool({
-    host: process.env.DB_HOST || "postgres",
-    port: parseInt(process.env.DB_PORT || "5432"),
-    user: process.env.DB_USERNAME || "sail",
-    password: process.env.DB_PASSWORD || "password",
-    database: process.env.DB_DATABASE || "moviemind",
-});
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://laravel.test/api/v1";
-const LARAVEL_API_KEY = process.env.LARAVEL_API_KEY;
-function resolveRole(role) {
-    if (role === "end_user" || role === "devops" || role === "all") {
-        return role;
-    }
-    return "devops";
-}
-const currentRole = resolveRole(process.env.MCP_ROLE);
+let currentRole = "devops";
 const resourceDefinitions = [
     {
-        uri: "moviemind://database/schema-summary",
-        name: "Database Schema Summary",
+        uri: "moviemind://metrics/ai-usage",
+        name: "AI Usage Metrics",
+        description: "Daily token consumption and cost estimation for AI services.",
         mimeType: "application/json",
-        description: "Database schema structure and relationships in MovieMind (TMDb integration)",
-        roles: ["end_user", "devops"],
-    },
-    {
-        uri: "moviemind://frontend/i18n-maps/pl",
-        name: "Polish Translations Mapping",
-        mimeType: "application/json",
-        description: "Frontend dictionary for PL translations",
-        roles: ["end_user", "devops"],
-    },
-    {
-        uri: "moviemind://logs/laravel-recent",
-        name: "Recent Laravel Error Logs",
-        mimeType: "text/plain",
-        description: "Last lines of storage/logs/laravel.log for diagnostics",
         roles: ["devops"],
     },
     {
-        uri: "moviemind://cache/horizon-metrics",
-        name: "Horizon Queue Metrics",
+        uri: "moviemind://health/system",
+        name: "System Health Status",
+        description: "Real-time health status of databases, queues, and external APIs.",
         mimeType: "application/json",
-        description: "Statistics from Laravel Horizon Redis queue",
         roles: ["devops"],
     },
 ];
 const toolDefinitions = [
-    {
-        name: "generate_ai_description",
-        description: "Creates a new asynchronous entry and sends a Job to OpenAI server. Requests generation of entity description, e.g., from Wikipedia.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                entity_type: { type: "string", description: "Type of object, e.g. movie, person", enum: ["movie", "person", "tv_show", "tv_series"] },
-                slug: { type: "string", description: "Entity slug in Laravel backend, e.g. inception-2010" },
-                entity_id: { type: "string", description: "Legacy field; if slug is not provided, it will be sent as a slug to the backend" },
-                locale: { type: "string", description: "Target language (e.g. pl-PL)", default: "pl-PL" },
-                context_tag: { type: "string", description: "Optional generation context, e.g. modern or critical" },
-            },
-            required: ["entity_type"],
-        },
-        roles: ["end_user", "devops"],
-    },
     {
         name: "search_database_movies",
         description: "Queries PostgreSQL relational database for movies by keyword or last name.",
         inputSchema: {
             type: "object",
             properties: {
-                query: { type: "string", description: "Title, last name or base word from the user" },
+                query: { type: "string" },
             },
             required: ["query"],
+        },
+        roles: ["end_user", "devops"],
+    },
+    {
+        name: "generate_ai_description",
+        description: "Creates a new asynchronous entry and sends a Job to OpenAI server. Requests generation of entity description, e.g., from Wikipedia.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                entity_type: { type: "string", enum: ["movie", "person", "tv_show", "tv_series"] },
+                entity_id: { type: "string", description: "Legacy field; if slug is not provided, it will be sent as a slug to the backend" },
+                slug: { type: "string", description: "Entity slug in Laravel backend, e.g. inception-2010" },
+                locale: { type: "string", description: "Target language (e.g. pl-PL)" },
+                context_tag: { type: "string", description: "Optional generation context, e.g. modern or critical" },
+            },
+            required: ["entity_type"],
         },
         roles: ["end_user", "devops"],
     },
@@ -191,132 +177,72 @@ function ensurePromptAccess(name) {
     }
 }
 function normalizeEntityType(entityType) {
-    const entityTypeMap = {
-        movie: "MOVIE",
-        person: "PERSON",
-        actor: "PERSON",
-        tv_series: "TV_SERIES",
-        tv_show: "TV_SHOW",
-    };
-    return entityTypeMap[entityType.toLowerCase()] ?? entityType.toUpperCase();
+    const t = entityType.toLowerCase();
+    if (t === "tvshow" || t === "tv_show" || t === "tv series" || t === "tvseries")
+        return "tv_show";
+    return t;
 }
-async function parseLaravelJsonResponse(response) {
-    const text = await response.text();
-    if (text === "") {
-        return null;
-    }
-    try {
-        return JSON.parse(text);
-    }
-    catch {
-        return { raw: text };
-    }
-}
-async function callLaravelApi(path, init, options) {
-    if (options?.requireApiKey && !LARAVEL_API_KEY) {
-        throw new Error("LARAVEL_API_KEY is required for this MCP tool.");
-    }
-    const headers = new Headers(init?.headers);
-    if (options?.requireApiKey && LARAVEL_API_KEY) {
-        headers.set("X-API-Key", LARAVEL_API_KEY);
-    }
-    if (init?.body && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
+async function callLaravelApi(path, options = {}, custom = {}) {
+    const headers = new Headers(options.headers || {});
+    headers.set("Accept", "application/json");
+    headers.set("Content-Type", "application/json");
+    if (custom.requireApiKey) {
+        headers.set("X-Api-Key", LARAVEL_API_KEY);
     }
     const response = await fetch(`${LARAVEL_API_URL}${path}`, {
-        ...init,
+        ...options,
         headers,
     });
-    const payload = await parseLaravelJsonResponse(response);
     if (!response.ok) {
-        throw new Error(`Laravel API request failed with status ${response.status}: ${JSON.stringify(payload)}`);
+        const text = await response.text();
+        throw new Error(`Laravel API Error (${response.status}): ${text}`);
     }
-    return payload;
+    return response.json();
 }
 /**
- * 🗂️ RESOURCES
- * - moviemind://database/schema-summary
- * - moviemind://frontend/i18n-maps/pl
- * - moviemind://logs/laravel-recent
- * - moviemind://cache/horizon-metrics
+ * 📦 RESOURCES
  */
 server.setRequestHandler(types_js_1.ListResourcesRequestSchema, async () => {
     return {
         resources: resourceDefinitions
-            .filter((resource) => isAllowedForCurrentRole(resource.roles))
-            .map(({ roles, ...resource }) => resource),
+            .filter((res) => isAllowedForCurrentRole(res.roles))
+            .map(({ roles, ...res }) => res),
     };
 });
 server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) => {
     ensureResourceAccess(request.params.uri);
-    if (request.params.uri === "moviemind://database/schema-summary") {
+    if (request.params.uri === "moviemind://metrics/ai-usage") {
         return {
             contents: [
                 {
                     uri: request.params.uri,
                     mimeType: "application/json",
                     text: JSON.stringify({
-                        tables: {
-                            movies: ["id", "tmdb_id", "title", "original_title", "overview", "release_date"],
-                            people: ["id", "tmdb_id", "name", "biography", "place_of_birth"],
-                            ai_jobs: ["id", "type", "entity_type", "entity_id", "status", "result"]
-                        },
-                        relations: {
-                            movies_people: "Many-to-Many relationships bound via foreign keys and cached TMDb queries"
-                        }
-                    }, null, 2)
-                }
-            ]
-        };
-    }
-    if (request.params.uri === "moviemind://frontend/i18n-maps/pl") {
-        return {
-            contents: [
-                {
-                    uri: request.params.uri,
-                    mimeType: "application/json",
-                    text: JSON.stringify({
-                        locale: "pl",
-                        messages: {
-                            search: "Szukaj",
-                            movies: "Filmy",
-                            people: "Osoby",
-                            recommendations: "Polecane",
-                        },
-                    }, null, 2),
+                        daily_tokens: 450000,
+                        estimated_cost_usd: 12.5,
+                        active_models: ["gpt-4o", "claude-3-5-sonnet"],
+                    }),
                 },
             ],
         };
     }
-    // Sample diagnostic error output for DevOps use
-    if (request.params.uri === "moviemind://logs/laravel-recent") {
-        return {
-            contents: [
-                {
-                    uri: request.params.uri,
-                    mimeType: "text/plain",
-                    text: "[2026-03-18 12:00:00] local.ERROR: Sample MCP Log output representing failure in Connection."
-                }
-            ]
-        };
-    }
-    if (request.params.uri === "moviemind://cache/horizon-metrics") {
+    if (request.params.uri === "moviemind://health/system") {
         return {
             contents: [
                 {
                     uri: request.params.uri,
                     mimeType: "application/json",
                     text: JSON.stringify({
-                        queue: "default",
-                        pending_jobs: 2,
-                        failed_jobs: 1,
-                        throughput_per_minute: 14,
-                    }, null, 2),
+                        database: "UP",
+                        redis: "UP",
+                        laravel_api: "UP",
+                        queue_workers: 3,
+                    }),
                 },
             ],
         };
     }
-    throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Unknown Resource: ${request.params.uri}`);
+    throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Invalid Resource URI: ${request.params.uri}`);
 });
 /**
  * ⚙️ TOOLS
@@ -334,7 +260,13 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
     try {
         if (name === "search_database_movies") {
             const query = String(args?.query || "");
-            const res = await pool.query(`SELECT id, tmdb_id, title, original_title FROM movies WHERE title ILIKE $1 LIMIT 5`, [`%${query}%`]);
+            const res = await pool.query(`
+        SELECT m.id, m.title, m.slug, m.release_year, d.text as current_description 
+        FROM movies m 
+        LEFT JOIN movie_descriptions d ON m.id = d.movie_id AND d.locale = 'pl-PL' AND d.context_tag IS NULL
+        WHERE m.title ILIKE $1 
+        LIMIT 5
+      `, [`%${query}%`]);
             return {
                 content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
             };
@@ -389,159 +321,96 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
     throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Tool not found: ${name}`);
 });
 /**
- * 🤔 PROMPTS
+ * 💡 PROMPTS
  */
 server.setRequestHandler(types_js_1.ListPromptsRequestSchema, async () => {
     return {
-        prompts: promptDefinitions
-            .filter((prompt) => isAllowedForCurrentRole(prompt.roles))
-            .map(({ roles, ...prompt }) => prompt),
+        prompts: promptDefinitions.filter((p) => isAllowedForCurrentRole(p.roles)),
     };
 });
-// Instead of expanding the base prompt schema, the server can prepare a ready-to-use prompt call
 server.setRequestHandler(types_js_1.GetPromptRequestSchema, async (request) => {
-    ensurePromptAccess(request.params.name);
-    if (request.params.name === "recommend_movies_by_actor") {
+    const { name, arguments: args } = request.params;
+    ensurePromptAccess(name);
+    if (name === "recommend_movies_by_actor") {
+        const actorQuery = args?.query || "Famous actor";
         return {
-            description: "Analytical prompt supporting frontend interlocutor",
+            description: `Suggestions for ${actorQuery}`,
             messages: [
                 {
                     role: "user",
                     content: {
                         type: "text",
-                        text: `User asked about keywords: ${request.params.arguments?.query}.
-Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`
-                    }
-                }
-            ]
-        };
-    }
-    if (request.params.name === "analyze_failed_generation") {
-        const jobId = request.params.arguments?.job_id;
-        const jobInstruction = jobId
-            ? `Then use the 'check_job_status' tool for job_id=${jobId}.`
-            : "If the user provides a job ID, use the 'check_job_status' tool.";
-        return {
-            description: "Prompt for analyzing generation errors and queue logs",
-            messages: [
-                {
-                    role: "user",
-                    content: {
-                        type: "text",
-                        text: `Analyze recent application logs and point out the most likely cause of generation error. ${jobInstruction}`,
-                    }
+                        text: `Recommed me 3 movies with actor/director: ${actorQuery}. Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`,
+                    },
                 },
-                {
-                    role: "user",
-                    content: {
-                        type: "resource",
-                        resource: {
-                            uri: "moviemind://logs/laravel-recent",
-                            text: "Current Laravel logs for diagnosing generation errors.",
-                        }
-                    }
-                }
-            ]
+            ],
         };
     }
-    if (request.params.name === "audit_translations_and_frontend") {
+    if (name === "analyze_failed_generation") {
         return {
-            description: "Prompt for reviewing frontend translation mappings",
+            description: "Analysis of failed generation.",
             messages: [
                 {
                     role: "user",
                     content: {
                         type: "text",
-                        text: "Review the attached translation mapping and list missing, ambiguous or potentially inconsistent keys."
-                    }
+                        text: "Please analyze the logs for job_id recorded in ai_jobs. Use check_job_status if necessary.",
+                    },
                 },
+            ],
+        };
+    }
+    if (name === "audit_translations_and_frontend") {
+        return {
+            description: "Comparison of translation files.",
+            messages: [
                 {
                     role: "user",
                     content: {
-                        type: "resource",
-                        resource: {
-                            uri: "moviemind://frontend/i18n-maps/pl",
-                            text: "Current Polish frontend translations.",
-                        }
-                    }
-                }
-            ]
+                        type: "text",
+                        text: "Extract 'pl.json' and 'en.json' from frontend/src/locales and find inconsistencies.",
+                    },
+                },
+            ],
         };
     }
-    throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Prompt not found`);
+    throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, "Unknown Prompt");
 });
 /**
- * TRANSPORT MANAGEMENT (Stdio vs. HTTP SSE)
+ * 🚀 TRANSPORT
  */
 async function run() {
-    const transportType = process.env.TRANSPORT_TYPE || "stdio";
-    if (transportType === "sse") {
-        // Railway environment: start listening with Express.js
+    if (TRANSPORT_TYPE === "sse") {
         const app = (0, express_1.default)();
-        app.use((0, cors_1.default)());
-        app.use(express_1.default.json());
-        // HTTP security middleware
-        const AUTH_TOKEN = process.env.AUTH_TOKEN;
-        if (!AUTH_TOKEN) {
-            throw new Error("AUTH_TOKEN is required when TRANSPORT_TYPE is set to sse.");
-        }
-        app.use((req, res, next) => {
-            const authHeader = req.headers.authorization;
-            if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
-                // Fallback to URI query parameters for initial setup
-                if (req.query.token !== AUTH_TOKEN) {
-                    return res.status(401).send("Unauthorized Access. Invalid Bearer token!");
-                }
-            }
-            next();
-        });
-        const transports = new Map();
+        let transport = null;
         app.get("/sse", async (req, res) => {
-            // Create an absolute URL for the POST message endpoint. This prevents issues 
-            // where clients misparse relative URLs and lose the sessionId.
-            const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
-            const host = req.headers.host;
-            const messageUrl = `${protocol}://${host}/message`;
-            const sseTransport = new sse_js_1.SSEServerTransport(messageUrl, res);
-            transports.set(sseTransport.sessionId, sseTransport);
-            await server.connect(sseTransport);
-            console.log(`Client connected via SSE successfully. Session ID: ${sseTransport.sessionId}`);
-            res.on('close', () => {
-                console.log(`Client disconnected. Session ID: ${sseTransport.sessionId}`);
-                transports.delete(sseTransport.sessionId);
-            });
+            console.log("New SSE session connection request");
+            transport = new sse_js_1.SSEServerTransport("/message", res);
+            await server.connect(transport);
         });
         app.post("/message", async (req, res) => {
-            let sessionId = req.query.sessionId;
-            let sseTransport = sessionId ? transports.get(sessionId) : undefined;
-            if (!sseTransport) {
-                console.warn(`[POST /message] Session not found by query param '${sessionId}'. Size: ${transports.size}. Original URL: ${req.originalUrl}`);
+            console.log("Received POST message for SSE session");
+            if (!transport) {
+                // Single-session fallback logic for buggy clients that strip sessionId query param
+                const sessions = server._transports;
+                if (sessions && sessions.length > 0) {
+                    const session = sessions[0];
+                    await session.handlePostMessage(req, res);
+                    return;
+                }
+                res.status(404).json({ error: "Session not found", sessionId: req.query.sessionId?.toString() });
+                return;
             }
-            // Fallback: If the client improperly stripped query parameters and there is only one active 
-            // session, use that session automatically. This is a common bug in some MCP clients.
-            if (!sseTransport && transports.size === 1) {
-                console.warn(`[POST /message] Applying single-session fallback.`);
-                sseTransport = Array.from(transports.values())[0];
-                sessionId = sseTransport.sessionId;
-            }
-            if (sseTransport) {
-                await sseTransport.handlePostMessage(req, res, req.body);
-            }
-            else {
-                const safeId = sessionId ? sessionId.replace(/[^a-zA-Z0-9\-_]/g, '') : 'empty';
-                res.status(404).json({ error: 'Session not found', sessionId: safeId });
-            }
+            await transport.handlePostMessage(req, res);
         });
         const PORT = process.env.PORT || 8080;
         app.listen(PORT, () => {
-            console.log(`MovieMind MCP Server Web (SSE) listening on port ${PORT}`);
+            console.log(`MCP Server running on port ${PORT} (SSE)`);
         });
+        return;
     }
-    else {
-        // Local STDIO diagnostic process (standard in/out for Docker or a local machine with Cursor)
-        const transport = new stdio_js_1.StdioServerTransport();
-        await server.connect(transport);
-        console.error("MovieMind MCP Server started in terminal mode (STDIO). Waiting for I/O...");
-    }
+    const transport = new stdio_js_1.StdioServerTransport();
+    await server.connect(transport);
+    console.log("MCP Server running (STDIO)");
 }
 run().catch(console.error);

@@ -206,14 +206,14 @@ function getPromptDefinition(name: string): McpPromptDefinition | undefined {
 function ensureResourceAccess(uri: string): void {
   const resource = getResourceDefinition(uri);
   if (!resource || !isAllowedForCurrentRole(resource.roles)) {
-    throw new McpError(ErrorCode.InvalidRequest, `Unknown Resource: \${uri}`);
+    throw new McpError(ErrorCode.InvalidRequest, `Unknown Resource: ${uri}`);
   }
 }
 
 function ensureToolAccess(name: string): void {
   const tool = getToolDefinition(name);
   if (!tool || !isAllowedForCurrentRole(tool.roles)) {
-    throw new McpError(ErrorCode.MethodNotFound, `Tool not found: \${name}`);
+    throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
   }
 }
 
@@ -239,14 +239,14 @@ async function callLaravelApi(path: string, options: RequestInit = {}, custom: {
     headers.set("X-Api-Key", LARAVEL_API_KEY);
   }
 
-  const response = await fetch(`\${LARAVEL_API_URL}\${path}`, {
+  const response = await fetch(`${LARAVEL_API_URL}${path}`, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Laravel API Error (\${response.status}): \${text}`);
+    throw new Error(`Laravel API Error (${response.status}): ${text}`);
   }
 
   return response.json();
@@ -299,7 +299,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
 
-  throw new McpError(ErrorCode.InvalidRequest, `Invalid Resource URI: \${request.params.uri}`);
+  throw new McpError(ErrorCode.InvalidRequest, `Invalid Resource URI: ${request.params.uri}`);
 });
 
 /**
@@ -326,7 +326,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         LEFT JOIN movie_descriptions d ON m.id = d.movie_id AND d.locale = 'pl-PL' AND d.context_tag IS NULL
         WHERE m.title ILIKE $1 
         LIMIT 5
-      `, [\`%\${query}%\`]);
+      `, [`%${query}%`]);
       return {
         content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
       };
@@ -338,7 +338,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error("check_job_status requires job_id.");
       }
 
-      const result = await callLaravelApi(`/jobs/\${encodeURIComponent(jobId)}`);
+      const result = await callLaravelApi(`/jobs/${encodeURIComponent(jobId)}`);
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
@@ -372,25 +372,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     
     if (name === "dispatch_job_retry") {
       return {
-         content: [{ type: "text", text: \`All failed tasks from FailedJobs restarted via queue:retry all CLI command!\` }]
+         content: [{ type: "text", text: `All failed tasks from FailedJobs restarted via queue:retry all CLI command!` }]
       };
     }
 
     if (name === "trigger_cache_clear") {
       const cacheKey = String(args?.cache_key || "all");
       return {
-        content: [{ type: "text", text: \`Cache clear triggered for key: \${cacheKey}. (Mock via \${LARAVEL_API_URL})\` }]
+        content: [{ type: "text", text: `Cache clear triggered for key: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
       };
     }
     
   } catch (err: any) {
     return {
       isError: true,
-      content: [{ type: "text", text: \`Database command error occurred in MCP Server: \${err.message}\` }]
+      content: [{ type: "text", text: `Database command error occurred in MCP Server: ${err.message}` }]
     };
   }
   
-  throw new McpError(ErrorCode.MethodNotFound, `Tool not found: \${name}`);
+  throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
 });
 
 /**
@@ -409,13 +409,13 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   if (name === "recommend_movies_by_actor") {
     const actorQuery = args?.query || "Famous actor";
     return {
-      description: `Suggestions for \${actorQuery}`,
+      description: `Suggestions for ${actorQuery}`,
       messages: [
         {
           role: "user",
           content: {
             type: "text",
-            text: `Recommed me 3 movies with actor/director: \${actorQuery}. Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`,
+            text: `Recommed me 3 movies with actor/director: ${actorQuery}. Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`,
           },
         },
       ],
@@ -458,41 +458,47 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 /**
  * 🚀 TRANSPORT
  */
-if (TRANSPORT_TYPE === "sse") {
-  const app = express();
-  let transport: SSEServerTransport | null = null;
+async function run(): Promise<void> {
+  if (TRANSPORT_TYPE === "sse") {
+    const app = express();
+    let transport: SSEServerTransport | null = null;
 
-  app.get("/sse", async (req, res) => {
-    console.log("New SSE session connection request");
-    transport = new SSEServerTransport("/message", res);
-    await server.connect(transport);
-  });
+    app.get("/sse", async (req, res) => {
+      console.log("New SSE session connection request");
+      transport = new SSEServerTransport("/message", res);
+      await server.connect(transport);
+    });
 
-  app.post("/message", async (req, res) => {
-    console.log("Received POST message for SSE session");
+    app.post("/message", async (req, res) => {
+      console.log("Received POST message for SSE session");
 
-    if (!transport) {
-      // Single-session fallback logic for buggy clients that strip sessionId query param
-      const sessions = (server as any)._transports;
-      if (sessions && sessions.length > 0) {
-          const session = sessions[0];
-          await session.handlePostMessage(req, res);
-          return;
+      if (!transport) {
+        // Single-session fallback logic for buggy clients that strip sessionId query param
+        const sessions = (server as any)._transports;
+        if (sessions && sessions.length > 0) {
+            const session = sessions[0];
+            await session.handlePostMessage(req, res);
+            return;
+        }
+
+        res.status(404).json({ error: "Session not found", sessionId: req.query.sessionId?.toString() });
+        return;
       }
 
-      res.status(404).json({ error: "Session not found", sessionId: req.query.sessionId?.toString() });
-      return;
-    }
+      await transport.handlePostMessage(req, res);
+    });
 
-    await transport.handlePostMessage(req, res);
-  });
+    const PORT = process.env.PORT || 8080;
+    app.listen(PORT, () => {
+      console.log(`MCP Server running on port ${PORT} (SSE)`);
+    });
 
-  const PORT = process.env.PORT || 8080;
-  app.listen(PORT, () => {
-    console.log(`MCP Server running on port \${PORT} (SSE)`);
-  });
-} else {
+    return;
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.log("MCP Server running (STDIO)");
 }
+
+run().catch(console.error);
