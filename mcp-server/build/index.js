@@ -268,10 +268,24 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         if (name === "search_database_movies") {
             const query = String(args?.query || "");
             const res = await pool.query(`
-        SELECT m.id, m.title, m.slug, m.release_year, d.text as current_description 
+        SELECT 
+          m.id, 
+          m.title, 
+          m.slug, 
+          m.release_year,
+          d.text as current_description,
+          d.context_tag,
+          d.created_at as description_created_at
         FROM movies m 
-        LEFT JOIN movie_descriptions d ON m.id = d.movie_id AND d.locale = 'pl-PL' AND d.context_tag IS NULL
+        LEFT JOIN LATERAL (
+          SELECT text, context_tag, created_at
+          FROM movie_descriptions
+          WHERE movie_id = m.id AND locale = 'pl-PL'
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) d ON true
         WHERE m.title ILIKE $1 
+        ORDER BY m.release_year DESC, m.title
         LIMIT 5
       `, [`%${query}%`]);
             return {
