@@ -178,9 +178,16 @@ function ensurePromptAccess(name) {
 }
 function normalizeEntityType(entityType) {
     const t = entityType.toLowerCase();
-    if (t === "tvshow" || t === "tv_show" || t === "tv series" || t === "tvseries")
-        return "tv_show";
-    return t;
+    if (t === "movie")
+        return "MOVIE";
+    if (t === "person" || t === "actor")
+        return "PERSON";
+    if (t === "tv_show" || t === "tvshow" || t === "tv show")
+        return "TV_SHOW";
+    if (t === "tv_series" || t === "tvseries" || t === "tv series")
+        return "TV_SERIES";
+    // If already uppercase, return as-is
+    return entityType.toUpperCase();
 }
 async function callLaravelApi(path, options = {}, custom = {}) {
     const headers = new Headers(options.headers || {});
