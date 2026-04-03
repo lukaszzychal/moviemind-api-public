@@ -51,3 +51,4 @@ chatgpt2
 /private/
 
 .php-cs-fixer.cache
+test-mcp-remote.js
