@@ -99,7 +99,7 @@ const toolDefinitions: McpToolDefinition[] = [
   {
     name: "search_database_movies",
     description:
-      "Queries PostgreSQL for movies by title keyword. Optional locale picks the latest description for that locale (default pl-PL).",
+      "Queries PostgreSQL for movies by title substring. Optional locale selects the latest description for that locale (default pl-PL).",
     inputSchema: {
       type: "object",
       properties: {
@@ -124,7 +124,11 @@ const toolDefinitions: McpToolDefinition[] = [
         entity_id: { type: "string", description: "Legacy field; if slug is not provided, it will be sent as a slug to the backend" },
         slug: { type: "string", description: "Entity slug in Laravel backend, e.g. inception-2010" },
         locale: { type: "string", description: "Target language (e.g. pl-PL)" },
-        context_tag: { type: "string", description: "Optional generation context, e.g. modern or critical" },
+        context_tag: {
+          type: "string",
+          description:
+            "Style: modern, critical, humorous (lowercase), or DEFAULT — must match API ContextTag enum",
+        },
       },
       required: ["entity_type"],
     },

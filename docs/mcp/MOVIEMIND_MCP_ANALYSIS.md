@@ -123,6 +123,11 @@ Dla `End-User MCP` sens mają:
 - `search_database_movies`,
 - `check_job_status`.
 
+`search_database_movies` przyjmuje **`query`** (fragment tytułu) oraz opcjonalnie **`locale`**
+(`en-US`, `pl-PL`, `de-DE`, `fr-FR`, `es-ES`; domyślnie `pl-PL`), żeby w polu
+`current_description` pokazać **najnowszy** opis w wybranym języku — bez
+sztywnego `pl-PL` w SQL.
+
 Dla `DevOps MCP` sens mają dodatkowo:
 
 - `dispatch_job_retry`,
