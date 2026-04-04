@@ -22,6 +22,54 @@ const DB_NAME = process.env.DB_NAME || "moviemind";
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://localhost:8000/api";
 const LARAVEL_API_KEY = process.env.LARAVEL_API_KEY || "";
 const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_secret";
+/** Supports base ending with `/api` or `/api/v1` (see docs MCP_CLIENT_EXAMPLES). */
+function resolveV1Url(relativePath) {
+    const base = LARAVEL_API_URL.replace(/\/$/, "");
+    const path = relativePath.startsWith("/") ? relativePath : `/${relativePath}`;
+    if (base.endsWith("/v1")) {
+        return `${base}${path}`;
+    }
+    return `${base}/v1${path}`;
+}
+function buildQueryString(params) {
+    const parts = [];
+    for (const [key, val] of Object.entries(params)) {
+        if (val === undefined || val === null || val === "") {
+            continue;
+        }
+        if (Array.isArray(val)) {
+            for (const item of val) {
+                if (item === undefined || item === null || item === "") {
+                    continue;
+                }
+                parts.push(`${encodeURIComponent(key)}[]=${encodeURIComponent(String(item))}`);
+            }
+        }
+        else {
+            parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(val))}`);
+        }
+    }
+    return parts.length > 0 ? `?${parts.join("&")}` : "";
+}
+async function callLaravelGet(pathUnderV1, query = {}, options = {}) {
+    const okStatuses = options.okStatuses ?? [200];
+    const url = `${resolveV1Url(pathUnderV1)}${buildQueryString(query)}`;
+    const headers = new Headers();
+    headers.set("Accept", "application/json");
+    const response = await fetch(url, { method: "GET", headers });
+    const text = await response.text();
+    let data;
+    try {
+        data = text ? JSON.parse(text) : null;
+    }
+    catch {
+        data = text;
+    }
+    if (!okStatuses.includes(response.status)) {
+        throw new Error(`Laravel API Error (${response.status}): ${typeof data === "string" ? data : JSON.stringify(data)}`);
+    }
+    return { status: response.status, data };
+}
 const pool = new Pool({
     host: DB_HOST,
     port: DB_PORT,
@@ -64,7 +112,7 @@ const resourceDefinitions = [
 const toolDefinitions = [
     {
         name: "search_database_movies",
-        description: "Queries PostgreSQL for movies by title substring. Optional locale selects the latest description for that locale (default pl-PL).",
+        description: "Dev/debug only: direct PostgreSQL ILIKE on the movies table (+ latest description per locale). Prefer search_entities for normal use (public API: local + TMDB).",
         inputSchema: {
             type: "object",
             properties: {
@@ -75,6 +123,78 @@ const toolDefinitions = [
                 },
             },
             required: ["query"],
+        },
+        roles: ["devops"],
+    },
+    {
+        name: "search_entities",
+        description: "Search movies, people, TV series, or TV shows via the public MovieMind API (local DB + TMDB for external hits; no TVMaze in search results). Returns SearchResult JSON (use get_entity for full description text).",
+        inputSchema: {
+            type: "object",
+            properties: {
+                entity_type: {
+                    type: "string",
+                    enum: ["movie", "person", "tv_series", "tv_show"],
+                    description: "Resource type matching API routes",
+                },
+                q: { type: "string", description: "Search query (title / name)" },
+                year: {
+                    type: "integer",
+                    description: "Release year (movies) or first-air year (tv_series, tv_show)",
+                },
+                birth_year: { type: "integer", description: "For person search only" },
+                birthplace: { type: "string", description: "For person search only" },
+                role: {
+                    type: "array",
+                    items: { type: "string", enum: ["ACTOR", "DIRECTOR", "WRITER", "PRODUCER"] },
+                    description: "For person search (e.g. ACTOR)",
+                },
+                movie: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "For person search: movie slugs",
+                },
+                source: { type: "string", enum: ["local", "external"], description: "Movie search only: restrict source" },
+                director: { type: "string", description: "Movie search only" },
+                actor: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Movie search: actor name filters (repeat API actor[] semantics)",
+                },
+                page: { type: "integer" },
+                per_page: { type: "integer" },
+                sort: { type: "string" },
+                order: { type: "string", enum: ["asc", "desc"] },
+                local_limit: { type: "integer" },
+                external_limit: { type: "integer" },
+            },
+            required: ["entity_type", "q"],
+        },
+        roles: ["end_user", "devops"],
+    },
+    {
+        name: "get_entity",
+        description: "GET a single movie, person, TV series, or TV show by slug from the public API (includes AI description when present). On 404, use search_entities or generate_ai_description.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                entity_type: {
+                    type: "string",
+                    enum: ["movie", "person", "tv_series", "tv_show"],
+                },
+                slug: { type: "string", description: "Entity slug from search results" },
+                description_id: {
+                    type: "string",
+                    description: "Optional UUID for movie / tv_series / tv_show (description_id query param)",
+                },
+                bio_id: { type: "string", description: "Optional UUID for person (bio_id query param)" },
+                locale: { type: "string", description: "Optional locale (e.g. pl-PL) for movie show" },
+                selected_slug: {
+                    type: "string",
+                    description: "Disambiguation: maps to query param slug when picking among options",
+                },
+            },
+            required: ["entity_type", "slug"],
         },
         roles: ["end_user", "devops"],
     },
@@ -212,14 +332,156 @@ function normalizeEntityType(entityType) {
     // If already uppercase, return as-is
     return entityType.toUpperCase();
 }
-async function callLaravelApi(path, options = {}, custom = {}) {
+function parseSearchEntityType(raw) {
+    const t = String(raw ?? "").toLowerCase().trim();
+    if (t === "movie" || t === "person" || t === "tv_series" || t === "tv_show") {
+        return t;
+    }
+    throw new Error(`search_entities: invalid entity_type "${raw}". Use movie, person, tv_series, or tv_show.`);
+}
+function searchPathForEntityType(entityType) {
+    switch (entityType) {
+        case "movie":
+            return "movies/search";
+        case "person":
+            return "people/search";
+        case "tv_series":
+            return "tv-series/search";
+        case "tv_show":
+            return "tv-shows/search";
+        default: {
+            const _exhaustive = entityType;
+            return _exhaustive;
+        }
+    }
+}
+function showPathForEntityType(entityType, slug) {
+    const enc = encodeURIComponent(slug);
+    switch (entityType) {
+        case "movie":
+            return `movies/${enc}`;
+        case "person":
+            return `people/${enc}`;
+        case "tv_series":
+            return `tv-series/${enc}`;
+        case "tv_show":
+            return `tv-shows/${enc}`;
+        default: {
+            const _exhaustive = entityType;
+            return _exhaustive;
+        }
+    }
+}
+function buildSearchQueryForEntity(entityType, args) {
+    const q = { q: String(args.q ?? "").trim() };
+    const num = (key) => {
+        const v = args[key];
+        if (v === undefined || v === null || v === "") {
+            return undefined;
+        }
+        const n = Number(v);
+        return Number.isFinite(n) ? n : undefined;
+    };
+    const str = (key) => {
+        const v = args[key];
+        if (v === undefined || v === null) {
+            return undefined;
+        }
+        const s = String(v).trim();
+        return s === "" ? undefined : s;
+    };
+    const page = num("page");
+    const perPage = num("per_page");
+    if (page !== undefined) {
+        q.page = page;
+    }
+    if (perPage !== undefined) {
+        q.per_page = perPage;
+    }
+    const sort = str("sort");
+    const order = str("order");
+    if (sort !== undefined) {
+        q.sort = sort;
+    }
+    if (order !== undefined) {
+        q.order = order;
+    }
+    const localLimit = num("local_limit");
+    const extLimit = num("external_limit");
+    if (localLimit !== undefined) {
+        q.local_limit = localLimit;
+    }
+    if (extLimit !== undefined) {
+        q.external_limit = extLimit;
+    }
+    if (entityType === "movie") {
+        const y = num("year");
+        if (y !== undefined) {
+            q.year = y;
+        }
+        const src = str("source");
+        if (src !== undefined) {
+            q.source = src;
+        }
+        const director = str("director");
+        if (director !== undefined) {
+            q.director = director;
+        }
+        if (Array.isArray(args.actor)) {
+            const actors = args.actor.map((a) => String(a).trim()).filter((a) => a !== "");
+            if (actors.length > 0) {
+                q.actor = actors;
+            }
+        }
+        else if (typeof args.actor === "string" && args.actor.trim() !== "") {
+            q.actor = [args.actor.trim()];
+        }
+    }
+    if (entityType === "person") {
+        const by = num("birth_year");
+        if (by !== undefined) {
+            q.birth_year = by;
+        }
+        const bp = str("birthplace");
+        if (bp !== undefined) {
+            q.birthplace = bp;
+        }
+        if (Array.isArray(args.role)) {
+            const roles = args.role.map((r) => String(r).trim()).filter((r) => r !== "");
+            if (roles.length > 0) {
+                q.role = roles;
+            }
+        }
+        else if (typeof args.role === "string" && args.role.trim() !== "") {
+            q.role = [args.role.trim()];
+        }
+        if (Array.isArray(args.movie)) {
+            const movies = args.movie.map((m) => String(m).trim()).filter((m) => m !== "");
+            if (movies.length > 0) {
+                q.movie = movies;
+            }
+        }
+        else if (typeof args.movie === "string" && args.movie.trim() !== "") {
+            q.movie = [args.movie.trim()];
+        }
+    }
+    if (entityType === "tv_series" || entityType === "tv_show") {
+        const y = num("year");
+        if (y !== undefined) {
+            q.year = y;
+        }
+    }
+    return q;
+}
+async function callLaravelApi(pathUnderV1, options = {}, custom = {}) {
+    const path = pathUnderV1.startsWith("/") ? pathUnderV1.slice(1) : pathUnderV1;
     const headers = new Headers(options.headers || {});
     headers.set("Accept", "application/json");
     headers.set("Content-Type", "application/json");
     if (custom.requireApiKey) {
         headers.set("X-Api-Key", LARAVEL_API_KEY);
     }
-    const response = await fetch(`${LARAVEL_API_URL}${path}`, {
+    const response = await fetch(resolveV1Url(path), {
         ...options,
         headers,
     });
@@ -318,12 +580,50 @@ function registerMcpHandlers(server) {
                     content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
                 };
             }
+            if (name === "search_entities") {
+                const entityType = parseSearchEntityType(args?.entity_type);
+                const path = searchPathForEntityType(entityType);
+                const query = buildSearchQueryForEntity(entityType, (args ?? {}));
+                const { status, data } = await callLaravelGet(path, query, { okStatuses: [200] });
+                return {
+                    content: [{ type: "text", text: JSON.stringify({ status, data }, null, 2) }],
+                };
+            }
+            if (name === "get_entity") {
+                const entityType = parseSearchEntityType(args?.entity_type);
+                const slug = String(args?.slug ?? "").trim();
+                if (slug === "") {
+                    throw new Error("get_entity requires slug.");
+                }
+                const path = showPathForEntityType(entityType, slug);
+                const query = {};
+                const desc = String(args?.description_id ?? "").trim();
+                if (desc !== "") {
+                    query.description_id = desc;
+                }
+                const bio = String(args?.bio_id ?? "").trim();
+                if (bio !== "") {
+                    query.bio_id = bio;
+                }
+                const locale = String(args?.locale ?? "").trim();
+                if (locale !== "") {
+                    query.locale = locale;
+                }
+                const selected = String(args?.selected_slug ?? "").trim();
+                if (selected !== "") {
+                    query.slug = selected;
+                }
+                const { status, data } = await callLaravelGet(path, query, { okStatuses: [200, 404, 422] });
+                return {
+                    content: [{ type: "text", text: JSON.stringify({ status, data }, null, 2) }],
+                };
+            }
             if (name === "check_job_status") {
                 const jobId = String(args?.job_id || "").trim();
                 if (jobId === "") {
                     throw new Error("check_job_status requires job_id.");
                 }
-                const result = await callLaravelApi(`/jobs/${encodeURIComponent(jobId)}`);
+                const result = await callLaravelApi(`jobs/${encodeURIComponent(jobId)}`);
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
                 };
@@ -339,7 +639,7 @@ function registerMcpHandlers(server) {
                     locale: args?.locale ? String(args.locale) : undefined,
                     context_tag: args?.context_tag ? String(args.context_tag) : undefined,
                 };
-                const result = await callLaravelApi("/generate", {
+                const result = await callLaravelApi("generate", {
                     method: "POST",
                     body: JSON.stringify(payload),
                 }, { requireApiKey: true });
@@ -387,7 +687,7 @@ function registerMcpHandlers(server) {
                         role: "user",
                         content: {
                             type: "text",
-                            text: `Recommed me 3 movies with actor/director: ${actorQuery}. Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`,
+                            text: `Recommed me 3 movies with actor/director: ${actorQuery}. Provide a list of top three recommendations. Use the search_entities tool (entity_type movie) against the public API, then get_entity for details.`,
                         },
                     },
                 ],
