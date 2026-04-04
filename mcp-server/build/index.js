@@ -30,16 +30,20 @@ const pool = new Pool({
     database: DB_NAME,
     ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 });
-const server = new index_js_1.Server({
-    name: "moviemind-mcp-server",
-    version: "1.0.0",
-}, {
-    capabilities: {
-        resources: {},
-        tools: {},
-        prompts: {},
-    },
-});
+function createMcpServer() {
+    const server = new index_js_1.Server({
+        name: "moviemind-mcp-server",
+        version: "1.0.0",
+    }, {
+        capabilities: {
+            resources: {},
+            tools: {},
+            prompts: {},
+        },
+    });
+    registerMcpHandlers(server);
+    return server;
+}
 let currentRole = "devops";
 const resourceDefinitions = [
     {
@@ -226,68 +230,69 @@ async function callLaravelApi(path, options = {}, custom = {}) {
     return response.json();
 }
 /**
- * 📦 RESOURCES
+ * 📦 RESOURCES / TOOLS / PROMPTS (per-Server instance for SSE multi-session)
  */
-server.setRequestHandler(types_js_1.ListResourcesRequestSchema, async () => {
-    return {
-        resources: resourceDefinitions
-            .filter((res) => isAllowedForCurrentRole(res.roles))
-            .map(({ roles, ...res }) => res),
-    };
-});
-server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) => {
-    ensureResourceAccess(request.params.uri);
-    if (request.params.uri === "moviemind://metrics/ai-usage") {
+function registerMcpHandlers(server) {
+    server.setRequestHandler(types_js_1.ListResourcesRequestSchema, async () => {
         return {
-            contents: [
-                {
-                    uri: request.params.uri,
-                    mimeType: "application/json",
-                    text: JSON.stringify({
-                        daily_tokens: 450000,
-                        estimated_cost_usd: 12.5,
-                        active_models: ["gpt-4o", "claude-3-5-sonnet"],
-                    }),
-                },
-            ],
+            resources: resourceDefinitions
+                .filter((res) => isAllowedForCurrentRole(res.roles))
+                .map(({ roles, ...res }) => res),
         };
-    }
-    if (request.params.uri === "moviemind://health/system") {
+    });
+    server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) => {
+        ensureResourceAccess(request.params.uri);
+        if (request.params.uri === "moviemind://metrics/ai-usage") {
+            return {
+                contents: [
+                    {
+                        uri: request.params.uri,
+                        mimeType: "application/json",
+                        text: JSON.stringify({
+                            daily_tokens: 450000,
+                            estimated_cost_usd: 12.5,
+                            active_models: ["gpt-4o", "claude-3-5-sonnet"],
+                        }),
+                    },
+                ],
+            };
+        }
+        if (request.params.uri === "moviemind://health/system") {
+            return {
+                contents: [
+                    {
+                        uri: request.params.uri,
+                        mimeType: "application/json",
+                        text: JSON.stringify({
+                            database: "UP",
+                            redis: "UP",
+                            laravel_api: "UP",
+                            queue_workers: 3,
+                        }),
+                    },
+                ],
+            };
+        }
+        throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Invalid Resource URI: ${request.params.uri}`);
+    });
+    /**
+     * ⚙️ TOOLS
+     */
+    server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
         return {
-            contents: [
-                {
-                    uri: request.params.uri,
-                    mimeType: "application/json",
-                    text: JSON.stringify({
-                        database: "UP",
-                        redis: "UP",
-                        laravel_api: "UP",
-                        queue_workers: 3,
-                    }),
-                },
-            ],
+            tools: toolDefinitions
+                .filter((tool) => isAllowedForCurrentRole(tool.roles))
+                .map(({ roles, ...tool }) => tool),
         };
-    }
-    throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, `Invalid Resource URI: ${request.params.uri}`);
-});
-/**
- * ⚙️ TOOLS
- */
-server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
-    return {
-        tools: toolDefinitions
-            .filter((tool) => isAllowedForCurrentRole(tool.roles))
-            .map(({ roles, ...tool }) => tool),
-    };
-});
-server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
-    const { name, arguments: args } = request.params;
-    ensureToolAccess(name);
-    try {
-        if (name === "search_database_movies") {
-            const query = String(args?.query || "");
-            const locale = resolveMovieSearchLocale(args?.locale);
-            const res = await pool.query(`
+    });
+    server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
+        const { name, arguments: args } = request.params;
+        ensureToolAccess(name);
+        try {
+            if (name === "search_database_movies") {
+                const query = String(args?.query || "");
+                const locale = resolveMovieSearchLocale(args?.locale);
+                const res = await pool.query(`
         SELECT 
           m.id, 
           m.title, 
@@ -309,141 +314,161 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         ORDER BY m.release_year DESC, m.title
         LIMIT 5
       `, [`%${query}%`, locale]);
-            return {
-                content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
-            };
-        }
-        if (name === "check_job_status") {
-            const jobId = String(args?.job_id || "").trim();
-            if (jobId === "") {
-                throw new Error("check_job_status requires job_id.");
+                return {
+                    content: [{ type: "text", text: JSON.stringify(res.rows, null, 2) }]
+                };
             }
-            const result = await callLaravelApi(`/jobs/${encodeURIComponent(jobId)}`);
-            return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
-            };
-        }
-        if (name === "generate_ai_description") {
-            const slug = String(args?.slug || args?.entity_id || "").trim();
-            if (slug === "") {
-                throw new Error("generate_ai_description requires either slug or entity_id.");
+            if (name === "check_job_status") {
+                const jobId = String(args?.job_id || "").trim();
+                if (jobId === "") {
+                    throw new Error("check_job_status requires job_id.");
+                }
+                const result = await callLaravelApi(`/jobs/${encodeURIComponent(jobId)}`);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+                };
             }
-            const payload = {
-                entity_type: normalizeEntityType(String(args?.entity_type || "")),
-                slug,
-                locale: args?.locale ? String(args.locale) : undefined,
-                context_tag: args?.context_tag ? String(args.context_tag) : undefined,
-            };
-            const result = await callLaravelApi("/generate", {
-                method: "POST",
-                body: JSON.stringify(payload),
-            }, { requireApiKey: true });
+            if (name === "generate_ai_description") {
+                const slug = String(args?.slug || args?.entity_id || "").trim();
+                if (slug === "") {
+                    throw new Error("generate_ai_description requires either slug or entity_id.");
+                }
+                const payload = {
+                    entity_type: normalizeEntityType(String(args?.entity_type || "")),
+                    slug,
+                    locale: args?.locale ? String(args.locale) : undefined,
+                    context_tag: args?.context_tag ? String(args.context_tag) : undefined,
+                };
+                const result = await callLaravelApi("/generate", {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                }, { requireApiKey: true });
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+                };
+            }
+            if (name === "dispatch_job_retry") {
+                return {
+                    content: [{ type: "text", text: `All failed tasks from FailedJobs restarted via queue:retry all CLI command!` }]
+                };
+            }
+            if (name === "trigger_cache_clear") {
+                const cacheKey = String(args?.cache_key || "all");
+                return {
+                    content: [{ type: "text", text: `Cache clear triggered for key: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
+                };
+            }
+        }
+        catch (err) {
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+                isError: true,
+                content: [{ type: "text", text: `Database command error occurred in MCP Server: ${err.message}` }]
             };
         }
-        if (name === "dispatch_job_retry") {
+        throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Tool not found: ${name}`);
+    });
+    /**
+     * 💡 PROMPTS
+     */
+    server.setRequestHandler(types_js_1.ListPromptsRequestSchema, async () => {
+        return {
+            prompts: promptDefinitions.filter((p) => isAllowedForCurrentRole(p.roles)),
+        };
+    });
+    server.setRequestHandler(types_js_1.GetPromptRequestSchema, async (request) => {
+        const { name, arguments: args } = request.params;
+        ensurePromptAccess(name);
+        if (name === "recommend_movies_by_actor") {
+            const actorQuery = args?.query || "Famous actor";
             return {
-                content: [{ type: "text", text: `All failed tasks from FailedJobs restarted via queue:retry all CLI command!` }]
+                description: `Suggestions for ${actorQuery}`,
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: `Recommed me 3 movies with actor/director: ${actorQuery}. Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`,
+                        },
+                    },
+                ],
             };
         }
-        if (name === "trigger_cache_clear") {
-            const cacheKey = String(args?.cache_key || "all");
+        if (name === "analyze_failed_generation") {
             return {
-                content: [{ type: "text", text: `Cache clear triggered for key: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
+                description: "Analysis of failed generation.",
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: "Please analyze the logs for job_id recorded in ai_jobs. Use check_job_status if necessary.",
+                        },
+                    },
+                ],
             };
         }
-    }
-    catch (err) {
-        return {
-            isError: true,
-            content: [{ type: "text", text: `Database command error occurred in MCP Server: ${err.message}` }]
-        };
-    }
-    throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Tool not found: ${name}`);
-});
-/**
- * 💡 PROMPTS
- */
-server.setRequestHandler(types_js_1.ListPromptsRequestSchema, async () => {
-    return {
-        prompts: promptDefinitions.filter((p) => isAllowedForCurrentRole(p.roles)),
-    };
-});
-server.setRequestHandler(types_js_1.GetPromptRequestSchema, async (request) => {
-    const { name, arguments: args } = request.params;
-    ensurePromptAccess(name);
-    if (name === "recommend_movies_by_actor") {
-        const actorQuery = args?.query || "Famous actor";
-        return {
-            description: `Suggestions for ${actorQuery}`,
-            messages: [
-                {
-                    role: "user",
-                    content: {
-                        type: "text",
-                        text: `Recommed me 3 movies with actor/director: ${actorQuery}. Provide a list of top three recommendations. Use 'search_database_movies' MCP tool to fetch thematically matching titles!`,
+        if (name === "audit_translations_and_frontend") {
+            return {
+                description: "Comparison of translation files.",
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: "Extract 'pl.json' and 'en.json' from frontend/src/locales and find inconsistencies.",
+                        },
                     },
-                },
-            ],
-        };
-    }
-    if (name === "analyze_failed_generation") {
-        return {
-            description: "Analysis of failed generation.",
-            messages: [
-                {
-                    role: "user",
-                    content: {
-                        type: "text",
-                        text: "Please analyze the logs for job_id recorded in ai_jobs. Use check_job_status if necessary.",
-                    },
-                },
-            ],
-        };
-    }
-    if (name === "audit_translations_and_frontend") {
-        return {
-            description: "Comparison of translation files.",
-            messages: [
-                {
-                    role: "user",
-                    content: {
-                        type: "text",
-                        text: "Extract 'pl.json' and 'en.json' from frontend/src/locales and find inconsistencies.",
-                    },
-                },
-            ],
-        };
-    }
-    throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, "Unknown Prompt");
-});
+                ],
+            };
+        }
+        throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, "Unknown Prompt");
+    });
+}
 /**
  * 🚀 TRANSPORT
  */
 async function run() {
     if (TRANSPORT_TYPE === "sse") {
         const app = (0, express_1.default)();
-        let transport = null;
-        app.get("/sse", async (req, res) => {
-            console.log("New SSE session connection request");
-            transport = new sse_js_1.SSEServerTransport("/message", res);
-            await server.connect(transport);
-        });
-        app.post("/message", async (req, res) => {
-            console.log("Received POST message for SSE session");
-            if (!transport) {
-                // Single-session fallback logic for buggy clients that strip sessionId query param
-                const sessions = server._transports;
-                if (sessions && sessions.length > 0) {
-                    const session = sessions[0];
-                    await session.handlePostMessage(req, res);
-                    return;
-                }
-                res.status(404).json({ error: "Session not found", sessionId: req.query.sessionId?.toString() });
+        const sseSessions = new Map();
+        const unregisterSseSession = (sessionId) => {
+            const entry = sseSessions.get(sessionId);
+            if (!entry) {
                 return;
             }
-            await transport.handlePostMessage(req, res);
+            sseSessions.delete(sessionId);
+            void entry.mcpServer.close().catch((e) => console.error("mcpServer.close:", e));
+        };
+        app.get("/sse", async (req, res) => {
+            console.log("New SSE session connection request");
+            const mcpServer = createMcpServer();
+            const transport = new sse_js_1.SSEServerTransport("/message", res);
+            const sessionId = transport.sessionId;
+            try {
+                await mcpServer.connect(transport);
+            }
+            catch (err) {
+                console.error(err);
+                if (!res.headersSent) {
+                    res.status(500).end("Internal Server Error");
+                }
+                return;
+            }
+            sseSessions.set(sessionId, { mcpServer, transport });
+            res.on("close", () => unregisterSseSession(sessionId));
+        });
+        app.post("/message", async (req, res) => {
+            const sessionId = typeof req.query.sessionId === "string" ? req.query.sessionId : "";
+            const entry = sessionId !== "" ? sseSessions.get(sessionId) : undefined;
+            if (!entry) {
+                console.log("Received POST message for unknown SSE session", req.query.sessionId);
+                res.status(404).json({
+                    error: "Session not found",
+                    sessionId: req.query.sessionId?.toString() ?? "",
+                });
+                return;
+            }
+            await entry.transport.handlePostMessage(req, res);
         });
         const PORT = process.env.PORT || 8080;
         app.listen(PORT, () => {
@@ -452,6 +477,7 @@ async function run() {
         return;
     }
     const transport = new stdio_js_1.StdioServerTransport();
+    const server = createMcpServer();
     await server.connect(transport);
     console.log("MCP Server running (STDIO)");
 }
