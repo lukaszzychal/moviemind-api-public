@@ -12,6 +12,8 @@ FROM node:20-alpine AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
+# Railway routes public HTTP to PORT; stdio transport never binds → 502 without this.
+ENV TRANSPORT_TYPE=sse
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev

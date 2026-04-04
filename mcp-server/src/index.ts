@@ -38,19 +38,23 @@ const pool = new Pool({
   ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 });
 
-const server = new Server(
-  {
-    name: "moviemind-mcp-server",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      resources: {},
-      tools: {},
-      prompts: {},
+function createMcpServer(): Server {
+  const server = new Server(
+    {
+      name: "moviemind-mcp-server",
+      version: "1.0.0",
     },
-  }
-);
+    {
+      capabilities: {
+        resources: {},
+        tools: {},
+        prompts: {},
+      },
+    }
+  );
+  registerMcpHandlers(server);
+  return server;
+}
 
 type McpRole = "end_user" | "devops" | "all";
 
@@ -284,8 +288,9 @@ async function callLaravelApi(path: string, options: RequestInit = {}, custom: {
 }
 
 /**
- * 📦 RESOURCES
+ * 📦 RESOURCES / TOOLS / PROMPTS (per-Server instance for SSE multi-session)
  */
+function registerMcpHandlers(server: Server): void {
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   return {
     resources: resourceDefinitions
@@ -504,6 +509,9 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 
   throw new McpError(ErrorCode.InvalidRequest, "Unknown Prompt");
 });
+}
+
+type SseSessionEntry = { mcpServer: Server; transport: SSEServerTransport };
 
 /**
  * 🚀 TRANSPORT
@@ -511,31 +519,47 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 async function run(): Promise<void> {
   if (TRANSPORT_TYPE === "sse") {
     const app = express();
-    let transport: SSEServerTransport | null = null;
+    const sseSessions = new Map<string, SseSessionEntry>();
+
+    const unregisterSseSession = (sessionId: string): void => {
+      const entry = sseSessions.get(sessionId);
+      if (!entry) {
+        return;
+      }
+      sseSessions.delete(sessionId);
+      void entry.mcpServer.close().catch((e) => console.error("mcpServer.close:", e));
+    };
 
     app.get("/sse", async (req, res) => {
       console.log("New SSE session connection request");
-      transport = new SSEServerTransport("/message", res);
-      await server.connect(transport);
+      const mcpServer = createMcpServer();
+      const transport = new SSEServerTransport("/message", res);
+      const sessionId = transport.sessionId;
+      try {
+        await mcpServer.connect(transport);
+      } catch (err) {
+        console.error(err);
+        if (!res.headersSent) {
+          res.status(500).end("Internal Server Error");
+        }
+        return;
+      }
+      sseSessions.set(sessionId, { mcpServer, transport });
+      res.on("close", () => unregisterSseSession(sessionId));
     });
 
     app.post("/message", async (req, res) => {
-      console.log("Received POST message for SSE session");
-
-      if (!transport) {
-        // Single-session fallback logic for buggy clients that strip sessionId query param
-        const sessions = (server as any)._transports;
-        if (sessions && sessions.length > 0) {
-            const session = sessions[0];
-            await session.handlePostMessage(req, res);
-            return;
-        }
-
-        res.status(404).json({ error: "Session not found", sessionId: req.query.sessionId?.toString() });
+      const sessionId = typeof req.query.sessionId === "string" ? req.query.sessionId : "";
+      const entry = sessionId !== "" ? sseSessions.get(sessionId) : undefined;
+      if (!entry) {
+        console.log("Received POST message for unknown SSE session", req.query.sessionId);
+        res.status(404).json({
+          error: "Session not found",
+          sessionId: req.query.sessionId?.toString() ?? "",
+        });
         return;
       }
-
-      await transport.handlePostMessage(req, res);
+      await entry.transport.handlePostMessage(req, res);
     });
 
     const PORT = process.env.PORT || 8080;
@@ -547,6 +571,7 @@ async function run(): Promise<void> {
   }
 
   const transport = new StdioServerTransport();
+  const server = createMcpServer();
   await server.connect(transport);
   console.log("MCP Server running (STDIO)");
 }
