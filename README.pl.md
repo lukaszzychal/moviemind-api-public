@@ -172,6 +172,10 @@ Zwróć tylko czysty tekst.
 
 Aplikacja zawiera wbudowany serwer MCP (zlokalizowany w katalogu `/mcp-server`), który umożliwia agentom AI bezpośrednią integrację z MovieMind.
 
+### 🔌 Integracja z popularnymi IDE (Cursor, Antigravity, ModeLLM)
+Szczegółowe instrukcje, w jaki sposób podłączyć ten serwer MCP do Twojego środowiska (np. **Cursor**, **Antigravity**, **ModeLLM**, **Claude Desktop**) poprzez `stdio`, znajdziesz w dedykowanym przewodniku: 
+👉 **[MCP Server Configuration & Course](docs/en/MCP_SERVER_COURSE.md)**.
+
 ### Jak wywołać MCP manualnie (np. przez Postman / klienta HTTP)
 
 Komunikacja z serwerem MCP odbywa się w oparciu o architekturę SSE (Server-Sent Events) i **JSON-RPC 2.0**. Wykonanie manualnego zapytania z klienta takiego jak Postman wymaga dwóch jednoczesnych połączeń:
@@ -359,6 +363,9 @@ Aby lokalnie przetestować logowanie, upewnij się, że posiadasz odpowiednie kl
 - **Diagramy architektury**: `docs/c4/`
 - **GitHub Projects Setup**: [`docs/GITHUB_PROJECTS_SETUP.md`](docs/GITHUB_PROJECTS_SETUP.md) – przewodnik po zarządzaniu zadaniami
 - **Portfolio Recommendations**: [`docs/PUBLIC_REPO_PORTFOLIO_RECOMMENDATIONS.md`](docs/PUBLIC_REPO_PORTFOLIO_RECOMMENDATIONS.md) – lista funkcji pod portfolio
+- **Kurs MCP & Integracja IDE**: [`docs/en/MCP_SERVER_COURSE.md`](docs/en/MCP_SERVER_COURSE.md) – instrukcja jak podpinać serwery do edytora (m.in Cursor, Antigravity)
+- **Zarządzanie serwerami MCP**: [`docs/en/MCP_SERVERS_MANAGEMENT_STRATEGY.md`](docs/en/MCP_SERVERS_MANAGEMENT_STRATEGY.md) – strategia organizacji przy limitach narzędzi (80)
+- **MCP File System Server**: [`docs/en/MCP_FILESYSTEM_SERVER_SETUP.md`](docs/en/MCP_FILESYSTEM_SERVER_SETUP.md) - Konfiguracja MCP File System Server dla Cursor/Claude Desktop
 
 ## 🧪 Testowanie
 
