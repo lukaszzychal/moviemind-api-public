@@ -172,7 +172,7 @@ Zwróć tylko czysty tekst.
 
 Aplikacja zawiera wbudowany serwer MCP (zlokalizowany w katalogu `/mcp-server`), który umożliwia agentom AI bezpośrednią integrację z MovieMind.
 
-### 🔌 Integracja z IDE (Cursor, Antigravity, ModeLLM)
+### 🔌 Integracja z popularnymi IDE (Cursor, Antigravity, ModeLLM)
 Szczegółowe instrukcje, w jaki sposób podłączyć ten serwer MCP do Twojego środowiska (np. **Cursor**, **Antigravity**, **ModeLLM**, **Claude Desktop**) poprzez `stdio`, znajdziesz w dedykowanym przewodniku: 
 👉 **[MCP Server Configuration & Course](docs/en/MCP_SERVER_COURSE.md)**.
 
