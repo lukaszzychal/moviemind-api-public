@@ -31,4 +31,28 @@ class PersonReportService
         // Multiply by type weight
         return (float) ($count * $report->type->weight());
     }
+
+    public function createReport(\App\Models\Person $person, array $validated): PersonReport
+    {
+        $report = PersonReport::create([
+            'person_id' => $person->id,
+            'bio_id' => $validated['bio_id'] ?? null,
+            'type' => $validated['type'],
+            'message' => $validated['message'],
+            'suggested_fix' => $validated['suggested_fix'] ?? null,
+            'status' => ReportStatus::PENDING,
+            'priority_score' => 0.0,
+        ]);
+
+        $priorityScore = $this->calculatePriorityScore($report);
+        $report->update(['priority_score' => $priorityScore]);
+
+        PersonReport::where('person_id', $person->id)
+            ->where('type', $report->type)
+            ->where('status', ReportStatus::PENDING)
+            ->where('id', '!=', $report->id)
+            ->update(['priority_score' => $priorityScore]);
+
+        return $report;
+    }
 }

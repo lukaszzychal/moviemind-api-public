@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Services\EntityVerificationServiceInterface;
@@ -22,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
         // Bind services...
         $this->app->bind(OpenAiClientInterface::class, OpenAiClient::class);
         $this->app->bind(EntityVerificationServiceInterface::class, TmdbVerificationService::class);
+
+        // Bind repositories...
+        $this->app->bind(\App\Repositories\Contracts\MovieRepositoryInterface::class, \App\Repositories\MovieRepository::class);
+        $this->app->bind(\App\Repositories\Contracts\PersonRepositoryInterface::class, \App\Repositories\PersonRepository::class);
+        $this->app->bind(\App\Repositories\Contracts\TvSeriesRepositoryInterface::class, \App\Repositories\TvSeriesRepository::class);
+        $this->app->bind(\App\Repositories\Contracts\TvShowRepositoryInterface::class, \App\Repositories\TvShowRepository::class);
 
         // TV show/series search and retrieval now also use TMDb for consistency and better coverage
         // (Removing Tvmaze overrides to use default TmdbVerificationService)

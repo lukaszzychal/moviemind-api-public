@@ -11,7 +11,6 @@ use App\Http\Resources\TvShowResource;
 use App\Http\Responses\TvShowResponseFormatter;
 use App\Models\TvShow;
 use App\Models\TvShowRelationship;
-use App\Models\TvShowReport;
 use App\Repositories\TvShowRepository;
 use App\Services\HateoasService;
 use App\Services\TvShowComparisonService;
@@ -23,6 +22,9 @@ use Illuminate\Http\Request;
 
 class TvShowController extends Controller
 {
+    use \App\Http\Concerns\BuildsPaginationResponse;
+    use \App\Http\Concerns\ParsesBulkParameters;
+
     public function __construct(
         private readonly TvShowRepository $tvShowRepository,
         private readonly HateoasService $hateoas,
@@ -54,14 +56,7 @@ class TvShowController extends Controller
 
         return response()->json([
             'data' => $data,
-            'pagination' => [
-                'current_page' => $tvShows->currentPage(),
-                'per_page' => $tvShows->perPage(),
-                'total_pages' => $tvShows->lastPage(),
-                'total' => $tvShows->total(),
-                'has_next_page' => $tvShows->hasMorePages(),
-                'has_previous_page' => $tvShows->currentPage() > 1,
-            ],
+            'pagination' => $this->buildPaginationMeta($tvShows),
         ]);
     }
 
@@ -70,63 +65,17 @@ class TvShowController extends Controller
      */
     private function handleBulkRetrieve(Request $request): JsonResponse
     {
-        $slugsParam = $request->query('slugs');
-
-        if ($slugsParam === null || $slugsParam === '') {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_slugs_required')],
-                ],
-            ], 422);
+        $slugsResult = $this->parseSlugsParam($request);
+        if ($slugsResult instanceof JsonResponse) {
+            return $slugsResult;
         }
 
-        $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
-        $slugs = array_map('trim', $slugs);
-        $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
-
-        if (empty($slugs)) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_slugs_required')],
-                ],
-            ], 422);
+        $includeResult = $this->parseIncludeParam($request, ['descriptions', 'people']);
+        if ($includeResult instanceof JsonResponse) {
+            return $includeResult;
         }
 
-        if (count($slugs) > 50) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_max_items')],
-                ],
-            ], 422);
-        }
-
-        foreach ($slugs as $slug) {
-            if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json([
-                    'errors' => [
-                        'slugs' => [trans('api.general.bulk_invalid_slug_pattern')],
-                    ],
-                ], 422);
-            }
-        }
-
-        $includeParam = $request->query('include');
-        $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
-        $include = array_map('trim', $include);
-        $include = array_filter($include, fn ($item) => $item !== '');
-
-        $allowedInclude = ['descriptions', 'people'];
-        foreach ($include as $item) {
-            if (! in_array($item, $allowedInclude, true)) {
-                return response()->json([
-                    'errors' => [
-                        'include' => [trans('api.general.bulk_invalid_include')],
-                    ],
-                ], 422);
-            }
-        }
-
-        $tvShows = $this->tvShowRepository->findBySlugs($slugs, $include);
+        $tvShows = $this->tvShowRepository->findBySlugs($slugsResult, $includeResult);
 
         $data = $tvShows->map(function (TvShow $tvShow) {
             $resource = TvShowResource::make($tvShow)->additional([
@@ -137,19 +86,19 @@ class TvShowController extends Controller
         })->toArray();
 
         $foundSlugs = $tvShows->pluck('slug')->toArray();
-        $notFound = array_values(array_diff($slugs, $foundSlugs));
+        $notFound = array_values(array_diff($slugsResult, $foundSlugs));
 
         return response()->json([
             'data' => $data,
             'not_found' => $notFound,
             'count' => count($data),
-            'requested_count' => count($slugs),
+            'requested_count' => count($slugsResult),
         ], 200);
     }
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $descriptionId = $this->normalizeDescriptionId($request->query('description_id'));
+        $descriptionId = \App\Helpers\UuidValidator::normalize($request->query('description_id'));
         if ($descriptionId === false) {
             return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
         }
@@ -174,35 +123,6 @@ class TvShowController extends Controller
         $searchResult = $this->tvShowSearchService->search($criteria);
 
         return response()->json($searchResult->toArray(), 200);
-    }
-
-    /**
-     * Normalize description_id parameter.
-     * Returns null if empty, string if valid UUID, false if invalid.
-     */
-    private function normalizeDescriptionId(mixed $descriptionId): null|string|false
-    {
-        if ($this->isEmpty($descriptionId)) {
-            return null;
-        }
-
-        $descriptionId = (string) $descriptionId;
-
-        if (! $this->isValidUuid($descriptionId)) {
-            return false;
-        }
-
-        return $descriptionId;
-    }
-
-    private function isEmpty(mixed $value): bool
-    {
-        return $value === null || $value === '';
-    }
-
-    private function isValidUuid(string $uuid): bool
-    {
-        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1;
     }
 
     public function related(Request $request, string $slug): JsonResponse
@@ -284,25 +204,7 @@ class TvShowController extends Controller
         }
 
         $validated = $request->validated();
-
-        $report = TvShowReport::create([
-            'tv_show_id' => $tvShow->id,
-            'description_id' => $validated['description_id'] ?? null,
-            'type' => $validated['type'],
-            'message' => $validated['message'],
-            'suggested_fix' => $validated['suggested_fix'] ?? null,
-            'status' => \App\Enums\ReportStatus::PENDING,
-            'priority_score' => 0.0,
-        ]);
-
-        $priorityScore = $this->tvShowReportService->calculatePriorityScore($report);
-        $report->update(['priority_score' => $priorityScore]);
-
-        TvShowReport::where('tv_show_id', $tvShow->id)
-            ->where('type', $report->type)
-            ->where('status', \App\Enums\ReportStatus::PENDING)
-            ->where('id', '!=', $report->id)
-            ->update(['priority_score' => $priorityScore]);
+        $report = $this->tvShowReportService->createReport($tvShow, $validated);
 
         return response()->json([
             'data' => [

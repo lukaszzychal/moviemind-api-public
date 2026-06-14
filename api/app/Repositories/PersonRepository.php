@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories;
 
 use App\Models\Person;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class PersonRepository
+class PersonRepository implements \App\Repositories\Contracts\PersonRepositoryInterface
 {
     public function searchPeople(?string $query, int $limit = 50): \Illuminate\Pagination\LengthAwarePaginator
     {

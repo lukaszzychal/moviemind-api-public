@@ -1,11 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Actions\GetRelatedPeopleAction;
 use App\Actions\QueuePersonGenerationAction;
-use App\Enums\Locale;
-use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkPeopleRequest;
 use App\Http\Requests\ComparePeopleRequest;
@@ -14,7 +14,6 @@ use App\Http\Requests\SearchPersonRequest;
 use App\Http\Resources\PersonResource;
 use App\Http\Responses\PersonResponseFormatter;
 use App\Models\Person;
-use App\Models\PersonReport;
 use App\Repositories\PersonRepository;
 use App\Services\BulkRetrievalService;
 use App\Services\EntityVerificationServiceInterface;
@@ -28,6 +27,9 @@ use Illuminate\Http\Request;
 
 class PersonController extends Controller
 {
+    use \App\Http\Concerns\BuildsPaginationResponse;
+    use \App\Http\Concerns\ParsesBulkParameters;
+
     public function __construct(
         private readonly PersonRepository $personRepository,
         private readonly HateoasService $hateoas,
@@ -59,14 +61,7 @@ class PersonController extends Controller
 
         return response()->json([
             'data' => $data,
-            'pagination' => [
-                'current_page' => $people->currentPage(),
-                'per_page' => $people->perPage(),
-                'total_pages' => $people->lastPage(),
-                'total' => $people->total(),
-                'has_next_page' => $people->hasMorePages(),
-                'has_previous_page' => $people->currentPage() > 1,
-            ],
+            'pagination' => $this->buildPaginationMeta($people),
         ]);
     }
 
@@ -78,44 +73,20 @@ class PersonController extends Controller
      */
     private function handleBulkRetrieve(Request $request): JsonResponse
     {
-        $slugsParam = $request->query('slugs');
-        if ($slugsParam === null) {
-            return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_slugs_required')]]], 422);
+        $slugsResult = $this->parseSlugsParam($request);
+        if ($slugsResult instanceof JsonResponse) {
+            return $slugsResult;
         }
 
-        $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
-        $slugs = array_map('trim', $slugs);
-        $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
-
-        if (empty($slugs)) {
-            return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_slugs_required')]]], 422);
-        }
-
-        if (count($slugs) > 50) {
-            return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_max_items')]]], 422);
-        }
-
-        foreach ($slugs as $slug) {
-            if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json(['errors' => ['slugs' => [trans('api.general.bulk_invalid_slug_pattern')]]], 422);
-            }
-        }
-
-        // Parse include
-        $includeParam = $request->query('include');
-        $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
-        $include = array_map('trim', $include);
-        $allowedInclude = ['bios', 'movies'];
-        foreach ($include as $item) {
-            if (! in_array($item, $allowedInclude, true)) {
-                return response()->json(['errors' => ['include' => [trans('api.general.bulk_invalid_include')]]], 422);
-            }
+        $includeResult = $this->parseIncludeParam($request, ['bios', 'movies']);
+        if ($includeResult instanceof JsonResponse) {
+            return $includeResult;
         }
 
         $result = $this->bulkRetrievalService->retrieve(
             $this->personRepository,
-            $slugs,
-            $include,
+            $slugsResult,
+            $includeResult,
             function (Person $person) {
                 return PersonResource::make($person)->additional([
                     '_links' => $this->hateoas->personLinks($person),
@@ -159,7 +130,7 @@ class PersonController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $bioId = $this->normalizeBioId($request->query('bio_id'));
+        $bioId = \App\Helpers\UuidValidator::normalize($request->query('bio_id'));
         if ($bioId === false) {
             return $this->responseFormatter->formatError('Invalid bio_id parameter', 422);
         }
@@ -194,141 +165,6 @@ class PersonController extends Controller
     }
 
     /**
-     * Normalize bio ID from request (UUID string or null).
-     *
-     * @param  mixed  $bioId  Bio ID from query parameter (UUID string or null)
-     * @return null|string|false Returns UUID string, null if not provided, or false if invalid
-     */
-    private function normalizeBioId(mixed $bioId): null|string|false
-    {
-        if ($bioId === null || $bioId === '') {
-            return null;
-        }
-
-        $bioId = (string) $bioId;
-
-        // Validate UUID format (UUIDv7 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $bioId)) {
-            return false;
-        }
-
-        return $bioId;
-    }
-
-    /**
-     * Handle disambiguation selection when user chooses specific person by slug.
-     * This method is called when user selects a slug from disambiguation options.
-     */
-    private function handleDisambiguationSelection(string $originalSlug, string $selectedSlug): JsonResponse
-    {
-        // Find person by selected slug
-        $person = $this->personRepository->findBySlugWithRelations($selectedSlug);
-
-        if (! $person) {
-            // Person doesn't exist yet - need to find it in TMDb and create it
-            // Search for people matching the original slug
-            $searchResults = $this->tmdbVerificationService->searchPeople($originalSlug, 10);
-
-            // Find the one that matches the selected slug
-            $selectedPerson = null;
-            foreach ($searchResults as $result) {
-                $birthDate = $result['birthday'] ?? null;
-                $birthplace = $result['place_of_birth'] ?? null;
-                $generatedSlug = Person::generateSlug($result['name'], $birthDate, $birthplace);
-
-                if ($generatedSlug === $selectedSlug) {
-                    $selectedPerson = $result;
-                    break;
-                }
-            }
-
-            if (! $selectedPerson) {
-                return $this->responseFormatter->formatDisambiguationSelectionNotFound();
-            }
-
-            // Re-validate slug for confidence score
-            $validation = SlugValidator::validatePersonSlug($selectedSlug);
-            $result = $this->queuePersonGenerationAction->handle(
-                $selectedSlug,
-                confidence: $validation['confidence'],
-                locale: Locale::EN_US->value,
-                tmdbData: $selectedPerson
-            );
-
-            return $this->responseFormatter->formatGenerationQueued($result);
-        }
-
-        // Person exists - return it directly by calling show method with a new request
-        $request = Request::create("/api/v1/people/{$selectedSlug}", 'GET');
-
-        return $this->show($request, $selectedSlug);
-    }
-
-    /**
-     * Respond with disambiguation options when multiple people match the slug.
-     *
-     * @phpstan-ignore-next-line
-     */
-    private function respondWithDisambiguation(string $slug, array $searchResults): JsonResponse
-    {
-        $options = array_map(function ($result) {
-            $birthDate = $result['birthday'] ?? null;
-            $birthplace = $result['place_of_birth'] ?? null;
-            $birthYear = ! empty($birthDate) ? substr($birthDate, 0, 4) : null;
-            $suggestedSlug = Person::generateSlug($result['name'], $birthDate, $birthplace);
-
-            return [
-                'slug' => $suggestedSlug,
-                'name' => $result['name'],
-                'birth_year' => $birthYear ? (int) $birthYear : null,
-                'birthplace' => $birthplace,
-                'biography' => substr($result['biography'] ?? '', 0, 200).(strlen($result['biography'] ?? '') > 200 ? '...' : ''),
-                'select_url' => url("/api/v1/people/{$suggestedSlug}"),
-            ];
-        }, $searchResults);
-
-        return response()->json([
-            'error' => trans('api.person.multiple_found'),
-            'message' => trans('api.person.disambiguation_message'),
-            'slug' => $slug,
-            'options' => $options,
-            'count' => count($options),
-            'hint' => 'Use the slug from options to access specific person (e.g., GET /api/v1/people/{slug})',
-        ], 300); // 300 Multiple Choices
-    }
-
-    /**
-     * Generate suggested slugs from TMDb search results.
-     *
-     * @param  array<int, array{name: string, birthday?: string, place_of_birth?: string, id: int}>  $searchResults
-     * @return array<int, array{slug: string, name: string, birth_year: int|null, birthplace: string|null}>
-     *
-     * @phpstan-ignore-next-line
-     */
-    private function generateSuggestedSlugsFromSearchResults(array $searchResults): array
-    {
-        $suggestedSlugs = [];
-        foreach ($searchResults as $result) {
-            $name = $result['name'];
-            if (empty($name)) {
-                continue;
-            }
-            $birthDate = $result['birthday'] ?? null;
-            $birthYear = ! empty($birthDate) ? (int) substr($birthDate, 0, 4) : null;
-            $birthplace = $result['place_of_birth'] ?? null;
-
-            $suggestedSlugs[] = [
-                'slug' => Person::generateSlug($name, $birthDate, $birthplace),
-                'name' => $name,
-                'birth_year' => $birthYear,
-                'birthplace' => $birthplace,
-            ];
-        }
-
-        return $suggestedSlugs;
-    }
-
-    /**
      * Report an issue with a person or their bio.
      */
     public function report(ReportPersonRequest $request, string $slug): JsonResponse
@@ -340,28 +176,7 @@ class PersonController extends Controller
         }
 
         $validated = $request->validated();
-
-        // Create report
-        $report = PersonReport::create([
-            'person_id' => $person->id,
-            'bio_id' => $validated['bio_id'] ?? null,
-            'type' => $validated['type'],
-            'message' => $validated['message'],
-            'suggested_fix' => $validated['suggested_fix'] ?? null,
-            'status' => \App\Enums\ReportStatus::PENDING,
-            'priority_score' => 0.0, // Will be calculated below
-        ]);
-
-        // Calculate and update priority score
-        $priorityScore = $this->personReportService->calculatePriorityScore($report);
-        $report->update(['priority_score' => $priorityScore]);
-
-        // Also update priority scores for other pending reports of same type
-        PersonReport::where('person_id', $person->id)
-            ->where('type', $report->type)
-            ->where('status', \App\Enums\ReportStatus::PENDING)
-            ->where('id', '!=', $report->id)
-            ->update(['priority_score' => $priorityScore]);
+        $report = $this->personReportService->createReport($person, $validated);
 
         return response()->json([
             'data' => [

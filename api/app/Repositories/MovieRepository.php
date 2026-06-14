@@ -8,7 +8,7 @@ use App\Models\Movie;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class MovieRepository
+class MovieRepository implements \App\Repositories\Contracts\MovieRepositoryInterface
 {
     /**
      * Search movies by text query and/or actor, director, year.
