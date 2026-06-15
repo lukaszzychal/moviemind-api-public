@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Services\OpenAiClient;
+use App\Services\OpenAiPromptBuilder;
 use App\Services\PromptSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -26,14 +27,14 @@ class OpenAiClientTest extends TestCase
             'services.openai.url' => 'https://api.openai.com/v1/chat/completions',
         ]);
 
-        $this->client = new OpenAiClient(new PromptSanitizer);
+        $this->client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
     }
 
     public function test_generate_movie_returns_error_when_api_key_missing(): void
     {
         config(['services.openai.api_key' => '']);
 
-        $client = new OpenAiClient(new PromptSanitizer);
+        $client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
         $result = $client->generateMovie('the-matrix');
 
         $this->assertFalse($result['success']);
@@ -155,7 +156,7 @@ class OpenAiClientTest extends TestCase
     {
         config(['services.openai.api_key' => '']);
 
-        $client = new OpenAiClient(new PromptSanitizer);
+        $client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
         $result = $client->generatePerson('keanu-reeves');
 
         $this->assertFalse($result['success']);
@@ -268,7 +269,7 @@ class OpenAiClientTest extends TestCase
     {
         // Test Responses API format (when explicitly configured)
         config(['services.openai.url' => 'https://api.openai.com/v1/responses']);
-        $client = new OpenAiClient(new PromptSanitizer);
+        $client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
 
         Http::fake([
             'api.openai.com/v1/responses' => function ($request) {
@@ -309,7 +310,7 @@ class OpenAiClientTest extends TestCase
     public function test_generate_movie_supports_legacy_chat_completions_payload(): void
     {
         // Chat Completions API is now default, supports json_schema properly
-        $client = new OpenAiClient(new PromptSanitizer);
+        $client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
 
         Http::fake([
             'api.openai.com/v1/chat/completions' => function ($request) {
