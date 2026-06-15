@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\GetRelatedPeopleAction;
 use App\Actions\QueuePersonGenerationAction;
+use App\Enums\Locale;
+use App\Helpers\SlugValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkPeopleRequest;
 use App\Http\Requests\ComparePeopleRequest;
@@ -162,6 +164,55 @@ class PersonController extends Controller
         ]);
 
         return $resource->resolve();
+    }
+
+    /**
+     * Handle disambiguation selection when user chooses specific person by slug.
+     * This method is called when user selects a slug from disambiguation options.
+     */
+    private function handleDisambiguationSelection(string $originalSlug, string $selectedSlug): JsonResponse
+    {
+        // Find person by selected slug
+        $person = $this->personRepository->findBySlugWithRelations($selectedSlug);
+
+        if (! $person) {
+            // Person doesn't exist yet - need to find it in TMDb and create it
+            // Search for people matching the original slug
+            $searchResults = $this->tmdbVerificationService->searchPeople($originalSlug, 10);
+
+            // Find the one that matches the selected slug
+            $selectedPerson = null;
+            foreach ($searchResults as $result) {
+                $birthDate = $result['birthday'] ?? null;
+                $birthplace = $result['place_of_birth'] ?? null;
+                $generatedSlug = Person::generateSlug($result['name'], $birthDate, $birthplace);
+
+                if ($generatedSlug === $selectedSlug) {
+                    $selectedPerson = $result;
+                    break;
+                }
+            }
+
+            if (! $selectedPerson) {
+                return $this->responseFormatter->formatDisambiguationSelectionNotFound();
+            }
+
+            // Re-validate slug for confidence score
+            $validation = SlugValidator::validatePersonSlug($selectedSlug);
+            $result = $this->queuePersonGenerationAction->handle(
+                $selectedSlug,
+                confidence: $validation['confidence'],
+                locale: Locale::EN_US->value,
+                tmdbData: $selectedPerson
+            );
+
+            return $this->responseFormatter->formatGenerationQueued($result);
+        }
+
+        // Person exists - return it directly by calling show method with a new request
+        $request = Request::create("/api/v1/people/{$selectedSlug}", 'GET');
+
+        return $this->show($request, $selectedSlug);
     }
 
     /**
