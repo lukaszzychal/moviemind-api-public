@@ -6,6 +6,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\AiGenerationMetric;
 use App\Services\OpenAiClient;
+use App\Services\OpenAiPromptBuilder;
 use App\Services\PromptSanitizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -27,7 +28,7 @@ class OpenAiClientMetricsTrackingTest extends TestCase
             'services.openai.url' => 'https://api.openai.com/v1/chat/completions',
         ]);
 
-        $this->client = new OpenAiClient(new PromptSanitizer);
+        $this->client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
     }
 
     public function test_tracks_token_usage_on_successful_generation(): void
