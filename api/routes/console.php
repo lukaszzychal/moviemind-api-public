@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Jobs\GenerateAiMetricsReportJob;
 use App\Jobs\ResetMonthlyUsageJob;
 use Illuminate\Foundation\Inspiring;

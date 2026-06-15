@@ -31,4 +31,28 @@ class MovieReportService
         // Multiply by type weight
         return (float) ($count * $report->type->weight());
     }
+
+    public function createReport(\App\Models\Movie $movie, array $validated): MovieReport
+    {
+        $report = MovieReport::create([
+            'movie_id' => $movie->id,
+            'description_id' => $validated['description_id'] ?? null,
+            'type' => $validated['type'],
+            'message' => $validated['message'],
+            'suggested_fix' => $validated['suggested_fix'] ?? null,
+            'status' => ReportStatus::PENDING,
+            'priority_score' => 0.0,
+        ]);
+
+        $priorityScore = $this->calculatePriorityScore($report);
+        $report->update(['priority_score' => $priorityScore]);
+
+        MovieReport::where('movie_id', $movie->id)
+            ->where('type', $report->type)
+            ->where('status', ReportStatus::PENDING)
+            ->where('id', '!=', $report->id)
+            ->update(['priority_score' => $priorityScore]);
+
+        return $report;
+    }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Actions\GetRelatedMoviesAction;
@@ -14,7 +16,6 @@ use App\Http\Requests\SearchMovieRequest;
 use App\Http\Resources\MovieResource;
 use App\Http\Responses\MovieResponseFormatter;
 use App\Models\Movie;
-use App\Models\MovieReport;
 use App\Repositories\MovieRepository;
 use App\Services\BulkRetrievalService;
 use App\Services\EntityVerificationServiceInterface;
@@ -29,6 +30,9 @@ use Illuminate\Http\Request;
 
 class MovieController extends Controller
 {
+    use \App\Http\Concerns\BuildsPaginationResponse;
+    use \App\Http\Concerns\ParsesBulkParameters;
+
     public function __construct(
         private readonly MovieRepository $movieRepository,
         private readonly HateoasService $hateoas,
@@ -67,14 +71,7 @@ class MovieController extends Controller
 
         return response()->json([
             'data' => $data,
-            'pagination' => [
-                'current_page' => $movies->currentPage(),
-                'per_page' => $movies->perPage(),
-                'total_pages' => $movies->lastPage(),
-                'total' => $movies->total(),
-                'has_next_page' => $movies->hasMorePages(),
-                'has_previous_page' => $movies->currentPage() > 1,
-            ],
+            'pagination' => $this->buildPaginationMeta($movies),
         ]);
     }
 
@@ -83,72 +80,20 @@ class MovieController extends Controller
      */
     private function handleBulkRetrieve(Request $request): JsonResponse
     {
-        // Parse slugs from query parameter (comma-separated string or array)
-        $slugsParam = $request->query('slugs');
-
-        // Handle empty or null slugs parameter
-        if ($slugsParam === null || $slugsParam === '') {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_slugs_required')],
-                ],
-            ], 422);
+        $slugsResult = $this->parseSlugsParam($request);
+        if ($slugsResult instanceof JsonResponse) {
+            return $slugsResult;
         }
 
-        $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
-        $slugs = array_map('trim', $slugs);
-        $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
-
-        // Validate slugs after filtering
-        if (empty($slugs)) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_slugs_required')],
-                ],
-            ], 422);
-        }
-
-        if (count($slugs) > 50) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_max_items')],
-                ],
-            ], 422);
-        }
-
-        // Validate slug format
-        foreach ($slugs as $slug) {
-            if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json([
-                    'errors' => [
-                        'slugs' => [trans('api.general.bulk_invalid_slug_pattern')],
-                    ],
-                ], 422);
-            }
-        }
-
-        // Parse include parameter
-        $includeParam = $request->query('include');
-        $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
-        $include = array_map('trim', $include);
-        $include = array_filter($include, fn ($item) => $item !== '');
-
-        // Validate include values
-        $allowedInclude = ['descriptions', 'people', 'genres'];
-        foreach ($include as $item) {
-            if (! in_array($item, $allowedInclude, true)) {
-                return response()->json([
-                    'errors' => [
-                        'include' => [trans('api.general.bulk_invalid_include')],
-                    ],
-                ], 422);
-            }
+        $includeResult = $this->parseIncludeParam($request, ['descriptions', 'people', 'genres']);
+        if ($includeResult instanceof JsonResponse) {
+            return $includeResult;
         }
 
         $result = $this->bulkRetrievalService->retrieve(
             $this->movieRepository,
-            $slugs,
-            $include,
+            $slugsResult,
+            $includeResult,
             function (Movie $movie) {
                 return MovieResource::make($movie)->additional([
                     '_links' => $this->hateoas->movieLinks($movie),
@@ -228,14 +173,14 @@ class MovieController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $descriptionId = $this->normalizeDescriptionId($request->query('description_id'));
+        $descriptionId = \App\Helpers\UuidValidator::normalize($request->query('description_id'));
         if ($descriptionId === false) {
             return $this->responseFormatter->formatError(trans('api.general.invalid_param', ['param' => 'description_id']), 422);
         }
 
         // Extract and validate locale parameter (null if not provided, 'en-US' if invalid)
         $localeParam = $request->query('locale');
-        $locale = $localeParam !== null ? $this->normalizeLocale($localeParam) : null;
+        $locale = $localeParam !== null ? (\App\Helpers\GenerationRequestNormalizer::normalizeLocale($localeParam) ?? 'en-US') : null;
 
         // Handle disambiguation selection (special case - user selects specific slug from disambiguation)
         // Note: Disambiguation now uses slugs instead of tmdb_id
@@ -313,51 +258,6 @@ class MovieController extends Controller
      * @param  string|null  $descriptionId  Description ID (UUID) or null
      * @return string Cache key
      */
-
-    /**
-     * Normalize description ID from request (UUID string or null).
-     *
-     * @param  mixed  $descriptionId  Description ID from query parameter (UUID string or null)
-     * @return null|string|false Returns UUID string, null if not provided, or false if invalid
-     */
-    private function normalizeDescriptionId(mixed $descriptionId): null|string|false
-    {
-        if ($descriptionId === null || $descriptionId === '') {
-            return null;
-        }
-
-        $descriptionId = (string) $descriptionId;
-
-        // Validate UUID format (UUIDv7 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $descriptionId)) {
-            return false;
-        }
-
-        return $descriptionId;
-    }
-
-    /**
-     * Normalize and validate locale parameter.
-     * Returns default 'en-US' if not provided or invalid.
-     *
-     * @return string Valid locale code or 'en-US' as default
-     */
-    private function normalizeLocale(mixed $locale): string
-    {
-        if ($locale === null || $locale === '') {
-            return 'en-US';
-        }
-
-        $locale = (string) $locale;
-
-        // Validate locale format using LocaleEnum
-        if (LocaleEnum::isValid($locale)) {
-            return $locale;
-        }
-
-        // Invalid locale - fallback to en-US
-        return 'en-US';
-    }
 
     /**
      * Refresh movie data from TMDb.
@@ -449,9 +349,6 @@ class MovieController extends Controller
         return $response;
     }
 
-    /**
-     * Report an issue with a movie or its description.
-     */
     public function report(ReportMovieRequest $request, string $slug): JsonResponse
     {
         $movie = $this->movieRepository->findBySlugWithRelations($slug);
@@ -461,28 +358,7 @@ class MovieController extends Controller
         }
 
         $validated = $request->validated();
-
-        // Create report
-        $report = MovieReport::create([
-            'movie_id' => $movie->id,
-            'description_id' => $validated['description_id'] ?? null,
-            'type' => $validated['type'],
-            'message' => $validated['message'],
-            'suggested_fix' => $validated['suggested_fix'] ?? null,
-            'status' => \App\Enums\ReportStatus::PENDING,
-            'priority_score' => 0.0, // Will be calculated below
-        ]);
-
-        // Calculate and update priority score
-        $priorityScore = $this->movieReportService->calculatePriorityScore($report);
-        $report->update(['priority_score' => $priorityScore]);
-
-        // Also update priority scores for other pending reports of same type
-        MovieReport::where('movie_id', $movie->id)
-            ->where('type', $report->type)
-            ->where('status', \App\Enums\ReportStatus::PENDING)
-            ->where('id', '!=', $report->id)
-            ->update(['priority_score' => $priorityScore]);
+        $report = $this->movieReportService->createReport($movie, $validated);
 
         return response()->json([
             'data' => [

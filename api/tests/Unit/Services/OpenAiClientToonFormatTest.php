@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Services\OpenAiClient;
+use App\Services\OpenAiPromptBuilder;
 use App\Services\PromptSanitizer;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -24,7 +25,7 @@ class OpenAiClientToonFormatTest extends TestCase
             'services.openai.url' => 'https://api.openai.com/v1/chat/completions',
         ]);
 
-        $this->client = new OpenAiClient(new PromptSanitizer);
+        $this->client = new OpenAiClient(new OpenAiPromptBuilder(new PromptSanitizer));
     }
 
     public function test_uses_json_when_toon_feature_flag_disabled(): void

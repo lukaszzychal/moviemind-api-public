@@ -16,12 +16,14 @@ use Illuminate\Http\JsonResponse;
  * Response Formatter for Person API responses.
  * Formats different types of responses (success, error, disambiguation, etc.) into JSON.
  */
-class PersonResponseFormatter
+class PersonResponseFormatter extends BaseResponseFormatter
 {
     public function __construct(
         private readonly HateoasService $hateoas,
         private readonly PersonDisambiguationService $personDisambiguationService
-    ) {}
+    ) {
+        $this->entityType = 'person';
+    }
 
     /**
      * Format successful person retrieval response.
@@ -93,80 +95,6 @@ class PersonResponseFormatter
     }
 
     /**
-     * Format error response.
-     */
-    public function formatError(string $errorMessage, int $statusCode, ?array $additionalData = null): JsonResponse
-    {
-        $response = ['error' => $errorMessage];
-
-        if ($additionalData !== null) {
-            $response = array_merge($response, $additionalData);
-        }
-
-        return response()->json($response, $statusCode);
-    }
-
-    /**
-     * Format bio not found response.
-     */
-    public function formatBioNotFound(): JsonResponse
-    {
-        return $this->formatError(trans('api.person.bio_not_found'), 404);
-    }
-
-    /**
-     * Format invalid slug response.
-     */
-    public function formatInvalidSlug(string $slug, array $validation): JsonResponse
-    {
-        return $this->formatError(
-            trans('api.person.invalid_slug'),
-            400,
-            [
-                'message' => $validation['reason'],
-                'confidence' => $validation['confidence'],
-                'slug' => $slug,
-            ]
-        );
-    }
-
-    /**
-     * Format disambiguation response.
-     */
-    public function formatDisambiguation(string $slug, array $options): JsonResponse
-    {
-        return $this->formatError(
-            trans('api.person.multiple_found'),
-            300,
-            [
-                'message' => trans('api.person.disambiguation_message'),
-                'slug' => $slug,
-                'options' => $options,
-                'count' => count($options),
-                'hint' => 'Use the slug from options to access specific person (e.g., GET /api/v1/people/{slug})',
-            ]
-        );
-    }
-
-    /**
-     * Format generation queued response.
-     */
-    public function formatGenerationQueued(array $generationResult): JsonResponse
-    {
-        return response()->json($generationResult, 202);
-    }
-
-    /**
-     * Format not found response.
-     */
-    public function formatNotFound(?string $customMessage = null): JsonResponse
-    {
-        $message = $customMessage ?? trans('api.person.not_found');
-
-        return $this->formatError($message, 404);
-    }
-
-    /**
      * Format response from PersonRetrievalResult.
      */
     public function formatFromResult(PersonRetrievalResult $result, string $slug): JsonResponse
@@ -207,45 +135,5 @@ class PersonResponseFormatter
         }
 
         return $this->formatNotFound($result->getErrorMessage());
-    }
-
-    /**
-     * Format disambiguation selection error (person not found in search results).
-     */
-    public function formatDisambiguationSelectionNotFound(): JsonResponse
-    {
-        return $this->formatError(trans('api.person.disambiguation_selection_not_found'), 404);
-    }
-
-    /**
-     * Format refresh success response.
-     *
-     * @param  string  $slug  Person slug
-     * @param  string  $personId  Person ID (UUID)
-     */
-    public function formatRefreshSuccess(string $slug, string $personId): JsonResponse
-    {
-        return response()->json([
-            'message' => trans('api.person.refresh_success'),
-            'slug' => $slug,
-            'person_id' => $personId,
-            'refreshed_at' => now()->toIso8601String(),
-        ]);
-    }
-
-    /**
-     * Format refresh error - no snapshot found.
-     */
-    public function formatRefreshNoSnapshot(): JsonResponse
-    {
-        return $this->formatError(trans('api.person.no_snapshot'), 404);
-    }
-
-    /**
-     * Format refresh error - failed to refresh.
-     */
-    public function formatRefreshFailed(): JsonResponse
-    {
-        return $this->formatError(trans('api.person.refresh_failed'), 500);
     }
 }

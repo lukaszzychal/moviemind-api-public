@@ -14,11 +14,13 @@ use Illuminate\Http\JsonResponse;
 /**
  * Response Formatter for TV Series API responses.
  */
-class TvSeriesResponseFormatter
+class TvSeriesResponseFormatter extends BaseResponseFormatter
 {
     public function __construct(
         private readonly HateoasService $hateoas
-    ) {}
+    ) {
+        $this->entityType = 'tv_series';
+    }
 
     /**
      * Format successful TV series retrieval response.
@@ -74,80 +76,6 @@ class TvSeriesResponseFormatter
         }
 
         return response()->json($data);
-    }
-
-    /**
-     * Format error response.
-     */
-    public function formatError(string $errorMessage, int $statusCode, ?array $additionalData = null): JsonResponse
-    {
-        $response = ['error' => $errorMessage];
-
-        if ($additionalData !== null) {
-            $response = array_merge($response, $additionalData);
-        }
-
-        return response()->json($response, $statusCode);
-    }
-
-    /**
-     * Format description not found response.
-     */
-    public function formatDescriptionNotFound(): JsonResponse
-    {
-        return $this->formatError(trans('api.tv_series.description_not_found'), 404);
-    }
-
-    /**
-     * Format invalid slug response.
-     */
-    public function formatInvalidSlug(string $slug, array $validation): JsonResponse
-    {
-        return $this->formatError(
-            trans('api.tv_series.invalid_slug'),
-            400,
-            [
-                'message' => $validation['reason'],
-                'confidence' => $validation['confidence'],
-                'slug' => $slug,
-            ]
-        );
-    }
-
-    /**
-     * Format disambiguation response.
-     */
-    public function formatDisambiguation(string $slug, array $options): JsonResponse
-    {
-        return $this->formatError(
-            trans('api.tv_series.multiple_found'),
-            300,
-            [
-                'message' => trans('api.tv_series.disambiguation_message'),
-                'slug' => $slug,
-                'options' => $options,
-                'count' => count($options),
-                'hint' => 'Use the slug from options to access specific TV series (e.g., GET /api/v1/tv-series/{slug})',
-            ]
-        );
-    }
-
-    /**
-     * Format generation queued response.
-     */
-    public function formatGenerationQueued(array $generationResult): JsonResponse
-    {
-        return response()->json($generationResult, 202);
-    }
-
-    /**
-     * Format not found response.
-     */
-    public function formatNotFound(?string $customMessage = null): JsonResponse
-    {
-        $message = $customMessage ?? trans('api.tv_series.not_found');
-
-        return $this->formatError($message, 404);
     }
 
     /**

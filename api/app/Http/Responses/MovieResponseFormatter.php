@@ -11,20 +11,21 @@ use App\Services\HateoasService;
 use App\Services\MovieDisambiguationService;
 use App\Services\MovieLocaleService;
 use App\Support\MovieRetrievalResult;
-use App\Support\SearchResult;
 use Illuminate\Http\JsonResponse;
 
 /**
  * Response Formatter for Movie API responses.
  * Formats different types of responses (success, error, disambiguation, etc.) into JSON.
  */
-class MovieResponseFormatter
+class MovieResponseFormatter extends BaseResponseFormatter
 {
     public function __construct(
         private readonly HateoasService $hateoas,
         private readonly MovieDisambiguationService $movieDisambiguationService,
         private readonly MovieLocaleService $movieLocaleService
-    ) {}
+    ) {
+        $this->entityType = 'movie';
+    }
 
     /**
      * Format successful movie retrieval response.
@@ -120,80 +121,6 @@ class MovieResponseFormatter
     }
 
     /**
-     * Format error response.
-     */
-    public function formatError(string $errorMessage, int $statusCode, ?array $additionalData = null): JsonResponse
-    {
-        $response = ['error' => $errorMessage];
-
-        if ($additionalData !== null) {
-            $response = array_merge($response, $additionalData);
-        }
-
-        return response()->json($response, $statusCode);
-    }
-
-    /**
-     * Format description not found response.
-     */
-    public function formatDescriptionNotFound(): JsonResponse
-    {
-        return $this->formatError(trans('api.movie.description_not_found'), 404);
-    }
-
-    /**
-     * Format invalid slug response.
-     */
-    public function formatInvalidSlug(string $slug, array $validation): JsonResponse
-    {
-        return $this->formatError(
-            trans('api.movie.invalid_slug'),
-            400,
-            [
-                'message' => $validation['reason'],
-                'confidence' => $validation['confidence'],
-                'slug' => $slug,
-            ]
-        );
-    }
-
-    /**
-     * Format disambiguation response.
-     */
-    public function formatDisambiguation(string $slug, array $options): JsonResponse
-    {
-        return $this->formatError(
-            trans('api.movie.multiple_found'),
-            300,
-            [
-                'message' => trans('api.movie.disambiguation_message'),
-                'slug' => $slug,
-                'options' => $options,
-                'count' => count($options),
-                'hint' => 'Use the slug from options to access specific movie (e.g., GET /api/v1/movies/{slug})',
-            ]
-        );
-    }
-
-    /**
-     * Format generation queued response.
-     */
-    public function formatGenerationQueued(array $generationResult): JsonResponse
-    {
-        return response()->json($generationResult, 202);
-    }
-
-    /**
-     * Format not found response.
-     */
-    public function formatNotFound(?string $customMessage = null): JsonResponse
-    {
-        $message = $customMessage ?? trans('api.movie.not_found');
-
-        return $this->formatError($message, 404);
-    }
-
-    /**
      * Format response from MovieRetrievalResult.
      */
     public function formatFromResult(MovieRetrievalResult $result, string $slug, ?string $locale = null): JsonResponse
@@ -238,82 +165,10 @@ class MovieResponseFormatter
     }
 
     /**
-     * Format search result response.
-     */
-    public function formatSearchResult(SearchResult $searchResult): JsonResponse
-    {
-        $statusCode = $searchResult->getHttpStatusCode();
-
-        if ($searchResult->isAmbiguous()) {
-            return response()->json([
-                'error' => trans('api.movie.search_multiple_found'),
-                'message' => trans('api.movie.search_multiple_message'),
-                'match_type' => $searchResult->matchType,
-                'count' => $searchResult->total,
-                'results' => $searchResult->results,
-                'hint' => 'Use the slug from results to access specific movie (e.g., GET /api/v1/movies/{slug})',
-            ], $statusCode);
-        }
-
-        if ($searchResult->isEmpty()) {
-            return response()->json([
-                'error' => trans('api.movie.search_none_found'),
-                'message' => trans('api.movie.search_none_message'),
-                'match_type' => $searchResult->matchType,
-                'total' => $searchResult->total,
-                'results' => [],
-            ], $statusCode);
-        }
-
-        // For exact or partial match (200)
-        return response()->json($searchResult->toArray(), $statusCode);
-    }
-
-    /**
      * Format list of movies response.
      */
     public function formatMovieList(array $movies): JsonResponse
     {
         return response()->json(['data' => $movies]);
-    }
-
-    /**
-     * Format disambiguation selection error (movie not found in search results).
-     */
-    public function formatDisambiguationSelectionNotFound(): JsonResponse
-    {
-        return $this->formatError(trans('api.movie.disambiguation_selection_not_found'), 404);
-    }
-
-    /**
-     * Format refresh success response.
-     *
-     * @param  string  $slug  Movie slug
-     * @param  string  $movieId  Movie ID (UUID)
-     */
-    public function formatRefreshSuccess(string $slug, string $movieId): JsonResponse
-    {
-        return response()->json([
-            'message' => trans('api.movie.refresh_success'),
-            'slug' => $slug,
-            'movie_id' => $movieId,
-            'refreshed_at' => now()->toIso8601String(),
-        ]);
-    }
-
-    /**
-     * Format refresh error - no snapshot found.
-     */
-    public function formatRefreshNoSnapshot(): JsonResponse
-    {
-        return $this->formatError(trans('api.movie.no_snapshot'), 404);
-    }
-
-    /**
-     * Format refresh error - failed to refresh.
-     */
-    public function formatRefreshFailed(): JsonResponse
-    {
-        return $this->formatError(trans('api.movie.refresh_failed'), 500);
     }
 }

@@ -8,7 +8,7 @@ use App\Models\TvShow;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-class TvShowRepository
+class TvShowRepository implements \App\Repositories\Contracts\TvShowRepositoryInterface
 {
     public function searchTvShows(?string $query, int $limit = 50): LengthAwarePaginator
     {

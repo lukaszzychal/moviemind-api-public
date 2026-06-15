@@ -11,7 +11,6 @@ use App\Http\Resources\TvSeriesResource;
 use App\Http\Responses\TvSeriesResponseFormatter;
 use App\Models\TvSeries;
 use App\Models\TvSeriesRelationship;
-use App\Models\TvSeriesReport;
 use App\Repositories\TvSeriesRepository;
 use App\Services\HateoasService;
 use App\Services\TvSeriesComparisonService;
@@ -23,6 +22,9 @@ use Illuminate\Http\Request;
 
 class TvSeriesController extends Controller
 {
+    use \App\Http\Concerns\BuildsPaginationResponse;
+    use \App\Http\Concerns\ParsesBulkParameters;
+
     public function __construct(
         private readonly TvSeriesRepository $tvSeriesRepository,
         private readonly HateoasService $hateoas,
@@ -54,14 +56,7 @@ class TvSeriesController extends Controller
 
         return response()->json([
             'data' => $data,
-            'pagination' => [
-                'current_page' => $tvSeries->currentPage(),
-                'per_page' => $tvSeries->perPage(),
-                'total_pages' => $tvSeries->lastPage(),
-                'total' => $tvSeries->total(),
-                'has_next_page' => $tvSeries->hasMorePages(),
-                'has_previous_page' => $tvSeries->currentPage() > 1,
-            ],
+            'pagination' => $this->buildPaginationMeta($tvSeries),
         ]);
     }
 
@@ -70,63 +65,17 @@ class TvSeriesController extends Controller
      */
     private function handleBulkRetrieve(Request $request): JsonResponse
     {
-        $slugsParam = $request->query('slugs');
-
-        if ($slugsParam === null || $slugsParam === '') {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_slugs_required')],
-                ],
-            ], 422);
+        $slugsResult = $this->parseSlugsParam($request);
+        if ($slugsResult instanceof JsonResponse) {
+            return $slugsResult;
         }
 
-        $slugs = is_array($slugsParam) ? $slugsParam : explode(',', (string) $slugsParam);
-        $slugs = array_map('trim', $slugs);
-        $slugs = array_filter($slugs, fn ($slug) => $slug !== '');
-
-        if (empty($slugs)) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_slugs_required')],
-                ],
-            ], 422);
+        $includeResult = $this->parseIncludeParam($request, ['descriptions', 'people']);
+        if ($includeResult instanceof JsonResponse) {
+            return $includeResult;
         }
 
-        if (count($slugs) > 50) {
-            return response()->json([
-                'errors' => [
-                    'slugs' => [trans('api.general.bulk_max_items')],
-                ],
-            ], 422);
-        }
-
-        foreach ($slugs as $slug) {
-            if (! preg_match('/^[a-z0-9-]+$/i', $slug) || strlen($slug) > 255) {
-                return response()->json([
-                    'errors' => [
-                        'slugs' => [trans('api.general.bulk_invalid_slug_pattern')],
-                    ],
-                ], 422);
-            }
-        }
-
-        $includeParam = $request->query('include');
-        $include = is_array($includeParam) ? $includeParam : ($includeParam !== null ? explode(',', (string) $includeParam) : []);
-        $include = array_map('trim', $include);
-        $include = array_filter($include, fn ($item) => $item !== '');
-
-        $allowedInclude = ['descriptions', 'people'];
-        foreach ($include as $item) {
-            if (! in_array($item, $allowedInclude, true)) {
-                return response()->json([
-                    'errors' => [
-                        'include' => [trans('api.general.bulk_invalid_include')],
-                    ],
-                ], 422);
-            }
-        }
-
-        $tvSeries = $this->tvSeriesRepository->findBySlugs($slugs, $include);
+        $tvSeries = $this->tvSeriesRepository->findBySlugs($slugsResult, $includeResult);
 
         $data = $tvSeries->map(function (TvSeries $tvSeries) {
             $resource = TvSeriesResource::make($tvSeries)->additional([
@@ -137,19 +86,19 @@ class TvSeriesController extends Controller
         })->toArray();
 
         $foundSlugs = $tvSeries->pluck('slug')->toArray();
-        $notFound = array_values(array_diff($slugs, $foundSlugs));
+        $notFound = array_values(array_diff($slugsResult, $foundSlugs));
 
         return response()->json([
             'data' => $data,
             'not_found' => $notFound,
             'count' => count($data),
-            'requested_count' => count($slugs),
+            'requested_count' => count($slugsResult),
         ], 200);
     }
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $descriptionId = $this->normalizeDescriptionId($request->query('description_id'));
+        $descriptionId = \App\Helpers\UuidValidator::normalize($request->query('description_id'));
         if ($descriptionId === false) {
             return $this->responseFormatter->formatError('Invalid description_id parameter', 422);
         }
@@ -174,35 +123,6 @@ class TvSeriesController extends Controller
         $searchResult = $this->tvSeriesSearchService->search($criteria);
 
         return response()->json($searchResult->toArray(), 200);
-    }
-
-    /**
-     * Normalize description_id parameter.
-     * Returns null if empty, string if valid UUID, false if invalid.
-     */
-    private function normalizeDescriptionId(mixed $descriptionId): null|string|false
-    {
-        if ($this->isEmpty($descriptionId)) {
-            return null;
-        }
-
-        $descriptionId = (string) $descriptionId;
-
-        if (! $this->isValidUuid($descriptionId)) {
-            return false;
-        }
-
-        return $descriptionId;
-    }
-
-    private function isEmpty(mixed $value): bool
-    {
-        return $value === null || $value === '';
-    }
-
-    private function isValidUuid(string $uuid): bool
-    {
-        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1;
     }
 
     public function related(Request $request, string $slug): JsonResponse
@@ -285,25 +205,7 @@ class TvSeriesController extends Controller
         }
 
         $validated = $request->validated();
-
-        $report = TvSeriesReport::create([
-            'tv_series_id' => $tvSeries->id,
-            'description_id' => $validated['description_id'] ?? null,
-            'type' => $validated['type'],
-            'message' => $validated['message'],
-            'suggested_fix' => $validated['suggested_fix'] ?? null,
-            'status' => \App\Enums\ReportStatus::PENDING,
-            'priority_score' => 0.0,
-        ]);
-
-        $priorityScore = $this->tvSeriesReportService->calculatePriorityScore($report);
-        $report->update(['priority_score' => $priorityScore]);
-
-        TvSeriesReport::where('tv_series_id', $tvSeries->id)
-            ->where('type', $report->type)
-            ->where('status', \App\Enums\ReportStatus::PENDING)
-            ->where('id', '!=', $report->id)
-            ->update(['priority_score' => $priorityScore]);
+        $report = $this->tvSeriesReportService->createReport($tvSeries, $validated);
 
         return response()->json([
             'data' => [
