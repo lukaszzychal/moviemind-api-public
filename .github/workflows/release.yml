@@ -164,7 +164,7 @@ jobs:
 
       - name: Deploy to production
         if: ${{ success() }}
-        uses: appleboy/ssh-action@v1.2.4
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.PROD_USER }}
