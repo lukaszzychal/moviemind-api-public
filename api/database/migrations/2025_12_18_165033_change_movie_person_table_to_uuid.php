@@ -34,15 +34,17 @@ return new class extends Migration
             $table->dropForeign(['person_id']);
         });
 
-        // Drop primary key constraint (composite key)
-        DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_pkey');
+        if ($driver === 'pgsql') {
+            // Drop primary key constraint (composite key)
+            DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_pkey');
 
-        // Change movie_id and person_id columns type from bigint to uuid
-        DB::statement('ALTER TABLE movie_person ALTER COLUMN movie_id TYPE uuid');
-        DB::statement('ALTER TABLE movie_person ALTER COLUMN person_id TYPE uuid');
+            // Change movie_id and person_id columns type from bigint to uuid
+            DB::statement('ALTER TABLE movie_person ALTER COLUMN movie_id TYPE uuid');
+            DB::statement('ALTER TABLE movie_person ALTER COLUMN person_id TYPE uuid');
 
-        // Recreate primary key constraint
-        DB::statement('ALTER TABLE movie_person ADD PRIMARY KEY (movie_id, person_id, role)');
+            // Recreate primary key constraint
+            DB::statement('ALTER TABLE movie_person ADD PRIMARY KEY (movie_id, person_id, role)');
+        }
 
         Schema::table('movie_person', function (Blueprint $table) {
             // Recreate foreign key constraints with uuid type
@@ -63,20 +65,24 @@ return new class extends Migration
      */
     public function down(): void
     {
+        $driver = DB::connection()->getDriverName();
+
         Schema::table('movie_person', function (Blueprint $table) {
             $table->dropForeign(['movie_id']);
             $table->dropForeign(['person_id']);
         });
 
-        // Drop primary key constraint
-        DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_pkey');
+        if ($driver === 'pgsql') {
+            // Drop primary key constraint
+            DB::statement('ALTER TABLE movie_person DROP CONSTRAINT IF EXISTS movie_person_pkey');
 
-        // Change movie_id and person_id columns type back from uuid to bigint
-        DB::statement('ALTER TABLE movie_person ALTER COLUMN movie_id TYPE bigint USING NULL');
-        DB::statement('ALTER TABLE movie_person ALTER COLUMN person_id TYPE bigint USING NULL');
+            // Change movie_id and person_id columns type back from uuid to bigint
+            DB::statement('ALTER TABLE movie_person ALTER COLUMN movie_id TYPE bigint USING NULL');
+            DB::statement('ALTER TABLE movie_person ALTER COLUMN person_id TYPE bigint USING NULL');
 
-        // Recreate primary key constraint
-        DB::statement('ALTER TABLE movie_person ADD PRIMARY KEY (movie_id, person_id, role)');
+            // Recreate primary key constraint
+            DB::statement('ALTER TABLE movie_person ADD PRIMARY KEY (movie_id, person_id, role)');
+        }
 
         Schema::table('movie_person', function (Blueprint $table) {
             $table->foreign('movie_id')

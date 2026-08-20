@@ -65,12 +65,14 @@ return new class extends Migration
             });
         }
 
-        // Now we can safely drop primary key constraint
-        DB::statement('ALTER TABLE people DROP CONSTRAINT IF EXISTS people_pkey');
+        if ($driver === 'pgsql') {
+            // Now we can safely drop primary key constraint
+            DB::statement('ALTER TABLE people DROP CONSTRAINT IF EXISTS people_pkey');
 
-        // Change id column type from bigint to uuid
-        DB::statement('ALTER TABLE people ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
-        DB::statement('ALTER TABLE people ADD PRIMARY KEY (id)');
+            // Change id column type from bigint to uuid
+            DB::statement('ALTER TABLE people ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
+            DB::statement('ALTER TABLE people ADD PRIMARY KEY (id)');
+        }
 
         // Recreate foreign keys that reference people.id (now UUID)
         if ($driver === 'pgsql') {
@@ -94,9 +96,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Change id column type back from uuid to bigint
-        DB::statement('ALTER TABLE people DROP CONSTRAINT IF EXISTS people_pkey');
-        DB::statement('ALTER TABLE people ALTER COLUMN id TYPE bigint USING NULL');
-        DB::statement('ALTER TABLE people ADD PRIMARY KEY (id)');
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            // Change id column type back from uuid to bigint
+            DB::statement('ALTER TABLE people DROP CONSTRAINT IF EXISTS people_pkey');
+            DB::statement('ALTER TABLE people ALTER COLUMN id TYPE bigint USING NULL');
+            DB::statement('ALTER TABLE people ADD PRIMARY KEY (id)');
+        }
     }
 };

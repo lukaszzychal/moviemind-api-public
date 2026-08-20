@@ -192,7 +192,7 @@ class MockGenerateMovieJob implements ShouldQueue
 
     private function refreshExistingMovie(Movie $movie): void
     {
-        $movie->loadMissing('descriptions');
+        $movie->unsetRelation('descriptions')->load('descriptions');
         $locale = $this->resolveLocale();
         $description = $this->shouldUpdateBaseline($movie, $locale)
             ? $this->updateBaselineDescription($movie, $locale, [
@@ -309,6 +309,10 @@ class MockGenerateMovieJob implements ShouldQueue
     private function shouldUpdateBaseline(Movie $movie, Locale $locale): bool
     {
         if (! $this->baselineLockingEnabled() || $this->baselineDescriptionId === null || $this->contextTag !== null) {
+            return false;
+        }
+
+        if ($movie->default_description_id !== null && (string) $movie->default_description_id !== (string) $this->baselineDescriptionId) {
             return false;
         }
 

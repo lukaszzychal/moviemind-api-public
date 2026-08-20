@@ -28,12 +28,14 @@ return new class extends Migration
 
         // PostgreSQL/MySQL migration
         // Change id column type from bigint to uuid
-        DB::statement('ALTER TABLE tmdb_snapshots DROP CONSTRAINT IF EXISTS tmdb_snapshots_pkey');
-        DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
-        DB::statement('ALTER TABLE tmdb_snapshots ADD PRIMARY KEY (id)');
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE tmdb_snapshots DROP CONSTRAINT IF EXISTS tmdb_snapshots_pkey');
+            DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
+            DB::statement('ALTER TABLE tmdb_snapshots ADD PRIMARY KEY (id)');
 
-        // Change entity_id column type from bigint to uuid
-        DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN entity_id TYPE uuid');
+            // Change entity_id column type from bigint to uuid
+            DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN entity_id TYPE uuid');
+        }
     }
 
     /**
@@ -41,12 +43,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Change entity_id column type back from uuid to bigint
-        DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN entity_id TYPE bigint USING NULL');
+        $driver = DB::connection()->getDriverName();
 
-        // Change id column type back from uuid to bigint
-        DB::statement('ALTER TABLE tmdb_snapshots DROP CONSTRAINT IF EXISTS tmdb_snapshots_pkey');
-        DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN id TYPE bigint USING NULL');
-        DB::statement('ALTER TABLE tmdb_snapshots ADD PRIMARY KEY (id)');
+        if ($driver === 'pgsql') {
+            // Change entity_id column type back from uuid to bigint
+            DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN entity_id TYPE bigint USING NULL');
+
+            // Change id column type back from uuid to bigint
+            DB::statement('ALTER TABLE tmdb_snapshots DROP CONSTRAINT IF EXISTS tmdb_snapshots_pkey');
+            DB::statement('ALTER TABLE tmdb_snapshots ALTER COLUMN id TYPE bigint USING NULL');
+            DB::statement('ALTER TABLE tmdb_snapshots ADD PRIMARY KEY (id)');
+        }
     }
 };

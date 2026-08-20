@@ -99,22 +99,24 @@ return new class extends Migration
             });
         }
 
-        // Now we can safely drop primary key constraint
-        DB::statement('ALTER TABLE movies DROP CONSTRAINT IF EXISTS movies_pkey');
+        if ($driver === 'pgsql') {
+            // Now we can safely drop primary key constraint
+            DB::statement('ALTER TABLE movies DROP CONSTRAINT IF EXISTS movies_pkey');
 
-        // Change id column type from bigint to uuid
-        // Note: This will fail if table contains data - use data migration script first
-        DB::statement('ALTER TABLE movies ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
-        DB::statement('ALTER TABLE movies ADD PRIMARY KEY (id)');
+            // Change id column type from bigint to uuid
+            // Note: This will fail if table contains data - use data migration script first
+            DB::statement('ALTER TABLE movies ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
+            DB::statement('ALTER TABLE movies ADD PRIMARY KEY (id)');
 
-        // Change default_description_id column type from bigint to uuid
-        DB::statement('ALTER TABLE movies ALTER COLUMN default_description_id TYPE uuid');
+            // Change default_description_id column type from bigint to uuid
+            DB::statement('ALTER TABLE movies ALTER COLUMN default_description_id TYPE uuid');
+        }
 
         // Recreate index on default_description_id if it doesn't exist
         // (The original create_movies_table migration already creates this index)
         if ($driver === 'pgsql') {
             DB::statement('CREATE INDEX IF NOT EXISTS movies_default_description_id_index ON movies (default_description_id)');
-        } else {
+        } elseif ($driver === 'mysql') {
             Schema::table('movies', function (Blueprint $table) {
                 // Check if index exists before creating (MySQL)
                 $indexes = DB::select("SHOW INDEXES FROM movies WHERE Key_name = 'movies_default_description_id_index'");

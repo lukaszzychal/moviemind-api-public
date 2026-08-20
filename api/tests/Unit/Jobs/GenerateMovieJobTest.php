@@ -16,6 +16,12 @@ class GenerateMovieJobTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Feature::purge();
+    }
+
     public function test_mock_job_has_correct_properties(): void
     {
         $slug = 'the-matrix';
@@ -269,6 +275,7 @@ class GenerateMovieJobTest extends TestCase
         $firstJob = new MockGenerateMovieJob(
             'the-matrix',
             'job-first',
+            existingMovieId: $movie->id,
             baselineDescriptionId: $baseline->id
         );
         $firstJob->handle();
@@ -280,12 +287,13 @@ class GenerateMovieJobTest extends TestCase
         $secondJob = new MockGenerateMovieJob(
             'the-matrix',
             'job-second',
+            existingMovieId: $movie->id,
             baselineDescriptionId: $baseline->id
         );
         $secondJob->handle();
 
-        $movie->refresh();
-        $this->assertEquals(3, $movie->descriptions()->count());
+        $movie->refresh()->load('descriptions');
+        $this->assertEquals(3, $movie->descriptions->count());
         $this->assertEquals($firstDefault, $movie->default_description_id);
         $secondPayload = Cache::get('ai_job:job-second');
         $this->assertNotNull($secondPayload);

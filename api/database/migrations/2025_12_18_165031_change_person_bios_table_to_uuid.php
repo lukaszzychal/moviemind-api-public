@@ -35,12 +35,14 @@ return new class extends Migration
         });
 
         // Change id column type from bigint to uuid
-        DB::statement('ALTER TABLE person_bios DROP CONSTRAINT IF EXISTS person_bios_pkey');
-        DB::statement('ALTER TABLE person_bios ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
-        DB::statement('ALTER TABLE person_bios ADD PRIMARY KEY (id)');
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE person_bios DROP CONSTRAINT IF EXISTS person_bios_pkey');
+            DB::statement('ALTER TABLE person_bios ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
+            DB::statement('ALTER TABLE person_bios ADD PRIMARY KEY (id)');
 
-        // Change person_id column type from bigint to uuid
-        DB::statement('ALTER TABLE person_bios ALTER COLUMN person_id TYPE uuid');
+            // Change person_id column type from bigint to uuid
+            DB::statement('ALTER TABLE person_bios ALTER COLUMN person_id TYPE uuid');
+        }
 
         Schema::table('person_bios', function (Blueprint $table) {
             // Recreate foreign key constraint with uuid type
@@ -56,17 +58,21 @@ return new class extends Migration
      */
     public function down(): void
     {
+        $driver = DB::connection()->getDriverName();
+
         Schema::table('person_bios', function (Blueprint $table) {
             $table->dropForeign(['person_id']);
         });
 
-        // Change id column type back from uuid to bigint
-        DB::statement('ALTER TABLE person_bios DROP CONSTRAINT IF EXISTS person_bios_pkey');
-        DB::statement('ALTER TABLE person_bios ALTER COLUMN id TYPE bigint USING NULL');
-        DB::statement('ALTER TABLE person_bios ADD PRIMARY KEY (id)');
+        if ($driver === 'pgsql') {
+            // Change id column type back from uuid to bigint
+            DB::statement('ALTER TABLE person_bios DROP CONSTRAINT IF EXISTS person_bios_pkey');
+            DB::statement('ALTER TABLE person_bios ALTER COLUMN id TYPE bigint USING NULL');
+            DB::statement('ALTER TABLE person_bios ADD PRIMARY KEY (id)');
 
-        // Change person_id column type back from uuid to bigint
-        DB::statement('ALTER TABLE person_bios ALTER COLUMN person_id TYPE bigint USING NULL');
+            // Change person_id column type back from uuid to bigint
+            DB::statement('ALTER TABLE person_bios ALTER COLUMN person_id TYPE bigint USING NULL');
+        }
 
         Schema::table('person_bios', function (Blueprint $table) {
             $table->foreign('person_id')

@@ -7,6 +7,7 @@ namespace App\Repositories;
 use App\Models\Movie;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MovieRepository implements \App\Repositories\Contracts\MovieRepositoryInterface
 {
@@ -23,13 +24,16 @@ class MovieRepository implements \App\Repositories\Contracts\MovieRepositoryInte
         ?string $director = null,
         ?int $year = null
     ): LengthAwarePaginator {
+        $driver = DB::connection()->getDriverName();
+        $genresExpr = $driver === 'pgsql' ? 'LOWER(genres::text) LIKE LOWER(?)' : 'LOWER(genres) LIKE LOWER(?)';
+
         return Movie::query()
-            ->when($query !== null && $query !== '', function ($builder) use ($query) {
+            ->when($query !== null && $query !== '', function ($builder) use ($query, $genresExpr) {
                 $pattern = '%'.$query.'%';
-                $builder->where(function ($b) use ($pattern) {
+                $builder->where(function ($b) use ($pattern, $genresExpr) {
                     $b->whereRaw('LOWER(title) LIKE LOWER(?)', [$pattern])
                         ->orWhereRaw('LOWER(director) LIKE LOWER(?)', [$pattern])
-                        ->orWhereRaw('LOWER(genres::text) LIKE LOWER(?)', [$pattern])
+                        ->orWhereRaw($genresExpr, [$pattern])
                         ->orWhereHas('locales', function ($query) use ($pattern) {
                             $query->whereRaw('LOWER(title_localized) LIKE LOWER(?)', [$pattern]);
                         });

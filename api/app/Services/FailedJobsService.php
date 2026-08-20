@@ -213,10 +213,17 @@ class FailedJobsService
             ->pluck('count', 'queue')
             ->toArray();
 
-        // Group by hour (last 24 hours) – PostgreSQL
+        $driver = DB::connection()->getDriverName();
+        $dateExpr = match ($driver) {
+            'sqlite' => "strftime('%Y-%m-%d %H:00:00', failed_at)",
+            'mysql' => "DATE_FORMAT(failed_at, '%Y-%m-%d %H:00:00')",
+            default => "TO_CHAR(failed_at, 'YYYY-MM-DD HH24:00:00')",
+        };
+
+        // Group by hour (last 24 hours)
         $byHour = DB::table('failed_jobs')
             ->where('failed_at', '>=', now()->subDay())
-            ->selectRaw("TO_CHAR(failed_at, 'YYYY-MM-DD HH24:00:00') as hour, COUNT(*) as count")
+            ->selectRaw("{$dateExpr} as hour, COUNT(*) as count")
             ->groupBy('hour')
             ->orderBy('hour')
             ->pluck('count', 'hour')

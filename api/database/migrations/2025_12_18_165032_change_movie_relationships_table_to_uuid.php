@@ -36,13 +36,15 @@ return new class extends Migration
         });
 
         // Change id column type from bigint to uuid
-        DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_pkey');
-        DB::statement('ALTER TABLE movie_relationships ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
-        DB::statement('ALTER TABLE movie_relationships ADD PRIMARY KEY (id)');
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_pkey');
+            DB::statement('ALTER TABLE movie_relationships ALTER COLUMN id TYPE uuid USING gen_random_uuid()');
+            DB::statement('ALTER TABLE movie_relationships ADD PRIMARY KEY (id)');
 
-        // Change movie_id and related_movie_id columns type from bigint to uuid
-        DB::statement('ALTER TABLE movie_relationships ALTER COLUMN movie_id TYPE uuid');
-        DB::statement('ALTER TABLE movie_relationships ALTER COLUMN related_movie_id TYPE uuid');
+            // Change movie_id and related_movie_id columns type from bigint to uuid
+            DB::statement('ALTER TABLE movie_relationships ALTER COLUMN movie_id TYPE uuid');
+            DB::statement('ALTER TABLE movie_relationships ALTER COLUMN related_movie_id TYPE uuid');
+        }
 
         Schema::table('movie_relationships', function (Blueprint $table) {
             // Recreate foreign key constraints with uuid type
@@ -63,19 +65,23 @@ return new class extends Migration
      */
     public function down(): void
     {
+        $driver = DB::connection()->getDriverName();
+
         Schema::table('movie_relationships', function (Blueprint $table) {
             $table->dropForeign(['movie_id']);
             $table->dropForeign(['related_movie_id']);
         });
 
-        // Change movie_id and related_movie_id columns type back from uuid to bigint
-        DB::statement('ALTER TABLE movie_relationships ALTER COLUMN movie_id TYPE bigint USING NULL');
-        DB::statement('ALTER TABLE movie_relationships ALTER COLUMN related_movie_id TYPE bigint USING NULL');
+        if ($driver === 'pgsql') {
+            // Change movie_id and related_movie_id columns type back from uuid to bigint
+            DB::statement('ALTER TABLE movie_relationships ALTER COLUMN movie_id TYPE bigint USING NULL');
+            DB::statement('ALTER TABLE movie_relationships ALTER COLUMN related_movie_id TYPE bigint USING NULL');
 
-        // Change id column type back from uuid to bigint
-        DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_pkey');
-        DB::statement('ALTER TABLE movie_relationships ALTER COLUMN id TYPE bigint USING NULL');
-        DB::statement('ALTER TABLE movie_relationships ADD PRIMARY KEY (id)');
+            // Change id column type back from uuid to bigint
+            DB::statement('ALTER TABLE movie_relationships DROP CONSTRAINT IF EXISTS movie_relationships_pkey');
+            DB::statement('ALTER TABLE movie_relationships ALTER COLUMN id TYPE bigint USING NULL');
+            DB::statement('ALTER TABLE movie_relationships ADD PRIMARY KEY (id)');
+        }
 
         Schema::table('movie_relationships', function (Blueprint $table) {
             $table->foreign('movie_id')

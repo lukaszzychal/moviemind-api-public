@@ -19,8 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         // PostgreSQL migration: change entity_id from bigint to uuid
-        // If column is already uuid, skip
-        if (Schema::hasColumn('ai_jobs', 'entity_id')) {
+        if (DB::getDriverName() === 'pgsql' && Schema::hasColumn('ai_jobs', 'entity_id')) {
             $columnType = DB::selectOne("
                 SELECT data_type 
                 FROM information_schema.columns 
@@ -40,7 +39,7 @@ return new class extends Migration
     public function down(): void
     {
         // Change entity_id back to bigint (will lose data if UUIDs can't be converted)
-        if (Schema::hasColumn('ai_jobs', 'entity_id')) {
+        if (DB::getDriverName() === 'pgsql' && Schema::hasColumn('ai_jobs', 'entity_id')) {
             $columnType = DB::selectOne("
                 SELECT data_type 
                 FROM information_schema.columns 

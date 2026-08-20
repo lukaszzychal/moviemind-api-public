@@ -189,7 +189,7 @@ class RealGenerateMovieJob implements ShouldQueue
 
     private function refreshExistingMovie(Movie $movie, OpenAiClientInterface $openAiClient): void
     {
-        $movie->loadMissing('descriptions');
+        $movie->unsetRelation('descriptions')->load('descriptions');
         $locale = $this->resolveLocale();
         $contextTag = $this->determineContextTag($movie, $locale);
 
