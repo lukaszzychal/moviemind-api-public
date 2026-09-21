@@ -12,6 +12,22 @@ jobs:
     permissions:
       contents: write
       packages: write
+    env:
+      POSTGRES_TEST_KEY: test_pg_${{ github.run_id }}_${{ github.run_number }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+          POSTGRES_DB: moviemind_test
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -24,20 +40,46 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, dom, curl, libxml, zip
+          extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
 
       - name: Cache Composer packages
         uses: actions/cache@v5
         with:
-          path: vendor
-          key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+          path: api/vendor
+          key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
 
       - name: Install dependencies
+        working-directory: api
         run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Prepare environment
+        working-directory: api
+        env:
+          APP_ENV: testing
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env || touch .env
+          fi
+          php artisan key:generate --force
+          php artisan config:clear
+          composer dump-autoload --optimize
+
+      - name: Setup PHPUnit configuration
+        working-directory: api
+        run: |
+          cp phpunit.xml.dist phpunit.xml || true
 
       - name: Run tests
         working-directory: api
-        run: composer test
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test
 
       - name: Run quality checks
         working-directory: api
@@ -113,11 +155,11 @@ jobs:
             echo "" >> release_notes.md
           fi
           
-          # Installation instructions
-          echo "### 📦 Installation" >> release_notes.md
+          # Pull instructions
+          echo "### 📦 Docker Image" >> release_notes.md
           echo "" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo "composer require lukaszzychal/tvmaze-client-php:^$VERSION" >> release_notes.md
+          echo "docker pull ghcr.io/$GITHUB_REPOSITORY:v$VERSION" >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
           
@@ -163,7 +205,9 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to production
-        if: ${{ success() }}
+        if: env.PROD_HOST != ''
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
         uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.PROD_HOST }}
@@ -177,18 +221,3 @@ jobs:
             sed -i.bak "s|image: .*|image: ${IMAGE}|" compose.yml
             docker compose pull
             docker compose up -d --remove-orphans
-
-      - name: Update composer.json version
-        run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
-          VERSION=${VERSION#v}
-          composer config version $VERSION
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add composer.json
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update version to $VERSION"
-            git push origin main
-          fi

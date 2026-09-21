@@ -394,10 +394,11 @@ class OpenAiClientTest extends TestCase
                 $systemMessage = $payload['messages'][0]['content'];
                 $userMessage = $payload['messages'][1]['content'];
 
-                // Check that prompts include verification instruction
-                $this->assertStringContainsString('verify if the movie exists', $systemMessage);
-                $this->assertStringContainsString('verify if this movie exists', $userMessage);
-                $this->assertStringContainsString('Movie not found', $systemMessage);
+                // Prompts should decode slug and avoid false-negative verification that blocks valid titles
+                $this->assertStringContainsString('Generate movie information based on the slug', $systemMessage);
+                $this->assertStringContainsString('Decode the title and year from the slug', $userMessage);
+                $this->assertStringNotContainsString('verify if the movie exists', $systemMessage);
+                $this->assertStringNotContainsString('verify if this movie exists', $userMessage);
 
                 return Http::response([
                     'choices' => [
@@ -426,10 +427,11 @@ class OpenAiClientTest extends TestCase
                 $systemMessage = $payload['messages'][0]['content'];
                 $userMessage = $payload['messages'][1]['content'];
 
-                // Check that prompts include verification instruction
-                $this->assertStringContainsString('verify if the person exists', $systemMessage);
-                $this->assertStringContainsString('verify if this person exists', $userMessage);
-                $this->assertStringContainsString('Person not found', $systemMessage);
+                // Prompts should decode slug and avoid false-negative verification that blocks valid persons
+                $this->assertStringContainsString("Generate a biography based on the person's slug", $systemMessage);
+                $this->assertStringContainsString("Decode the person's name from the slug", $userMessage);
+                $this->assertStringNotContainsString('verify if the person exists', $systemMessage);
+                $this->assertStringNotContainsString('verify if this person exists', $userMessage);
 
                 return Http::response([
                     'choices' => [

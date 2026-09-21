@@ -26,7 +26,9 @@ class SearchPerformanceTest extends TestCase
         $this->artisan('db:seed');
         config(['cache.default' => 'array']);
         config(['logging.default' => 'stack']);
-        config(['rate-limiting.logging.enabled' => false]); // Disable logging in tests
+        config(['rate-limiting.logging.enabled' => false]);
+        config(['rate-limiting.queue.enabled' => false]);
+        config(['rate-limiting.active_jobs.enabled' => false]);
         config(['services.tmdb.api_key' => 'test-api-key']);
         Cache::flush();
         Feature::deactivate('tmdb_verification');
