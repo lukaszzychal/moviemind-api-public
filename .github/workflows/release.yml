@@ -205,7 +205,9 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to production
-        if: ${{ success() && secrets.PROD_HOST != '' }}
+        if: env.PROD_HOST != ''
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
         uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.PROD_HOST }}
