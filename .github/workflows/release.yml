@@ -12,6 +12,22 @@ jobs:
     permissions:
       contents: write
       packages: write
+    env:
+      POSTGRES_TEST_KEY: test_pg_${{ github.run_id }}_${{ github.run_number }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+          POSTGRES_DB: moviemind_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -24,7 +40,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, dom, curl, libxml, zip
+          extensions: mbstring, dom, curl, libxml, zip, pdo_pgsql, pgsql
 
       - name: Cache Composer packages
         uses: actions/cache@v5
@@ -36,9 +52,34 @@ jobs:
         working-directory: api
         run: composer install --prefer-dist --no-progress --no-suggest
 
+      - name: Prepare environment
+        working-directory: api
+        env:
+          APP_ENV: testing
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env || touch .env
+          fi
+          php artisan key:generate --force
+          php artisan config:clear
+          composer dump-autoload --optimize
+
+      - name: Setup PHPUnit configuration
+        working-directory: api
+        run: |
+          cp phpunit.xml.dist phpunit.xml || true
+
       - name: Run tests
         working-directory: api
-        run: composer test
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: moviemind_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
+        run: php -d memory_limit=512M -d zend.max_allowed_stack_size=512M artisan test
 
       - name: Run quality checks
         working-directory: api
