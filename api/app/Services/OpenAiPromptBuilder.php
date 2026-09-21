@@ -244,9 +244,9 @@ class OpenAiPromptBuilder
     {
         return match (strtolower($contextTag)) {
             'modern' => "STRICT: You MUST write in a modern, contemporary style. Use current language and references that resonate with today's audience. Avoid archaic or formal tone. The description MUST feel up-to-date and relevant to present-day readers.",
-            'critical' => "STRICT: You MUST write in a critical, analytical tone. Evaluate the film's themes, cinematography, direction, and artistic merit. Do NOT use humor or casual language. The description MUST offer a thoughtful, critical perspective—not just a plot summary.",
+            'critical' => 'STRICT: You MUST write in a critical, analytical tone. Evaluate the themes, storytelling, direction, and artistic merit. Do NOT use humor or casual language. The description MUST offer a thoughtful, critical perspective—not just a basic plot summary.',
             'humorous' => 'STRICT: You MUST write in a humorous, witty style. Use light humor, clever wordplay, and entertaining phrasing while remaining informative. Do NOT write a dry or purely critical description. The tone MUST be clearly funny and engaging.',
-            'default' => "Write a balanced, informative description that provides a clear overview of the movie's plot and appeal. Neutral tone.",
+            'default' => 'Write a balanced, informative description that provides a clear overview of the content and appeal. Neutral tone.',
             default => "STRICT: Write the description in the requested style: {$contextTag}. The tone and style MUST be clearly recognizable.",
         };
     }
@@ -298,23 +298,18 @@ class OpenAiPromptBuilder
 
     private function formatTmdbContext(array $tmdbData): string
     {
-        $lines = [
-            "Title: {$tmdbData['title']}",
-        ];
+        $lines = [];
 
-        if (! empty($tmdbData['release_date'])) {
+        if (isset($tmdbData['title'])) {
+            $lines[] = "Title: {$tmdbData['title']}";
+        }
+        if (isset($tmdbData['release_date'])) {
             $lines[] = "Release Date: {$tmdbData['release_date']}";
         }
-
-        if (! empty($tmdbData['director'])) {
-            $lines[] = "Director: {$tmdbData['director']}";
+        if (isset($tmdbData['overview'])) {
+            $lines[] = "Overview: {$tmdbData['overview']}";
         }
-
-        if (! empty($tmdbData['overview'])) {
-            $lines[] = "TMDb Overview: {$tmdbData['overview']}";
-        }
-
-        if (! empty($tmdbData['id'])) {
+        if (isset($tmdbData['id'])) {
             $lines[] = "TMDb ID: {$tmdbData['id']}";
         }
 
@@ -323,16 +318,19 @@ class OpenAiPromptBuilder
 
     private function formatTmdbTvContext(array $tmdbData): string
     {
-        $lines = [
-            "Title: {$tmdbData['name']}",
-        ];
+        $lines = [];
 
-        if (! empty($tmdbData['first_air_date'])) {
+        if (isset($tmdbData['name'])) {
+            $lines[] = "Title: {$tmdbData['name']}";
+        }
+        if (isset($tmdbData['first_air_date'])) {
             $lines[] = "First Air Date: {$tmdbData['first_air_date']}";
         }
-
-        if (! empty($tmdbData['overview'])) {
+        if (isset($tmdbData['overview'])) {
             $lines[] = "Overview: {$tmdbData['overview']}";
+        }
+        if (isset($tmdbData['id'])) {
+            $lines[] = "TMDb ID: {$tmdbData['id']}";
         }
 
         return implode("\n", $lines);
@@ -370,10 +368,6 @@ class OpenAiPromptBuilder
             'schema' => [
                 'type' => 'object',
                 'properties' => [
-                    'error' => [
-                        'type' => 'string',
-                        'description' => 'Error message when movie does not exist (e.g., "Movie not found")',
-                    ],
                     'title' => [
                         'type' => 'string',
                         'description' => 'Movie title',
@@ -437,10 +431,6 @@ class OpenAiPromptBuilder
             'schema' => [
                 'type' => 'object',
                 'properties' => [
-                    'error' => [
-                        'type' => 'string',
-                        'description' => 'Error message when person does not exist (e.g., "Person not found")',
-                    ],
                     'name' => [
                         'type' => 'string',
                         'description' => 'Person full name',
@@ -458,7 +448,7 @@ class OpenAiPromptBuilder
                         'description' => 'Full biography text',
                     ],
                 ],
-                'required' => [],
+                'required' => ['name', 'biography'],
             ],
         ];
     }
@@ -470,10 +460,6 @@ class OpenAiPromptBuilder
             'schema' => [
                 'type' => 'object',
                 'properties' => [
-                    'error' => [
-                        'type' => 'string',
-                        'description' => 'Error message when TV series does not exist (e.g., "TV series not found")',
-                    ],
                     'title' => [
                         'type' => 'string',
                         'description' => 'TV series title',
@@ -506,10 +492,6 @@ class OpenAiPromptBuilder
             'schema' => [
                 'type' => 'object',
                 'properties' => [
-                    'error' => [
-                        'type' => 'string',
-                        'description' => 'Error message when TV show does not exist (e.g., "TV show not found")',
-                    ],
                     'title' => [
                         'type' => 'string',
                         'description' => 'TV show title',

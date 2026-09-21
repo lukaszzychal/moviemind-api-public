@@ -51,7 +51,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=semver,pattern={{version}}
-            type=raw,value=staging,enable=${{ startsWith(github.ref, 'refs/tags/staging-') }}
+            type=raw,value=staging,enable=${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/staging-') || startsWith(github.ref, 'refs/tags/v') }}
             type=sha,format=long
 
       - name: Build and push Docker image
@@ -68,23 +68,36 @@ jobs:
 
       - name: Output image tags
         run: |
-          echo "## 🐳 \${{ matrix.component }} Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐳 ${{ matrix.component }} Docker Image Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Registry:** \`\${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`\${{ github.repository }}-\${{ matrix.component }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** \`\${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ github.repository }}-${{ matrix.component }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo '\`\`\`' >> $GITHUB_STEP_SUMMARY
-          echo "\${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '\`\`\`' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
-          echo '\`\`\`bash' >> $GITHUB_STEP_SUMMARY
-          echo "docker pull \${{ env.REGISTRY }}/\${{ github.repository }}-\${{ matrix.component }}:\${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          if [[ "\${{ github.ref }}" == refs/tags/staging-* ]]; then
-            echo "docker pull \${{ env.REGISTRY }}/\${{ github.repository }}-\${{ matrix.component }}:staging" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}:${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.ref }}" == refs/tags/staging-* ]]; then
+            echo "docker pull ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}:staging" >> $GITHUB_STEP_SUMMARY
           else
-            echo "docker pull \${{ env.REGISTRY }}/\${{ github.repository }}-\${{ matrix.component }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}:latest" >> $GITHUB_STEP_SUMMARY
           fi
-          echo '\`\`\`' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Trigger Railway Redeploy
+        if: matrix.component == 'backend' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            echo "Triggering Railway redeployment for moviemind-api-staging..."
+            npx --yes @railway/cli redeploy --service 9b054e90-55d7-421b-ab98-56b3deeea25c -y || true
+          else
+            echo "RAILWAY_TOKEN not set, skipping Railway redeploy"
+          fi
+
