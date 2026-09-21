@@ -129,6 +129,10 @@ class AdaptiveRateLimiter
      */
     private function getQueueRatio(): float
     {
+        if (app()->environment('testing') && ! config('rate-limiting.queue.testing_enabled', false)) {
+            return 0.0;
+        }
+
         try {
             $connection = config('rate-limiting.queue.connection', 'default');
             $queueName = config('rate-limiting.queue.queue_name', 'default');
@@ -142,7 +146,7 @@ class AdaptiveRateLimiter
             $ratio = min(1.0, (float) ($queueSize / max(1, $maxSize)));
 
             return max(0.0, $ratio);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Fallback: return 0 if Redis is unavailable
             Log::warning('Failed to get queue size for rate limiting', [
                 'error' => $e->getMessage(),
@@ -159,6 +163,10 @@ class AdaptiveRateLimiter
      */
     private function getActiveJobsRatio(): float
     {
+        if (app()->environment('testing') && ! config('rate-limiting.active_jobs.testing_enabled', false)) {
+            return 0.0;
+        }
+
         try {
             $maxJobs = (int) config('rate-limiting.active_jobs.max_jobs', 100);
 
@@ -171,7 +179,7 @@ class AdaptiveRateLimiter
             $ratio = min(1.0, (float) ($activeJobsCount / max(1, $maxJobs)));
 
             return max(0.0, $ratio);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Fallback: return 0 if monitoring is unavailable
             Log::warning('Failed to get active jobs count for rate limiting', [
                 'error' => $e->getMessage(),

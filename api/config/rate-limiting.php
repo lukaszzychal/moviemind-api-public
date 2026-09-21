@@ -91,7 +91,7 @@ return [
     |
     */
     'queue' => [
-        'enabled' => true,    // Enable queue size monitoring
+        'enabled' => env('RATE_LIMITING_QUEUE_ENABLED', true),    // Enable queue size monitoring
         'connection' => 'default', // Redis connection name (matches config/database.php)
         'queue_name' => 'default', // Queue name to monitor
         'max_size' => 1000,   // Maximum expected queue size (for normalization)
@@ -106,7 +106,7 @@ return [
     |
     */
     'active_jobs' => [
-        'enabled' => true,    // Enable active jobs monitoring
+        'enabled' => env('RATE_LIMITING_ACTIVE_JOBS_ENABLED', true),    // Enable active jobs monitoring
         'max_jobs' => 100,    // Maximum expected active jobs (for normalization)
     ],
 
