@@ -22,7 +22,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ env.POSTGRES_TEST_KEY }}
           POSTGRES_DB: moviemind_test
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -205,7 +205,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to production
-        if: ${{ success() }}
+        if: ${{ success() && secrets.PROD_HOST != '' }}
         uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.PROD_HOST }}
@@ -221,6 +221,7 @@ jobs:
             docker compose up -d --remove-orphans
 
       - name: Update composer.json version
+        working-directory: api
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           VERSION=${VERSION#v}
