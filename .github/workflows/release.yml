@@ -29,10 +29,11 @@ jobs:
       - name: Cache Composer packages
         uses: actions/cache@v5
         with:
-          path: vendor
-          key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+          path: api/vendor
+          key: ${{ runner.os }}-php-8.3-${{ hashFiles('api/composer.lock') }}
 
       - name: Install dependencies
+        working-directory: api
         run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Run tests
