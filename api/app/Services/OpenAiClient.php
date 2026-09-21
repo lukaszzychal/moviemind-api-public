@@ -368,7 +368,7 @@ class OpenAiClient implements OpenAiClientInterface
             );
 
             // Check for error response from AI (e.g., "Movie not found", "Person not found")
-            if (isset($content['error'])) {
+            if (isset($content['error']) && ! empty($content['error']) && empty($content['description']) && empty($content['biography'])) {
                 $errorMessage = $content['error'];
                 Log::info("AI returned error response for {$entityType}", [
                     'slug' => $slug,
