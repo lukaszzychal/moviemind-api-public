@@ -134,6 +134,8 @@ Route::prefix('v1/admin')->middleware('admin.token')->group(function () {
         Route::get('/failed', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failed']);
         Route::get('/failed/stats', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'failedStats']);
         Route::get('/processing-times', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'processingTimes']);
+        Route::post('/failed/retry', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'retryFailedJobs']);
+        Route::post('/cache/clear', [\App\Http\Controllers\Admin\JobsDashboardController::class, 'clearCache']);
     });
     Route::prefix('subscription-plans')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'index']);

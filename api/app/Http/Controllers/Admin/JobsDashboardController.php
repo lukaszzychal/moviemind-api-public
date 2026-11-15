@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ClearCacheRequest;
+use App\Services\AdminMaintenanceService;
 use App\Services\FailedJobsService;
 use App\Services\QueueJobsDashboardService;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +21,8 @@ class JobsDashboardController extends Controller
 {
     public function __construct(
         private readonly QueueJobsDashboardService $queueJobsService,
-        private readonly FailedJobsService $failedJobsService
+        private readonly FailedJobsService $failedJobsService,
+        private readonly AdminMaintenanceService $maintenanceService
     ) {}
 
     /**
@@ -95,5 +98,21 @@ class JobsDashboardController extends Controller
         $stats = $this->queueJobsService->getProcessingTimes();
 
         return response()->json($stats);
+    }
+
+    /**
+     * Retry all failed queue jobs.
+     */
+    public function retryFailedJobs(): JsonResponse
+    {
+        return response()->json($this->maintenanceService->retryFailedJobs());
+    }
+
+    /**
+     * Clear a single cache key, or the whole application cache for "all".
+     */
+    public function clearCache(ClearCacheRequest $request): JsonResponse
+    {
+        return response()->json($this->maintenanceService->clearCache($request->cacheKey()));
     }
 }
