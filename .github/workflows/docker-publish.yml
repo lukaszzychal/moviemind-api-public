@@ -89,15 +89,65 @@ jobs:
           fi
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Trigger Railway Redeploy
+      # The Railway service (moviemind-api-staging) runs the `:staging` image tag.
+      # A fresh deployment re-pulls that tag, so every push to main ships the new backend.
+      - name: Deploy backend to Railway
         if: matrix.component == 'backend' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: 9b054e90-55d7-421b-ab98-56b3deeea25c
+          RAILWAY_ENVIRONMENT_ID: 23ab2fb0-b14a-4504-8306-c98de20ed555
         run: |
-          if [ -n "$RAILWAY_TOKEN" ]; then
-            echo "Triggering Railway redeployment for moviemind-api-staging..."
-            npx --yes @railway/cli redeploy --service 9b054e90-55d7-421b-ab98-56b3deeea25c -y || true
-          else
-            echo "RAILWAY_TOKEN not set, skipping Railway redeploy"
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::RAILWAY_TOKEN secret is not set"
+            exit 1
           fi
+          payload=$(jq -n --arg s "$RAILWAY_SERVICE_ID" --arg e "$RAILWAY_ENVIRONMENT_ID" \
+            '{query: "mutation($s:String!,$e:String!){ serviceInstanceDeployV2(serviceId:$s, environmentId:$e) }", variables: {s: $s, e: $e}}')
+          response=$(curl -sS https://backboard.railway.com/graphql/v2 \
+            -H "Project-Access-Token: $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$payload")
+          deployment_id=$(echo "$response" | jq -r '.data.serviceInstanceDeployV2 // empty')
+          if [ -z "$deployment_id" ]; then
+            echo "::error::Railway deploy failed: $(echo "$response" | jq -c '.errors // .')"
+            exit 1
+          fi
+          echo "Railway deployment started: $deployment_id"
+          echo "**Railway deployment:** \`$deployment_id\`" >> $GITHUB_STEP_SUMMARY
+
+          # Wait for this specific deployment to finish (the old one keeps serving until then)
+          status_query=$(jq -n --arg id "$deployment_id" \
+            '{query: "query($id:String!){ deployment(id:$id){ status } }", variables: {id: $id}}')
+          for i in $(seq 1 60); do
+            status=$(curl -sS https://backboard.railway.com/graphql/v2 \
+              -H "Project-Access-Token: $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$status_query" | jq -r '.data.deployment.status // empty')
+            echo "Attempt $i: deployment status = ${status:-unknown}"
+            case "$status" in
+              SUCCESS) exit 0 ;;
+              FAILED|CRASHED|REMOVED) echo "::error::Railway deployment $deployment_id ended with $status"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Timed out waiting for Railway deployment $deployment_id"
+          exit 1
+
+      - name: Verify backend is up
+        if: matrix.component == 'backend' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        run: |
+          # /health returns 503 when an optional integration (e.g. OpenAI) is degraded,
+          # so check that the app answers and the database is reachable instead of the HTTP code.
+          for i in $(seq 1 10); do
+            db=$(curl -s --max-time 10 https://moviemind-api.up.railway.app/api/v1/health | jq -r '.checks.database.status // empty' 2>/dev/null || true)
+            if [ "$db" = "ok" ]; then
+              echo "Backend is up (database: ok)"
+              exit 0
+            fi
+            echo "Attempt $i: backend not ready yet, retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::Backend did not become healthy after deployment"
+          exit 1
 
