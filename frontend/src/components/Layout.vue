@@ -1,6 +1,22 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+
+const navLinks = [
+  { to: '/search', key: 'nav.search' },
+  { to: '/compare', key: 'nav.compare' },
+  { to: '/generate', key: 'nav.generate' },
+  { to: '/feedback', key: 'nav.feedback' },
+]
+
+const mobileMenuOpen = ref(false)
+const route = useRoute()
+
+// Close the mobile menu after navigating
+watch(() => route.fullPath, () => {
+  mobileMenuOpen.value = false
+})
 </script>
 
 <template>
@@ -16,33 +32,64 @@ import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
               MovieMind
             </RouterLink>
             <RouterLink
-              to="/search"
-              class="text-gray-600 hover:text-gray-900"
+              v-for="link in navLinks"
+              :key="link.to"
+              :to="link.to"
+              class="hidden sm:inline text-gray-600 hover:text-gray-900"
             >
-              {{ $t('nav.search') }}
-            </RouterLink>
-            <RouterLink
-              to="/compare"
-              class="text-gray-600 hover:text-gray-900"
-            >
-              {{ $t('nav.compare') }}
-            </RouterLink>
-            <RouterLink
-              to="/generate"
-              class="text-gray-600 hover:text-gray-900"
-            >
-              {{ $t('nav.generate') }}
-            </RouterLink>
-            <RouterLink
-              to="/feedback"
-              class="text-gray-600 hover:text-gray-900"
-            >
-              {{ $t('nav.feedback') }}
+              {{ $t(link.key) }}
             </RouterLink>
           </div>
-          <div class="flex items-center">
+          <div class="flex items-center gap-1">
             <LanguageSwitcher />
+            <button
+              type="button"
+              class="sm:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              :aria-expanded="mobileMenuOpen"
+              aria-controls="mobile-menu"
+              :aria-label="mobileMenuOpen ? $t('nav.close_menu') : $t('nav.open_menu')"
+              @click="mobileMenuOpen = !mobileMenuOpen"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  v-if="mobileMenuOpen"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+                <path
+                  v-else
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
           </div>
+        </div>
+      </div>
+      <div
+        v-show="mobileMenuOpen"
+        id="mobile-menu"
+        class="sm:hidden border-t border-gray-200"
+      >
+        <div class="px-4 py-2 flex flex-col">
+          <RouterLink
+            v-for="link in navLinks"
+            :key="link.to"
+            :to="link.to"
+            class="py-2 text-gray-600 hover:text-gray-900"
+            active-class="text-gray-900 font-medium"
+          >
+            {{ $t(link.key) }}
+          </RouterLink>
         </div>
       </div>
     </nav>
