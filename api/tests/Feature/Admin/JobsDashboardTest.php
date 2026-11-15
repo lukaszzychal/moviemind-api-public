@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -201,5 +203,82 @@ class JobsDashboardTest extends TestCase
             'by_queue',
             'overall_avg',
         ]);
+    }
+
+    public function test_retry_failed_jobs_executes_queue_retry_command(): void
+    {
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('queue:retry', ['id' => ['all']])
+            ->andReturn(0);
+        Artisan::shouldReceive('output')
+            ->once()
+            ->andReturn('Retried all failed jobs.');
+
+        $response = $this->postJson('/api/v1/admin/jobs-dashboard/failed/retry');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'ok',
+            'command' => 'queue:retry',
+            'scope' => 'all',
+            'exit_code' => 0,
+            'output' => 'Retried all failed jobs.',
+        ]);
+    }
+
+    public function test_clear_cache_forgets_specific_key(): void
+    {
+        $cacheKey = 'movie:the-matrix-1999:desc:default';
+        Cache::put($cacheKey, 'cached value', 60);
+        $this->assertTrue(Cache::has($cacheKey));
+
+        $response = $this->postJson('/api/v1/admin/jobs-dashboard/cache/clear', [
+            'cache_key' => $cacheKey,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'ok',
+            'scope' => 'key',
+            'cache_key' => $cacheKey,
+            'cleared' => true,
+        ]);
+        $this->assertFalse(Cache::has($cacheKey));
+    }
+
+    public function test_clear_cache_all_executes_cache_clear_command(): void
+    {
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('cache:clear')
+            ->andReturn(0);
+        Artisan::shouldReceive('output')
+            ->once()
+            ->andReturn('Application cache cleared successfully.');
+
+        $response = $this->postJson('/api/v1/admin/jobs-dashboard/cache/clear', [
+            'cache_key' => 'all',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'ok',
+            'command' => 'cache:clear',
+            'scope' => 'all',
+            'cache_key' => 'all',
+            'exit_code' => 0,
+            'output' => 'Application cache cleared successfully.',
+        ]);
+    }
+
+    public function test_clear_cache_rejects_invalid_cache_key(): void
+    {
+        $response = $this->postJson('/api/v1/admin/jobs-dashboard/cache/clear', [
+            'cache_key' => str_repeat('a', 256),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['cache_key']);
     }
 }

@@ -27,6 +27,8 @@ const DB_PASSWORD = process.env.DB_PASSWORD || "password";
 const DB_NAME = process.env.DB_NAME || "moviemind";
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || "http://localhost:8000/api";
 const LARAVEL_API_KEY = process.env.LARAVEL_API_KEY || "";
+/** Token for Laravel admin endpoints (X-Admin-Token, matches ADMIN_API_TOKEN in the API). */
+const LARAVEL_ADMIN_TOKEN = process.env.LARAVEL_ADMIN_TOKEN || "";
 const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_secret";
 
 /** Supports base ending with `/api` or `/api/v1` (see docs MCP_CLIENT_EXAMPLES). */
@@ -281,7 +283,7 @@ const toolDefinitions: McpToolDefinition[] = [
   },
   {
     name: "dispatch_job_retry",
-    description: "Restarts failed queue events (php artisan queue:retry). Requires local Laravel server environment.",
+    description: "Retries all failed queue jobs (queue:retry all) via the Laravel admin API. Requires LARAVEL_ADMIN_TOKEN.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -290,7 +292,7 @@ const toolDefinitions: McpToolDefinition[] = [
   },
   {
     name: "trigger_cache_clear",
-    description: "Clears specified cache entries after diagnostic or deployment activities.",
+    description: "Clears a single cache key, or the whole application cache with 'all', via the Laravel admin API. Requires LARAVEL_ADMIN_TOKEN.",
     inputSchema: {
       type: "object",
       properties: {
@@ -550,7 +552,7 @@ function buildSearchQueryForEntity(entityType: SearchEntityType, args: Record<st
 async function callLaravelApi(
   pathUnderV1: string,
   options: RequestInit = {},
-  custom: { requireApiKey?: boolean } = {}
+  custom: { requireApiKey?: boolean; requireAdminToken?: boolean } = {}
 ) {
   const path = pathUnderV1.startsWith("/") ? pathUnderV1.slice(1) : pathUnderV1;
   const headers = new Headers(options.headers || {});
@@ -559,6 +561,13 @@ async function callLaravelApi(
 
   if (custom.requireApiKey) {
     headers.set("X-Api-Key", LARAVEL_API_KEY);
+  }
+
+  if (custom.requireAdminToken) {
+    if (!LARAVEL_ADMIN_TOKEN) {
+      throw new Error("LARAVEL_ADMIN_TOKEN is required for this MCP tool.");
+    }
+    headers.set("X-Admin-Token", LARAVEL_ADMIN_TOKEN);
   }
 
   const response = await fetch(resolveV1Url(path), {
@@ -753,15 +762,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     
     if (name === "dispatch_job_retry") {
+      const result = await callLaravelApi(
+        "/admin/jobs-dashboard/failed/retry",
+        { method: "POST" },
+        { requireAdminToken: true }
+      );
       return {
-         content: [{ type: "text", text: `All failed tasks from FailedJobs restarted via queue:retry all CLI command!` }]
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
     }
 
     if (name === "trigger_cache_clear") {
       const cacheKey = String(args?.cache_key || "all");
+      const result = await callLaravelApi(
+        "/admin/jobs-dashboard/cache/clear",
+        { method: "POST", body: JSON.stringify({ cache_key: cacheKey }) },
+        { requireAdminToken: true }
+      );
       return {
-        content: [{ type: "text", text: `Cache clear triggered for key: ${cacheKey}. (Mock via ${LARAVEL_API_URL})` }]
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
     }
     
