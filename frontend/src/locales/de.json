@@ -3,7 +3,9 @@
         "search": "Suche",
         "compare": "Vergleichen",
         "generate": "Erzeugen",
-        "feedback": "Feedback"
+        "feedback": "Feedback",
+        "open_menu": "Menü öffnen",
+        "close_menu": "Menü schließen"
     },
     "footer": {
         "tmdb_disclaimer": "Dieses Produkt verwendet die TMDb-API, wird jedoch nicht von TMDb unterstützt oder zertifiziert."

@@ -3,7 +3,9 @@
         "search": "Search",
         "compare": "Compare",
         "generate": "Generate",
-        "feedback": "Feedback"
+        "feedback": "Feedback",
+        "open_menu": "Open menu",
+        "close_menu": "Close menu"
     },
     "footer": {
         "tmdb_disclaimer": "This product uses the TMDB API but is not endorsed or certified by TMDB."

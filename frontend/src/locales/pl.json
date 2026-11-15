@@ -3,7 +3,9 @@
         "search": "Szukaj",
         "compare": "Porównaj",
         "generate": "Generuj",
-        "feedback": "Opinia"
+        "feedback": "Opinia",
+        "open_menu": "Otwórz menu",
+        "close_menu": "Zamknij menu"
     },
     "footer": {
         "tmdb_disclaimer": "Ten produkt korzysta z interfejsu API TMDB, jednak nie został zatwierdzony ani certyfikowany przez firmę TMDB."
