@@ -12,6 +12,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = require("path");
 const sse_js_1 = require("@modelcontextprotocol/sdk/server/sse.js");
 const express_1 = __importDefault(require("express"));
+const crypto_1 = require("crypto");
 dotenv_1.default.config({ path: (0, path_1.resolve)(process.cwd(), ".env") });
 const TRANSPORT_TYPE = process.env.TRANSPORT_TYPE || "stdio";
 const DB_HOST = process.env.DB_HOST || "localhost";
@@ -735,11 +736,32 @@ function registerMcpHandlers(server) {
     });
 }
 /**
+ * Rejects SSE/HTTP requests without `Authorization: Bearer <AUTH_TOKEN>`
+ * (the header documented in docs/mcp/MCP_CLIENT_EXAMPLES.md).
+ */
+function requireBearerToken(req, res, next) {
+    const header = req.headers.authorization ?? "";
+    const provided = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
+    const expected = Buffer.from(AUTH_TOKEN);
+    const actual = Buffer.from(provided);
+    if (actual.length !== expected.length || !(0, crypto_1.timingSafeEqual)(actual, expected)) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+    }
+    next();
+}
+/**
  * 🚀 TRANSPORT
  */
 async function run() {
     if (TRANSPORT_TYPE === "sse") {
+        // The SSE transport is reachable over the network, so it must not run with the
+        // built-in fallback token: require an explicit AUTH_TOKEN.
+        if (!process.env.AUTH_TOKEN || process.env.AUTH_TOKEN === "default_secret") {
+            throw new Error("AUTH_TOKEN must be set to a non-default value when TRANSPORT_TYPE=sse.");
+        }
         const app = (0, express_1.default)();
+        app.use(["/sse", "/message"], requireBearerToken);
         const sseSessions = new Map();
         const unregisterSseSession = (sessionId) => {
             const entry = sseSessions.get(sessionId);
