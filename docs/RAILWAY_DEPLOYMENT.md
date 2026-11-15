@@ -106,14 +106,18 @@ gh release create staging-1.0.6 --title "Release staging-1.0.6" --notes "Release
 
 ### Krok 3: Wdrożenie na Railway
 
-#### Opcja A: Automatyczne wdrożenie (przez Git push)
+#### Opcja A: Automatyczne wdrożenie (merge do `main`)
 
-Railway automatycznie wdraża zmiany z `main` branch:
+Serwis `moviemind-api-staging` uruchamia obraz `ghcr.io/lukaszzychal/moviemind-api-public-backend:staging`.
+Po merge'u do `main` workflow **Build and Publish to GHCR** (`.github/workflows/docker-publish.yml`):
 
-```bash
-# Merge PR do main (jeśli jeszcze nie zmergowany)
-# Railway automatycznie wykryje zmiany i uruchomi deployment
-```
+1. buduje obraz backendu i publikuje go z tagiem `:staging`,
+2. uruchamia nowy deployment na Railway (GraphQL API, sekret `RAILWAY_TOKEN` = **project token** środowiska `production`),
+3. czeka na status deploymentu i sprawdza `/api/v1/health` (baza danych `ok`).
+
+Nieudany deployment lub nieważny token kończy pipeline na czerwono.
+
+**Rollback:** w Railway → serwis `moviemind-api-staging` → Settings → Source ustaw konkretny tag (np. `:v1.2.2` lub `:sha-<commit>`) i zrób redeploy.
 
 #### Opcja B: Manualne wdrożenie przez Railway CLI
 
@@ -127,7 +131,7 @@ railway up
 
 ### Krok 4: Uruchomienie migracji
 
-**⚠️ WAŻNE:** Migracje NIE są uruchamiane automatycznie podczas deploymentu. Musisz uruchomić je ręcznie.
+**⚠️ WAŻNE:** Migracje **są uruchamiane automatycznie** przy każdym starcie kontenera (`docker/php/entrypoint.sh` → `php artisan migrate --force`), więc merge z nową migracją do `main` od razu zmienia bazę produkcyjną. Aby to wyłączyć, ustaw w Railway zmienną `RUN_MIGRATIONS=false` i uruchamiaj migracje ręcznie (metody poniżej).
 
 #### Metoda 1: Railway Web UI (Najłatwiejsza)
 
