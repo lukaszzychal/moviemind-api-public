@@ -51,3 +51,6 @@ chatgpt2
 /private/
 
 .php-cs-fixer.cache
+
+# Dependencies (any directory)
+node_modules/
