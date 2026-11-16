@@ -273,4 +273,71 @@ class MovieRelationshipsTest extends TestCase
             ->assertJsonCount(0, 'related_movies')
             ->assertJsonPath('count', 0);
     }
+
+    /**
+     * Scenario: Relationship stored only from the other movie's perspective
+     *
+     * Given: Only the row "Shrek 2 -> Shrek is a PREQUEL" exists (synced from Shrek 2)
+     * When: Related movies of Shrek are requested
+     * Then: Shrek 2 is reported as a SEQUEL of Shrek (type inverted)
+     */
+    public function test_related_movies_inverts_type_for_reverse_relationship(): void
+    {
+        $shrek = Movie::create(['title' => 'Shrek', 'slug' => 'shrek-2001', 'release_year' => 2001]);
+        $shrek2 = Movie::create(['title' => 'Shrek 2', 'slug' => 'shrek-2-2004', 'release_year' => 2004]);
+
+        MovieRelationship::create([
+            'movie_id' => $shrek2->id,
+            'related_movie_id' => $shrek->id,
+            'relationship_type' => RelationshipType::PREQUEL,
+            'order' => 1,
+        ]);
+
+        $response = $this->getJson("/api/v1/movies/{$shrek->slug}/related");
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'related_movies')
+            ->assertJsonPath('related_movies.0.slug', 'shrek-2-2004')
+            ->assertJsonPath('related_movies.0.relationship_type', 'SEQUEL')
+            ->assertJsonPath('related_movies.0.relationship_label', 'Sequel');
+    }
+
+    /**
+     * Scenario: Relationship stored in both directions
+     *
+     * Given: "Shrek -> Shrek 2 is a SEQUEL" and "Shrek 2 -> Shrek is a PREQUEL" both exist
+     * When: Related movies of either movie are requested
+     * Then: The other movie appears exactly once with the correct type
+     */
+    public function test_related_movies_deduplicates_bidirectional_relationships(): void
+    {
+        $shrek = Movie::create(['title' => 'Shrek', 'slug' => 'shrek-2001', 'release_year' => 2001]);
+        $shrek2 = Movie::create(['title' => 'Shrek 2', 'slug' => 'shrek-2-2004', 'release_year' => 2004]);
+
+        MovieRelationship::create([
+            'movie_id' => $shrek->id,
+            'related_movie_id' => $shrek2->id,
+            'relationship_type' => RelationshipType::SEQUEL,
+            'order' => 1,
+        ]);
+        MovieRelationship::create([
+            'movie_id' => $shrek2->id,
+            'related_movie_id' => $shrek->id,
+            'relationship_type' => RelationshipType::PREQUEL,
+            'order' => 1,
+        ]);
+
+        $this->getJson("/api/v1/movies/{$shrek->slug}/related")
+            ->assertOk()
+            ->assertJsonCount(1, 'related_movies')
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('related_movies.0.slug', 'shrek-2-2004')
+            ->assertJsonPath('related_movies.0.relationship_type', 'SEQUEL');
+
+        $this->getJson("/api/v1/movies/{$shrek2->slug}/related")
+            ->assertOk()
+            ->assertJsonCount(1, 'related_movies')
+            ->assertJsonPath('related_movies.0.slug', 'shrek-2001')
+            ->assertJsonPath('related_movies.0.relationship_type', 'PREQUEL');
+    }
 }
