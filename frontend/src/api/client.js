@@ -4,10 +4,9 @@
  * In production, use VITE_API_BASE_URL if set (e.g. different domain).
  * POST /generate requires X-API-Key; other endpoints do not.
  */
-const base =
-  import.meta.env.DEV
-    ? '/api/v1'
-    : (import.meta.env.VITE_API_BASE_URL ?? '') + '/api/v1'
+import { resolveApiBase } from './base'
+
+const base = resolveApiBase(import.meta.env.VITE_API_BASE_URL, import.meta.env.DEV)
 
 function get(path, options = {}) {
   const { headers, ...restOptions } = options
