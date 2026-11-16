@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\RelationshipType;
 use App\Models\Genre;
 use App\Models\Movie;
 use App\Models\MovieRelationship;
@@ -41,9 +42,12 @@ class GetRelatedMoviesAction
         $typeFilter = $this->normalizeTypeFilter($request->query('type'));
         $genreSlugs = $this->normalizeGenreFilter($request->query('genre'), $request->query('genres'));
 
-        // Get collection relationships (from database)
-        $collectionRelationships = $this->getCollectionRelationships($movie, $typeFilter);
-        $collectionCount = $collectionRelationships->count();
+        // Get collection relationships (from database), seen from this movie's perspective
+        $collectionEntries = $this->toPerspectiveOf(
+            $movie,
+            $this->getCollectionRelationships($movie, $typeFilter)
+        );
+        $collectionCount = count($collectionEntries);
 
         // Get similar movies (from TMDb - placeholder for now)
         $similarMovies = $this->getSimilarMovies($movie, $typeFilter);
@@ -53,25 +57,19 @@ class GetRelatedMoviesAction
         $formattedMovies = [];
 
         // Format collection relationships
-        foreach ($collectionRelationships as $relationship) {
-            $relatedMovie = $relationship->movie_id === $movie->id
-                ? $relationship->relatedMovie
-                : $relationship->movie;
-
-            if ($relatedMovie instanceof Movie) {
-                if ($genreSlugs !== null && ! $this->movieHasGenres($relatedMovie, $genreSlugs)) {
-                    continue;
-                }
-                $formattedMovies[] = [
-                    'id' => $relatedMovie->id,
-                    'slug' => $relatedMovie->slug,
-                    'title' => $relatedMovie->title,
-                    'release_year' => $relatedMovie->release_year,
-                    'relationship_type' => $relationship->relationship_type->value,
-                    'relationship_label' => $relationship->relationship_type->label(),
-                    'relationship_order' => $relationship->order,
-                ];
+        foreach ($collectionEntries as ['movie' => $relatedMovie, 'type' => $type, 'order' => $order]) {
+            if ($genreSlugs !== null && ! $this->movieHasGenres($relatedMovie, $genreSlugs)) {
+                continue;
             }
+            $formattedMovies[] = [
+                'id' => $relatedMovie->id,
+                'slug' => $relatedMovie->slug,
+                'title' => $relatedMovie->title,
+                'release_year' => $relatedMovie->release_year,
+                'relationship_type' => $type->value,
+                'relationship_label' => $type->label(),
+                'relationship_order' => $order,
+            ];
         }
 
         // Add similar movies (if any) - for now empty
@@ -150,6 +148,46 @@ class GetRelatedMoviesAction
             ->with(['movie', 'relatedMovie'])
             ->orderBy('order')
             ->get();
+    }
+
+    /**
+     * Express relationships from the given movie's point of view, one entry per related movie.
+     *
+     * A row (A, B, SEQUEL) means "B is a sequel of A". Rows stored from the other movie's side
+     * (related_movie_id = this movie) get their type inverted. Rows stored on this movie's side
+     * win when both directions exist.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, MovieRelationship>  $relationships
+     * @return list<array{movie: Movie, type: RelationshipType, order: int|null}>
+     */
+    private function toPerspectiveOf(Movie $movie, \Illuminate\Database\Eloquent\Collection $relationships): array
+    {
+        $entries = [];
+
+        foreach ($relationships as $relationship) {
+            $isOwnSide = $relationship->movie_id === $movie->id;
+            $relatedMovie = $isOwnSide ? $relationship->relatedMovie : $relationship->movie;
+
+            if (! $relatedMovie instanceof Movie || $relatedMovie->id === $movie->id) {
+                continue;
+            }
+
+            if (isset($entries[$relatedMovie->id]) && (! $isOwnSide || $entries[$relatedMovie->id]['own'])) {
+                continue;
+            }
+
+            $entries[$relatedMovie->id] = [
+                'movie' => $relatedMovie,
+                'type' => $isOwnSide ? $relationship->relationship_type : $relationship->relationship_type->inverse(),
+                'order' => $relationship->order,
+                'own' => $isOwnSide,
+            ];
+        }
+
+        return array_values(array_map(
+            fn (array $entry): array => ['movie' => $entry['movie'], 'type' => $entry['type'], 'order' => $entry['order']],
+            $entries
+        ));
     }
 
     /**

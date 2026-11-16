@@ -19,6 +19,18 @@ enum RelationshipType: string
     case SAME_UNIVERSE = 'SAME_UNIVERSE';
 
     /**
+     * The same relationship seen from the other movie (a sequel's counterpart is a prequel).
+     */
+    public function inverse(): self
+    {
+        return match ($this) {
+            self::SEQUEL => self::PREQUEL,
+            self::PREQUEL => self::SEQUEL,
+            default => $this,
+        };
+    }
+
+    /**
      * Get human-readable label for relationship type.
      */
     public function label(): string
