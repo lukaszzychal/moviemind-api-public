@@ -10,8 +10,9 @@ import Compare from '@/views/Compare.vue'
 import Generate from '@/views/Generate.vue'
 import Job from '@/views/Job.vue'
 import Feedback from '@/views/Feedback.vue'
+import NotFound from '@/views/NotFound.vue'
 
-const routes = [
+export const routes = [
   {
     path: '/',
     component: Layout,
@@ -26,6 +27,7 @@ const routes = [
       { path: 'generate', name: 'Generate', component: Generate },
       { path: 'jobs/:id', name: 'Job', component: Job },
       { path: 'feedback', name: 'Feedback', component: Feedback },
+      { path: ':pathMatch(.*)*', name: 'NotFound', component: NotFound },
     ],
   },
 ]
