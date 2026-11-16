@@ -9,7 +9,8 @@ export function contentLocaleFor (uiLocale) {
  * Choose which description/bio to show. An explicitly requested version wins;
  * otherwise the one in the interface language (the default if it matches), then
  * the default, then the first available. `isOtherLanguage` tells the page to
- * explain that the text is in another language.
+ * explain that the text is in another language; it stays false when a version
+ * in the interface language exists and another one was picked on purpose.
  */
 export function pickLocalized ({ items, defaultItem, uiLocale, requestedId = null }) {
   const list = items ?? []
@@ -27,7 +28,7 @@ export function pickLocalized ({ items, defaultItem, uiLocale, requestedId = nul
 
   return {
     item,
-    isOtherLanguage: Boolean(item?.locale) && item.locale !== wanted,
+    isOtherLanguage: Boolean(item?.locale) && item.locale !== wanted && !inInterfaceLanguage,
   }
 }
 
