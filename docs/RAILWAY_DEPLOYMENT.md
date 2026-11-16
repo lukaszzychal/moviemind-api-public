@@ -193,10 +193,10 @@ Seeder utworzy użytkownika w tabeli `users` z podanym emailem i hasłem. Loguj 
 railway logs --service moviemind-api-staging --deployment latest
 
 # Test endpointu
-curl https://moviemind-api-staging.up.railway.app/api/v1/health/openai
+curl https://moviemind-api.up.railway.app/api/v1/health/openai
 
 # Test głównego endpointu
-curl https://moviemind-api-staging.up.railway.app/
+curl https://moviemind-api.up.railway.app/
 ```
 
 ---
@@ -302,8 +302,8 @@ railway logs --service moviemind-api-staging --deployment latest
 # cd api && php artisan migrate --force
 
 # 6. Testowanie
-curl https://moviemind-api-staging.up.railway.app/api/v1/health/openai
-curl https://moviemind-api-staging.up.railway.app/api/v1/movies/search?q=matrix
+curl https://moviemind-api.up.railway.app/api/v1/health/openai
+curl https://moviemind-api.up.railway.app/api/v1/movies/search?q=matrix
 ```
 
 ---
