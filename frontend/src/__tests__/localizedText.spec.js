@@ -42,9 +42,15 @@ describe('pickLocalized', () => {
     expect(result.isOtherLanguage).toBe(true)
   })
 
-  it('honours an explicitly requested version', () => {
-    const result = pickLocalized({ items: [plBio, enBio], defaultItem: plBio, uiLocale: 'en', requestedId: 'pl1' })
+  it('honours an explicitly requested version without the notice when the interface language exists', () => {
+    const result = pickLocalized({ items: [plBio, enBio], defaultItem: enBio, uiLocale: 'en', requestedId: 'pl1' })
     expect(result.item).toBe(plBio)
+    expect(result.isOtherLanguage).toBe(false)
+  })
+
+  it('keeps the notice for a requested version when the interface language is missing', () => {
+    const result = pickLocalized({ items: [plBio, deBio], defaultItem: plBio, uiLocale: 'en', requestedId: 'de1' })
+    expect(result.item).toBe(deBio)
     expect(result.isOtherLanguage).toBe(true)
   })
 
