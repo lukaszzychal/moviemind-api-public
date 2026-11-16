@@ -26,7 +26,7 @@ Add to `~/.cursor/mcp.json` or your project's `.cursor/mcp.json`:
         "-y",
         "supergateway",
         "--sse",
-        "https://mcp-moviemind-api.up.railway.app/sse",
+        "https://moviemind-mcp.lukaszzychal.dev/sse",
         "--header",
         "Authorization: Bearer YOUR_TOKEN_HERE"
       ]
@@ -113,7 +113,7 @@ Add to Claude Desktop config: on macOS
         "-y",
         "supergateway",
         "--sse",
-        "https://mcp-moviemind-api.up.railway.app/sse",
+        "https://moviemind-mcp.lukaszzychal.dev/sse",
         "--header",
         "Authorization: Bearer YOUR_TOKEN_HERE"
       ]
@@ -160,7 +160,7 @@ const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const { SSEClientTransport } = require("@modelcontextprotocol/sdk/client/sse.js");
 
 const transport = new SSEClientTransport(
-  new URL("https://mcp-moviemind-api.up.railway.app/sse")
+  new URL("https://moviemind-mcp.lukaszzychal.dev/sse")
 );
 
 const client = new Client(
@@ -297,7 +297,7 @@ const { SSEClientTransport } = require("@modelcontextprotocol/sdk/client/sse.js"
 
 async function test() {
   const transport = new SSEClientTransport(
-    new URL("https://mcp-moviemind-api.up.railway.app/sse")
+    new URL("https://moviemind-mcp.lukaszzychal.dev/sse")
   );
   const client = new Client(
     { name: "test", version: "1.0.0" },
