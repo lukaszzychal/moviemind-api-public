@@ -168,5 +168,10 @@
         "generate_bio": "Generuj biografię",
         "compare": "Porównaj z innym",
         "report": "Zgłoś problem"
+    },
+    "not_found": {
+        "title": "Nie znaleziono strony",
+        "message": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+        "back_home": "Wróć na stronę główną"
     }
 }
