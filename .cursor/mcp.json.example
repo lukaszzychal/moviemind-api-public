@@ -6,7 +6,7 @@
         "-y",
         "supergateway",
         "--sse",
-        "https://mcp-moviemind-api.up.railway.app/sse",
+        "https://moviemind-mcp.lukaszzychal.dev/sse",
         "--header",
         "Authorization: Bearer YOUR_TOKEN_HERE"
       ]

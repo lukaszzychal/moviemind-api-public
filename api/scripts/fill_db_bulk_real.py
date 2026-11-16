@@ -5,7 +5,7 @@ import sys
 import random
 
 # Konfiguracja
-BASE_URL = "https://moviemind-api.up.railway.app/api/v1"
+BASE_URL = "https://moviemind-api.lukaszzychal.dev/api/v1"
 API_KEY = "mm_demo_portfolio_staging"  # Twój klucz API (możesz zmienić)
 
 # Opcje generowania zgodne z App\Enums\ContextTag.php i App\Enums\Locale.php
