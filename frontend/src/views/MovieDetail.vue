@@ -12,6 +12,8 @@ import Badge from '@/components/ui/Badge.vue'
 import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
+import LocaleNotice from '@/components/LocaleNotice.vue'
+import { pickLocalized } from '@/utils/localizedText'
 
 const { t: translate, locale } = useI18n()
 
@@ -80,15 +82,17 @@ watch([activeSlug, locale], () => {
   loadCollection()
 }, { immediate: true })
 
-const selectedDescription = computed(() => {
+const selectedDescriptionInfo = computed(() => {
   const movie = movieData.value
-  if (!movie) return null
-  if (requestedDescriptionId.value && movie.descriptions) {
-    const found = movie.descriptions.find(desc => String(desc.id) === String(requestedDescriptionId.value))
-    if (found) return found
-  }
-  return movie.default_description || (movie.descriptions && movie.descriptions[0]) || null
+  if (!movie) return { item: null, isOtherLanguage: false }
+  return pickLocalized({
+    items: movie.descriptions,
+    defaultItem: movie.default_description,
+    uiLocale: locale.value,
+    requestedId: requestedDescriptionId.value,
+  })
 })
+const selectedDescription = computed(() => selectedDescriptionInfo.value.item)
 
 function selectDescription (id) {
   router.replace({ query: { ...route.query, description_id: id } })
@@ -182,6 +186,12 @@ function translatedGenre (genre) {
         />
       </div>
 
+      <LocaleNotice
+        v-if="selectedDescriptionInfo.isOtherLanguage"
+        :content-locale="selectedDescription.locale"
+        entity-type="MOVIE"
+        :slug="movieData.slug"
+      />
       <div
         v-if="selectedDescription"
         class="prose max-w-none mb-8"

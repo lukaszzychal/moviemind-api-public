@@ -6,6 +6,8 @@ import ReportModal from '@/components/ReportModal.vue'
 import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
+import LocaleNotice from '@/components/LocaleNotice.vue'
+import { pickLocalized } from '@/utils/localizedText'
 import { formatDate } from '@/composables/useDate.js'
 
 const { t: translate, locale } = useI18n()
@@ -57,15 +59,17 @@ watch([activeSlug, locale], () => {
   loadRelated()
 }, { immediate: true })
 
-const selectedBio = computed(() => {
+const selectedBioInfo = computed(() => {
   const person = personData.value
-  if (!person) return null
-  if (requestedBioId.value && person.bios) {
-    const found = person.bios.find(bio => String(bio.id) === String(requestedBioId.value))
-    if (found) return found
-  }
-  return person.default_bio || (person.bios && person.bios[0]) || null
+  if (!person) return { item: null, isOtherLanguage: false }
+  return pickLocalized({
+    items: person.bios,
+    defaultItem: person.default_bio,
+    uiLocale: locale.value,
+    requestedId: requestedBioId.value,
+  })
 })
+const selectedBio = computed(() => selectedBioInfo.value.item)
 
 function selectBio (id) {
   router.replace({ query: { ...route.query, bio_id: id } })
@@ -147,6 +151,12 @@ const formattedBirthDate = computed(() => {
         />
       </div>
 
+      <LocaleNotice
+        v-if="selectedBioInfo.isOtherLanguage"
+        :content-locale="selectedBio.locale"
+        entity-type="PERSON"
+        :slug="personData.slug"
+      />
       <div
         v-if="selectedBio"
         class="prose max-w-none mb-8"
