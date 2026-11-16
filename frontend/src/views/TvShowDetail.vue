@@ -9,6 +9,8 @@ import ReportModal from '@/components/ReportModal.vue'
 import Select from '@/components/ui/Select.vue'
 import Button from '@/components/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
+import LocaleNotice from '@/components/LocaleNotice.vue'
+import { pickLocalized } from '@/utils/localizedText'
 import { formatDate } from '@/composables/useDate.js'
 
 const { t, locale } = useI18n()
@@ -61,15 +63,17 @@ watch([slug, locale], () => {
   loadRelated()
 }, { immediate: true })
 
-const selectedDescription = computed(() => {
+const selectedDescriptionInfo = computed(() => {
   const s = tvShow.value
-  if (!s) return null
-  if (descriptionId.value && s.descriptions) {
-    const found = s.descriptions.find(d => String(d.id) === String(descriptionId.value))
-    if (found) return found
-  }
-  return s.descriptions?.[0] || null
+  if (!s) return { item: null, isOtherLanguage: false }
+  return pickLocalized({
+    items: s.descriptions,
+    defaultItem: s.default_description,
+    uiLocale: locale.value,
+    requestedId: descriptionId.value,
+  })
 })
+const selectedDescription = computed(() => selectedDescriptionInfo.value.item)
 
 function selectDescription (id) {
   router.replace({ query: { ...route.query, description_id: id } })
@@ -144,6 +148,12 @@ const airYear = computed(() => {
         />
       </div>
 
+      <LocaleNotice
+        v-if="selectedDescriptionInfo.isOtherLanguage"
+        :content-locale="selectedDescription.locale"
+        entity-type="TV_SHOW"
+        :slug="tvShow.slug"
+      />
       <div
         v-if="selectedDescription?.text"
         class="prose max-w-none mb-8"

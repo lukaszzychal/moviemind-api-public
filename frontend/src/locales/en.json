@@ -167,7 +167,9 @@
         "generate_desc": "Generate description",
         "generate_bio": "Generate bio",
         "compare": "Compare with another",
-        "report": "Report issue"
+        "report": "Report issue",
+        "other_language": "This text is only available in {language}.",
+        "generate_in_language": "Generate in {language}"
     },
     "not_found": {
         "title": "Page not found",

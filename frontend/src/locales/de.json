@@ -167,7 +167,9 @@
         "generate_desc": "Beschreibung generieren",
         "generate_bio": "Biografie generieren",
         "compare": "Mit einem anderen vergleichen",
-        "report": "Problem melden"
+        "report": "Problem melden",
+        "other_language": "Dieser Text ist nur auf {language} verfügbar.",
+        "generate_in_language": "Auf {language} generieren"
     },
     "not_found": {
         "title": "Seite nicht gefunden",

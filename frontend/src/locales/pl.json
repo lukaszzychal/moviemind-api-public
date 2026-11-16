@@ -167,7 +167,9 @@
         "generate_desc": "Generuj opis",
         "generate_bio": "Generuj biografię",
         "compare": "Porównaj z innym",
-        "report": "Zgłoś problem"
+        "report": "Zgłoś problem",
+        "other_language": "Ten tekst jest dostępny tylko w języku: {language}.",
+        "generate_in_language": "Wygeneruj w języku: {language}"
     },
     "not_found": {
         "title": "Nie znaleziono strony",
