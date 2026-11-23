@@ -12,7 +12,7 @@
   "devDependencies": {
     "@playwright/mcp": "^0.0.75",
     "@playwright/test": "^1.60.0",
-    "markdownlint-cli2": "^0.22.1"
+    "markdownlint-cli2": "^0.24.2"
   },
   "engines": {
     "node": ">=18.0.0",
